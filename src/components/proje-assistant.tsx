@@ -242,18 +242,28 @@ export function ProjeAssistant() {
         const pdfHeight = pdf.internal.pageSize.getHeight();
         const imgWidth = canvas.width;
         const imgHeight = canvas.height;
-        const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-        const imgX = (pdfWidth - imgWidth * ratio) / 2;
-        const imgY = 10;
-        pdf.addImage(
-          imgData,
-          'PNG',
-          imgX,
-          imgY,
-          imgWidth * ratio,
-          imgHeight * ratio
-        );
-        pdf.save(`${projectName || 'proje'}.pdf`);
+
+        if (imgWidth > 0 && imgHeight > 0) {
+            const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+            const imgX = (pdfWidth - imgWidth * ratio) / 2;
+            const imgY = 10;
+            pdf.addImage(
+              imgData,
+              'PNG',
+              imgX,
+              imgY,
+              imgWidth * ratio,
+              imgHeight * ratio
+            );
+            pdf.save(`${projectName || 'proje'}.pdf`);
+        } else {
+            console.error('Invalid image dimensions for PDF export');
+            toast({
+                variant: 'destructive',
+                title: 'Dışa Aktarma Hatası',
+                description: 'PDF için geçersiz resim boyutları.',
+            });
+        }
       } else if (format === 'word') {
         const htmlString = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${exportRef.current.innerHTML}</body></html>`;
         const result = await handleGenerateDocx(htmlString);

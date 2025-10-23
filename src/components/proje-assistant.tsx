@@ -120,12 +120,10 @@ export function ProjeAssistant() {
     });
   }, [amac, yontem, beklenenSonuc]);
 
-  const onPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const pastedText = e.clipboardData.getData('text');
-    setDraft(pastedText);
-    if (pastedText.trim().length > 10) {
+  const processText = (text: string) => {
+    if (text.trim().length > 10) {
       startGenerating(async () => {
-        const genResult = await handleGenerateContent({ draftText: pastedText });
+        const genResult = await handleGenerateContent({ draftText: text });
         let newAmac = '',
           newYontem = '',
           newBeklenenSonuc = '';
@@ -149,7 +147,7 @@ export function ProjeAssistant() {
         }
 
         const extractResult = await handleExtractProjectInfo({
-          projectText: pastedText,
+          projectText: text,
         });
         if (extractResult.success && extractResult.data) {
           setProjectName(extractResult.data.projectName);
@@ -193,6 +191,26 @@ export function ProjeAssistant() {
       });
     }
   };
+
+
+  const onPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const pastedText = e.clipboardData.getData('text');
+    setDraft(pastedText);
+    processText(pastedText);
+  };
+  
+  const onRegenerate = () => {
+    if (draft.trim().length < 10) {
+      toast({
+        variant: 'destructive',
+        title: 'Hata',
+        description: 'Lütfen önce bir proje metni yapıştırın veya yazın.',
+      });
+      return;
+    }
+    processText(draft);
+  };
+
 
   const onOptimize = (
     section: 'amac' | 'yontem' | 'beklenenSonuc' | 'all'
@@ -354,7 +372,7 @@ export function ProjeAssistant() {
               </p>
             </div>
             <div className="flex items-center gap-2 flex-wrap justify-center">
-              <Button variant="outline" size="sm" onClick={resetForm}>
+              <Button variant="outline" size="sm" onClick={onRegenerate}>
                 <RefreshCw className="mr-2" />
                 Yeniden Üret
               </Button>

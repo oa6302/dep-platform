@@ -18,16 +18,16 @@ const OptimizeSectionContentInputSchema = z.object({
 export type OptimizeSectionContentInput = z.infer<typeof OptimizeSectionContentInputSchema>;
 
 const SuitabilityScoresSchema = z.object({
-  ozgunluk: z.number().describe('Originality score (0-100).'),
-  formatUygunlugu: z.number().describe('Format suitability score (0-100).'),
-  dilAnlatim: z.number().describe('Language and expression score (0-100).'),
-  genelUygunluk: z.number().describe('Overall suitability score (0-100).'),
+  ozgunluk: z.number().min(0).max(100).describe('Originality score (0-100). Represents how unique and creative the project idea is.'),
+  formatUygunlugu: z.number().min(0).max(100).describe('Format suitability score (0-100). Assesses adherence to TÜBİTAK 4006 word counts and structure.'),
+  dilAnlatim: z.number().min(0).max(100).describe('Language and expression score (0-100). Evaluates the clarity, fluency, and scientific appropriateness of the language used.'),
+  genelUygunluk: z.number().min(0).max(100).describe('Overall suitability score (0-100). An average of the other scores, representing the overall readiness of the project draft.'),
 });
 
 const OptimizedSectionContentSchema = z.object({
-  amac: z.string().describe('Optimized Amaç (Purpose) section content.'),
-  yontem: z.string().describe('Optimized Yöntem (Method) section content.'),
-  beklenenSonuc: z.string().describe('Optimized Beklenen Sonuç (Expected Result) section content.'),
+  amac: z.string().describe('Optimized Amaç (Purpose) section content, within the 100-word limit.'),
+  yontem: z.string().describe('Optimized Yöntem (Method) section content, within the 150-word limit.'),
+  beklenenSonuc: z.string().describe('Optimized Beklenen Sonuç (Expected Result) section content, within the 100-word limit.'),
   suitabilityScores: SuitabilityScoresSchema.describe('Suitability scores for the optimized content.'),
 });
 
@@ -43,16 +43,21 @@ const prompt = ai.definePrompt({
   output: {schema: OptimizedSectionContentSchema},
   prompt: `You are an AI assistant specialized in optimizing project drafts for TÜBİTAK 4006 format.
   You will receive the content for Amaç (Purpose), Yöntem (Method), and Beklenen Sonuç (Expected Result) sections.
-  Your task is to optimize these sections for originality, feasibility, and adherence to word count limits.
-  Provide suitability scores (0-100) for Originality, Format Suitability, Language & Expression, and Overall Suitability.
 
+  Your task is to:
+  1. Optimize these sections for originality, feasibility, and adherence to word count limits (Amaç: ~100 words, Yöntem: ~150 words, Beklenen Sonuç: ~100 words).
+  2. Provide realistic suitability scores (0-100) for the following criteria:
+     - Özgünlük (Originality): How unique and creative is the idea?
+     - Format Uygunluğu (Format Suitability): Does it meet the structural and length requirements?
+     - Dil & Anlatım (Language & Expression): Is the language clear, scientific, and well-written?
+     - Genel Uygunluk (Overall Suitability): Calculate this as the average of the other three scores.
+
+  Input Content:
   Amaç (Purpose): {{{amac}}}
   Yöntem (Method): {{{yontem}}}
   Beklenen Sonuç (Expected Result): {{{beklenenSonuc}}}
 
-  Ensure the optimized content is well-structured, original, and feasible within the context of a TÜBİTAK 4006 project.
-  Return the optimized content and suitability scores in the following JSON format:
-  {{$jsonOutput}}
+  Return the optimized content and the calculated suitability scores in the specified JSON format.
 `,
 });
 
@@ -64,6 +69,11 @@ const optimizeSectionContentFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
+    const scores = output!.suitabilityScores;
+    // Ensure Genel Uygunluk is the average of the other scores
+    const avgScore = Math.round((scores.ozgunluk + scores.formatUygunlugu + scores.dilAnlatim) / 3);
+    output!.suitabilityScores.genelUygunluk = avgScore;
+    
     return output!;
   }
 );

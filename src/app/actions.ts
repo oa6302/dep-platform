@@ -49,7 +49,16 @@ export async function handleGenerateDocx(htmlString: string) {
         left: 720,
       },
     });
-    return { success: true, data: fileBuffer.toString('base64') };
+    
+    if (fileBuffer instanceof Buffer) {
+      return { success: true, data: fileBuffer.toString('base64') };
+    }
+    
+    // For Blob type (which might be returned in browser-like environments, though less likely in server action)
+    const arrayBuffer = await (fileBuffer as Blob).arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    return { success: true, data: buffer.toString('base64') };
+
   } catch (error) {
     console.error('Error in handleGenerateDocx:', error);
     return { success: false, error: 'Word dosyası oluşturulurken bir hata oluştu.' };

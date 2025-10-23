@@ -269,10 +269,15 @@ export function ProjeAssistant() {
         const result = await handleGenerateDocx(htmlString);
 
         if (result.success && result.data) {
-          const blob = new Blob(
-            [Buffer.from(result.data, 'base64')],
-            { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }
-          );
+          const byteCharacters = atob(result.data);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], {
+            type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          });
           FileSaver.saveAs(blob, `${projectName || 'proje'}.docx`);
         } else {
           throw new Error(result.error);

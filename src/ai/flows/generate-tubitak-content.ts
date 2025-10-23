@@ -28,7 +28,7 @@ const GenerateTubitakContentOutputSchema = z.object({
     .describe('The generated content for the Beklenen Sonuç (Expected Result) section.'),
   progress: z.string().describe('Progress summary of content generation.'),
 });
-export type GenerateTubitakContentOutput = z.infer<
+export type GenerateTubitakContentOutput = zinfer<
   typeof GenerateTubitakContentOutputSchema
 >;
 
@@ -49,6 +49,8 @@ const prompt = ai.definePrompt({
 
   Generate content for the following sections, optimizing for originality, feasibility, and word count limits (Amaç: 100 words, Yöntem: 150 words, Beklenen Sonuç: 100 words). Be as original as possible. Make sure the content is feasible to implement.
   
+  For the 'Amaç' section of research projects, structure it to explain the scientific premise and the specific goal. For example: "Vermikülit bünyesine daha fazla su alır, perlit ise vermikülite göre daha az su tutar fakat daha fazla havayı içerde tutabilir. Bu projede vermikülitin su tutma kapasitesi ile perlitin daha iyi drenaj ve hava tutma kapasitesine bağlı olarak kurak bölgelerde suyun verimli kullanılıp toprakta nem oranının uzun süre muhafaza edilmesi amaçlanmıştır."
+
   For the 'Yöntem' section, structure it clearly with numbered steps like a scientific experiment (e.g., Araştırma Aşaması, Tasarım Aşaması, Uygulama Aşaması, Veri Analizi, Sunum Aşaması).
 
   Return the output as a JSON object with the following keys: amac, yontem, beklenenSonuc.

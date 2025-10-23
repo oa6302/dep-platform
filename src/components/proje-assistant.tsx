@@ -4,7 +4,7 @@ import {
   handleGenerateContent,
   handleGenerateDocx,
   handleOptimizeContent,
-  handleExtractProjectInfo
+  handleExtractProjectInfo,
 } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import {
@@ -126,7 +126,9 @@ export function ProjeAssistant() {
     if (pastedText.trim().length > 10) {
       startGenerating(async () => {
         const genResult = await handleGenerateContent({ draftText: pastedText });
-        let newAmac = '', newYontem = '', newBeklenenSonuc = '';
+        let newAmac = '',
+          newYontem = '',
+          newBeklenenSonuc = '';
         if (genResult.success && genResult.data) {
           newAmac = genResult.data.amac;
           newYontem = genResult.data.yontem;
@@ -146,33 +148,44 @@ export function ProjeAssistant() {
           });
         }
 
-        const extractResult = await handleExtractProjectInfo({ projectText: pastedText });
+        const extractResult = await handleExtractProjectInfo({
+          projectText: pastedText,
+        });
         if (extractResult.success && extractResult.data) {
-            setProjectName(extractResult.data.projectName);
-            setAdvisor(extractResult.data.advisor);
-            setStudents(extractResult.data.students.length > 0 ? extractResult.data.students : ['']);
-            setMainArea(extractResult.data.mainArea);
-            setThematicSubject(extractResult.data.thematicSubject);
-            setProjectType(extractResult.data.projectType);
-             toast({
-              title: 'Bilgiler Çıkarıldı',
-              description: 'Proje bilgileri formunuza otomatik olarak eklendi.',
-            });
+          setProjectName(extractResult.data.projectName);
+          setAdvisor(extractResult.data.advisor);
+          setStudents(
+            extractResult.data.students.length > 0
+              ? extractResult.data.students
+              : ['']
+          );
+          setMainArea(extractResult.data.mainArea);
+          setThematicSubject(extractResult.data.thematicSubject);
+          setProjectType(extractResult.data.projectType);
+          toast({
+            title: 'Bilgiler Çıkarıldı',
+            description: 'Proje bilgileri formunuza otomatik olarak eklendi.',
+          });
         } else {
-            toast({
-              variant: 'destructive',
-              title: 'Hata',
-              description: extractResult.error,
-            });
+          toast({
+            variant: 'destructive',
+            title: 'Hata',
+            description: extractResult.error,
+          });
         }
 
         if (newAmac || newYontem || newBeklenenSonuc) {
-          const optResult = await handleOptimizeContent({ amac: newAmac, yontem: newYontem, beklenenSonuc: newBeklenenSonuc });
+          const optResult = await handleOptimizeContent({
+            amac: newAmac,
+            yontem: newYontem,
+            beklenenSonuc: newBeklenenSonuc,
+          });
           if (optResult.success && optResult.data) {
             setScores(optResult.data.suitabilityScores);
             toast({
               title: 'Puanlar Hesaplandı',
-              description: 'Projenizin uygunluk puanları otomatik olarak hesaplandı.',
+              description:
+                'Projenizin uygunluk puanları otomatik olarak hesaplandı.',
               className: 'bg-accent text-accent-foreground',
             });
           }
@@ -181,7 +194,9 @@ export function ProjeAssistant() {
     }
   };
 
-  const onOptimize = (section: 'amac' | 'yontem' | 'beklenenSonuc' | 'all') => {
+  const onOptimize = (
+    section: 'amac' | 'yontem' | 'beklenenSonuc' | 'all'
+  ) => {
     if (!amac && !yontem && !beklenenSonuc) {
       toast({
         variant: 'destructive',
@@ -260,41 +275,35 @@ export function ProjeAssistant() {
         const imgHeight = canvas.height;
 
         if (imgWidth > 0 && imgHeight > 0) {
-            const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-            const imgX = (pdfWidth - imgWidth * ratio) / 2;
-            const imgY = 10;
-            pdf.addImage(
-              imgData,
-              'PNG',
-              imgX,
-              imgY,
-              imgWidth * ratio,
-              imgHeight * ratio
-            );
-            pdf.save(`${projectName || 'proje'}.pdf`);
+          const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+          const imgX = (pdfWidth - imgWidth * ratio) / 2;
+          const imgY = 10;
+          pdf.addImage(
+            imgData,
+            'PNG',
+            imgX,
+            imgY,
+            imgWidth * ratio,
+            imgHeight * ratio
+          );
+          pdf.save(`${projectName || 'proje'}.pdf`);
         } else {
-            console.error('Invalid image dimensions for PDF export');
-            toast({
-                variant: 'destructive',
-                title: 'Dışa Aktarma Hatası',
-                description: 'PDF için geçersiz resim boyutları.',
-            });
+          console.error('Invalid image dimensions for PDF export');
+          toast({
+            variant: 'destructive',
+            title: 'Dışa Aktarma Hatası',
+            description: 'PDF için geçersiz resim boyutları.',
+          });
         }
       } else if (format === 'word') {
         const htmlString = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${exportRef.current.innerHTML}</body></html>`;
         const result = await handleGenerateDocx(htmlString);
 
         if (result.success && result.data) {
-          const byteCharacters = atob(result.data);
-          const byteNumbers = new Array(byteCharacters.length);
-          for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-          }
-          const byteArray = new Uint8Array(byteNumbers);
-          const blob = new Blob([byteArray], {
-            type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          });
-          FileSaver.saveAs(blob, `${projectName || 'proje'}.docx`);
+          FileSaver.saveAs(
+            `data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${result.data}`,
+            `${projectName || 'proje'}.docx`
+          );
         } else {
           throw new Error(result.error);
         }
@@ -317,16 +326,18 @@ export function ProjeAssistant() {
       shareText += `Amaç: ${amac}\n\n`;
       shareText += `Yöntem: ${yontem}\n\n`;
       shareText += `Beklenen Sonuç: ${beklenenSonuc}\n\n`;
-      navigator.share({
-        title: `TÜBİTAK 4006 Projesi: ${projectName}`,
-        text: shareText,
-      }).catch(err => console.error("Paylaşım hatası:", err));
+      navigator
+        .share({
+          title: `TÜBİTAK 4006 Projesi: ${projectName}`,
+          text: shareText,
+        })
+        .catch(err => console.error('Paylaşım hatası:', err));
     } else {
       toast({
         description: 'Tarayıcınız bu özelliği desteklemiyor.',
       });
     }
-  }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-background font-body">
@@ -631,7 +642,11 @@ export function ProjeAssistant() {
                   ))}
                 </CardContent>
               </Card>
-              <Button onClick={handleShare} variant="secondary" className="w-full">
+              <Button
+                onClick={handleShare}
+                variant="secondary"
+                className="w-full"
+              >
                 <Share2 className="mr-2" />
                 Mobilden Paylaş
               </Button>
@@ -658,27 +673,49 @@ export function ProjeAssistant() {
             margin: '2.54cm',
           }}
         >
-          <p style={{textAlign: 'center', fontWeight: 'bold' }}>PROJE ADI: {projectName.toUpperCase()}</p>
+          <p style={{ textAlign: 'center', fontWeight: 'bold' }}>
+            PROJE ADI: {projectName.toUpperCase()}
+          </p>
           <br />
-          <p><strong>ALT PROJE TÜRÜ:</strong> {projectType}</p>
-          <p><strong>ANA ALANI:</strong> {mainArea}</p>
-          <p><strong>TEMATİK KONUSU:</strong> {thematicSubject}</p>
+          <p>
+            <strong>ALT PROJE TÜRÜ:</strong> {projectType}
+          </p>
+          <p>
+            <strong>ANA ALANI:</strong> {mainArea}
+          </p>
+          <p>
+            <strong>TEMATİK KONUSU:</strong> {thematicSubject}
+          </p>
           <br />
-          <p><strong>DANIŞMAN:</strong> {advisor.toUpperCase()}</p>
+          <p>
+            <strong>DANIŞMAN:</strong> {advisor.toUpperCase()}
+          </p>
           <div>
-            <p><strong>ÖĞRENCİLER:</strong></p>
+            <p>
+              <strong>ÖĞRENCİLER:</strong>
+            </p>
             <ol>
-              {students.filter(s => s.trim() !== '').map((s, i) => <li key={i}>{s.toUpperCase()}</li>)}
+              {students
+                .filter(s => s.trim() !== '')
+                .map((s, i) => (
+                  <li key={i}>{s.toUpperCase()}</li>
+                ))}
             </ol>
           </div>
           <br />
-          <p><strong>AMAÇ:</strong></p>
+          <p>
+            <strong>AMAÇ:</strong>
+          </p>
           <p>{amac}</p>
           <br />
-          <p><strong>YÖNTEM:</strong></p>
+          <p>
+            <strong>YÖNTEM:</strong>
+          </p>
           <p>{yontem}</p>
           <br />
-          <p><strong>BEKLENEN SONUÇ:</strong></p>
+          <p>
+            <strong>BEKLENEN SONUÇ:</strong>
+          </p>
           <p>{beklenenSonuc}</p>
         </div>
       </div>

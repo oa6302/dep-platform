@@ -49,19 +49,14 @@ export async function handleGenerateDocx(htmlString: string) {
         left: 720,
       },
     });
-    
-    if (fileBuffer instanceof Buffer) {
-      return { success: true, data: fileBuffer.toString('base64') };
-    }
-    
-    // For Blob type (which might be returned in browser-like environments, though less likely in server action)
-    const arrayBuffer = await (fileBuffer as Blob).arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    return { success: true, data: buffer.toString('base64') };
 
+    return { success: true, data: fileBuffer.toString('base64') };
   } catch (error) {
     console.error('Error in handleGenerateDocx:', error);
-    return { success: false, error: 'Word dosyası oluşturulurken bir hata oluştu.' };
+    return {
+      success: false,
+      error: 'Word dosyası oluşturulurken bir hata oluştu.',
+    };
   }
 }
 
@@ -71,6 +66,9 @@ export async function handleExtractProjectInfo(input: ExtractProjectInfoInput) {
     return { success: true, data: result };
   } catch (error) {
     console.error('Error in handleExtractProjectInfo:', error);
-    return { success: false, error: 'Proje bilgileri ayrıştırılırken bir hata oluştu.' };
+    return {
+      success: false,
+      error: 'Proje bilgileri ayrıştırılırken bir hata oluştu.',
+    };
   }
 }

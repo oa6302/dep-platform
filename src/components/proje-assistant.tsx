@@ -2,6 +2,7 @@
 
 import {
   handleGenerateContent,
+  handleGenerateDocx,
   handleOptimizeContent,
 } from '@/app/actions';
 import { Button } from '@/components/ui/button';
@@ -233,18 +234,18 @@ export function ProjeAssistant() {
         );
         pdf.save(`${projectName || 'proje'}.pdf`);
       } else if (format === 'word') {
-        // This is a dynamic import because html-to-docx is not ESM friendly
-        const HTMLtoDOCX = (await import('html-to-docx')).default;
         const htmlString = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${exportRef.current.innerHTML}</body></html>`;
-        const fileBuffer = await HTMLtoDOCX(htmlString, undefined, {
-            margins: {
-                top: 720,
-                right: 720,
-                bottom: 720,
-                left: 720,
-            }
-        });
-        FileSaver.saveAs(fileBuffer, `${projectName || 'proje'}.docx`);
+        const result = await handleGenerateDocx(htmlString);
+
+        if (result.success && result.data) {
+          const blob = new Blob(
+            [Buffer.from(result.data, 'base64')],
+            { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }
+          );
+          FileSaver.saveAs(blob, `${projectName || 'proje'}.docx`);
+        } else {
+          throw new Error(result.error);
+        }
       }
     } catch (error) {
       console.error('Export error:', error);

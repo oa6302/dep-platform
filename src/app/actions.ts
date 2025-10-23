@@ -8,6 +8,7 @@ import {
   optimizeSectionContent,
   OptimizeSectionContentInput,
 } from '@/ai/flows/optimize-section-content';
+import HTMLtoDOCX from 'html-to-docx';
 
 export async function handleGenerateContent(
   input: GenerateTubitakContentInput
@@ -30,5 +31,22 @@ export async function handleOptimizeContent(
   } catch (error) {
     console.error('Error in handleOptimizeContent:', error);
     return { success: false, error: 'İçerik optimize edilirken bir hata oluştu.' };
+  }
+}
+
+export async function handleGenerateDocx(htmlString: string) {
+  try {
+    const fileBuffer = await HTMLtoDOCX(htmlString, undefined, {
+      margins: {
+        top: 720,
+        right: 720,
+        bottom: 720,
+        left: 720,
+      },
+    });
+    return { success: true, data: fileBuffer.toString('base64') };
+  } catch (error) {
+    console.error('Error in handleGenerateDocx:', error);
+    return { success: false, error: 'Word dosyası oluşturulurken bir hata oluştu.' };
   }
 }

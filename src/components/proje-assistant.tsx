@@ -126,10 +126,14 @@ export function ProjeAssistant() {
     if (pastedText.trim().length > 10) {
       startGenerating(async () => {
         const genResult = await handleGenerateContent({ draftText: pastedText });
+        let newAmac = '', newYontem = '', newBeklenenSonuc = '';
         if (genResult.success && genResult.data) {
-          setAmac(genResult.data.amac);
-          setYontem(genResult.data.yontem);
-          setBeklenenSonuc(genResult.data.beklenenSonuc);
+          newAmac = genResult.data.amac;
+          newYontem = genResult.data.yontem;
+          newBeklenenSonuc = genResult.data.beklenenSonuc;
+          setAmac(newAmac);
+          setYontem(newYontem);
+          setBeklenenSonuc(newBeklenenSonuc);
           toast({
             title: 'Dönüşüm Başarılı',
             description: 'Proje metniniz TÜBİTAK formatına dönüştürüldü.',
@@ -160,6 +164,18 @@ export function ProjeAssistant() {
               title: 'Hata',
               description: extractResult.error,
             });
+        }
+
+        if (newAmac || newYontem || newBeklenenSonuc) {
+          const optResult = await handleOptimizeContent({ amac: newAmac, yontem: newYontem, beklenenSonuc: newBeklenenSonuc });
+          if (optResult.success && optResult.data) {
+            setScores(optResult.data.suitabilityScores);
+            toast({
+              title: 'Puanlar Hesaplandı',
+              description: 'Projenizin uygunluk puanları otomatik olarak hesaplandı.',
+              className: 'bg-accent text-accent-foreground',
+            });
+          }
         }
       });
     }
@@ -364,7 +380,7 @@ export function ProjeAssistant() {
       <main className="container mx-auto px-4 py-8 flex-grow">
         <div className="space-y-8">
           <Card className="relative shadow-lg">
-            {isGenerating && (
+            {(isGenerating || isOptimizing) && (
               <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10 rounded-lg">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
@@ -383,7 +399,7 @@ export function ProjeAssistant() {
                 value={draft}
                 onPaste={onPaste}
                 onChange={e => setDraft(e.target.value)}
-                disabled={isGenerating}
+                disabled={isGenerating || isOptimizing}
               />
             </CardContent>
             <CardFooter>
@@ -434,7 +450,7 @@ export function ProjeAssistant() {
                     <Button
                       size="sm"
                       onClick={() => onOptimize('all')}
-                      disabled={isOptimizing}
+                      disabled={isGenerating || isOptimizing}
                       variant="default"
                     >
                       {isOptimizing ? (
@@ -451,7 +467,7 @@ export function ProjeAssistant() {
                     value={item.value}
                     onChange={e => item.setter(e.target.value)}
                     className="min-h-[200px] text-base"
-                    disabled={isOptimizing}
+                    disabled={isGenerating || isOptimizing}
                   />
                 </CardContent>
                 <CardFooter>

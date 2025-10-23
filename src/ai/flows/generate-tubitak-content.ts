@@ -48,6 +48,8 @@ const prompt = ai.definePrompt({
   {{draftText}}
 
   Generate content for the following sections, optimizing for originality, feasibility, and word count limits (Amaç: 100 words, Yöntem: 150 words, Beklenen Sonuç: 100 words). Be as original as possible. Make sure the content is feasible to implement.
+  
+  For the 'Yöntem' section, structure it clearly with numbered steps like a scientific experiment (e.g., Araştırma Aşaması, Tasarım Aşaması, Uygulama Aşaması, Veri Analizi, Sunum Aşaması).
 
   Return the output as a JSON object with the following keys: amac, yontem, beklenenSonuc.
   Also add a field called \"progress\" to indicate which section it is working on.`,

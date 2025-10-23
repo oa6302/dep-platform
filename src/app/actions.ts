@@ -8,6 +8,11 @@ import {
   optimizeSectionContent,
   OptimizeSectionContentInput,
 } from '@/ai/flows/optimize-section-content';
+import {
+  extractProjectInfo,
+  ExtractProjectInfoInput,
+} from '@/ai/flows/extract-project-info';
+
 import HTMLtoDOCX from 'html-to-docx';
 
 export async function handleGenerateContent(
@@ -48,5 +53,15 @@ export async function handleGenerateDocx(htmlString: string) {
   } catch (error) {
     console.error('Error in handleGenerateDocx:', error);
     return { success: false, error: 'Word dosyası oluşturulurken bir hata oluştu.' };
+  }
+}
+
+export async function handleExtractProjectInfo(input: ExtractProjectInfoInput) {
+  try {
+    const result = await extractProjectInfo(input);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Error in handleExtractProjectInfo:', error);
+    return { success: false, error: 'Proje bilgileri ayrıştırılırken bir hata oluştu.' };
   }
 }

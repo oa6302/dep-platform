@@ -4,6 +4,7 @@ import {
   handleGenerateContent,
   handleGenerateDocx,
   handleOptimizeContent,
+  handleExtractProjectInfo
 } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import {
@@ -124,11 +125,11 @@ export function ProjeAssistant() {
     setDraft(pastedText);
     if (pastedText.trim().length > 10) {
       startGenerating(async () => {
-        const result = await handleGenerateContent({ draftText: pastedText });
-        if (result.success && result.data) {
-          setAmac(result.data.amac);
-          setYontem(result.data.yontem);
-          setBeklenenSonuc(result.data.beklenenSonuc);
+        const genResult = await handleGenerateContent({ draftText: pastedText });
+        if (genResult.success && genResult.data) {
+          setAmac(genResult.data.amac);
+          setYontem(genResult.data.yontem);
+          setBeklenenSonuc(genResult.data.beklenenSonuc);
           toast({
             title: 'Dönüşüm Başarılı',
             description: 'Proje metniniz TÜBİTAK formatına dönüştürüldü.',
@@ -137,8 +138,28 @@ export function ProjeAssistant() {
           toast({
             variant: 'destructive',
             title: 'Hata',
-            description: result.error,
+            description: genResult.error,
           });
+        }
+
+        const extractResult = await handleExtractProjectInfo({ projectText: pastedText });
+        if (extractResult.success && extractResult.data) {
+            setProjectName(extractResult.data.projectName);
+            setAdvisor(extractResult.data.advisor);
+            setStudents(extractResult.data.students.length > 0 ? extractResult.data.students : ['']);
+            setMainArea(extractResult.data.mainArea);
+            setThematicSubject(extractResult.data.thematicSubject);
+            setProjectType(extractResult.data.projectType);
+             toast({
+              title: 'Bilgiler Çıkarıldı',
+              description: 'Proje bilgileri formunuza otomatik olarak eklendi.',
+            });
+        } else {
+            toast({
+              variant: 'destructive',
+              title: 'Hata',
+              description: extractResult.error,
+            });
         }
       });
     }

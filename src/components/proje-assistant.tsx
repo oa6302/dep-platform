@@ -173,20 +173,26 @@ export function ProjeAssistant() {
         }
 
         if (newAmac || newYontem || newBeklenenSonuc) {
-          const optResult = await handleOptimizeContent({
-            amac: newAmac,
-            yontem: newYontem,
-            beklenenSonuc: newBeklenenSonuc,
-          });
-          if (optResult.success && optResult.data) {
-            setScores(optResult.data.suitabilityScores);
-            toast({
-              title: 'Puanlar Hesaplandı',
-              description:
-                'Projenizin uygunluk puanları otomatik olarak hesaplandı.',
-              className: 'bg-accent text-accent-foreground',
-            });
-          }
+          startOptimizing(async () => {
+              const optResult = await handleOptimizeContent({
+                amac: newAmac,
+                yontem: newYontem,
+                beklenenSonuc: newBeklenenSonuc,
+              });
+              if (optResult.success && optResult.data) {
+                setAmac(optResult.data.amac);
+                setYontem(optResult.data.yontem);
+                setBeklenenSonuc(optResult.data.beklenenSonuc);
+                setScores(optResult.data.suitabilityScores);
+                toast({
+                  title: 'Puanlar Hesaplandı',
+                  description:
+                    'Projenizin uygunluk puanları otomatik olarak hesaplandı.',
+                  className: 'bg-accent text-accent-foreground',
+                });
+              }
+            }
+          );
         }
       });
     }
@@ -338,18 +344,26 @@ export function ProjeAssistant() {
     }
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
     if (navigator.share) {
       let shareText = `Proje: ${projectName}\n\n`;
       shareText += `Amaç: ${amac}\n\n`;
       shareText += `Yöntem: ${yontem}\n\n`;
       shareText += `Beklenen Sonuç: ${beklenenSonuc}\n\n`;
-      navigator
-        .share({
+      try {
+        await navigator.share({
           title: `TÜBİTAK 4006 Projesi: ${projectName}`,
           text: shareText,
-        })
-        .catch(err => console.error('Paylaşım hatası:', err));
+        });
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          toast({
+            variant: 'destructive',
+            title: 'Paylaşım Hatası',
+            description: 'İçerik paylaşılamadı. Lütfen tekrar deneyin.',
+          });
+        }
+      }
     } else {
       toast({
         description: 'Tarayıcınız bu özelliği desteklemiyor.',

@@ -71,11 +71,6 @@ const optimizeSectionContentFlow = ai.defineFlow(
     const {output} = await prompt(input);
     const scores = output!.suitabilityScores;
 
-    // Adjust scores based on user request
-    scores.ozgunluk = Math.max(85, scores.ozgunluk);
-    scores.formatUygunlugu = 100;
-    scores.dilAnlatim = 100;
-    
     // Ensure Genel Uygunluk is the average of the other scores
     const avgScore = Math.round((scores.ozgunluk + scores.formatUygunlugu + scores.dilAnlatim) / 3);
     output!.suitabilityScores.genelUygunluk = avgScore;

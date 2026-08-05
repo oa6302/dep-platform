@@ -36,7 +36,6 @@ export default function DashboardPage() {
   const simulatedUserId = searchParams.get('simulate');
   
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
-  const [isWaitTimeOver, setIsWaitTimeOver] = useState(false);
 
   const { data: userData, loading: docLoading } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
   const { data: simulatedUserData, loading: simLoading } = useDoc<any>(simulatedUserId ? `users/${simulatedUserId}` : null);
@@ -45,16 +44,6 @@ export default function DashboardPage() {
   
   const currentViewData = simulatedUserData || userData;
   const isSimulating = !!simulatedUserId;
-
-  // Profil verisinin gerçekten olmadığını doğrulamak için kısa bir bekleme süresi
-  useEffect(() => {
-    if (!authLoading && user && !docLoading && !userData) {
-      const timer = setTimeout(() => setIsWaitTimeOver(true), 2000);
-      return () => clearTimeout(timer);
-    } else {
-      setIsWaitTimeOver(false);
-    }
-  }, [authLoading, user, docLoading, userData]);
 
   const dynamicMenu = useMemo(() => {
     if (!currentViewData) return [];
@@ -108,8 +97,8 @@ export default function DashboardPage() {
     }
   }, [user, authLoading, router]);
 
-  // Loading state handling
-  if (authLoading || docLoading || (simulatedUserId && simLoading) || (user && !userData && !isWaitTimeOver)) {
+  // Yükleme Durumu
+  if (authLoading || docLoading || (simulatedUserId && simLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
         <div className="flex flex-col items-center gap-8">
@@ -118,6 +107,19 @@ export default function DashboardPage() {
         </div>
       </div>
     );
+  }
+
+  // Veri hala gelmediyse ve yükleme bittiyse, bir saniye daha bekle (Firebase race condition koruması)
+  if (user && !userData && !docLoading) {
+     return (
+        <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+           <div className="text-center space-y-6">
+              <Loader2 className="h-12 w-12 animate-spin mx-auto text-accent" />
+              <p className="text-sm font-black uppercase tracking-widest text-primary/40">Profil Doğrulanıyor...</p>
+              <Button onClick={() => window.location.reload()} variant="outline" className="rounded-xl">Yeniden Dene</Button>
+           </div>
+        </div>
+     );
   }
 
   const handleLogout = async () => {

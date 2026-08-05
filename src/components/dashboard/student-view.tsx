@@ -11,7 +11,8 @@ import {
   TrendingUp, Star, Zap, Timer, MessageSquare, 
   ChevronRight, Play, AlertCircle, History,
   LayoutDashboard, BarChart3, LineChart as LineIcon,
-  Flame, Award, Search, ArrowUpRight, ArrowRight
+  Flame, Award, Search, ArrowUpRight, ArrowRight,
+  BookOpenCheck, PencilLine
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { 
@@ -142,7 +143,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
          <div className="xl:col-span-8 space-y-8">
             <div className="flex justify-between items-end px-4">
                <h3 className="text-3xl font-black italic tracking-tighter uppercase text-primary">BUGÜNKÜ GÖREVLER</h3>
-               <Button variant="link" className="text-accent font-black uppercase text-[10px] tracking-widest">Tümünü Gör</Button>
+               <button className="text-accent font-black uppercase text-[10px] tracking-widest hover:underline">Tümünü Gör</button>
             </div>
             <div className="grid gap-6">
                {[

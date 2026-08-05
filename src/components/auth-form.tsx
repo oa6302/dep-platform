@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -16,11 +15,12 @@ import {
 import { doc, setDoc, serverTimestamp, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, School, Hash, Target, Sparkles, ScrollText } from 'lucide-react';
+import { Loader2, Mail, Lock, User, School, Hash, Target, Sparkles, UserRound, Building, CheckCircle2, QrCode } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface AuthFormProps {
   mode: 'login' | 'register';
@@ -39,10 +39,11 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [role, setRole] = useState<'student' | 'teacher'>('student');
+  const [role, setRole] = useState<'student' | 'teacher' | 'school_admin'>('student');
   const [targetExam, setTargetExam] = useState<string>('');
-  const [school, setSchool] = useState('');
+  const [schoolName, setSchoolName] = useState('');
   const [teacherCode, setTeacherCode] = useState('');
+  const [studentMode, setStudentMode] = useState<'individual' | 'connected'>('individual');
   const [loading, setLoading] = useState(false);
   
   const auth = useAuth();
@@ -101,7 +102,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     try {
       if (mode === 'register') {
         let coachId = '';
-        if (role === 'student' && teacherCode) {
+        if (role === 'student' && studentMode === 'connected' && teacherCode) {
           const q = query(collection(db, 'users'), where('activationCode', '==', teacherCode), where('role', '==', 'teacher'));
           const querySnapshot = await getDocs(q);
           if (!querySnapshot.empty) {
@@ -121,15 +122,17 @@ export function AuthForm({ mode }: AuthFormProps) {
           email,
           displayName,
           role,
-          school,
           createdAt: serverTimestamp(),
         };
 
         if (role === 'teacher') {
           userData.activationCode = generateTeacherCode();
+          userData.school = schoolName;
         } else if (role === 'student') {
           userData.targetExam = targetExam;
           if (coachId) userData.coachId = coachId;
+        } else if (role === 'school_admin') {
+          userData.school = schoolName;
         }
 
         await Promise.all([
@@ -137,7 +140,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           setDoc(doc(db, 'users', user.uid), userData)
         ]);
 
-        toast({ title: 'Kayıt Başarılı', description: role === 'teacher' ? 'Hesabınız oluşturuldu.' : `Hoş geldin! Sistem ${targetExam} moduna göre yapılandırıldı.` });
+        toast({ title: 'Kayıt Başarılı', description: role === 'teacher' ? `Öğretmen hesabınız oluşturuldu. Kodunuz: ${userData.activationCode}` : `Hoş geldin! Sistem ${targetExam} moduna göre yapılandırıldı.` });
       } else {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: 'Giriş Başarılı', description: 'Hoş geldiniz!' });
@@ -157,16 +160,44 @@ export function AuthForm({ mode }: AuthFormProps) {
 
   return (
     <div className="space-y-6">
+      {mode === 'register' && (
+        <div className="space-y-3">
+          <Label className="text-[10px] font-black uppercase tracking-widest opacity-40">Sistemi Nasıl Kullanacaksınız?</Label>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { id: 'student', label: 'Öğrenci', icon: User },
+              { id: 'teacher', label: 'Öğretmen', icon: UserRound },
+              { id: 'school_admin', label: 'Okul', icon: Building },
+            ].map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => setRole(r.id as any)}
+                className={cn(
+                  "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2 group",
+                  role === r.id ? "border-accent bg-accent/5 text-primary" : "border-primary/5 bg-white text-muted-foreground hover:border-primary/20"
+                )}
+              >
+                <r.icon className={cn("h-6 w-6 transition-transform group-hover:scale-110", role === r.id ? "text-accent" : "text-muted-foreground")} />
+                <span className="text-[10px] font-black uppercase tracking-tighter italic">{r.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         {mode === 'register' && (
           <>
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-xs font-black uppercase tracking-widest opacity-60">Ad Soyad</Label>
+              <Label htmlFor="name" className="text-xs font-black uppercase tracking-widest opacity-60">
+                {role === 'school_admin' ? 'Okul / Kurum Adı' : 'Ad Soyad'}
+              </Label>
               <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <User className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="name"
-                  placeholder="Adınız Soyadınız"
+                  placeholder={role === 'school_admin' ? 'Örn: Atatürk Lisesi' : 'Adınız Soyadınız'}
                   className="pl-10 rounded-xl h-12 bg-[#F8FAFC] border-none shadow-inner font-bold"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
@@ -174,81 +205,95 @@ export function AuthForm({ mode }: AuthFormProps) {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="role" className="text-xs font-black uppercase tracking-widest opacity-60">Hesap Türü</Label>
-                <Select value={role} onValueChange={(v: any) => setRole(v)}>
-                  <SelectTrigger className="w-full rounded-xl h-12 bg-[#F8FAFC] border-none shadow-inner font-bold">
-                    <SelectValue placeholder="Rol Seçin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="student" className="font-bold">Öğrenci</SelectItem>
-                    <SelectItem value="teacher" className="font-bold">Öğretmen</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="school" className="text-xs font-black uppercase tracking-widest opacity-60">Okul</Label>
+
+            {role === 'teacher' && (
+              <div className="space-y-2 animate-in slide-in-from-top">
+                <Label htmlFor="school" className="text-xs font-black uppercase tracking-widest opacity-60">Çalıştığınız Kurum (Opsiyonel)</Label>
                 <div className="relative">
-                  <School className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <School className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="school"
-                    placeholder="Okul Adı"
+                    placeholder="Kurum Adı"
                     className="pl-10 rounded-xl h-12 bg-[#F8FAFC] border-none shadow-inner font-bold"
-                    value={school}
-                    onChange={(e) => setSchool(e.target.value)}
+                    value={schoolName}
+                    onChange={(e) => setSchoolName(e.target.value)}
                   />
                 </div>
               </div>
-            </div>
+            )}
 
             {role === 'student' && (
-              <div className="space-y-4 animate-in slide-in-from-top duration-500">
-                <div className="space-y-2">
-                  <Label htmlFor="targetExam" className="text-xs font-black uppercase tracking-widest text-accent flex items-center gap-2">
-                     <Target className="h-3 w-3" /> HEDEF SINAVIN
-                  </Label>
-                  <div className="relative">
-                    <Select value={targetExam} onValueChange={setTargetExam}>
-                      <SelectTrigger className="w-full h-12 bg-white border-2 border-accent/20 rounded-2xl shadow-xl font-black text-primary px-4">
-                        <SelectValue placeholder="Sınavını Seç" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[300px] rounded-2xl">
-                         {Object.values(EXAM_CONFIGS).map((exam) => (
-                           <SelectItem key={exam.id} value={exam.id} className="font-bold py-3 hover:bg-accent/5">
-                             <div className="flex items-center gap-3">
-                                <exam.icon className="h-4 w-4 text-accent" />
-                                <span>{exam.title}</span>
-                             </div>
-                           </SelectItem>
-                         ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground italic px-1">Seçtiğin sınava göre tüm sistemin (dersler, AI asistan) otomatik değişecek.</p>
+              <div className="space-y-6 animate-in slide-in-from-top duration-500">
+                <div className="space-y-3">
+                   <Label className="text-xs font-black uppercase tracking-widest opacity-60">Kullanım Modu</Label>
+                   <RadioGroup value={studentMode} onValueChange={(v: any) => setStudentMode(v)} className="grid grid-cols-2 gap-4">
+                      <div className={cn(
+                        "flex items-center space-x-2 rounded-xl p-4 border-2 transition-all cursor-pointer",
+                        studentMode === 'individual' ? "border-primary bg-primary text-white" : "border-primary/5 bg-white"
+                      )} onClick={() => setStudentMode('individual')}>
+                        <RadioGroupItem value="individual" id="individual" className="hidden" />
+                        <CheckCircle2 className={cn("h-5 w-5", studentMode === 'individual' ? "text-accent" : "text-muted-foreground")} />
+                        <Label htmlFor="individual" className="font-black text-[10px] uppercase tracking-widest cursor-pointer">Bireysel Devam Et</Label>
+                      </div>
+                      <div className={cn(
+                        "flex items-center space-x-2 rounded-xl p-4 border-2 transition-all cursor-pointer",
+                        studentMode === 'connected' ? "border-accent bg-accent text-white" : "border-primary/5 bg-white"
+                      )} onClick={() => setStudentMode('connected')}>
+                        <RadioGroupItem value="connected" id="connected" className="hidden" />
+                        <UserRound className={cn("h-5 w-5", studentMode === 'connected' ? "text-white" : "text-muted-foreground")} />
+                        <Label htmlFor="connected" className="font-black text-[10px] uppercase tracking-widest cursor-pointer">Öğretmene Bağlan</Label>
+                      </div>
+                   </RadioGroup>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="teacherCode" className="text-xs font-black uppercase tracking-widest opacity-60">Öğretmen Kodu (Opsiyonel)</Label>
-                  <div className="relative">
-                    <Hash className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="teacherCode"
-                      placeholder="DK-XXXX-XXXX"
-                      className="pl-10 rounded-xl h-12 bg-[#F8FAFC] border-none shadow-inner font-bold"
-                      value={teacherCode}
-                      onChange={(e) => setTeacherCode(e.target.value)}
-                    />
+
+                {studentMode === 'connected' && (
+                  <div className="space-y-2 animate-in slide-in-from-right">
+                    <Label htmlFor="teacherCode" className="text-xs font-black uppercase tracking-widest text-accent flex items-center gap-2">
+                       <QrCode className="h-3 w-3" /> ÖĞRETMEN AKTİVASYON KODU
+                    </Label>
+                    <div className="relative">
+                      <Hash className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="teacherCode"
+                        placeholder="DK-XXXX-XXXX"
+                        className="pl-10 rounded-xl h-12 bg-white border-2 border-accent/20 shadow-lg font-black text-primary"
+                        value={teacherCode}
+                        onChange={(e) => setTeacherCode(e.target.value)}
+                        required={studentMode === 'connected'}
+                      />
+                    </div>
                   </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="targetExam" className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                     <Target className="h-3 w-3" /> HAZIRLANDIĞIN SINAV
+                  </Label>
+                  <Select value={targetExam} onValueChange={setTargetExam}>
+                    <SelectTrigger className="w-full h-12 bg-white border-2 border-primary/10 rounded-xl shadow-sm font-bold text-primary px-4">
+                      <SelectValue placeholder="Sınavını Seç" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px] rounded-2xl">
+                       {Object.values(EXAM_CONFIGS).map((exam) => (
+                         <SelectItem key={exam.id} value={exam.id} className="font-bold py-3">
+                           <div className="flex items-center gap-3">
+                              <exam.icon className="h-4 w-4 text-accent" />
+                              <span>{exam.title}</span>
+                           </div>
+                         </SelectItem>
+                       ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             )}
           </>
         )}
+
         <div className="space-y-2">
           <Label htmlFor="email" className="text-xs font-black uppercase tracking-widest opacity-60">E-posta</Label>
           <div className="relative">
-            <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Mail className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
             <Input
               id="email"
               type="email"
@@ -260,10 +305,11 @@ export function AuthForm({ mode }: AuthFormProps) {
             />
           </div>
         </div>
+
         <div className="space-y-2">
           <Label htmlFor="password" className="text-xs font-black uppercase tracking-widest opacity-60">Şifre</Label>
           <div className="relative">
-            <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Lock className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
             <Input
               id="password"
               type="password"
@@ -275,10 +321,11 @@ export function AuthForm({ mode }: AuthFormProps) {
             />
           </div>
         </div>
-        <Button type="submit" className="w-full h-14 rounded-2xl bg-accent hover:bg-primary transition-all font-black text-xs uppercase tracking-widest shadow-xl shadow-accent/20 gap-3" disabled={loading}>
+
+        <Button type="submit" className="w-full h-14 rounded-2xl bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 gap-3" disabled={loading}>
           {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
             <>
-              {mode === 'login' ? 'Giriş Yap' : 'Hemen Başla'}
+              {mode === 'login' ? 'Giriş Yap' : 'Hesap Oluştur'}
               <Sparkles className="h-4 w-4" />
             </>
           )}

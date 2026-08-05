@@ -16,13 +16,14 @@ import {
 import { doc, setDoc, serverTimestamp, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, School, Hash, Target, Sparkles, UserRound, Building, CheckCircle2, QrCode, Star, History } from 'lucide-react';
+import { Loader2, Mail, Lock, User, School, Hash, Target, Sparkles, UserRound, Building, CheckCircle2, QrCode, Star, History, ChevronRight } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectSeparator } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card } from '@/components/ui/card';
 
 interface AuthFormProps {
   mode: 'login' | 'register';
@@ -84,7 +85,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           uid: user.uid,
           email: user.email,
           displayName: user.displayName,
-          role: role, // Use currently selected role in UI
+          role: role,
           createdAt: serverTimestamp(),
         };
 
@@ -95,7 +96,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         await setDoc(userDocRef, userData);
         toast({ title: 'Hoş Geldiniz', description: `Hesabınız ${role === 'teacher' ? 'Öğretmen' : 'Öğrenci'} olarak oluşturuldu.` });
         
-        if (role === 'student') {
+        if (role === 'student' && !targetExam) {
           router.push('/dashboard/select-exam');
         } else {
           router.push('/dashboard');
@@ -151,9 +152,9 @@ export function AuthForm({ mode }: AuthFormProps) {
         if (role === 'teacher') {
           userData.activationCode = generateTeacherCode();
           userData.school = schoolName;
-          userData.branch = 'Genel'; // Default branch
+          userData.branch = 'Genel';
         } else if (role === 'student') {
-          userData.targetExam = targetExam.replace('fav-', '').replace('cat-', '');
+          userData.targetExam = targetExam;
           if (coachId) userData.coachId = coachId;
         } else if (role === 'school_admin') {
           userData.school = schoolName;
@@ -206,7 +207,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-6">
         {mode === 'register' && (
           <>
             <div className="space-y-2">
@@ -227,7 +228,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             </div>
 
             {role === 'student' && (
-              <div className="space-y-6 animate-in slide-in-from-top duration-500">
+              <div className="space-y-8 animate-in slide-in-from-top duration-500">
                 <div className="space-y-3">
                    <Label className="text-xs font-black uppercase tracking-widest opacity-60 italic">Kullanım Modu</Label>
                    <RadioGroup value={studentMode} onValueChange={(v: any) => setStudentMode(v)} className="grid grid-cols-2 gap-4">
@@ -269,44 +270,58 @@ export function AuthForm({ mode }: AuthFormProps) {
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="targetExam" className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2 italic">
-                     <Target className="h-3 w-3" /> HEDEF PROGRAMINIZ
+                <div className="space-y-4">
+                  <Label className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2 italic">
+                     <Target className="h-4 w-4 text-accent" /> HEDEF PROGRAMINIZI SEÇİN
                   </Label>
-                  <Select value={targetExam} onValueChange={setTargetExam}>
-                    <SelectTrigger className="w-full h-12 bg-white border-2 border-primary/10 rounded-xl shadow-xl font-black text-primary px-4">
-                      <SelectValue placeholder="Bir Program Seçin" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[400px] rounded-2xl border-none shadow-2xl">
-                       <ScrollArea className="h-[350px]">
-                          <SelectGroup>
-                             <SelectLabel className="text-[10px] font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2 p-4">
-                                <Star className="h-3 w-3 fill-current" /> Favoriler & Son Kullanılan
-                             </SelectLabel>
-                             <SelectItem key="fav-LGS" value="fav-LGS" className="font-black py-3 px-6 hover:bg-accent/10">LGS (Ortaokul)</SelectItem>
-                             <SelectItem key="fav-YKS" value="fav-YKS" className="font-black py-3 px-6 hover:bg-accent/10">YKS (Üniversite)</SelectItem>
-                          </SelectGroup>
-                          
-                          <SelectSeparator className="bg-primary/5" />
-
+                  
+                  <div className="bg-slate-50 p-4 rounded-[2rem] border-2 border-primary/5 shadow-inner">
+                    <ScrollArea className="h-[450px] pr-4">
+                       <div className="space-y-10">
                           {categories.map((category) => (
-                            <SelectGroup key={`cat-group-${category}`}>
-                              <SelectLabel className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground opacity-40 p-4 pt-6">
-                                {category}
-                              </SelectLabel>
-                              {categorizedExams[category]?.map((exam) => (
-                                <SelectItem key={`cat-item-${category}-${exam.id}`} value={`cat-${exam.id}`} className="font-bold py-3 px-6 cursor-pointer">
-                                  <div className="flex items-center gap-3">
-                                     <exam.icon className="h-4 w-4 text-accent" />
-                                     <span>{exam.title}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
+                            <div key={category} className="space-y-4">
+                               <div className="flex items-center gap-3">
+                                  <div className="h-1 w-8 bg-accent rounded-full"></div>
+                                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/40">{category}</h3>
+                               </div>
+                               <div className="grid grid-cols-1 gap-3">
+                                  {categorizedExams[category]?.map((exam) => (
+                                    <button
+                                      key={exam.id}
+                                      type="button"
+                                      onClick={() => setTargetExam(exam.id)}
+                                      className={cn(
+                                        "flex items-center justify-between p-5 rounded-2xl border-2 transition-all group text-left",
+                                        targetExam === exam.id 
+                                          ? "border-accent bg-white shadow-xl shadow-accent/5 ring-4 ring-accent/5" 
+                                          : "border-white bg-white/50 hover:border-primary/10 hover:bg-white"
+                                      )}
+                                    >
+                                       <div className="flex items-center gap-5">
+                                          <div className={cn(
+                                            "h-12 w-12 rounded-xl flex items-center justify-center transition-all",
+                                            targetExam === exam.id ? "bg-accent text-white" : "bg-primary/5 text-primary"
+                                          )}>
+                                             <exam.icon className="h-6 w-6" />
+                                          </div>
+                                          <div>
+                                             <p className={cn("font-black text-sm uppercase tracking-tight", targetExam === exam.id ? "text-primary" : "text-primary/70")}>{exam.title}</p>
+                                             <p className="text-[9px] font-bold opacity-40 uppercase tracking-widest">{exam.targetGroup}</p>
+                                          </div>
+                                       </div>
+                                       {targetExam === exam.id ? (
+                                          <CheckCircle2 className="h-5 w-5 text-accent animate-in zoom-in duration-300" />
+                                       ) : (
+                                          <ChevronRight className="h-4 w-4 text-muted-foreground opacity-20 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                                       )}
+                                    </button>
+                                  ))}
+                               </div>
+                            </div>
                           ))}
-                       </ScrollArea>
-                    </SelectContent>
-                  </Select>
+                       </div>
+                    </ScrollArea>
+                  </div>
                 </div>
               </div>
             )}
@@ -362,7 +377,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           </div>
         </div>
 
-        <Button type="submit" className="w-full h-14 rounded-2xl bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 gap-3 mt-4" disabled={loading}>
+        <Button type="submit" className="w-full h-16 rounded-2xl bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest shadow-2xl shadow-primary/20 gap-3 mt-6" disabled={loading}>
           {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
             <>
               {mode === 'login' ? 'Giriş Yap' : 'Hesabımı Yapılandır'}

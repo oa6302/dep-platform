@@ -20,13 +20,34 @@ import {
   Award, 
   Zap,
   Star,
-  BarChart3
+  BarChart3,
+  Calendar,
+  Clock,
+  LineChart,
+  ClipboardCheck,
+  Sparkles,
+  MessageSquare,
+  FileText,
+  Eye,
+  Building,
+  UserRound,
+  Layers,
+  PieChart,
+  LayoutDashboard,
+  CalendarCheck,
+  ShieldCheck,
+  Key,
+  Settings,
+  Lock,
+  Code2,
+  HardDrive
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { doc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function HomePage() {
   const { user, loading } = useUser();
@@ -102,6 +123,65 @@ export default function HomePage() {
       toast({ variant: 'destructive', title: 'Hata', description: error.message });
     } finally {
       setSeeding(false);
+    }
+  };
+
+  const featureGroups = {
+    student: {
+      label: 'Öğrenci',
+      icon: Users,
+      items: [
+        { icon: Brain, title: "AI Eğitim Koçu", desc: "Öğrenme stilini analiz eden kişiye özel asistan." },
+        { icon: Calendar, title: "Akıllı Ders Planı", desc: "Zayıf konularına odaklanan dinamik takvim." },
+        { icon: BarChart3, title: "Deneme Analizi", desc: "Sınav sonuçlarını derinlemesine analiz eder." },
+        { icon: Target, title: "Hedef Yönetimi", desc: "Kısa ve uzun vadeli akademik hedeflerini izle." },
+        { icon: BookOpen, title: "Dijital Kütüphane", desc: "Binlerce kaynak ve video ders parmaklarının ucunda." },
+        { icon: Award, title: "Başarı Karnesi", desc: "Gelişimini görsel raporlarla takip et." },
+        { icon: Clock, title: "Çalışma Takvimi", desc: "Zamanını en verimli şekilde yönet." },
+        { icon: Zap, title: "Motivasyon Sistemi", desc: "Başarılarınla rozetler kazan ve hevesini koru." },
+      ]
+    },
+    teacher: {
+      label: 'Öğretmen',
+      icon: UserRound,
+      items: [
+        { icon: Users, title: "Öğrenci Yönetimi", desc: "Tüm öğrencilerini tek bir panelden yönet." },
+        { icon: LineChart, title: "Sınıf Analizi", desc: "Sınıfın genel başarı durumunu anlık izle." },
+        { icon: CheckCircle2, title: "Kazanım Takibi", desc: "Müfredat uyumunu ve konu eksiklerini gör." },
+        { icon: ClipboardCheck, title: "Ödev Yönetimi", desc: "Dijital ödevler ata ve kontrol et." },
+        { icon: Sparkles, title: "AI Asistan", desc: "Raporlama ve analiz süreçlerini yapay zeka ile hızlandır." },
+        { icon: MessageSquare, title: "Veli Bilgilendirme", desc: "Otomatik bildirimlerle velileri güncel tut." },
+        { icon: FileText, title: "Akademik Raporlar", desc: "Öğrenci bazlı detaylı akademik çıktılar al." },
+        { icon: Eye, title: "Simülasyon Modu", desc: "Öğrencinin panelini onun gözünden görüntüle." },
+      ]
+    },
+    school: {
+      label: 'Okul Yönetimi',
+      icon: Building,
+      items: [
+        { icon: Building, title: "Kurumsal Yönetim", desc: "Okulunuzun tüm dijital süreçlerini tek merkezden yönetin." },
+        { icon: UserRound, title: "Öğretmen Yönetimi", desc: "Öğretmen performanslarını ve verimliliğini izleyin." },
+        { icon: Layers, title: "Şube Yönetimi", desc: "Şubeler arası başarı karşılaştırmaları yapın." },
+        { icon: PieChart, title: "Akademik Raporlar", desc: "Kurumsal başarı grafiklerini anlık takip edin." },
+        { icon: Globe, title: "İstatistik Merkezi", desc: "Okul genelindeki tüm verileri analiz edin." },
+        { icon: LayoutDashboard, title: "AI Yönetim Paneli", desc: "Yönetim kararlarını veriye dayalı alın." },
+        { icon: CalendarCheck, title: "Sınav Takibi", desc: "Tüm sınav süreçlerini planlayın ve izleyin." },
+        { icon: Bell, title: "Duyuru Sistemi", desc: "Tüm okula anlık bildirimler ve duyurular gönderin." },
+      ]
+    },
+    admin: {
+      label: 'Admin',
+      icon: ShieldCheck,
+      items: [
+        { icon: Users, title: "Kullanıcı Yönetimi", desc: "Tüm kullanıcı hesaplarını kontrol edin." },
+        { icon: ShieldCheck, title: "Rol Yönetimi", desc: "Yetkilendirme ve erişim izinlerini düzenleyin." },
+        { icon: Key, title: "Lisans Yönetimi", desc: "Okul lisanslarını ve abonelikleri takip edin." },
+        { icon: Settings, title: "Sistem Ayarları", desc: "Platformun genel yapılandırmasını yönetin." },
+        { icon: Database, title: "Log Yönetimi", desc: "Tüm sistem hareketlerini izleyin." },
+        { icon: Lock, title: "Güvenlik Merkezi", desc: "Veri güvenliğini ve SSL durumunu kontrol edin." },
+        { icon: Code2, title: "API Yönetimi", desc: "Entegrasyonları ve servis bağlantılarını yönetin." },
+        { icon: HardDrive, title: "Yedekleme", desc: "Sistem verilerini periyodik olarak yedekleyin." },
+      ]
     }
   };
 
@@ -266,34 +346,50 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Features - Premium Grid */}
+        {/* Features - Premium Role-Based Section */}
         <section id="features" className="py-40 bg-white relative overflow-hidden">
           <div className="container mx-auto px-6">
-            <div className="text-center max-w-4xl mx-auto mb-32 space-y-8">
+            <div className="text-center max-w-4xl mx-auto mb-20 space-y-8">
                <div className="inline-block px-6 py-2 rounded-full bg-primary text-white font-black text-[10px] uppercase tracking-widest">Özellikler</div>
                <h2 className="text-6xl md:text-8xl font-black text-primary tracking-tighter leading-none italic">Yapay Zeka ile <br /><span className="text-accent">Daha Akıllı</span> Eğitim.</h2>
                <p className="text-2xl text-muted-foreground font-medium leading-relaxed">Başarı tesadüf değildir, doğru analiz edilmiş bir süreçtir.</p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-              {[
-                { icon: Target, title: "Akıllı Hedefler", desc: "Yapay zeka günlük hedeflerini ilgi alanlarına göre anlık oluşturur.", color: "accent" },
-                { icon: TrendingUp, title: "Başarı Analizi", desc: "Grafikler ve raporlar ile gelişim sürecini en ince detayına kadar izle.", color: "primary" },
-                { icon: Brain, title: "AI Eğitim Koçu", desc: "Seni tanıyan, öğrenme stilini analiz eden ve kişiye özel rota öneren asistan.", color: "accent" },
-                { icon: Award, title: "Sınav Takibi", desc: "LGS, YKS, AGS süreçlerini tek bir profesyonel panelden kontrol et.", color: "primary" },
-              ].map((feature, i) => (
-                <div key={i} className="group p-14 bg-[#F8FAFC] rounded-[4rem] border-2 border-transparent hover:border-accent/10 hover:bg-white hover:shadow-[0_60px_100px_-20px_rgba(15,23,42,0.1)] transition-all duration-700 hover:-translate-y-4">
-                  <div className={cn(
-                    "h-24 w-24 rounded-[2rem] flex items-center justify-center mb-12 transition-all group-hover:rotate-12 duration-500 shadow-2xl",
-                    feature.color === "accent" ? "bg-accent text-white shadow-accent/30" : "bg-primary text-white shadow-primary/30"
-                  )}>
-                    <feature.icon className="h-12 w-12" />
+            <Tabs defaultValue="student" className="w-full">
+              <div className="flex justify-center mb-16">
+                <TabsList className="bg-[#F1F5F9] p-2 rounded-[2rem] h-20 md:h-24">
+                  {Object.entries(featureGroups).map(([key, group]) => (
+                    <TabsTrigger 
+                      key={key} 
+                      value={key}
+                      className="rounded-[1.5rem] px-8 md:px-12 h-full font-black text-xs md:text-sm uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-2xl transition-all"
+                    >
+                      <group.icon className="mr-3 h-5 w-5" />
+                      {group.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
+
+              {Object.entries(featureGroups).map(([key, group]) => (
+                <TabsContent key={key} value={key} className="mt-0 outline-none">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    {group.items.map((item, i) => (
+                      <div key={i} className="group p-10 bg-[#F8FAFC] rounded-[3rem] border-2 border-transparent hover:border-accent/10 hover:bg-white hover:shadow-[0_40px_80px_-20px_rgba(15,23,42,0.1)] transition-all duration-500 hover:-translate-y-2 flex flex-col">
+                        <div className="h-16 w-16 rounded-2xl bg-primary/5 flex items-center justify-center mb-8 group-hover:bg-accent group-hover:text-white transition-all duration-500">
+                          <item.icon className="h-8 w-8" />
+                        </div>
+                        <h3 className="text-xl font-black text-primary mb-4 tracking-tight italic">{item.title}</h3>
+                        <p className="text-muted-foreground leading-relaxed font-medium text-sm mb-6 flex-grow">{item.desc}</p>
+                        <Link href="#" className="inline-flex items-center text-[10px] font-black uppercase tracking-widest text-accent group-hover:translate-x-2 transition-transform">
+                          Daha Fazla <ArrowRight className="ml-2 h-3 w-3" />
+                        </Link>
+                      </div>
+                    ))}
                   </div>
-                  <h3 className="text-3xl font-black text-primary mb-6 tracking-tight italic">{feature.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed font-medium text-lg">{feature.desc}</p>
-                </div>
+                </TabsContent>
               ))}
-            </div>
+            </Tabs>
           </div>
         </section>
 
@@ -336,7 +432,7 @@ export default function HomePage() {
               </div>
               <div className="space-y-1">
                 <span className="font-black text-4xl tracking-tighter block leading-none italic">DEK</span>
-                <span className="text-[11px] text-white/40 font-black uppercase tracking-[0.3em]">Dijital Eğitim Koçu</span>
+                <span className="text-[11px] text-white/40 font-black uppercase tracking-[0.2em]">Dijital Eğitim Koçu</span>
               </div>
             </Link>
             <p className="text-white/50 text-2xl leading-relaxed max-w-xl font-medium italic">

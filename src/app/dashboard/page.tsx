@@ -1,15 +1,15 @@
-
 'use client';
 
-import { useUser, useDoc, useAuth, useCollection } from '@/firebase';
+import { useUser, useDoc, useAuth } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
+import { StudentView } from '@/components/dashboard/student-view';
+import { TeacherView } from '@/components/dashboard/teacher-view';
+import { AdminView } from '@/components/dashboard/admin-view';
+import { GraduationCap, LogOut, LayoutDashboard, Calendar, CheckCircle2, User, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { GraduationCap, LogOut, Calendar, CheckCircle2, User, Settings, LayoutDashboard, Plus } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
-import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useUser();
@@ -18,31 +18,6 @@ export default function DashboardPage() {
 
   const userDocQuery = user?.uid ? `users/${user.uid}` : null;
   const { data: userData, loading: docLoading } = useDoc<any>(userDocQuery);
-
-  // Memoized query for tasks
-  const tasksQuery = useMemo(() => {
-    if (!user?.uid) return null;
-    return query(
-      collection(useAuth()?.app ? (window as any).firestore : null as any, 'tasks'), // Workaround to get firestore if not directly accessible via hook here without re-invoking useFirestore
-      where('studentId', '==', user.uid),
-      orderBy('dueDate', 'asc'),
-      limit(5)
-    );
-  }, [user?.uid]);
-
-  // Using useCollection with path string for simplicity since useMemoFirebase isn't available in current context, 
-  // but useCollection handles path strings.
-  const { data: tasks, loading: tasksLoading } = useCollection<any>(
-    user?.uid ? 'tasks' : null,
-    where('studentId', '==', user?.uid || ''),
-    orderBy('dueDate', 'asc')
-  );
-
-  const { data: sessions, loading: sessionsLoading } = useCollection<any>(
-    user?.uid ? 'sessions' : null,
-    where(userData?.role === 'teacher' ? 'teacherId' : 'studentId', '==', user?.uid || ''),
-    orderBy('scheduledAt', 'asc')
-  );
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -74,8 +49,18 @@ export default function DashboardPage() {
     admin: 'Yönetici'
   };
 
-  const pendingTasks = tasks.filter(t => t.status === 'pending');
-  const upcomingSessions = sessions.filter(s => s.status === 'scheduled');
+  const renderView = () => {
+    switch (userData?.role) {
+      case 'student':
+        return <StudentView user={user} userData={userData} />;
+      case 'teacher':
+        return <TeacherView user={user} userData={userData} />;
+      case 'admin':
+        return <AdminView user={user} userData={userData} />;
+      default:
+        return <div className="p-8">Rolünüz tanımlanırken bir hata oluştu.</div>;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -138,116 +123,7 @@ export default function DashboardPage() {
               </Button>
             </div>
           </header>
-
-          <div className="p-6 lg:p-8 space-y-8 max-w-7xl mx-auto w-full">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="bg-primary/5 border-primary/20">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Aktif Görevler</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold">{pendingTasks.length}</p>
-                  <CardDescription>Tamamlanmayı bekliyor</CardDescription>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Yaklaşan Görüşme</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xl font-bold">
-                    {upcomingSessions.length > 0 
-                      ? new Date(upcomingSessions[0].scheduledAt).toLocaleDateString('tr-TR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })
-                      : 'Henüz görüşme yok'}
-                  </p>
-                  <CardDescription>Planlanmış son görüşme</CardDescription>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Gelişim Puanı</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold">850</p>
-                  <CardDescription>+120 son 30 günde</CardDescription>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Yaklaşan Görüşmeler</CardTitle>
-                    <CardDescription>Takviminizi kontrol edin</CardDescription>
-                  </div>
-                  <Button size="sm" variant="outline">
-                    <Plus className="h-4 w-4 mr-1" /> Yeni
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {upcomingSessions.length > 0 ? (
-                      upcomingSessions.map((session) => (
-                        <div key={session.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
-                          <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                              <Calendar className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                            <div>
-                              <p className="font-semibold">{session.notes || 'Koçluk Seansı'}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(session.scheduledAt).toLocaleString('tr-TR')}
-                              </p>
-                            </div>
-                          </div>
-                          <Button size="sm" variant="outline">Detay</Button>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        Planlanmış bir görüşmeniz bulunmuyor.
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Bekleyen Görevler</CardTitle>
-                    <CardDescription>Haftalık hedefleriniz</CardDescription>
-                  </div>
-                  <Button size="sm" variant="outline">
-                    <Plus className="h-4 w-4 mr-1" /> Ekle
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {pendingTasks.length > 0 ? (
-                      pendingTasks.map((task) => (
-                        <div key={task.id} className="flex items-center justify-between p-4 border rounded-lg">
-                          <div className="flex items-center gap-4">
-                            <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
-                            <div>
-                              <p className="font-semibold">{task.title}</p>
-                              <p className="text-xs text-muted-foreground">Teslim: {new Date(task.dueDate).toLocaleDateString('tr-TR')}</p>
-                            </div>
-                          </div>
-                          <Button size="sm">Tamamla</Button>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        Şu an bekleyen bir göreviniz yok.
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+          {renderView()}
         </main>
       </div>
     </div>

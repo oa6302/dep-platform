@@ -7,48 +7,24 @@ import { useUser, useFirestore } from '@/firebase';
 import { 
   Database, 
   Loader2, 
-  Globe, 
   ArrowRight, 
   Play, 
-  CheckCircle2, 
   TrendingUp, 
-  Target, 
   Brain, 
   Users, 
-  BookOpen, 
-  Award, 
-  Zap,
-  Star,
   BarChart3,
-  Calendar,
-  Clock,
-  LineChart,
-  ClipboardCheck,
+  Star,
   Sparkles,
-  MessageSquare,
-  FileText,
-  Eye,
-  Building,
-  UserRound,
-  Layers,
-  PieChart,
-  LayoutDashboard,
-  CalendarCheck,
-  ShieldCheck,
-  Key,
-  Settings,
-  Lock,
-  Code2,
-  HardDrive,
+  ChevronRight,
+  Globe,
   Bell,
-  UserCheck
+  Award
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { doc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function HomePage() {
   const { user, loading } = useUser();
@@ -67,25 +43,6 @@ export default function HomePage() {
     if (!db) return;
     setSeeding(true);
     try {
-      const sampleAdminId = 'sample-admin-999';
-      await setDoc(doc(db, 'users', sampleAdminId), {
-        uid: sampleAdminId,
-        displayName: 'Sistem Yöneticisi',
-        email: 'admin@dijitalegitim.com',
-        role: 'admin',
-        createdAt: serverTimestamp(),
-      });
-
-      const sampleSchoolAdminId = 'sample-school-admin-888';
-      await setDoc(doc(db, 'users', sampleSchoolAdminId), {
-        uid: sampleSchoolAdminId,
-        displayName: 'Müdür Ahmet Bey',
-        email: 'mudur@test.com',
-        role: 'school_admin',
-        school: 'Atatürk Lisesi',
-        createdAt: serverTimestamp(),
-      });
-
       const sampleTeacherId = 'sample-teacher-111';
       await setDoc(doc(db, 'users', sampleTeacherId), {
         uid: sampleTeacherId,
@@ -102,83 +59,11 @@ export default function HomePage() {
         bio: 'Boğaziçi Mezunu, 12 yıllık YKS hazırlık tecrübesi ile öğrencilere koçluk yapmaktayım.',
         createdAt: serverTimestamp(),
       });
-
-      const sampleStudentId = 'sample-student-222';
-      await setDoc(doc(db, 'users', sampleStudentId), {
-        uid: sampleStudentId,
-        displayName: 'Ali Öğrenci',
-        email: 'ali@test.com',
-        role: 'student',
-        coachId: sampleTeacherId,
-        school: 'Atatürk Lisesi',
-        grade: '12. Sınıf',
-        branch: 'SAY',
-        targetExam: 'YKS',
-        createdAt: serverTimestamp(),
-      });
-
-      await addDoc(collection(db, 'tasks'), {
-        studentId: sampleStudentId,
-        teacherId: sampleTeacherId,
-        title: 'Matematik: Türev Tekrarı',
-        description: 'Türev alma kuralları ile ilgili 50 soru çöz.',
-        dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-        status: 'pending',
-        createdAt: serverTimestamp(),
-      });
-
-      toast({ title: 'Sistem Hazır', description: 'Örnek veriler (Keşfedilebilir Uzmanlar dahil) oluşturuldu.' });
+      toast({ title: 'Sistem Hazır', description: 'Örnek veriler başarıyla oluşturuldu.' });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Hata', description: error.message });
     } finally {
       setSeeding(false);
-    }
-  };
-
-  const featureGroups = {
-    student: {
-      label: 'Öğrenci',
-      icon: Users,
-      link: '/features/student',
-      items: [
-        { icon: Brain, title: "AI Eğitim Koçu", desc: "Öğrenme stilini analiz eden kişiye özel asistan." },
-        { icon: Calendar, title: "Akıllı Ders Planı", desc: "Zayıf konularına odaklanan dinamik takvim." },
-        { icon: BarChart3, title: "Deneme Analizi", desc: "Sınav sonuçlarını derinlemesine analiz eder." },
-        { icon: UserCheck, title: "Uzman Keşfet", desc: "Sana en uygun koç ve öğretmeni AI ile bul." },
-      ]
-    },
-    teacher: {
-      label: 'Öğretmen',
-      icon: UserRound,
-      link: '/features/teacher',
-      items: [
-        { icon: Users, title: "Öğrenci Yönetimi", desc: "Tüm öğrencilerini tek bir panelden yönet." },
-        { icon: LineChart, title: "Sınıf Analizi", desc: "Sınıfın genel başarı durumunu anlık izle." },
-        { icon: CheckCircle2, title: "Kazanım Takibi", desc: "Müfredat uyumunu ve konu eksiklerini gör." },
-        { icon: ClipboardCheck, title: "Ödev Yönetimi", desc: "Dijital ödevler ata ve kontrol et." },
-      ]
-    },
-    school: {
-      label: 'Okul Yönetimi',
-      icon: Building,
-      link: '/features/school',
-      items: [
-        { icon: Building, title: "Kurumsal Yönetim", desc: "Okulunuzun tüm dijital süreçlerini tek merkezden yönetin." },
-        { icon: UserRound, title: "Öğretmen Yönetimi", desc: "Öğretmen performanslarını ve verimliliğini izleyin." },
-        { icon: Layers, title: "Şube Yönetimi", desc: "Şubeler arası başarı karşılaştırmaları yapın." },
-        { icon: PieChart, title: "Akademik Raporlar", desc: "Kurumsal başarı grafiklerini anlık takip edin." },
-      ]
-    },
-    admin: {
-      label: 'Admin',
-      icon: ShieldCheck,
-      link: '/features/admin',
-      items: [
-        { icon: Users, title: "Kullanıcı Yönetimi", desc: "Tüm kullanıcı hesaplarını kontrol edin." },
-        { icon: ShieldCheck, title: "Rol Yönetimi", desc: "Yetkilendirme ve erişim izinlerini düzenleyin." },
-        { icon: Key, title: "Lisans Yönetimi", desc: "Okul lisanslarını ve abonelikleri takip edin." },
-        { icon: Settings, title: "Sistem Ayarları", desc: "Platformun genel yapılandırmasını yönetin." },
-      ]
     }
   };
 
@@ -200,10 +85,10 @@ export default function HomePage() {
           </Link>
           
           <div className="hidden lg:flex items-center gap-10 text-[11px] font-black uppercase tracking-widest text-primary/60">
-            <Link href="#" className="hover:text-accent transition-colors">Ana Sayfa</Link>
-            <Link href="#features" className="hover:text-accent transition-colors">Özellikler</Link>
-            <Link href="/dashboard/ai-analysis" className="hover:text-accent transition-colors">Yapay Zeka</Link>
-            <Link href="/dashboard/contact" className="hover:text-accent transition-colors">İletişim</Link>
+            <Link href="/" className="hover:text-accent transition-colors">Ana Sayfa</Link>
+            <Link href="/features" className="hover:text-accent transition-colors">Özellikler</Link>
+            <Link href="/ai" className="hover:text-accent transition-colors">Yapay Zeka</Link>
+            <Link href="/contact" className="hover:text-accent transition-colors">İletişim</Link>
           </div>
 
           <div className="flex items-center gap-4">
@@ -248,22 +133,9 @@ export default function HomePage() {
                 <Button size="lg" className="bg-primary hover:bg-accent transition-all rounded-[1.75rem] px-12 h-20 text-xl font-black shadow-[0_30px_60px_-15px_rgba(15,23,42,0.3)] group" asChild>
                   <Link href="/login?tab=register">Ücretsiz Başla <ArrowRight className="ml-4 h-7 w-7 transition-transform group-hover:translate-x-2" /></Link>
                 </Button>
-                <Button size="lg" variant="outline" className="border-4 border-primary/10 rounded-[1.75rem] px-12 h-20 text-xl font-black group hover:bg-white transition-all bg-transparent backdrop-blur-sm shadow-xl">
-                  <Play className="mr-4 h-7 w-7 fill-current text-accent" /> Canlı Demo
+                <Button size="lg" variant="outline" className="border-4 border-primary/10 rounded-[1.75rem] px-12 h-20 text-xl font-black group hover:bg-white transition-all bg-transparent backdrop-blur-sm shadow-xl" asChild>
+                  <Link href="/features"><Play className="mr-4 h-7 w-7 fill-current text-accent" /> Özellikleri Keşfet</Link>
                 </Button>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-12 pt-20 border-t border-primary/5">
-                {[
-                  { label: 'Analiz', val: '150K+' },
-                  { label: 'Okul', val: '650+' },
-                  { label: 'Memnuniyet', val: '%96' },
-                  { label: 'Öğretmen', val: '3500+' },
-                ].map((stat, i) => (
-                  <div key={i} className="space-y-1 group cursor-default">
-                    <p className="text-4xl font-black text-primary tracking-tighter group-hover:text-accent transition-colors text-shadow-deep">{stat.val}</p>
-                    <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-60">{stat.label}</p>
-                  </div>
-                ))}
               </div>
             </div>
 
@@ -312,61 +184,13 @@ export default function HomePage() {
                              <p className="text-white/60 font-medium">Bu hafta Türev sorularına odaklanmalısın.</p>
                           </div>
                        </div>
-                       <Button size="icon" className="h-16 w-16 rounded-[1.5rem] bg-accent text-white shadow-2xl shadow-accent/20">
-                          <ArrowRight className="h-8 w-8" />
+                       <Button size="icon" className="h-16 w-16 rounded-[1.5rem] bg-accent text-white shadow-2xl shadow-accent/20" asChild>
+                          <Link href="/ai"><ArrowRight className="h-8 w-8" /></Link>
                        </Button>
                     </div>
                  </div>
               </div>
             </div>
-          </div>
-        </section>
-
-        <section id="features" className="py-40 bg-white relative overflow-hidden">
-          <div className="container mx-auto px-6">
-            <div className="text-center max-w-4xl mx-auto mb-20 space-y-8">
-               <div className="inline-block px-6 py-2 rounded-full bg-primary text-white font-black text-[10px] uppercase tracking-widest shadow-xl">Özellikler</div>
-               <h2 className="text-6xl md:text-8xl font-black text-primary tracking-tighter leading-none italic text-shadow-premium uppercase">Yapay Zeka ile <br /><span className="text-accent text-shadow-accent">Daha Akıllı</span> Eğitim.</h2>
-               <p className="text-2xl text-muted-foreground font-medium leading-relaxed italic">Başarı tesadüf değildir, doğru analiz edilmiş bir süreçtir.</p>
-            </div>
-            
-            <Tabs defaultValue="student" className="w-full">
-              <div className="flex justify-center mb-16">
-                <TabsList className="bg-[#F1F5F9] p-2 rounded-[2rem] h-20 md:h-24 shadow-inner">
-                  {Object.entries(featureGroups).map(([key, group]) => (
-                    <TabsTrigger 
-                      key={key} 
-                      value={key}
-                      className="rounded-[1.5rem] px-8 md:px-12 h-full font-black text-xs md:text-sm uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-2xl transition-all"
-                    >
-                      <group.icon className="mr-3 h-5 w-5" />
-                      {group.label}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </div>
-
-              {Object.entries(featureGroups).map(([key, group]) => (
-                <TabsContent key={key} value={key} className="mt-0 outline-none space-y-16">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {group.items.map((item, i) => (
-                      <div key={i} className="group p-10 bg-[#F8FAFC] rounded-[3rem] border border-primary/5 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
-                        <div className="h-16 w-16 rounded-2xl bg-primary/5 flex items-center justify-center mb-8 group-hover:bg-accent group-hover:text-white transition-all shadow-inner">
-                          <item.icon className="h-8 w-8" />
-                        </div>
-                        <h3 className="text-xl font-black text-primary mb-4 tracking-tight italic text-shadow-premium uppercase">{item.title}</h3>
-                        <p className="text-muted-foreground leading-relaxed font-medium text-sm mb-6 opacity-70 italic">{item.desc}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="text-center">
-                    <Button size="lg" className="h-16 px-12 rounded-2xl bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest shadow-2xl shadow-primary/20 gap-3" asChild>
-                       <Link href={group.link}>Tüm {group.label} Özelliklerini Gör <ArrowRight className="h-4 w-4" /></Link>
-                    </Button>
-                  </div>
-                </TabsContent>
-              ))}
-            </Tabs>
           </div>
         </section>
 
@@ -412,7 +236,7 @@ export default function HomePage() {
             <ul className="space-y-6 text-white/60 font-bold text-lg">
               <li><Link href="#" className="hover:text-white transition-colors">KVKK ve Gizlilik</Link></li>
               <li><Link href="#" className="hover:text-white transition-colors">Kullanım Koşulları</Link></li>
-              <li><Link href="#" className="hover:text-white transition-colors">Yardım Merkezi</Link></li>
+              <li><Link href="/contact" className="hover:text-white transition-colors">Yardım Merkezi</Link></li>
             </ul>
           </div>
           <div className="space-y-10">

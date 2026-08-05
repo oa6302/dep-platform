@@ -12,6 +12,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useState, useEffect, useMemo } from 'react';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
+import { Badge } from '@/components/ui/badge';
 
 interface StudentViewProps {
   user: any;
@@ -74,7 +75,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const upcomingSessions = sessions.filter(s => s.status === 'scheduled');
 
   return (
-    <div className="p-6 lg:p-10 space-y-12 max-w-7xl mx-auto w-full">
+    <div className="p-6 lg:p-10 space-y-12 max-w-7xl mx-auto w-full animate-in fade-in duration-1000">
       {/* Modern Hero Profile Card */}
       <div className="bg-white rounded-[4rem] p-12 shadow-[0_60px_120px_-30px_rgba(15,23,42,0.1)] border border-primary/5 flex flex-col lg:flex-row justify-between items-center gap-12 relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2"></div>
@@ -110,18 +111,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
             <p className="text-5xl font-black text-accent tracking-tighter text-shadow-accent">124</p>
             <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mt-1">Puan</p>
           </div>
-        </div>
-      </div>
-
-      {/* Dynamic Exam Lessons Header */}
-      <div className="space-y-8 animate-in slide-in-from-right duration-700">
-        <h3 className="text-3xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep">Program Dersleri ({examConfig.title})</h3>
-        <div className="flex flex-wrap gap-4">
-          {examConfig.lessons.map((lesson) => (
-            <div key={lesson} className="px-8 py-6 bg-white rounded-[2rem] shadow-xl border border-primary/5 font-black text-sm text-primary italic uppercase tracking-widest hover:bg-primary hover:text-white transition-all cursor-default group">
-              <span className="group-hover:translate-x-1 inline-block transition-transform">{lesson}</span>
-            </div>
-          ))}
         </div>
       </div>
 

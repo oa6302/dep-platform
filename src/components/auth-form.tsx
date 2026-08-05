@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -15,10 +16,11 @@ import {
 import { doc, setDoc, serverTimestamp, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, School, Hash, Target, Sparkles } from 'lucide-react';
+import { Loader2, Mail, Lock, User, School, Hash, Target, Sparkles, ScrollText } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface AuthFormProps {
   mode: 'login' | 'register';
@@ -69,7 +71,6 @@ export function AuthForm({ mode }: AuthFormProps) {
           role: 'student', 
           createdAt: serverTimestamp(),
         });
-        // Eğer Google ile ilk kez kayıt oluyorsa hedef seçimine yönlendir
         toast({ title: 'Hoş Geldiniz', description: 'Lütfen hedefinizi belirleyin.' });
         router.push('/dashboard/select-exam');
       } else {
@@ -204,19 +205,23 @@ export function AuthForm({ mode }: AuthFormProps) {
             {role === 'student' && (
               <div className="space-y-4 animate-in slide-in-from-top duration-500">
                 <div className="space-y-2">
-                  <Label htmlFor="targetExam" className="text-xs font-black uppercase tracking-widest text-accent">🎯 Hedef Sınavın</Label>
+                  <Label htmlFor="targetExam" className="text-xs font-black uppercase tracking-widest text-accent flex items-center gap-2">
+                     <Target className="h-3 w-3" /> HEDEF SINAVIN
+                  </Label>
                   <div className="relative">
-                    <Target className="absolute left-3 top-3 h-4 w-4 text-accent" />
                     <Select value={targetExam} onValueChange={setTargetExam}>
-                      <SelectTrigger className="w-full pl-10 rounded-xl h-12 bg-[#F8FAFC] border-2 border-accent/20 shadow-inner font-bold text-primary">
+                      <SelectTrigger className="w-full h-12 bg-white border-2 border-accent/20 rounded-2xl shadow-xl font-black text-primary px-4">
                         <SelectValue placeholder="Sınavını Seç" />
                       </SelectTrigger>
-                      <SelectContent>
-                        {Object.values(EXAM_CONFIGS).map((exam) => (
-                          <SelectItem key={exam.id} value={exam.id} className="font-bold">
-                            {exam.title}
-                          </SelectItem>
-                        ))}
+                      <SelectContent className="max-h-[300px] rounded-2xl">
+                         {Object.values(EXAM_CONFIGS).map((exam) => (
+                           <SelectItem key={exam.id} value={exam.id} className="font-bold py-3 hover:bg-accent/5">
+                             <div className="flex items-center gap-3">
+                                <exam.icon className="h-4 w-4 text-accent" />
+                                <span>{exam.title}</span>
+                             </div>
+                           </SelectItem>
+                         ))}
                       </SelectContent>
                     </Select>
                   </div>

@@ -1,7 +1,8 @@
 
 import { 
   Target, GraduationCap, BookOpen, Globe, Languages, 
-  Brain, Scale, Library, Building, UserCheck 
+  Brain, Scale, Library, Building, UserCheck, 
+  Pencil, PlusCircle, BookMarked, School, ScrollText
 } from 'lucide-react';
 
 export type ExamType = {
@@ -46,6 +47,16 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
     features: ['Atama Tahmini', 'Alan Analizi', 'Güncel Bilgiler'],
     aiFocus: 'Puan türlerine göre atama olasılığını hesapla ve alan eksikliklerine odaklan.'
   },
+  DGS: {
+    id: 'DGS',
+    title: 'DGS',
+    icon: BookOpen,
+    description: 'Dikey Geçiş Sınavı',
+    targetGroup: 'Önlisans Mezunları',
+    lessons: ['Sayısal', 'Sözel'],
+    features: ['Hız Analizi', 'Mantıksal Akıl Yürütme'],
+    aiFocus: 'Soru çözüm hızını artırmaya ve mantıksal muhakeme yeteneğini geliştirmeye odaklan.'
+  },
   ALES: {
     id: 'ALES',
     title: 'ALES',
@@ -75,5 +86,35 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
     lessons: ['Ezber (Has)', 'Tekrar (Pişirme)', 'Tecvid'],
     features: ['Sayfa Takibi', 'Hata Analizi'],
     aiFocus: 'Ezber performansını ölç ve unutma riskine karşı tekrar periyotları planla.'
+  },
+  AKADEMIK: {
+    id: 'AKADEMIK',
+    title: 'Akademik Destek',
+    icon: Brain,
+    description: 'Okul Dersleri ve Genel Akademik Gelişim',
+    targetGroup: 'Ara Sınıf Öğrencileri',
+    lessons: ['Matematik', 'Türkçe', 'Fen', 'Sosyal Bilgiler'],
+    features: ['Okul Notu Takibi', 'Yazılı Hazırlık', 'Konu Eksikleri'],
+    aiFocus: 'Okul başarısını artırmak için konu temelli eksikleri tamamla.'
+  },
+  MANUEL: {
+    id: 'MANUEL',
+    title: 'Manuel Mod',
+    icon: Pencil,
+    description: 'Kendi Derslerini ve Hedeflerini Kendin Belirle',
+    targetGroup: 'Özel Çalışma Yapanlar',
+    lessons: ['Özel Ders 1', 'Özel Ders 2'],
+    features: ['Serbest Planlama', 'Kişisel Hedefler'],
+    aiFocus: 'Kullanıcının tanımladığı özel hedeflere göre esnek analizler üret.'
+  },
+  DIGER: {
+    id: 'DIGER',
+    title: 'Diğer Sınavlar',
+    icon: PlusCircle,
+    description: 'MSÜ, TUS, DUS, YÖS, SAT, IB, TOEFL, IELTS vb.',
+    targetGroup: 'Farklı Hedefleri Olanlar',
+    lessons: ['Alan Bilgisi 1', 'Alan Bilgisi 2'],
+    features: ['Geniş Yelpazeli Takip', 'Özel Analizler'],
+    aiFocus: 'Seçilen özel sınav türüne göre genel başarı metriklerini uyarla.'
   }
 };

@@ -5,8 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
-  title: 'Öğrenci Koçluğu Platformu',
-  description: 'Geleceğinizi birlikte planlayalım.',
+  title: 'Dijital Eğitim Koçu',
+  description: 'AI Destekli Akademik Başarı ve Eğitim Yönetim Platformu',
 };
 
 export default function RootLayout({
@@ -16,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr" suppressHydrationWarning>
-      <body className="font-body antialiased">
+      <body className="font-body antialiased selection:bg-accent selection:text-white">
         <FirebaseClientProvider>
           {children}
           <Toaster />

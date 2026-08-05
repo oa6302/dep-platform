@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useCollection, useDoc, useFirestore } from '@/firebase';
@@ -24,7 +25,7 @@ import {
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 const expertTypes = [
@@ -64,6 +65,7 @@ export default function DiscoverPage() {
   const [teacherCode, setTeacherCode] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [sentRequests, setSentRequests] = useState<string[]>([]);
 
   const teacherList = useMemo(() => {
     return (teachers || []).filter(t => t.role === 'teacher');
@@ -108,6 +110,34 @@ export default function DiscoverPage() {
     setTimeout(() => {
       setIsAiMatching(false);
     }, 1500);
+  };
+
+  const handleSendRequest = async (teacherId: string, teacherName: string) => {
+    if (!db || !user) return;
+    
+    try {
+      await addDoc(collection(db, 'requests'), {
+        studentId: user.uid,
+        teacherId: teacherId,
+        status: 'pending',
+        message: `${userData?.displayName || 'Bir öğrenci'} sizinle akademik koçluk için bağlantı kurmak istiyor.`,
+        createdAt: serverTimestamp(),
+      });
+
+      setSentRequests(prev => [...prev, teacherId]);
+
+      toast({
+        title: 'İstek Gönderildi',
+        description: `${teacherName} hocamıza talebiniz başarıyla iletildi.`,
+        className: "bg-primary text-white rounded-[2rem]"
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Hata',
+        description: 'İstek gönderilirken bir sorun oluştu. Lütfen tekrar deneyin.'
+      });
+    }
   };
 
   const handleConnectWithCode = async () => {
@@ -306,6 +336,7 @@ export default function DiscoverPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
         {filteredTeachers.map((teacher, i) => {
           const matchScore = calculateMatchScore(teacher);
+          const isRequested = sentRequests.includes(teacher.uid);
           
           return (
             <Card key={i} className="group relative overflow-hidden rounded-[3.5rem] border-none shadow-[0_30px_60px_-15px_rgba(15,23,42,0.08)] bg-white transition-all hover:-translate-y-4 hover:shadow-[0_60px_120px_-30px_rgba(15,23,42,0.15)] border border-primary/5">
@@ -369,8 +400,19 @@ export default function DiscoverPage() {
                   <Button variant="outline" className="flex-1 h-16 rounded-2xl border-2 border-primary/5 font-black text-[11px] uppercase tracking-widest hover:bg-primary hover:text-white transition-all shadow-sm" asChild>
                     <Link href={`/dashboard/teacher/${teacher.uid}`}>Profili Gör</Link>
                   </Button>
-                  <Button className="flex-1 h-16 rounded-2xl bg-primary hover:bg-accent font-black text-[11px] uppercase tracking-widest gap-3 shadow-2xl shadow-primary/20 transition-all hover:scale-105 active:scale-95">
-                    İstek Gönder <ArrowRight className="h-4 w-4" />
+                  <Button 
+                    onClick={() => handleSendRequest(teacher.uid, teacher.displayName)}
+                    disabled={isRequested}
+                    className={cn(
+                      "flex-1 h-16 rounded-2xl font-black text-[11px] uppercase tracking-widest gap-3 shadow-2xl transition-all hover:scale-105 active:scale-95",
+                      isRequested ? "bg-emerald-500 text-white cursor-default hover:scale-100" : "bg-primary hover:bg-accent text-white shadow-primary/20"
+                    )}
+                  >
+                    {isRequested ? (
+                      <>İstek İletildi <CheckCircle2 className="h-4 w-4" /></>
+                    ) : (
+                      <>İstek Gönder <ArrowRight className="h-4 w-4" /></>
+                    )}
                   </Button>
                 </div>
               </div>

@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useDoc, useUser } from '@/firebase';
+import { useDoc, useUser, useFirestore } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -14,21 +15,49 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 
 export default function TeacherProfilePage() {
   const { uid } = useParams();
+  const { user } = useUser();
+  const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  
   const { data: teacher, loading } = useDoc<any>(`users/${uid}`);
+  const { data: userData } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
+  
   const [requestSent, setRequestSent] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
-  const handleSendRequest = () => {
-    setRequestSent(true);
-    toast({
-      title: 'İstek Gönderildi',
-      description: `${teacher?.displayName} hocamız talebinizi inceleyip onaylayacaktır.`,
-      className: "bg-primary text-white rounded-[2rem]"
-    });
+  const handleSendRequest = async () => {
+    if (!db || !user || !teacher) return;
+    
+    setIsSending(true);
+    try {
+      await addDoc(collection(db, 'requests'), {
+        studentId: user.uid,
+        teacherId: teacher.uid,
+        status: 'pending',
+        message: `${userData?.displayName || 'Bir öğrenci'} sizinle bağlantı kurmak istiyor.`,
+        createdAt: serverTimestamp(),
+      });
+
+      setRequestSent(true);
+      toast({
+        title: 'İstek Gönderildi',
+        description: `${teacher?.displayName} hocamız talebinizi inceleyip onaylayacaktır.`,
+        className: "bg-primary text-white rounded-[2rem]"
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Hata',
+        description: 'İstek gönderilirken bir sorun oluştu.'
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   if (loading) {
@@ -71,10 +100,19 @@ export default function TeacherProfilePage() {
            </Button>
            <Button 
              onClick={handleSendRequest}
-             disabled={requestSent}
-             className="h-12 px-8 rounded-xl bg-accent hover:bg-primary transition-all font-black text-[10px] uppercase tracking-widest gap-3 shadow-xl shadow-accent/20"
+             disabled={requestSent || isSending}
+             className={cn(
+               "h-12 px-8 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest gap-3 shadow-xl",
+               requestSent ? "bg-emerald-500 text-white" : "bg-accent hover:bg-primary text-white shadow-accent/20"
+             )}
            >
-             {requestSent ? <CheckCircle2 className="h-4 w-4" /> : <Target className="h-4 w-4" />}
+             {isSending ? (
+               <Loader2 className="h-4 w-4 animate-spin" />
+             ) : requestSent ? (
+               <CheckCircle2 className="h-4 w-4" />
+             ) : (
+               <Target className="h-4 w-4" />
+             )}
              {requestSent ? 'İstek Gönderildi' : 'Bağlantı Kur'}
            </Button>
         </div>

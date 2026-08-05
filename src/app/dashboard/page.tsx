@@ -12,11 +12,14 @@ import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
 import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useUser();
   const auth = useAuth();
   const router = useRouter();
+
+  const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl || "https://picsum.photos/seed/67/400/400";
 
   const userDocQuery = user?.uid ? `users/${user.uid}` : null;
   const { data: userData, loading: docLoading } = useDoc<any>(userDocQuery);
@@ -73,7 +76,7 @@ export default function DashboardPage() {
               <Link href="/" className="flex items-center gap-3 group">
                 <div className="relative h-10 w-10 overflow-hidden rounded-xl bg-white p-0.5">
                   <Image 
-                    src="/logo.png" 
+                    src={logoUrl} 
                     alt="Logo" 
                     fill 
                     className="object-contain"

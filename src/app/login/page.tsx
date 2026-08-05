@@ -8,12 +8,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AuthForm } from '@/components/auth-form';
 import Image from 'next/image';
 import Link from 'next/link';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const tab = searchParams.get('tab') || 'login';
   const [activeTab, setActiveTab] = useState(tab);
+
+  const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl || "https://picsum.photos/seed/67/400/400";
 
   useEffect(() => {
     setActiveTab(tab);
@@ -24,9 +27,9 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-6">
         <div className="flex flex-col items-center gap-4 mb-4">
           <Link href="/" className="flex flex-col items-center gap-2 group">
-            <div className="relative h-20 w-20 overflow-hidden rounded-2xl shadow-xl transition-transform group-hover:scale-105">
+            <div className="relative h-20 w-20 overflow-hidden rounded-2xl shadow-xl transition-transform group-hover:scale-105 bg-white p-1">
               <Image 
-                src="/logo.png" 
+                src={logoUrl} 
                 alt="Dijital Eğitim Koçu Logo" 
                 fill 
                 className="object-contain"

@@ -27,6 +27,7 @@ import { doc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/fires
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function HomePage() {
   const { user, loading } = useUser();
@@ -34,6 +35,8 @@ export default function HomePage() {
   const { toast } = useToast();
   const [seeding, setSeeding] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl || "https://picsum.photos/seed/67/400/400";
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -107,9 +110,9 @@ export default function HomePage() {
       )}>
         <div className="container mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative h-12 w-12 overflow-hidden rounded-xl">
+            <div className="relative h-12 w-12 overflow-hidden rounded-xl bg-white p-0.5">
               <Image 
-                src="/logo.png" 
+                src={logoUrl} 
                 alt="Dijital Eğitim Koçu Logo" 
                 fill 
                 className="object-contain"
@@ -401,7 +404,7 @@ export default function HomePage() {
             <div className="flex items-center gap-3">
               <div className="relative h-12 w-12 overflow-hidden rounded-xl bg-white p-1">
                 <Image 
-                  src="/logo.png" 
+                  src={logoUrl} 
                   alt="Dijital Eğitim Koçu Logo" 
                   fill 
                   className="object-contain"

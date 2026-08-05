@@ -5,7 +5,8 @@ import {
   Pencil, PlusCircle, BookMarked, School, ScrollText,
   Search, MessageSquare, LineChart, ClipboardCheck,
   Calendar, Award, Library as LibraryIcon, Cpu,
-  Bookmark, Mic, Headphones, PenTool, BookOpenCheck
+  Bookmark, Mic, Headphones, PenTool, BookOpenCheck,
+  TrendingUp, RefreshCw
 } from 'lucide-react';
 
 export type ExamModule = {

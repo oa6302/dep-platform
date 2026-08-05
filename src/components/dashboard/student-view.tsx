@@ -1,29 +1,46 @@
-
 'use client';
 
-import { useFirestore } from '@/firebase';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { 
-  CheckCircle2, Clock, Calendar, Brain, Target, 
-  TrendingUp, Star, Zap, Timer, MessageSquare, 
-  ChevronRight, Play, AlertCircle, History,
-  LayoutDashboard, BarChart3, LineChart as LineIcon,
-  Flame, Award, Search, ArrowUpRight, ArrowRight,
-  BookOpen, Pencil
+  CheckCircle2, 
+  Clock, 
+  Calendar, 
+  Brain, 
+  Target, 
+  TrendingUp, 
+  Star, 
+  Zap, 
+  Timer, 
+  MessageSquare, 
+  ChevronRight, 
+  Play, 
+  AlertCircle, 
+  History,
+  LayoutDashboard, 
+  BarChart3, 
+  LineChart as LineIcon,
+  Flame, 
+  Award, 
+  Search, 
+  ArrowUpRight, 
+  ArrowRight,
+  BookOpen, 
+  Pencil,
+  BookOpenCheck
 } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState } from 'react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, RadarChart, PolarGrid, 
-  PolarAngleAxis, PolarRadiusAxis, Radar, AreaChart, 
-  Area, BarChart, Bar, Cell
+  PolarAngleAxis, Radar, AreaChart, 
+  Area
 } from 'recharts';
 import { cn } from '@/lib/utils';
 
-// --- MOCK DATA FOR AOS ---
+// --- MOCK DATA ---
 const netGrowthData = [
   { name: 'Eyl', net: 62 },
   { name: 'Eki', net: 68 },
@@ -42,7 +59,7 @@ const dnaData = [
   { subject: 'Analiz', A: 75, fullMark: 100 },
 ];
 
-const heatMapData = Array.from({ length: 52 * 7 }).map((_, i) => ({
+const heatMapData = Array.from({ length: 364 }).map((_, i) => ({
   value: Math.floor(Math.random() * 5),
   date: i
 }));
@@ -66,7 +83,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   return (
     <div className="p-6 lg:p-10 space-y-10 max-w-[1600px] mx-auto w-full animate-in fade-in duration-1000 bg-[#FAFBFF]">
       
-      {/* 1. GÜNÜN AKADEMİK ÖZETİ (HEADER) */}
+      {/* 1. GÜNÜN AKADEMİK ÖZETİ */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <Card className="lg:col-span-8 rounded-[3.5rem] border-none shadow-[0_40px_100px_-20px_rgba(15,23,42,0.1)] bg-white p-12 relative overflow-hidden group">
            <div className="absolute top-0 right-0 w-96 h-96 bg-accent/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2"></div>
@@ -76,7 +93,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                     ✨ AKADEMİK KOMUTA MERKEZİ
                  </div>
                  <h1 className="text-5xl md:text-7xl font-black text-primary tracking-tighter italic uppercase leading-none">
-                    GÜNAYDIN <br /><span className="text-accent text-shadow-accent">{userData?.displayName?.split(' ')[0] || 'AHMET'} 👋</span>
+                    GÜNAYDIN <br /><span className="text-accent text-shadow-accent">{userData?.displayName?.split(' ')[0] || 'ÖĞRENCİ'} 👋</span>
                  </h1>
                  <p className="text-xl text-muted-foreground font-medium italic opacity-70">Bugünkü akademik planın hazır. Senin için 4 kritik görev belirledik.</p>
               </div>
@@ -93,7 +110,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-12 mt-12 border-t border-primary/5">
               {[
                 { label: 'Görev', val: '4', sub: 'Tamamlanan: 2', icon: CheckCircle2, color: 'text-emerald-500' },
-                { label: 'Konu', val: '3', sub: 'Bugünkü Hedef', icon: BookOpen, color: 'text-blue-500' },
+                { label: 'Konu', val: '3', sub: 'Bugünkü Hedef', icon: BookOpenCheck, color: 'text-blue-500' },
                 { label: 'Soru', val: '120', sub: 'Çözülen: 84', icon: Pencil, color: 'text-orange-500' },
                 { label: 'Çalışma', val: '3s', sub: 'Gerçekleşen: 1.5s', icon: Clock, color: 'text-accent' },
               ].map((item, i) => (
@@ -109,7 +126,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
            </div>
         </Card>
 
-        {/* GÜNLÜK İLERLEME CIRCLE */}
+        {/* GÜNLÜK İLERLEME */}
         <Card className="lg:col-span-4 rounded-[3.5rem] border-none shadow-[0_40px_100px_-20px_rgba(15,23,42,0.1)] bg-[#0F172A] p-12 text-white flex flex-col items-center justify-center space-y-10 relative overflow-hidden group">
            <div className="absolute inset-0 bg-accent/5 blur-[100px] rounded-full scale-150 group-hover:scale-100 transition-all duration-1000"></div>
            <div className="relative h-56 w-56 flex items-center justify-center">
@@ -139,7 +156,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
 
       {/* 2. GÖREVLER & TAKVİM */}
       <section className="grid grid-cols-1 xl:grid-cols-12 gap-10">
-         {/* BUGÜNKÜ GÖREVLER */}
          <div className="xl:col-span-8 space-y-8">
             <div className="flex justify-between items-end px-4">
                <h3 className="text-3xl font-black italic tracking-tighter uppercase text-primary">BUGÜNKÜ GÖREVLER</h3>
@@ -189,7 +205,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
             </div>
          </div>
 
-         {/* AKADEMİK TAKVİM (MİNİ) */}
          <Card className="xl:col-span-4 rounded-[3.5rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.08)] bg-white p-10 flex flex-col space-y-8 border border-primary/5">
             <h4 className="text-2xl font-black italic tracking-tighter uppercase flex items-center gap-3">
                <Calendar className="h-6 w-6 text-accent" /> AJANDA
@@ -233,7 +248,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
 
       {/* 3. ANALİZLER & HEDEF TAKİBİ */}
       <section className="grid grid-cols-1 xl:grid-cols-3 gap-10">
-         {/* HEDEF TAKİBİ */}
          <Card className="rounded-[3.5rem] border-none shadow-xl bg-white p-10 space-y-10 border border-primary/5 relative overflow-hidden group">
             <Target className="absolute top-8 right-8 h-12 w-12 text-accent opacity-10 group-hover:scale-110 transition-transform" />
             <h4 className="text-2xl font-black italic tracking-tighter uppercase leading-none">HEDEF TAKİBİ</h4>
@@ -270,7 +284,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
             </div>
          </Card>
 
-         {/* NET GELİŞİM GRAFİĞİ */}
          <Card className="xl:col-span-2 rounded-[3.5rem] border-none shadow-xl bg-white p-10 space-y-8 border border-primary/5">
             <div className="flex justify-between items-center">
                <h4 className="text-2xl font-black italic tracking-tighter uppercase leading-none">NET GELİŞİM TRENDİ</h4>
@@ -303,9 +316,8 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
          </Card>
       </section>
 
-      {/* 4. AOS ZEKA MERKEZİ (Compliance & DNA) */}
+      {/* 4. AOS ZEKA MERKEZİ */}
       <section className="grid grid-cols-1 xl:grid-cols-12 gap-10">
-         {/* PLAN UYUMLULUK */}
          <Card className="xl:col-span-4 rounded-[4rem] border-none shadow-2xl bg-[#0F172A] p-12 text-white space-y-10 relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-80 h-80 bg-accent/10 blur-[100px] rounded-full"></div>
             <h4 className="text-2xl font-black italic tracking-tighter uppercase text-shadow-deep">PLAN UYUMLULUĞU</h4>
@@ -334,13 +346,9 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                     </div>
                   ))}
                </div>
-               <div className="p-6 bg-white/5 rounded-[2rem] border border-white/10 italic text-sm font-medium opacity-80 group-hover:bg-white/10 transition-all">
-                  "Harika gidiyorsun Ahmet! Son üç haftadır planına düzenli uyuyorsun. AI yarından itibaren planı hafifçe zorlaştırmayı öneriyor."
-               </div>
             </div>
          </Card>
 
-         {/* AKADEMİK DNA & KONU İLERLEMESİ */}
          <Card className="xl:col-span-8 rounded-[4rem] border-none shadow-xl bg-white p-12 grid grid-cols-1 md:grid-cols-2 gap-12 border border-primary/5">
             <div className="space-y-10">
                <h4 className="text-2xl font-black italic tracking-tighter uppercase leading-none">AKADEMİK DNA</h4>
@@ -379,7 +387,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
          </Card>
       </section>
 
-      {/* 5. GAMIFICATION & ISTS (XP, Rozetler & Isı Haritası) */}
+      {/* 5. GAMIFICATION & ISTS */}
       <section className="grid grid-cols-1 xl:grid-cols-4 gap-8">
          <Card className="xl:col-span-1 rounded-[3rem] border-none shadow-xl bg-white p-10 space-y-8 border border-primary/5 text-center relative overflow-hidden group">
             <div className="h-24 w-24 rounded-[2.5rem] bg-accent flex items-center justify-center mx-auto text-white shadow-2xl relative z-10 group-hover:rotate-12 transition-transform">
@@ -391,10 +399,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                <p className="text-xs font-bold text-accent italic">Matematik Ustası Rozeti • 3 Gün Kaldı</p>
             </div>
             <div className="pt-6 border-t border-primary/5 space-y-4">
-               <div className="flex justify-between text-[10px] font-black uppercase tracking-widest opacity-40 italic">
-                  <span>8.420 XP</span>
-                  <span>10.000 XP</span>
-               </div>
                <Progress value={84} className="h-2 rounded-full" />
             </div>
          </Card>
@@ -402,16 +406,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
          <Card className="xl:col-span-3 rounded-[3rem] border-none shadow-xl bg-white p-10 space-y-8 border border-primary/5 overflow-hidden group">
             <div className="flex justify-between items-center">
                <h4 className="text-2xl font-black italic tracking-tighter uppercase leading-none">ÇALIŞMA YOĞUNLUĞU</h4>
-               <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1.5">
-                     <div className="h-3 w-3 rounded-sm bg-slate-100"></div>
-                     <span className="text-[8px] font-black opacity-30">AZ</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                     <div className="h-3 w-3 rounded-sm bg-accent"></div>
-                     <span className="text-[8px] font-black opacity-30">ÇOK</span>
-                  </div>
-               </div>
             </div>
             <div className="flex flex-wrap gap-1.5">
                {heatMapData.map((d, i) => (
@@ -424,35 +418,14 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                  )}></div>
                ))}
             </div>
-            <p className="text-[10px] font-bold text-muted-foreground italic opacity-40">"Son 365 gündeki akademik aktivitenizi yansıtır. Süreklilik başarının anahtarıdır."</p>
          </Card>
       </section>
 
-      {/* 6. GENEL İSTATİSTİKLER (GRID) */}
-      <section className="grid grid-cols-2 md:grid-cols-5 gap-6">
-         {[
-           { label: 'TOPLAM ÇALIŞMA', val: '425s', icon: Timer, color: 'text-primary' },
-           { label: 'TOPLAM SORU', val: '18.4k', icon: Pencil, color: 'text-accent' },
-           { label: 'TOPLAM DENEME', val: '126', icon: ClipboardCheck, color: 'text-emerald-500' },
-           { label: 'BİTEN KONU', val: '382', icon: BookOpen, color: 'text-blue-500' },
-           { label: 'BAŞARI ORANI', val: '%91', icon: Award, color: 'text-indigo-500' },
-         ].map((stat, i) => (
-           <Card key={i} className="p-8 rounded-[2.5rem] border-none shadow-lg bg-white group hover:-translate-y-2 transition-all">
-              <div className="h-12 w-12 rounded-xl bg-slate-50 flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-white transition-all shadow-inner">
-                 <stat.icon className="h-6 w-6" />
-              </div>
-              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground opacity-40 mb-1 leading-none">{stat.label}</p>
-              <p className={cn("text-3xl font-black italic tracking-tighter leading-none", stat.color)}>{stat.val}</p>
-           </Card>
-         ))}
-      </section>
-
-      {/* 7. AI AKADEMİK KOÇ (FLOATING CHAT TRIGGER) */}
+      {/* AI KOÇ BUTTON */}
       <div className="fixed bottom-10 right-10 z-[100]">
          <Button className="h-24 w-24 rounded-[2.5rem] bg-[#0F172A] hover:bg-accent text-white shadow-[0_30px_60px_-10px_rgba(15,23,42,0.5)] group transition-all duration-500 hover:scale-110 flex flex-col items-center justify-center gap-1 border-[6px] border-white">
             <Brain className="h-10 w-10 text-accent group-hover:text-white transition-colors" />
             <span className="text-[8px] font-black tracking-widest uppercase">AI KOÇ</span>
-            <div className="absolute -top-2 -right-2 h-7 w-7 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] font-black border-4 border-white animate-bounce">2</div>
          </Button>
       </div>
 

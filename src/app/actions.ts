@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -18,6 +19,13 @@ import {
 } from '@/ai/flows/generate-ai-insights';
 
 import HTMLtoDOCX from 'html-to-docx';
+
+// Curriculum Actions
+export async function handleSaveProgram(data: any) {
+  // Bu bir prototip eylemidir. UI tarafında Firestore SDK kullanılmaktadır.
+  console.log('Program Kaydedildi:', data);
+  return { success: true };
+}
 
 export async function handleGenerateContent(
   input: GenerateTubitakContentInput
@@ -88,7 +96,6 @@ export async function handleGetAiInsights(input: GenerateAiInsightsInput) {
 }
 
 export async function handleSendSupportRequest(data: any) {
-  // Bu bir prototip eylemidir. Gerçek uygulamada Firestore'a kaydedilir.
   console.log('Destek Talebi Alındı:', data);
   return { success: true };
 }

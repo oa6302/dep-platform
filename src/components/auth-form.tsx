@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth, useFirestore, useCollection } from '@/firebase';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -13,17 +13,15 @@ import {
   signInWithPopup,
   GoogleAuthProvider
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, School, Hash, Target, Sparkles, UserRound, Building, CheckCircle2, QrCode, Star, History, ChevronRight } from 'lucide-react';
+import { Loader2, Mail, Lock, User, School, Hash, Target, Sparkles, UserRound, Building, CheckCircle2, QrCode, Star, History, ChevronRight, Grid3X3 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectSeparator } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { EXAM_CONFIGS } from '@/lib/exam-configs';
 import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card } from '@/components/ui/card';
 
 interface AuthFormProps {
   mode: 'login' | 'register';
@@ -54,16 +52,19 @@ export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const { toast } = useToast();
 
+  const { data: dbPrograms, loading: programsLoading } = useCollection<any>('programs', orderBy('title', 'asc'));
+
   const categories = ['ORTAOKUL', 'ÜNİVERSİTE', 'KAMU', 'ÜNİVERSİTE GEÇİŞ', 'DİL', 'DİNÎ', 'AKADEMİK', 'ÖZEL'] as const;
 
   const categorizedExams = useMemo(() => {
     const grouped: Record<string, any[]> = {};
-    Object.values(EXAM_CONFIGS).forEach(exam => {
-      if (!grouped[exam.category]) grouped[exam.category] = [];
-      grouped[exam.category].push(exam);
+    dbPrograms.forEach(exam => {
+      const cat = exam.category || 'ÖZEL';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(exam);
     });
     return grouped;
-  }, []);
+  }, [dbPrograms]);
 
   const generateTeacherCode = () => {
     return 'DK-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -89,9 +90,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           createdAt: serverTimestamp(),
         };
 
-        if (role === 'teacher') {
-          userData.activationCode = generateTeacherCode();
-        }
+        if (role === 'teacher') userData.activationCode = generateTeacherCode();
 
         await setDoc(userDocRef, userData);
         toast({ title: 'Hoş Geldiniz', description: `Hesabınız ${role === 'teacher' ? 'Öğretmen' : 'Öğrenci'} olarak oluşturuldu.` });
@@ -165,7 +164,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           setDoc(doc(db, 'users', user.uid), userData)
         ]);
 
-        toast({ title: 'Kayıt Başarılı', description: role === 'teacher' ? `Öğretmen hesabınız oluşturuldu. Kodunuz: ${userData.activationCode}` : `Sistem ${userData.targetExam} moduna göre yapılandırıldı.` });
+        toast({ title: 'Kayıt Başarılı', description: role === 'teacher' ? `Öğretmen hesabınız oluşturuldu. Kodunuz: ${userData.activationCode}` : `Sistem yapılandırıldı.` });
       } else {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: 'Giriş Başarılı', description: 'Hoş geldiniz!' });
@@ -277,49 +276,55 @@ export function AuthForm({ mode }: AuthFormProps) {
                   
                   <div className="bg-slate-50 p-4 rounded-[2rem] border-2 border-primary/5 shadow-inner">
                     <ScrollArea className="h-[450px] pr-4">
-                       <div className="space-y-10">
-                          {categories.map((category) => (
-                            <div key={category} className="space-y-4">
-                               <div className="flex items-center gap-3">
-                                  <div className="h-1 w-8 bg-accent rounded-full"></div>
-                                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/40">{category}</h3>
-                               </div>
-                               <div className="grid grid-cols-1 gap-3">
-                                  {categorizedExams[category]?.map((exam) => (
-                                    <button
-                                      key={exam.id}
-                                      type="button"
-                                      onClick={() => setTargetExam(exam.id)}
-                                      className={cn(
-                                        "flex items-center justify-between p-5 rounded-2xl border-2 transition-all group text-left",
-                                        targetExam === exam.id 
-                                          ? "border-accent bg-white shadow-xl shadow-accent/5 ring-4 ring-accent/5" 
-                                          : "border-white bg-white/50 hover:border-primary/10 hover:bg-white"
-                                      )}
-                                    >
-                                       <div className="flex items-center gap-5">
-                                          <div className={cn(
-                                            "h-12 w-12 rounded-xl flex items-center justify-center transition-all",
-                                            targetExam === exam.id ? "bg-accent text-white" : "bg-primary/5 text-primary"
-                                          )}>
-                                             <exam.icon className="h-6 w-6" />
-                                          </div>
-                                          <div>
-                                             <p className={cn("font-black text-sm uppercase tracking-tight", targetExam === exam.id ? "text-primary" : "text-primary/70")}>{exam.title}</p>
-                                             <p className="text-[9px] font-bold opacity-40 uppercase tracking-widest">{exam.targetGroup}</p>
-                                          </div>
-                                       </div>
-                                       {targetExam === exam.id ? (
-                                          <CheckCircle2 className="h-5 w-5 text-accent animate-in zoom-in duration-300" />
-                                       ) : (
-                                          <ChevronRight className="h-4 w-4 text-muted-foreground opacity-20 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                                       )}
-                                    </button>
-                                  ))}
-                               </div>
-                            </div>
-                          ))}
-                       </div>
+                       {programsLoading ? (
+                         <div className="py-20 text-center opacity-30 animate-pulse font-black uppercase tracking-widest text-xs italic">Müfredat Motoru Hazırlanıyor...</div>
+                       ) : (
+                         <div className="space-y-10">
+                            {categories.map((category) => (
+                              categorizedExams[category] && (
+                                <div key={category} className="space-y-4">
+                                   <div className="flex items-center gap-3">
+                                      <div className="h-1 w-8 bg-accent rounded-full"></div>
+                                      <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/40">{category}</h3>
+                                   </div>
+                                   <div className="grid grid-cols-1 gap-3">
+                                      {categorizedExams[category]?.map((exam) => (
+                                        <button
+                                          key={exam.id}
+                                          type="button"
+                                          onClick={() => setTargetExam(exam.id)}
+                                          className={cn(
+                                            "flex items-center justify-between p-5 rounded-2xl border-2 transition-all group text-left",
+                                            targetExam === exam.id 
+                                              ? "border-accent bg-white shadow-xl shadow-accent/5 ring-4 ring-accent/5" 
+                                              : "border-white bg-white/50 hover:border-primary/10 hover:bg-white"
+                                          )}
+                                        >
+                                           <div className="flex items-center gap-5">
+                                              <div className={cn(
+                                                "h-12 w-12 rounded-xl flex items-center justify-center transition-all",
+                                                targetExam === exam.id ? "bg-accent text-white" : "bg-primary/5 text-primary"
+                                              )}>
+                                                 <Grid3X3 className="h-6 w-6" />
+                                              </div>
+                                              <div>
+                                                 <p className={cn("font-black text-sm uppercase tracking-tight", targetExam === exam.id ? "text-primary" : "text-primary/70")}>{exam.title}</p>
+                                                 <p className="text-[9px] font-bold opacity-40 uppercase tracking-widest">{exam.targetGroup || 'Aktif Müfredat'}</p>
+                                              </div>
+                                           </div>
+                                           {targetExam === exam.id ? (
+                                              <CheckCircle2 className="h-5 w-5 text-accent animate-in zoom-in duration-300" />
+                                           ) : (
+                                              <ChevronRight className="h-4 w-4 text-muted-foreground opacity-20 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                                           )}
+                                        </button>
+                                      ))}
+                                   </div>
+                                </div>
+                              )
+                            ))}
+                         </div>
+                       )}
                     </ScrollArea>
                   </div>
                 </div>

@@ -36,7 +36,7 @@ export default function HomePage() {
   const [seeding, setSeeding] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl || "https://picsum.photos/seed/67/400/400";
+  const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl || "https://picsum.photos/seed/edu-logo-99/400/400";
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -116,10 +116,10 @@ export default function HomePage() {
                 alt="Dijital Eğitim Koçu Logo" 
                 fill 
                 className="object-contain"
-                data-ai-hint="education logo"
+                data-ai-hint="education logo blue gold"
               />
             </div>
-            <div>
+            <div className="hidden sm:block">
               <span className="font-bold text-xl block text-primary leading-tight">Dijital Eğitim Koçu</span>
               <span className="text-[10px] text-muted-foreground block font-medium uppercase tracking-wider">AI Destekli Akademik Platform</span>
             </div>
@@ -408,7 +408,7 @@ export default function HomePage() {
                   alt="Dijital Eğitim Koçu Logo" 
                   fill 
                   className="object-contain"
-                  data-ai-hint="education logo"
+                  data-ai-hint="education logo blue gold"
                 />
               </div>
               <span className="font-black text-2xl tracking-tighter">Dijital Eğitim Koçu</span>

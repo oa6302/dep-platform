@@ -16,7 +16,7 @@ export default function LoginPage() {
   const tab = searchParams.get('tab') || 'login';
   const [activeTab, setActiveTab] = useState(tab);
 
-  const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl || "https://picsum.photos/seed/67/400/400";
+  const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl || "https://picsum.photos/seed/edu-logo-99/400/400";
 
   useEffect(() => {
     setActiveTab(tab);
@@ -33,7 +33,7 @@ export default function LoginPage() {
                 alt="Dijital Eğitim Koçu Logo" 
                 fill 
                 className="object-contain"
-                data-ai-hint="education logo"
+                data-ai-hint="education logo blue gold"
               />
             </div>
             <div className="text-center">

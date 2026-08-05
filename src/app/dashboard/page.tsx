@@ -19,7 +19,7 @@ export default function DashboardPage() {
   const auth = useAuth();
   const router = useRouter();
 
-  const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl || "https://picsum.photos/seed/67/400/400";
+  const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl || "https://picsum.photos/seed/edu-logo-99/400/400";
 
   const userDocQuery = user?.uid ? `users/${user.uid}` : null;
   const { data: userData, loading: docLoading } = useDoc<any>(userDocQuery);
@@ -80,7 +80,7 @@ export default function DashboardPage() {
                     alt="Logo" 
                     fill 
                     className="object-contain"
-                    data-ai-hint="education logo"
+                    data-ai-hint="education logo blue gold"
                   />
                 </div>
                 <div className="overflow-hidden">

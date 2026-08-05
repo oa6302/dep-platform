@@ -33,9 +33,9 @@ export default function DashboardPage() {
   if (authLoading || docLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-accent border-t-transparent shadow-xl" />
-          <p className="text-sm text-primary font-bold uppercase tracking-widest animate-pulse">Dijital Eğitim Koçu Hazırlanıyor...</p>
+        <div className="flex flex-col items-center gap-6">
+          <div className="h-16 w-16 animate-spin rounded-[2rem] border-[6px] border-accent border-t-transparent shadow-[0_0_40px_rgba(245,158,11,0.2)]" />
+          <p className="text-xs text-primary font-black uppercase tracking-[0.3em] animate-pulse italic">Dijital Eğitim Koçu Hazırlanıyor...</p>
         </div>
       </div>
     );
@@ -63,18 +63,18 @@ export default function DashboardPage() {
       case 'admin':
         return <AdminView user={user} userData={userData} />;
       default:
-        return <div className="p-8 font-bold text-destructive">Rolünüz tanımlanırken bir hata oluştu. Lütfen destekle iletişime geçin.</div>;
+        return <div className="p-12 font-black text-destructive text-center uppercase tracking-widest italic">Rolünüz tanımlanırken bir hata oluştu. Lütfen destekle iletişime geçin.</div>;
     }
   };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      <div className="grid lg:grid-cols-[280px_1fr] min-h-screen">
+      <div className="grid lg:grid-cols-[300px_1fr] min-h-screen">
         <aside className="bg-primary text-white hidden lg:block border-r border-white/5 shadow-2xl z-50">
           <div className="flex flex-col h-full">
-            <div className="p-8">
-              <Link href="/" className="flex items-center gap-3 group">
-                <div className="relative h-10 w-10 overflow-hidden rounded-xl bg-white p-0.5">
+            <div className="p-10">
+              <Link href="/" className="flex items-center gap-4 group">
+                <div className="relative h-12 w-12 overflow-hidden rounded-2xl bg-white p-0.5 shadow-xl transition-transform group-hover:rotate-3">
                   <Image 
                     src={logoUrl} 
                     alt="Logo" 
@@ -83,49 +83,49 @@ export default function DashboardPage() {
                     data-ai-hint="education logo blue gold"
                   />
                 </div>
-                <div className="overflow-hidden">
-                  <span className="font-black text-xl block tracking-tighter leading-none">DEK</span>
-                  <span className="text-[9px] opacity-60 block font-bold uppercase tracking-widest">Dijital Eğitim Koçu</span>
+                <div className="overflow-hidden space-y-0.5">
+                  <span className="font-black text-2xl block tracking-tighter leading-none italic">DEK</span>
+                  <span className="text-[8px] opacity-40 block font-black uppercase tracking-[0.2em]">Eğitim Koçu</span>
                 </div>
               </Link>
             </div>
             
-            <nav className="flex-1 px-4 space-y-2 mt-4">
-              <Button variant="ghost" className="w-full justify-start rounded-2xl bg-white/10 hover:bg-accent font-bold transition-all" asChild>
+            <nav className="flex-1 px-6 space-y-3 mt-4">
+              <Button variant="ghost" className="w-full justify-start rounded-[1.25rem] bg-white/10 hover:bg-accent font-black transition-all h-14 group" asChild>
                 <Link href="/dashboard">
-                  <LayoutDashboard className="mr-3 h-5 w-5" />
+                  <LayoutDashboard className="mr-4 h-5 w-5 transition-transform group-hover:scale-110" />
                   Panelim
                 </Link>
               </Button>
-              <Button variant="ghost" className="w-full justify-start rounded-2xl hover:bg-accent font-bold transition-all opacity-80 hover:opacity-100">
-                <Calendar className="mr-3 h-5 w-5" />
+              <Button variant="ghost" className="w-full justify-start rounded-[1.25rem] hover:bg-white/5 font-black transition-all opacity-60 hover:opacity-100 h-14 group">
+                <Calendar className="mr-4 h-5 w-5 transition-transform group-hover:scale-110" />
                 Görüşmeler
               </Button>
-              <Button variant="ghost" className="w-full justify-start rounded-2xl hover:bg-accent font-bold transition-all opacity-80 hover:opacity-100">
-                <CheckCircle2 className="mr-3 h-5 w-5" />
+              <Button variant="ghost" className="w-full justify-start rounded-[1.25rem] hover:bg-white/5 font-black transition-all opacity-60 hover:opacity-100 h-14 group">
+                <CheckCircle2 className="mr-4 h-5 w-5 transition-transform group-hover:scale-110" />
                 Görevler
               </Button>
-              <Button variant="ghost" className="w-full justify-start rounded-2xl hover:bg-accent font-bold transition-all opacity-80 hover:opacity-100">
-                <User className="mr-3 h-5 w-5" />
+              <Button variant="ghost" className="w-full justify-start rounded-[1.25rem] hover:bg-white/5 font-black transition-all opacity-60 hover:opacity-100 h-14 group">
+                <User className="mr-4 h-5 w-5 transition-transform group-hover:scale-110" />
                 Profilim
               </Button>
-              <Button variant="ghost" className="w-full justify-start rounded-2xl hover:bg-accent font-bold transition-all opacity-80 hover:opacity-100">
-                <Settings className="mr-3 h-5 w-5" />
+              <Button variant="ghost" className="w-full justify-start rounded-[1.25rem] hover:bg-white/5 font-black transition-all opacity-60 hover:opacity-100 h-14 group">
+                <Settings className="mr-4 h-5 w-5 transition-transform group-hover:scale-110" />
                 Ayarlar
               </Button>
             </nav>
 
-            <div className="p-6">
-              <div className="flex items-center gap-3 px-4 py-4 bg-white/5 rounded-3xl border border-white/10">
-                <div className="h-10 w-10 rounded-2xl bg-accent flex items-center justify-center text-white font-black shadow-lg shadow-accent/20">
+            <div className="p-8">
+              <div className="flex items-center gap-4 px-5 py-5 bg-white/5 rounded-[2rem] border border-white/10 shadow-2xl">
+                <div className="h-12 w-12 rounded-2xl bg-accent flex items-center justify-center text-white font-black shadow-lg shadow-accent/20 text-xl italic">
                   {userData?.displayName?.charAt(0) || 'U'}
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <p className="text-sm font-bold truncate">{userData?.displayName}</p>
-                  <p className="text-[10px] opacity-50 truncate font-bold uppercase">{roleLabels[userData?.role || 'student']}</p>
+                  <p className="text-sm font-black truncate tracking-tight">{userData?.displayName}</p>
+                  <p className="text-[9px] opacity-40 truncate font-black uppercase tracking-widest">{roleLabels[userData?.role || 'student']}</p>
                 </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive rounded-xl transition-colors" onClick={handleLogout}>
-                  <LogOut className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-destructive rounded-xl transition-all" onClick={handleLogout}>
+                  <LogOut className="h-5 w-5" />
                 </Button>
               </div>
             </div>
@@ -133,25 +133,25 @@ export default function DashboardPage() {
         </aside>
 
         <main className="flex flex-col">
-          <header className="h-20 bg-white/80 backdrop-blur-md border-b flex items-center justify-between px-8 sticky top-0 z-40">
-            <div className="flex items-center gap-4">
-              <h1 className="text-lg font-black text-primary uppercase tracking-tight">
-                Hoş Geldin, <span className="text-accent">{userData?.displayName?.split(' ')[0]}</span>
+          <header className="h-24 bg-white/70 backdrop-blur-xl border-b border-primary/5 flex items-center justify-between px-10 sticky top-0 z-40">
+            <div className="flex items-center gap-6">
+              <h1 className="text-xl font-black text-primary uppercase tracking-tighter italic">
+                Hoş Geldin, <span className="text-accent underline decoration-accent/20 underline-offset-8">{userData?.displayName?.split(' ')[0]}</span>
               </h1>
             </div>
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" className="relative h-10 w-10 bg-[#F1F5F9] rounded-2xl">
-                <Bell className="h-5 w-5 text-primary" />
-                <span className="absolute top-2 right-2 h-2 w-2 bg-accent rounded-full border-2 border-white"></span>
+            <div className="flex items-center gap-6">
+              <Button variant="ghost" size="icon" className="relative h-12 w-12 bg-[#F1F5F9] rounded-2xl transition-transform hover:scale-105">
+                <Bell className="h-6 w-6 text-primary" />
+                <span className="absolute top-3 right-3 h-2.5 w-2.5 bg-accent rounded-full border-[3px] border-white animate-pulse"></span>
               </Button>
               <div className="lg:hidden">
-                <Button variant="ghost" size="icon" className="h-10 w-10" onClick={handleLogout}>
-                  <LogOut className="h-5 w-5 text-destructive" />
+                <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl bg-destructive/5 text-destructive" onClick={handleLogout}>
+                  <LogOut className="h-6 w-6" />
                 </Button>
               </div>
             </div>
           </header>
-          <div className="flex-1">
+          <div className="flex-1 overflow-y-auto">
             {renderView()}
           </div>
         </main>

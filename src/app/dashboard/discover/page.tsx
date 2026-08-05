@@ -20,7 +20,8 @@ import {
   Search, Users, Star, ShieldCheck, GraduationCap, 
   Brain, Sparkles, Filter, ArrowRight, UserCheck,
   Target, Zap, MessageSquare, Compass, ShieldAlert,
-  Hash, QrCode, CheckCircle2, Loader2, Home, ArrowLeft
+  Hash, QrCode, CheckCircle2, Loader2, Home, ArrowLeft,
+  Key, Ticket
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -66,6 +67,7 @@ export default function DiscoverPage() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [sentRequests, setSentRequests] = useState<string[]>([]);
+  const [sentCodeRequests, setSentCodeRequests] = useState<string[]>([]);
 
   const teacherList = useMemo(() => {
     return (teachers || []).filter(t => t.role === 'teacher');
@@ -120,6 +122,7 @@ export default function DiscoverPage() {
         studentId: user.uid,
         teacherId: teacherId,
         status: 'pending',
+        type: 'connection',
         message: `${userData?.displayName || 'Bir öğrenci'} sizinle akademik koçluk için bağlantı kurmak istiyor.`,
         createdAt: serverTimestamp(),
       });
@@ -135,7 +138,36 @@ export default function DiscoverPage() {
       toast({
         variant: 'destructive',
         title: 'Hata',
-        description: 'İstek gönderilirken bir sorun oluştu. Lütfen tekrar deneyin.'
+        description: 'İstek gönderilirken bir sorun oluştu.'
+      });
+    }
+  };
+
+  const handleSendCodeRequest = async (teacherId: string, teacherName: string) => {
+    if (!db || !user) return;
+    
+    try {
+      await addDoc(collection(db, 'requests'), {
+        studentId: user.uid,
+        teacherId: teacherId,
+        status: 'pending',
+        type: 'code_request',
+        message: `${userData?.displayName || 'Bir öğrenci'} sizden sisteme giriş için aktivasyon kodu talep ediyor.`,
+        createdAt: serverTimestamp(),
+      });
+
+      setSentCodeRequests(prev => [...prev, teacherId]);
+
+      toast({
+        title: 'Kod İsteği Gönderildi',
+        description: `${teacherName} hocamıza aktivasyon kodu talebiniz iletildi.`,
+        className: "bg-accent text-primary rounded-[2rem]"
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Hata',
+        description: 'Kod isteği gönderilirken bir sorun oluştu.'
       });
     }
   };
@@ -174,13 +206,13 @@ export default function DiscoverPage() {
         toast({
           variant: 'destructive',
           title: 'Hata',
-          description: 'Geçersiz aktivasyon kodu. Lütfen kontrol edip tekrar deneyin.'
+          description: 'Geçersiz aktivasyon kodu.'
         });
       }
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Sistem Hatası',
+        title: 'Hata',
         description: 'Bağlantı kurulurken bir sorun oluştu.'
       });
     } finally {
@@ -239,7 +271,7 @@ export default function DiscoverPage() {
                 className="h-16 px-8 rounded-2xl border-2 border-primary/10 font-black text-xs uppercase tracking-widest gap-3 shadow-sm hover:bg-slate-50 group"
               >
                 <QrCode className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
-                Kod ile Bağlan
+                Kod İle Bağlan
               </Button>
             </DialogTrigger>
             <DialogContent className="rounded-[3rem] border-none shadow-[0_60px_120px_-30px_rgba(15,23,42,0.3)] p-10 max-w-md bg-white">
@@ -337,6 +369,7 @@ export default function DiscoverPage() {
         {filteredTeachers.map((teacher, i) => {
           const matchScore = calculateMatchScore(teacher);
           const isRequested = sentRequests.includes(teacher.uid);
+          const isCodeRequested = sentCodeRequests.includes(teacher.uid);
           
           return (
             <Card key={i} className="group relative overflow-hidden rounded-[3.5rem] border-none shadow-[0_30px_60px_-15px_rgba(15,23,42,0.08)] bg-white transition-all hover:-translate-y-4 hover:shadow-[0_60px_120px_-30px_rgba(15,23,42,0.15)] border border-primary/5">
@@ -354,14 +387,28 @@ export default function DiscoverPage() {
                       </div>
                     )}
                   </div>
-                  <div className="text-right space-y-2">
+                  <div className="flex flex-col items-end gap-3">
+                    <div className="flex gap-2">
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        onClick={() => handleSendCodeRequest(teacher.uid, teacher.displayName)}
+                        disabled={isCodeRequested}
+                        className={cn(
+                          "h-12 w-12 rounded-2xl border-2 transition-all shadow-sm group/code",
+                          isCodeRequested ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-white border-primary/5 hover:border-accent hover:text-accent"
+                        )}
+                        title="Kod Almak İçin İstek Gönder"
+                      >
+                        {isCodeRequested ? <CheckCircle2 className="h-6 w-6" /> : <Key className="h-6 w-6 group-hover/code:rotate-12 transition-transform" />}
+                      </Button>
+                    </div>
                     <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase tracking-widest border border-emerald-100 shadow-sm">
                       <Sparkles className="h-3.5 w-3.5" /> %{matchScore} AI Uyum
                     </div>
                     <div className="flex items-center justify-end gap-1.5 text-accent font-black">
                       <Star className="h-4 w-4 fill-current" />
                       <span className="text-sm tracking-tighter">{teacher.rating || '5.0'}</span>
-                      <span className="text-[10px] text-muted-foreground opacity-40">({teacher.reviewCount || 0})</span>
                     </div>
                   </div>
                 </div>

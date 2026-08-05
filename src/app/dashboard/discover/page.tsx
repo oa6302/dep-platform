@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useUser, useCollection, useDoc } from '@/firebase';
+import { useUser, useCollection, useDoc, useFirestore } from '@/firebase';
 import { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,12 +8,23 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogDescription 
+} from '@/components/ui/dialog';
+import { 
   Search, Users, Star, ShieldCheck, GraduationCap, 
   Brain, Sparkles, Filter, ArrowRight, UserCheck,
-  Target, Zap, MessageSquare, Compass, ShieldAlert
+  Target, Zap, MessageSquare, Compass, ShieldAlert,
+  Hash, QrCode, CheckCircle2, Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 const expertTypes = [
   "Branş Öğretmeni",
@@ -38,6 +48,8 @@ const exams = [
 
 export default function DiscoverPage() {
   const { user } = useUser();
+  const db = useFirestore();
+  const { toast } = useToast();
   const { data: userData } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
   const { data: teachers, loading } = useCollection<any>('users', (q: any) => q); 
 
@@ -46,6 +58,11 @@ export default function DiscoverPage() {
   const [selectedBranch, setSelectedBranch] = useState('all');
   const [selectedExam, setSelectedExam] = useState('all');
   const [isAiMatching, setIsAiMatching] = useState(false);
+  
+  // Activation Code States
+  const [teacherCode, setTeacherCode] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Filter logic
   const teacherList = useMemo(() => {
@@ -90,8 +107,55 @@ export default function DiscoverPage() {
     setIsAiMatching(true);
     setTimeout(() => {
       setIsAiMatching(false);
-      // In real logic, this would re-sort filteredTeachers based on match scores
     }, 1500);
+  };
+
+  const handleConnectWithCode = async () => {
+    if (!db || !user || !teacherCode) return;
+    setIsConnecting(true);
+    
+    try {
+      const q = query(
+        collection(db, 'users'), 
+        where('activationCode', '==', teacherCode), 
+        where('role', '==', 'teacher')
+      );
+      
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const teacherData = querySnapshot.docs[0].data();
+        const userRef = doc(db, 'users', user.uid);
+        
+        await updateDoc(userRef, {
+          coachId: querySnapshot.docs[0].id,
+          updatedAt: serverTimestamp()
+        });
+
+        toast({
+          title: 'Bağlantı Başarılı',
+          description: `${teacherData.displayName} hocamızla başarıyla eşleştiniz!`,
+          className: "bg-primary text-white rounded-[2rem]"
+        });
+        
+        setIsDialogOpen(false);
+        setTeacherCode('');
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Hata',
+          description: 'Geçersiz aktivasyon kodu. Lütfen kontrol edip tekrar deneyin.'
+        });
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Sistem Hatası',
+        description: 'Bağlantı kurulurken bir sorun oluştu.'
+      });
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   if (loading) {
@@ -114,14 +178,60 @@ export default function DiscoverPage() {
             Geleceğini <br /><span className="text-accent text-shadow-accent">Doğru Kişiyle Planla</span>
           </h2>
         </div>
-        <Button 
-          onClick={handleAiMatch}
-          disabled={isAiMatching}
-          className="h-16 px-8 rounded-2xl bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest gap-3 shadow-[0_20px_50px_-10px_rgba(15,23,42,0.3)] group"
-        >
-          {isAiMatching ? <Zap className="h-5 w-5 animate-spin" /> : <Brain className="h-5 w-5 text-accent group-hover:scale-110 transition-transform" />}
-          Bana En Uygun Uzmanı Bul
-        </Button>
+        
+        <div className="flex gap-4">
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                variant="outline"
+                className="h-16 px-8 rounded-2xl border-2 border-primary/10 font-black text-xs uppercase tracking-widest gap-3 shadow-sm hover:bg-slate-50 group"
+              >
+                <QrCode className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+                Kod ile Bağlan
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="rounded-[3rem] border-none shadow-[0_60px_120px_-30px_rgba(15,23,42,0.3)] p-10 max-w-md bg-white">
+              <DialogHeader className="space-y-4 text-center">
+                <div className="h-20 w-20 bg-accent/10 rounded-[1.75rem] flex items-center justify-center mx-auto mb-2">
+                  <Hash className="h-10 w-10 text-accent" />
+                </div>
+                <DialogTitle className="text-3xl font-black italic tracking-tighter uppercase text-primary">Eğitmen Kodu Gir</DialogTitle>
+                <DialogDescription className="font-medium italic">
+                  Hocanızdan aldığınız 10 haneli aktivasyon kodunu girerek anında koçluk almaya başlayın.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-6 pt-6">
+                <div className="relative group">
+                  <Hash className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-accent transition-colors" />
+                  <Input 
+                    placeholder="DK-XXXX-XXXX" 
+                    value={teacherCode}
+                    onChange={(e) => setTeacherCode(e.target.value.toUpperCase())}
+                    className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-black text-xl tracking-[0.2em] text-center pl-12 focus-visible:ring-accent focus-visible:bg-white transition-all uppercase"
+                  />
+                </div>
+                <Button 
+                  onClick={handleConnectWithCode}
+                  disabled={isConnecting || !teacherCode}
+                  className="w-full h-16 rounded-2xl bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest gap-3 shadow-2xl shadow-primary/20"
+                >
+                  {isConnecting ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
+                  Bağlantıyı Kur
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Button 
+            onClick={handleAiMatch}
+            disabled={isAiMatching}
+            className="h-16 px-8 rounded-2xl bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest gap-3 shadow-[0_20px_50px_-10px_rgba(15,23,42,0.3)] group"
+          >
+            {isAiMatching ? <Zap className="h-5 w-5 animate-spin" /> : <Brain className="h-5 w-5 text-accent group-hover:scale-110 transition-transform" />}
+            AI Uzman Eşleştir
+          </Button>
+        </div>
       </div>
 
       {/* Advanced Filter Bar */}
@@ -176,7 +286,6 @@ export default function DiscoverPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
         {filteredTeachers.map((teacher, i) => {
           const matchScore = calculateMatchScore(teacher);
-          const isCoach = teacher.coachType?.includes('Koçu') || teacher.hideBranch;
           
           return (
             <Card key={i} className="group relative overflow-hidden rounded-[3.5rem] border-none shadow-[0_30px_60px_-15px_rgba(15,23,42,0.08)] bg-white transition-all hover:-translate-y-4 hover:shadow-[0_60px_120px_-30px_rgba(15,23,42,0.15)] border border-primary/5">

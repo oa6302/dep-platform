@@ -86,3 +86,9 @@ export async function handleGetAiInsights(input: GenerateAiInsightsInput) {
     return { success: false, error: 'Yapay zeka analizleri oluşturulurken bir hata oluştu.' };
   }
 }
+
+export async function handleSendSupportRequest(data: any) {
+  // Bu bir prototip eylemidir. Gerçek uygulamada Firestore'a kaydedilir.
+  console.log('Destek Talebi Alındı:', data);
+  return { success: true };
+}

@@ -17,6 +17,16 @@ interface AuthFormProps {
   mode: 'login' | 'register';
 }
 
+const errorMessageMap: Record<string, string> = {
+  'auth/email-already-in-use': 'Bu e-posta adresi zaten kullanımda. Lütfen giriş yapmayı deneyin.',
+  'auth/invalid-email': 'Geçersiz bir e-posta adresi girdiniz.',
+  'auth/weak-password': 'Şifreniz çok zayıf. En az 6 karakter kullanın.',
+  'auth/user-not-found': 'Kullanıcı bulunamadı veya bilgiler hatalı.',
+  'auth/wrong-password': 'Kullanıcı bulunamadı veya bilgiler hatalı.',
+  'auth/invalid-credential': 'Giriş bilgileri doğrulanamadı.',
+  'auth/too-many-requests': 'Çok fazla deneme yapıldı. Lütfen daha sonra tekrar deneyin.',
+};
+
 export function AuthForm({ mode }: AuthFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,7 +51,6 @@ export function AuthForm({ mode }: AuthFormProps) {
 
         await updateProfile(user, { displayName });
 
-        // Create user profile in Firestore
         await setDoc(doc(db, 'users', user.uid), {
           uid: user.uid,
           email,
@@ -57,11 +66,13 @@ export function AuthForm({ mode }: AuthFormProps) {
       }
       router.push('/dashboard');
     } catch (error: any) {
-      console.error(error);
+      const errorCode = error.code;
+      const description = errorMessageMap[errorCode] || 'Bir hata oluştu. Lütfen tekrar deneyin.';
+      
       toast({
         variant: 'destructive',
-        title: 'Hata',
-        description: error.message || 'Bir sorun oluştu. Lütfen tekrar deneyin.',
+        title: 'İşlem Başarısız',
+        description: description,
       });
     } finally {
       setLoading(false);

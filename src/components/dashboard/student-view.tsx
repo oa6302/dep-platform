@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useCollection } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, CheckCircle2, Plus, Clock } from 'lucide-react';
+import { Calendar, CheckCircle2, Clock } from 'lucide-react';
 import { where, orderBy } from 'firebase/firestore';
 
 interface StudentViewProps {
@@ -23,6 +24,12 @@ export function StudentView({ user, userData }: StudentViewProps) {
     where('studentId', '==', user?.uid || ''),
     orderBy('scheduledAt', 'asc')
   );
+
+  const formatDate = (date: any) => {
+    if (!date) return '';
+    const d = date.toDate ? date.toDate() : new Date(date);
+    return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+  };
 
   const pendingTasks = tasks.filter(t => t.status === 'pending');
   const upcomingSessions = sessions.filter(s => s.status === 'scheduled');
@@ -46,7 +53,7 @@ export function StudentView({ user, userData }: StudentViewProps) {
           <CardContent>
             <p className="text-xl font-bold truncate">
               {upcomingSessions.length > 0 
-                ? new Date(upcomingSessions[0].scheduledAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
+                ? formatDate(upcomingSessions[0].scheduledAt)
                 : 'Planlanmış görüşme yok'}
             </p>
             <CardDescription>Koçunuz ile olan seansınız</CardDescription>
@@ -85,7 +92,7 @@ export function StudentView({ user, userData }: StudentViewProps) {
                         <p className="font-semibold">{session.notes || 'Haftalık Değerlendirme'}</p>
                         <p className="text-xs text-muted-foreground flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          {new Date(session.scheduledAt).toLocaleString('tr-TR')}
+                          {formatDate(session.scheduledAt)}
                         </p>
                       </div>
                     </div>
@@ -118,7 +125,7 @@ export function StudentView({ user, userData }: StudentViewProps) {
                       <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <p className="font-semibold">{task.title}</p>
-                        <p className="text-xs text-muted-foreground">Son Tarih: {new Date(task.dueDate).toLocaleDateString('tr-TR')}</p>
+                        <p className="text-xs text-muted-foreground">Son Tarih: {formatDate(task.dueDate)}</p>
                       </div>
                     </div>
                     <Button size="sm">Tamamla</Button>

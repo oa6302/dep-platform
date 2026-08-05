@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { 
   Calendar, CheckCircle2, Clock, TrendingUp, Target, Brain, Award, Play, BookOpen, Zap, Star, MapPin, LineChart, ClipboardCheck, Library, ArrowRight, Sparkles 
 } from 'lucide-react';
-import { where, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useState, useEffect, useMemo } from 'react';
@@ -25,6 +25,15 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const [timer, setTimer] = useState(25 * 60);
   const [isActive, setIsActive] = useState(false);
 
+  // Veritabanından dersleri dinamik olarak çekelim
+  const subjectsQuery = useMemo(() => {
+    if (!db || !userData?.targetExam) return null;
+    return query(collection(db, 'subjects'), where('programId', '==', userData.targetExam));
+  }, [db, userData?.targetExam]);
+
+  const { data: dbSubjects } = useCollection<any>(subjectsQuery);
+
+  // Eğer program verisi kodda da varsa fallback olarak kullan
   const examConfig = useMemo(() => {
     return EXAM_CONFIGS[userData?.targetExam || 'LGS'] || EXAM_CONFIGS['LGS'];
   }, [userData?.targetExam]);
@@ -114,10 +123,30 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
         </div>
       </div>
 
-      {/* Dynamic Modules Section */}
+      {/* Dynamic Modules Section - Seçilen Sınavın Dersleri ve Modülleri */}
       <div className="space-y-10">
         <h3 className="text-4xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep">Aktif Eğitim Modülleri</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {/* Firestore'dan gelen dersleri göster */}
+          {dbSubjects.map((subj, i) => (
+            <Card key={subj.id} className="group relative overflow-hidden rounded-[3rem] border-none shadow-[0_30px_60px_-15px_rgba(15,23,42,0.06)] bg-white p-10 transition-all hover:-translate-y-4 hover:shadow-[0_50px_100px_-20px_rgba(15,23,42,0.12)] cursor-pointer border border-primary/5">
+              <div className={`absolute top-0 right-0 w-32 h-32 bg-primary/5 opacity-5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 group-hover:opacity-10 transition-opacity`}></div>
+              <div className="space-y-8">
+                <div className={`h-16 w-16 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all`}>
+                  <BookOpen className="h-8 w-8" />
+                </div>
+                <div className="space-y-3">
+                  <h4 className="font-black text-2xl italic tracking-tight text-primary text-shadow-deep uppercase">{subj.name}</h4>
+                  <p className="text-sm text-muted-foreground font-medium leading-relaxed">Müfredat takibi ve konu eksikleri</p>
+                </div>
+                <div className="flex items-center text-[11px] font-black uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 transition-all">
+                  Dersi İncele <ArrowRight className="ml-2 h-4 w-4" />
+                </div>
+              </div>
+            </Card>
+          ))}
+
+          {/* Varsayılan Modüller */}
           {examConfig.modules.map((mod, i) => (
             <Card key={i} className="group relative overflow-hidden rounded-[3rem] border-none shadow-[0_30px_60px_-15px_rgba(15,23,42,0.06)] bg-white p-10 transition-all hover:-translate-y-4 hover:shadow-[0_50px_100px_-20px_rgba(15,23,42,0.12)] cursor-pointer border border-primary/5">
               <div className={`absolute top-0 right-0 w-32 h-32 ${mod.color} opacity-5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 group-hover:opacity-10 transition-opacity`}></div>

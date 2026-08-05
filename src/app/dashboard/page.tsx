@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useDoc, useAuth } from '@/firebase';
@@ -8,7 +7,7 @@ import { StudentView } from '@/components/dashboard/student-view';
 import { TeacherView } from '@/components/dashboard/teacher-view';
 import { AdminView } from '@/components/dashboard/admin-view';
 import { SchoolAdminView } from '@/components/dashboard/school-admin-view';
-import { LogOut, LayoutDashboard, Calendar, CheckCircle2, User, Settings, Bell, Eye, XCircle, Search } from 'lucide-react';
+import { LogOut, LayoutDashboard, Calendar, CheckCircle2, User, Settings, Bell, Eye, XCircle, Search, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
@@ -127,6 +126,12 @@ export default function DashboardPage() {
                   Panelim
                 </Link>
               </Button>
+              <Button variant="ghost" className="w-full justify-start rounded-2xl hover:bg-white/5 font-black transition-all opacity-60 hover:opacity-100 h-14 group" asChild>
+                <Link href="/dashboard/ai-analysis">
+                  <Brain className="mr-4 h-5 w-5 transition-transform group-hover:scale-110 text-accent" />
+                  AI Asistanım
+                </Link>
+              </Button>
               <Button variant="ghost" className="w-full justify-start rounded-2xl hover:bg-white/5 font-black transition-all opacity-60 hover:opacity-100 h-14 group">
                 <Calendar className="mr-4 h-5 w-5 transition-transform group-hover:scale-110" />
                 Takvim
@@ -191,6 +196,12 @@ export default function DashboardPage() {
           </header>
           
           <div className="flex-1 overflow-y-auto">
+            {/* 
+              This part is tricky because the dashboard/page.tsx renders view components.
+              I will add a check if we are on the AI subpage in a real app, 
+              but for this prototype, the renderView handles the root dashboard.
+              The subpages like /ai-analysis are handled by Next.js routing.
+            */}
             {renderView()}
           </div>
         </main>

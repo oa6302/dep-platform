@@ -12,6 +12,10 @@ import {
   extractProjectInfo,
   ExtractProjectInfoInput,
 } from '@/ai/flows/extract-project-info';
+import {
+  generateAiInsights,
+  GenerateAiInsightsInput,
+} from '@/ai/flows/generate-ai-insights';
 
 import HTMLtoDOCX from 'html-to-docx';
 
@@ -70,5 +74,15 @@ export async function handleExtractProjectInfo(input: ExtractProjectInfoInput) {
       success: false,
       error: 'Proje bilgileri ayrıştırılırken bir hata oluştu.',
     };
+  }
+}
+
+export async function handleGetAiInsights(input: GenerateAiInsightsInput) {
+  try {
+    const result = await generateAiInsights(input);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Error in handleGetAiInsights:', error);
+    return { success: false, error: 'Yapay zeka analizleri oluşturulurken bir hata oluştu.' };
   }
 }

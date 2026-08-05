@@ -1,14 +1,15 @@
 
 'use client';
 
-import { useUser, useDoc, useAuth } from '@/firebase';
+import { useUser, useDoc, useAuth, useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { GraduationCap, LogOut, Calendar, CheckCircle2, User, Settings, LayoutDashboard } from 'lucide-react';
+import { GraduationCap, LogOut, Calendar, CheckCircle2, User, Settings, LayoutDashboard, Plus } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
+import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useUser();
@@ -17,6 +18,31 @@ export default function DashboardPage() {
 
   const userDocQuery = user?.uid ? `users/${user.uid}` : null;
   const { data: userData, loading: docLoading } = useDoc<any>(userDocQuery);
+
+  // Memoized query for tasks
+  const tasksQuery = useMemo(() => {
+    if (!user?.uid) return null;
+    return query(
+      collection(useAuth()?.app ? (window as any).firestore : null as any, 'tasks'), // Workaround to get firestore if not directly accessible via hook here without re-invoking useFirestore
+      where('studentId', '==', user.uid),
+      orderBy('dueDate', 'asc'),
+      limit(5)
+    );
+  }, [user?.uid]);
+
+  // Using useCollection with path string for simplicity since useMemoFirebase isn't available in current context, 
+  // but useCollection handles path strings.
+  const { data: tasks, loading: tasksLoading } = useCollection<any>(
+    user?.uid ? 'tasks' : null,
+    where('studentId', '==', user?.uid || ''),
+    orderBy('dueDate', 'asc')
+  );
+
+  const { data: sessions, loading: sessionsLoading } = useCollection<any>(
+    user?.uid ? 'sessions' : null,
+    where(userData?.role === 'teacher' ? 'teacherId' : 'studentId', '==', user?.uid || ''),
+    orderBy('scheduledAt', 'asc')
+  );
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -47,6 +73,9 @@ export default function DashboardPage() {
     teacher: 'Öğretmen (Koç)',
     admin: 'Yönetici'
   };
+
+  const pendingTasks = tasks.filter(t => t.status === 'pending');
+  const upcomingSessions = sessions.filter(s => s.status === 'scheduled');
 
   return (
     <div className="min-h-screen bg-background">
@@ -117,17 +146,21 @@ export default function DashboardPage() {
                   <CardTitle className="text-sm font-medium">Aktif Görevler</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-3xl font-bold">4</p>
-                  <CardDescription>Bu hafta tamamlanacak</CardDescription>
+                  <p className="text-3xl font-bold">{pendingTasks.length}</p>
+                  <CardDescription>Tamamlanmayı bekliyor</CardDescription>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Sıradaki Görüşme</CardTitle>
+                  <CardTitle className="text-sm font-medium">Yaklaşan Görüşme</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-xl font-bold">Yarın, 14:00</p>
-                  <CardDescription>Koç: Serbay Kapuci</CardDescription>
+                  <p className="text-xl font-bold">
+                    {upcomingSessions.length > 0 
+                      ? new Date(upcomingSessions[0].scheduledAt).toLocaleDateString('tr-TR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })
+                      : 'Henüz görüşme yok'}
+                  </p>
+                  <CardDescription>Planlanmış son görüşme</CardDescription>
                 </CardContent>
               </Card>
               <Card>
@@ -143,50 +176,73 @@ export default function DashboardPage() {
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <Card>
-                <CardHeader>
-                  <CardTitle>Yaklaşan Görüşmeler</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Yaklaşan Görüşmeler</CardTitle>
+                    <CardDescription>Takviminizi kontrol edin</CardDescription>
+                  </div>
+                  <Button size="sm" variant="outline">
+                    <Plus className="h-4 w-4 mr-1" /> Yeni
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {[1, 2].map((i) => (
-                      <div key={i} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
-                        <div className="flex items-center gap-4">
-                          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                            <Calendar className="h-5 w-5 text-muted-foreground" />
+                    {upcomingSessions.length > 0 ? (
+                      upcomingSessions.map((session) => (
+                        <div key={session.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+                          <div className="flex items-center gap-4">
+                            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                              <Calendar className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <p className="font-semibold">{session.notes || 'Koçluk Seansı'}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(session.scheduledAt).toLocaleString('tr-TR')}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-semibold">Akademik Planlama #{i}</p>
-                            <p className="text-xs text-muted-foreground">15 Mart 2024, 15:30</p>
-                          </div>
+                          <Button size="sm" variant="outline">Detay</Button>
                         </div>
-                        <Button size="sm" variant="outline">Detay</Button>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Planlanmış bir görüşmeniz bulunmuyor.
                       </div>
-                    ))}
+                    )}
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle>Bekleyen Görevler</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Bekleyen Görevler</CardTitle>
+                    <CardDescription>Haftalık hedefleriniz</CardDescription>
+                  </div>
+                  <Button size="sm" variant="outline">
+                    <Plus className="h-4 w-4 mr-1" /> Ekle
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {[
-                      { title: 'Matematik Deneme Analizi', date: 'Bugün' },
-                      { title: 'Haftalık Kitap Okuma Ödevi', date: 'Yarın' },
-                    ].map((task, i) => (
-                      <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center gap-4">
-                          <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
-                          <div>
-                            <p className="font-semibold">{task.title}</p>
-                            <p className="text-xs text-muted-foreground">Teslim: {task.date}</p>
+                    {pendingTasks.length > 0 ? (
+                      pendingTasks.map((task) => (
+                        <div key={task.id} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center gap-4">
+                            <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
+                            <div>
+                              <p className="font-semibold">{task.title}</p>
+                              <p className="text-xs text-muted-foreground">Teslim: {new Date(task.dueDate).toLocaleDateString('tr-TR')}</p>
+                            </div>
                           </div>
+                          <Button size="sm">Tamamla</Button>
                         </div>
-                        <Button size="sm">Tamamla</Button>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Şu an bekleyen bir göreviniz yok.
                       </div>
-                    ))}
+                    )}
                   </div>
                 </CardContent>
               </Card>

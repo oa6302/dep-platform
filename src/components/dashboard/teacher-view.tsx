@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useCollection, useFirestore } from '@/firebase';
@@ -8,9 +9,10 @@ import {
   TrendingUp, AlertTriangle, Brain, FileText, BarChart3, Search, 
   LayoutDashboard, ClipboardList, Sparkles, PieChart, ArrowRight,
   CheckCircle2, Clock, MapPin, UserCheck, Zap, Mail, ChevronRight,
-  CalendarDays, BookOpen, UserPlus, Target, Settings, ShieldCheck, Activity
+  CalendarDays, BookOpen, UserPlus, Target, Settings, ShieldCheck, Activity,
+  School, Layers, BookOpenCheck, Loader2, Save, Trash2, Edit3, Grid3X3
 } from 'lucide-react';
-import { where, orderBy } from 'firebase/firestore';
+import { collection, doc, setDoc, deleteDoc, query, where, orderBy, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -18,6 +20,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { useState, useMemo } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from '@/components/ui/label';
 
 interface TeacherViewProps {
   user: any;
@@ -26,21 +46,34 @@ interface TeacherViewProps {
 
 export function TeacherView({ user, userData }: TeacherViewProps) {
   const router = useRouter();
+  const db = useFirestore();
   const { toast } = useToast();
   
-  const { data: students, loading: studentsLoading } = useCollection<any>(
+  const [loading, setLoading] = useState<string | null>(null);
+  const [isAddingClass, setIsAddingClass] = useState(false);
+  const [isAddingSubject, setIsAddingSubject] = useState(false);
+  const [selectedProgram, setSelectedProgram] = useState<string>('');
+
+  // Veri Çekme
+  const { data: students } = useCollection<any>(
     'users',
     where('role', '==', 'student'),
     where('coachId', '==', user?.uid || '')
   );
 
-  const { data: sessions } = useCollection<any>(
-    'sessions',
-    where('teacherId', '==', user?.uid || ''),
-    orderBy('scheduledAt', 'asc')
+  const { data: classrooms } = useCollection<any>(
+    'classrooms',
+    where('teacherId', '==', user?.uid || '')
   );
 
-  const upcomingSessions = sessions.filter(s => s.status === 'scheduled');
+  const { data: programs } = useCollection<any>('programs', orderBy('title', 'asc'));
+  
+  const mySubjectsQuery = useMemo(() => {
+    if (!user?.uid) return null;
+    return query(collection(db!, 'subjects'), where('creatorId', '==', user.uid));
+  }, [db, user?.uid]);
+  
+  const { data: mySubjects } = useCollection<any>(mySubjectsQuery);
 
   const copyCode = () => {
     if (userData?.activationCode) {
@@ -49,15 +82,66 @@ export function TeacherView({ user, userData }: TeacherViewProps) {
     }
   };
 
-  const simulateStudent = (studentId: string) => {
-    router.push(`/dashboard?simulate=${studentId}`);
+  const handleAddClassroom = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!db || !user) return;
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get('name') as string;
+    const grade = formData.get('grade') as string;
+    const id = `class_${user.uid}_${Date.now()}`;
+
+    setLoading('add-class');
+    try {
+      await setDoc(doc(db, 'classrooms', id), {
+        id,
+        name,
+        grade,
+        teacherId: user.uid,
+        schoolId: userData.school || '',
+        studentIds: [],
+        createdAt: serverTimestamp(),
+      });
+      toast({ title: 'Sınıf Oluşturuldu', description: `${name} şubesi başarıyla sisteme eklendi.` });
+      setIsAddingClass(false);
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Hata', description: 'Sınıf eklenemedi.' });
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleAddSubject = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!db || !user || !selectedProgram) return;
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get('name') as string;
+    const id = `subj_${user.uid}_${Date.now()}`;
+
+    setLoading('add-subject');
+    try {
+      await setDoc(doc(db, 'subjects', id), {
+        id,
+        programId: selectedProgram,
+        name,
+        creatorId: user.uid,
+        isActive: true,
+        order: (mySubjects?.length || 0) + 1,
+        createdAt: serverTimestamp(),
+      });
+      toast({ title: 'Özel Ders Eklendi', description: `${name} dersi müfredatınıza eklendi.` });
+      setIsAddingSubject(false);
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Hata', description: 'Ders eklenemedi.' });
+    } finally {
+      setLoading(null);
+    }
   };
 
   const stats = [
     { label: 'Toplam Öğrenci', val: students.length, icon: Users, color: 'text-primary' },
-    { label: 'Bugünkü Görüşmeler', val: 3, icon: CalendarDays, color: 'text-accent' },
-    { label: 'Bekleyen Ödevler', val: 12, icon: ClipboardList, color: 'text-primary' },
-    { label: 'Riskli Öğrenciler', val: 2, icon: AlertTriangle, color: 'text-destructive' },
+    { label: 'Aktif Sınıf', val: classrooms.length, icon: School, color: 'text-accent' },
+    { label: 'Özel Dersler', val: mySubjects.length, icon: BookOpenCheck, color: 'text-primary' },
+    { label: 'Riskli Durum', val: 2, icon: AlertTriangle, color: 'text-destructive' },
   ];
 
   return (
@@ -91,169 +175,241 @@ export function TeacherView({ user, userData }: TeacherViewProps) {
 
       <Tabs defaultValue="overview" className="space-y-12">
         <TabsList className="bg-[#F1F5F9]/80 backdrop-blur-xl p-2.5 rounded-[3rem] h-24 shadow-inner flex overflow-x-auto scrollbar-hide border border-primary/5">
-          <TabsTrigger value="overview" className="rounded-[2.5rem] px-12 h-full font-black text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-[0_20px_40px_-10px_rgba(15,23,42,0.1)] transition-all duration-500 gap-4 group">
-             <LayoutDashboard className="h-5 w-5 group-data-[state=active]:text-accent transition-colors" /> Genel Bakış
+          <TabsTrigger value="overview" className="rounded-[2.5rem] px-12 h-full font-black text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-xl transition-all duration-500 gap-4 group">
+             <LayoutDashboard className="h-5 w-5 group-data-[state=active]:text-accent" /> Genel Bakış
           </TabsTrigger>
-          <TabsTrigger value="students" className="rounded-[2.5rem] px-12 h-full font-black text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-[0_20px_40px_-10px_rgba(15,23,42,0.1)] transition-all duration-500 gap-4 group">
-             <Users className="h-5 w-5 group-data-[state=active]:text-accent transition-colors" /> Öğrencilerim
+          <TabsTrigger value="classrooms" className="rounded-[2.5rem] px-12 h-full font-black text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-xl transition-all duration-500 gap-4 group">
+             <School className="h-5 w-5 group-data-[state=active]:text-accent" /> Sınıf Yönetimi
           </TabsTrigger>
-          <TabsTrigger value="performance" className="rounded-[2.5rem] px-12 h-full font-black text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-[0_20px_40px_-10px_rgba(15,23,42,0.1)] transition-all duration-500 gap-4 group">
-             <Activity className="h-5 w-5 group-data-[state=active]:text-accent transition-colors" /> Performans Analizi
+          <TabsTrigger value="curriculum" className="rounded-[2.5rem] px-12 h-full font-black text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-xl transition-all duration-500 gap-4 group">
+             <BookOpenCheck className="h-5 w-5 group-data-[state=active]:text-accent" /> Müfredatım
           </TabsTrigger>
-          <TabsTrigger value="ai" className="rounded-[2.5rem] px-12 h-full font-black text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-[0_20px_40px_-10px_rgba(15,23,42,0.1)] transition-all duration-500 gap-4 group">
+          <TabsTrigger value="students" className="rounded-[2.5rem] px-12 h-full font-black text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-xl transition-all duration-500 gap-4 group">
+             <Users className="h-5 w-5 group-data-[state=active]:text-accent" /> Öğrencilerim
+          </TabsTrigger>
+          <TabsTrigger value="ai" className="rounded-[2.5rem] px-12 h-full font-black text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-xl transition-all duration-500 gap-4 group">
              <Brain className="h-5 w-5 text-accent animate-pulse" /> AI Asistanı
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-12 outline-none animate-in fade-in slide-in-from-bottom-4 duration-700">
+        {/* --- GENEL BAKIŞ --- */}
+        <TabsContent value="overview" className="space-y-12 outline-none animate-in fade-in slide-in-from-bottom-4">
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
              {stats.map((stat, i) => (
                <Card key={i} className="premium-card p-10 group border border-primary/5 relative overflow-hidden">
                  <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 blur-[40px] rounded-full translate-x-1/2 -translate-y-1/2"></div>
                  <div className="flex justify-between items-start mb-8 relative z-10">
-                    <div className="h-16 w-16 rounded-[1.25rem] bg-slate-50 flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-inner">
+                    <div className="h-16 w-16 rounded-[1.25rem] bg-slate-50 flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all shadow-inner">
                        <stat.icon className={cn("h-8 w-8", stat.color)} />
                     </div>
-                    <Badge variant="outline" className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 px-3 py-1 rounded-full">Canlı</Badge>
+                    <Badge variant="outline" className="text-[10px] font-black uppercase opacity-40">Canlı</Badge>
                  </div>
-                 <p className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-1 relative z-10 italic">{stat.label}</p>
-                 <p className="text-6xl font-black text-primary tracking-tighter text-shadow-deep relative z-10">{stat.val}</p>
+                 <p className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-1 italic">{stat.label}</p>
+                 <p className="text-6xl font-black text-primary tracking-tighter text-shadow-deep">{stat.val}</p>
                </Card>
              ))}
            </div>
 
            <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
-              <Card className="xl:col-span-8 rounded-[4rem] border-none shadow-[0_60px_120px_-30px_rgba(15,23,42,0.12)] bg-white p-12 space-y-10 border border-primary/5">
+              <Card className="xl:col-span-8 rounded-[4rem] border-none shadow-xl bg-white p-12 space-y-10 border border-primary/5">
                  <div className="flex justify-between items-center">
-                    <div className="space-y-1">
-                       <h3 className="text-3xl font-black italic tracking-tighter uppercase text-shadow-deep">Haftalık Başarı Trendi</h3>
-                       <p className="text-xs font-bold text-muted-foreground italic uppercase tracking-widest">Sınıf Geneli Net Ortalaması</p>
-                    </div>
-                    <Button variant="ghost" size="sm" className="h-12 px-6 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50">
-                       Rapor Detayı <ArrowRight className="ml-3 h-4 w-4" />
-                    </Button>
+                    <h3 className="text-3xl font-black italic tracking-tighter uppercase text-shadow-deep">Haftalık Başarı Trendi</h3>
+                    <Button variant="ghost" className="font-black text-[10px] uppercase tracking-widest gap-2">Detaylar <ArrowRight className="h-4 w-4" /></Button>
                  </div>
-                 <div className="h-[400px] flex items-end gap-8 pb-4 relative">
-                    <div className="absolute inset-0 flex flex-col justify-between opacity-10 pointer-events-none">
-                       {[1,2,3,4,5].map(l => <div key={l} className="w-full h-px bg-primary"></div>)}
-                    </div>
+                 <div className="h-[300px] flex items-end gap-8 pb-4">
                     {[45, 68, 85, 52, 98, 74, 88].map((h, i) => (
-                      <div key={i} className="flex-1 bg-slate-50 rounded-[2rem] relative group/bar hover:bg-slate-100 transition-all cursor-pointer">
-                         <div className="absolute bottom-0 w-full bg-primary rounded-[2rem] transition-all duration-1000 group-hover/bar:bg-accent group-hover/bar:shadow-[0_0_30px_rgba(245,158,11,0.4)]" style={{ height: `${h}%` }}></div>
-                         <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover/bar:opacity-100 transition-all duration-300 font-black text-sm bg-primary text-white px-4 py-2 rounded-xl shadow-2xl">%{h}</div>
+                      <div key={i} className="flex-1 bg-slate-50 rounded-[2rem] relative group/bar hover:bg-slate-100 transition-all">
+                         <div className="absolute bottom-0 w-full bg-primary rounded-[2rem] transition-all duration-1000 group-hover/bar:bg-accent" style={{ height: `${h}%` }}></div>
                       </div>
                     ))}
-                 </div>
-                 <div className="flex justify-between px-4 text-[11px] font-black uppercase tracking-widest opacity-40 italic">
-                    <span>Pzt</span><span>Sal</span><span>Çar</span><span>Per</span><span>Cum</span><span>Cmt</span><span>Paz</span>
                  </div>
               </Card>
 
               <div className="xl:col-span-4 space-y-10">
-                 <Card className="rounded-[3.5rem] border-none shadow-[0_50px_100px_-20px_rgba(15,23,42,0.2)] bg-primary text-white p-12 space-y-10 relative overflow-hidden group">
-                    <div className="absolute -top-20 -right-20 w-48 h-48 bg-accent/20 blur-[100px] rounded-full group-hover:scale-150 transition-transform duration-1000"></div>
-                    <div className="flex items-center gap-6 relative z-10">
-                       <div className="h-16 w-16 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center">
-                          <Brain className="h-9 w-9 text-accent" />
-                       </div>
-                       <h4 className="text-2xl font-black italic tracking-tighter uppercase text-shadow-premium">AI Risk Analizi</h4>
-                    </div>
-                    <p className="text-lg leading-relaxed font-medium opacity-90 italic relative z-10">
-                       "Melis S. ve Ali K. için son 3 denemede matematik netleri düşüş trendinde. Acil konu tekrarı atanması önerilir."
+                 <Card className="rounded-[3.5rem] border-none shadow-xl bg-primary text-white p-12 space-y-8 relative overflow-hidden group">
+                    <Brain className="h-12 w-12 text-accent absolute top-8 right-8 opacity-20" />
+                    <h4 className="text-2xl font-black italic tracking-tighter uppercase">AI Risk Analizi</h4>
+                    <p className="text-lg leading-relaxed font-medium opacity-90 italic">
+                       "Sınıf genelinde Matematik netleri geçen haftaya göre %12 düşüşte. Acil telafi dersi önerilir."
                     </p>
-                    <Button className="w-full h-16 rounded-2xl bg-accent hover:bg-white hover:text-primary transition-all duration-500 font-black text-xs uppercase tracking-widest relative z-10 shadow-2xl shadow-accent/20">Aksiyon Al</Button>
-                 </Card>
-
-                 <Card className="rounded-[3.5rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.08)] bg-white p-12 space-y-8 border border-primary/5">
-                    <h4 className="text-xl font-black italic tracking-tighter uppercase text-shadow-deep">Hızlı İşlemler</h4>
-                    <div className="grid gap-5">
-                       <QuickActionButton icon={Plus} label="Yeni Görev Ata" color="text-accent" />
-                       <QuickActionButton icon={CalendarDays} label="Görüşme Planla" color="text-primary" />
-                       <QuickActionButton icon={Mail} label="Toplu Duyuru Yap" color="text-primary" />
-                    </div>
+                    <Button className="w-full h-16 rounded-2xl bg-accent hover:bg-white hover:text-primary transition-all font-black text-xs uppercase tracking-widest shadow-2xl shadow-accent/20">Aksiyon Al</Button>
                  </Card>
               </div>
            </div>
         </TabsContent>
 
-        <TabsContent value="students" className="outline-none animate-in fade-in duration-700">
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-              {studentsLoading ? (
-                 <div className="col-span-full py-40 flex flex-col items-center gap-6 opacity-30">
-                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-                    <p className="font-black uppercase tracking-widest text-xs italic">Veriler Hazırlanıyor...</p>
+        {/* --- SINIF YÖNETİMİ --- */}
+        <TabsContent value="classrooms" className="space-y-12 outline-none animate-in fade-in">
+           <header className="flex justify-between items-center">
+              <div className="space-y-1">
+                 <h3 className="text-4xl font-black italic tracking-tighter text-primary uppercase">Şube & Sınıf Merkezi</h3>
+                 <p className="text-sm font-bold text-muted-foreground italic uppercase">Eğitim verdiğiniz tüm şubeleri buradan yönetin.</p>
+              </div>
+              <Dialog open={isAddingClass} onOpenChange={setIsAddingClass}>
+                 <DialogTrigger asChild>
+                    <Button className="h-16 px-8 rounded-2xl bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest gap-3 shadow-xl shadow-primary/20">
+                       <Plus className="h-5 w-5" /> Yeni Şube Oluştur
+                    </Button>
+                 </DialogTrigger>
+                 <DialogContent className="rounded-[3rem] border-none shadow-2xl p-10 bg-white">
+                    <DialogHeader>
+                       <DialogTitle className="text-3xl font-black italic tracking-tighter text-primary uppercase">Sınıf Tanımla</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleAddClassroom} className="space-y-8 pt-8">
+                       <div className="space-y-3">
+                          <Label className="text-xs font-black uppercase tracking-widest opacity-40 ml-2">Şube Adı</Label>
+                          <Input name="name" required placeholder="Örn: 12-A SAY, 11-B MF..." className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-black text-xl" />
+                       </div>
+                       <div className="space-y-3">
+                          <Label className="text-xs font-black uppercase tracking-widest opacity-40 ml-2">Kademe / Sınıf</Label>
+                          <Select name="grade" required>
+                             <SelectTrigger className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold text-lg">
+                                <SelectValue placeholder="Seçiniz" />
+                             </SelectTrigger>
+                             <SelectContent className="rounded-2xl">
+                                {['8. Sınıf', '9. Sınıf', '10. Sınıf', '11. Sınıf', '12. Sınıf', 'Mezun'].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                             </SelectContent>
+                          </Select>
+                       </div>
+                       <Button type="submit" disabled={loading === 'add-class'} className="w-full h-18 rounded-[1.75rem] bg-primary hover:bg-accent font-black text-xs uppercase tracking-widest gap-3 shadow-2xl">
+                          {loading === 'add-class' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                          Sisteme Kaydet
+                       </Button>
+                    </form>
+                 </DialogContent>
+              </Dialog>
+           </header>
+
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {classrooms.length > 0 ? classrooms.map((cls) => (
+                 <Card key={cls.id} className="premium-card p-10 group border border-primary/5 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 blur-[40px] rounded-full"></div>
+                    <div className="space-y-8">
+                       <div className="flex justify-between items-start">
+                          <div className="h-16 w-16 rounded-2xl bg-primary flex items-center justify-center text-white shadow-xl group-hover:rotate-6 transition-all">
+                             <Layers className="h-8 w-8" />
+                          </div>
+                          <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 font-black text-[10px] uppercase">Aktif</Badge>
+                       </div>
+                       <div>
+                          <h4 className="text-3xl font-black text-primary italic uppercase tracking-tighter leading-none mb-1">{cls.name}</h4>
+                          <p className="text-[11px] font-black text-accent uppercase tracking-widest">{cls.grade} • {cls.studentIds?.length || 0} Öğrenci</p>
+                       </div>
+                       <div className="flex gap-4 pt-2">
+                          <Button variant="outline" className="flex-1 h-12 rounded-xl border-2 font-black text-[10px] uppercase tracking-widest hover:bg-slate-50">Öğrenciler</Button>
+                          <Button size="icon" className="h-12 w-12 rounded-xl bg-slate-50 text-primary hover:bg-primary hover:text-white shadow-inner transition-all"><Settings className="h-5 w-5" /></Button>
+                       </div>
+                    </div>
+                 </Card>
+              )) : (
+                 <div className="col-span-full py-40 text-center opacity-30 italic font-black uppercase tracking-widest text-xs">Henüz bir şube tanımlamadınız.</div>
+              )}
+           </div>
+        </TabsContent>
+
+        {/* --- MÜFREDAT YÖNETİMİ --- */}
+        <TabsContent value="curriculum" className="space-y-12 outline-none animate-in fade-in">
+           <header className="flex justify-between items-center">
+              <div className="space-y-1">
+                 <h3 className="text-4xl font-black italic tracking-tighter text-primary uppercase">Özel Müfredat & İçerik</h3>
+                 <p className="text-sm font-bold text-muted-foreground italic uppercase">Kendi derslerinizi oluşturun ve öğrencilerinizle paylaşın.</p>
+              </div>
+              <Dialog open={isAddingSubject} onOpenChange={setIsAddingSubject}>
+                 <DialogTrigger asChild>
+                    <Button className="h-16 px-8 rounded-2xl bg-accent hover:bg-primary transition-all font-black text-xs uppercase tracking-widest gap-3 shadow-xl shadow-accent/20">
+                       <Plus className="h-5 w-5" /> Yeni Ders Ekle
+                    </Button>
+                 </DialogTrigger>
+                 <DialogContent className="rounded-[3rem] border-none shadow-2xl p-10 bg-white">
+                    <DialogHeader>
+                       <DialogTitle className="text-3xl font-black italic tracking-tighter text-primary uppercase">Ders Oluştur</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleAddSubject} className="space-y-8 pt-8">
+                       <div className="space-y-3">
+                          <Label className="text-xs font-black uppercase tracking-widest opacity-40 ml-2">Program (Sınav)</Label>
+                          <Select value={selectedProgram} onValueChange={setSelectedProgram} required>
+                             <SelectTrigger className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold text-lg">
+                                <SelectValue placeholder="Bir Program Seç" />
+                             </SelectTrigger>
+                             <SelectContent className="rounded-2xl">
+                                {programs.map(p => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}
+                             </SelectContent>
+                          </Select>
+                       </div>
+                       <div className="space-y-3">
+                          <Label className="text-xs font-black uppercase tracking-widest opacity-40 ml-2">Ders Adı</Label>
+                          <Input name="name" required placeholder="Örn: İleri Geometri, Robotik Kodlama..." className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-black text-xl" />
+                       </div>
+                       <Button type="submit" disabled={loading === 'add-subject' || !selectedProgram} className="w-full h-18 rounded-[1.75rem] bg-primary hover:bg-accent font-black text-xs uppercase tracking-widest gap-3 shadow-2xl">
+                          {loading === 'add-subject' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                          Dersi Kaydet
+                       </Button>
+                    </form>
+                 </DialogContent>
+              </Dialog>
+           </header>
+
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {mySubjects.length > 0 ? mySubjects.map((subj) => (
+                 <Card key={subj.id} className="premium-card p-10 group border border-primary/5 flex items-center justify-between">
+                    <div className="flex items-center gap-8">
+                       <div className="h-16 w-16 rounded-2xl bg-accent text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-all">
+                          <BookOpen className="h-8 w-8" />
+                       </div>
+                       <div>
+                          <h4 className="text-2xl font-black text-primary italic uppercase tracking-tighter leading-none mb-1">{subj.name}</h4>
+                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Program: {subj.programId}</p>
+                       </div>
+                    </div>
+                    <div className="flex gap-3">
+                       <Button size="icon" variant="ghost" className="h-12 w-12 rounded-xl hover:bg-slate-50"><Edit3 className="h-5 w-5" /></Button>
+                       <Button size="icon" variant="ghost" className="h-12 w-12 rounded-xl hover:bg-destructive/5 text-destructive"><Trash2 className="h-5 w-5" /></Button>
+                    </div>
+                 </Card>
+              )) : (
+                 <div className="col-span-full py-40 text-center bg-slate-50 rounded-[3rem] border border-dashed border-primary/10 opacity-30 italic font-black uppercase tracking-widest text-xs">
+                    Henüz özel bir ders oluşturmadınız.
                  </div>
-              ) : students.length > 0 ? (
+              )}
+           </div>
+        </TabsContent>
+
+        {/* --- ÖĞRENCİLERİM --- */}
+        <TabsContent value="students" className="outline-none animate-in fade-in">
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+              {students.length > 0 ? (
                  students.map((student) => (
                     <Card key={student.id} className="premium-card p-12 group border border-primary/5 relative overflow-hidden">
                        <div className={cn(
-                          "absolute top-0 right-0 w-3 h-full transition-all duration-500",
-                          student.risk === 'high' ? 'bg-destructive shadow-[0_0_20px_rgba(239,68,68,0.5)]' : student.risk === 'medium' ? 'bg-accent shadow-[0_0_20px_rgba(245,158,11,0.5)]' : 'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)]'
+                          "absolute top-0 right-0 w-3 h-full",
+                          student.risk === 'high' ? 'bg-destructive' : 'bg-emerald-500'
                        )}></div>
-                       <div className="space-y-10">
+                       <div className="space-y-8">
                           <div className="flex justify-between items-start">
-                             <div className="h-24 w-24 rounded-[2.25rem] bg-primary flex items-center justify-center text-white font-black text-4xl italic shadow-2xl relative border-[6px] border-white group-hover:scale-105 transition-all duration-500 group-hover:rotate-3">
+                             <div className="h-24 w-24 rounded-[2.25rem] bg-primary flex items-center justify-center text-white font-black text-4xl italic shadow-2xl relative border-[6px] border-white group-hover:scale-105 transition-all">
                                 {student.displayName?.charAt(0)}
                              </div>
-                             <div className="text-right space-y-3">
-                                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-50 text-primary font-black text-[10px] uppercase tracking-widest border border-slate-100 shadow-sm">
-                                   <Sparkles className="h-3 w-3 text-accent" /> {student.successScore || 85} AI Skor
-                                </div>
-                                <p className="text-[10px] font-black uppercase opacity-40 mt-1 italic tracking-widest">Son Aktif: 2sa</p>
+                             <div className="text-right">
+                                <Badge className="bg-slate-50 text-primary border-slate-100 font-black text-[10px] uppercase">%{student.successScore || 85} AI Skor</Badge>
                              </div>
                           </div>
-
-                          <div className="space-y-2">
-                             <h4 className="text-3xl font-black text-primary tracking-tighter italic uppercase text-shadow-deep leading-none">{student.displayName}</h4>
-                             <p className="text-[11px] font-black text-accent uppercase tracking-widest flex items-center gap-2">
-                                <Target className="h-3.5 w-3.5" /> {student.targetExam} • {student.grade}
-                             </p>
+                          <div>
+                             <h4 className="text-3xl font-black text-primary italic uppercase tracking-tighter leading-none mb-1">{student.displayName}</h4>
+                             <p className="text-[11px] font-black text-accent uppercase tracking-widest">{student.targetExam} • {student.grade}</p>
                           </div>
-
-                          <div className="grid grid-cols-2 gap-6 py-6 border-y border-primary/5">
-                             <div>
-                                <p className="text-[10px] font-black uppercase opacity-40 mb-1 tracking-widest">Ort. Net</p>
-                                <p className="text-2xl font-black text-primary italic text-shadow-deep">74.5</p>
-                             </div>
-                             <div>
-                                <p className="text-[10px] font-black uppercase opacity-40 mb-1 tracking-widest">Çalışma</p>
-                                <p className="text-2xl font-black text-primary italic text-shadow-deep">34s 12d</p>
-                             </div>
-                          </div>
-
-                          <div className="flex gap-4 pt-2">
-                             <Button onClick={() => simulateStudent(student.id)} size="icon" className="h-16 w-16 rounded-2xl bg-primary hover:bg-accent text-white shadow-2xl transition-all duration-500 hover:rotate-3 active:scale-95">
-                                <Eye className="h-7 w-7" />
-                             </Button>
-                             <Button variant="outline" className="flex-1 h-16 rounded-2xl border-2 font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all duration-300">Profil</Button>
-                             <Button size="icon" className="h-16 w-16 rounded-2xl bg-slate-50 text-primary hover:bg-primary hover:text-white transition-all duration-500 shadow-inner">
-                                <MessageSquare className="h-7 w-7" />
-                             </Button>
+                          <div className="flex gap-4">
+                             <Button onClick={() => router.push(`/dashboard?simulate=${student.id}`)} size="icon" className="h-14 w-14 rounded-2xl bg-primary hover:bg-accent text-white shadow-xl transition-all"><Eye className="h-6 w-6" /></Button>
+                             <Button variant="outline" className="flex-1 h-14 rounded-2xl border-2 font-black text-xs uppercase tracking-widest">İncele</Button>
                           </div>
                        </div>
                     </Card>
                  ))
               ) : (
-                 <div className="col-span-3 py-60 text-center opacity-30 space-y-8 animate-in fade-in duration-1000">
-                    <Users className="h-24 w-24 mx-auto text-primary" />
-                    <p className="text-2xl font-black uppercase tracking-widest italic text-primary">Henüz bağlı bir öğrenciniz yok.</p>
-                 </div>
+                 <div className="col-span-full py-60 text-center opacity-30 italic font-black uppercase tracking-widest text-xs">Henüz bağlı bir öğrenciniz yok.</div>
               )}
            </div>
         </TabsContent>
       </Tabs>
     </div>
-  );
-}
-
-function QuickActionButton({ icon: Icon, label, color }: { icon: any, label: string, color: string }) {
-  return (
-    <Button variant="outline" className="w-full h-16 justify-start rounded-2xl border-primary/5 bg-slate-50 hover:bg-white hover:shadow-2xl hover:-translate-y-1 font-black text-xs uppercase tracking-widest transition-all duration-300 group">
-       <div className="h-10 w-10 rounded-xl bg-white border border-primary/5 flex items-center justify-center mr-4 group-hover:rotate-6 transition-transform">
-          <Icon className={cn("h-5 w-5", color)} />
-       </div>
-       {label}
-       <ChevronRight className="ml-auto h-4 w-4 opacity-20 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-    </Button>
   );
 }

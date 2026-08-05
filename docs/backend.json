@@ -47,7 +47,8 @@
         "iconName": { "type": "string" },
         "color": { "type": "string" },
         "order": { "type": "number" },
-        "isActive": { "type": "boolean" }
+        "isActive": { "type": "boolean" },
+        "creatorId": { "type": "string", "description": "Dersi oluşturan öğretmen/koç ID'si." }
       },
       "required": ["programId", "name"]
     },
@@ -58,7 +59,8 @@
       "properties": {
         "subjectId": { "type": "string" },
         "name": { "type": "string" },
-        "order": { "type": "number" }
+        "order": { "type": "number" },
+        "creatorId": { "type": "string" }
       },
       "required": ["subjectId", "name"]
     },
@@ -74,9 +76,25 @@
         "pdfUrl": { "type": "string" },
         "questionCount": { "type": "number" },
         "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"] },
-        "order": { "type": "number" }
+        "order": { "type": "number" },
+        "creatorId": { "type": "string" }
       },
       "required": ["unitId", "name"]
+    },
+    "Classroom": {
+      "title": "Sınıf/Şube",
+      "description": "Öğretmenin yönettiği sınıf ve şubeler.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "grade": { "type": "string" },
+        "teacherId": { "type": "string" },
+        "schoolId": { "type": "string" },
+        "studentIds": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "teacherId"]
     }
   },
   "auth": {
@@ -102,6 +120,10 @@
     "/topics/{topicId}": {
       "schema": "Topic",
       "description": "Konular ve kazanımlar."
+    },
+    "/classrooms/{classroomId}": {
+      "schema": "Classroom",
+      "description": "Sınıflar ve şubeler."
     }
   }
 }

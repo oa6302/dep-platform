@@ -13,7 +13,7 @@ import {
   Settings, Bell, Eye, XCircle, Search, Brain, Headset, 
   Sparkles, Compass, AlertCircle, ChevronRight, Loader2,
   Home, ArrowLeft, BarChart3, ClipboardCheck, Library,
-  Timer, ScrollText, PieChart, ArrowRight
+  Timer, ScrollText, PieChart, ArrowRight, Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
@@ -128,6 +128,7 @@ export default function DashboardPage() {
               <AlertCircle className="h-12 w-12 text-destructive" />
            </div>
            <h2 className="text-5xl font-black text-primary tracking-tighter uppercase italic text-shadow-deep">Profil Saptanamadı</h2>
+           <p className="text-muted-foreground max-w-md mx-auto italic font-medium">Hesabınızla eşleşen bir profil verisi bulunamadı. Lütfen yeniden kayıt olmayı deneyin veya teknik destekle iletişime geçin.</p>
            <Button onClick={() => router.push('/login?tab=register')} className="h-20 px-12 rounded-[2rem] bg-primary text-white font-black uppercase text-xs tracking-widest flex items-center gap-4 shadow-2xl">
               <User className="h-6 w-6 text-accent" /> Yeniden Kayıt Ol
            </Button>
@@ -142,6 +143,23 @@ export default function DashboardPage() {
       case 'admin': return <AdminView user={user} userData={currentViewData} />;
       default: return <StudentView user={{ uid: currentViewData.uid }} userData={currentViewData} />;
     }
+  };
+
+  const getPageTitle = () => {
+    if (isSimulating) return 'ÖĞRENCİ SİMÜLASYONU';
+    if (!userData) return 'PANEL';
+    
+    if (userData.role === 'student') {
+      return `${userData.targetExam || 'AKADEMİK'} PANELİ`;
+    }
+    
+    const roles: Record<string, string> = {
+      'teacher': 'ÖĞRETMEN PANELİ',
+      'school_admin': 'OKUL PANELİ',
+      'admin': 'SİSTEM PANELİ'
+    };
+    
+    return roles[userData.role] || 'HESAP PANELİ';
   };
 
   return (
@@ -200,10 +218,10 @@ export default function DashboardPage() {
             >
               <div className="flex items-center gap-6 relative z-10">
                 <div className="h-16 w-16 rounded-[1.75rem] bg-accent flex items-center justify-center text-white font-black text-3xl italic border-4 border-white/10 shadow-xl">
-                  {userData?.displayName?.charAt(0)}
+                  {userData?.displayName?.charAt(0) || <User className="h-8 w-8" />}
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <p className="text-base font-black truncate tracking-tight text-shadow-deep">{userData?.displayName}</p>
+                  <p className="text-base font-black truncate tracking-tight text-shadow-deep">{userData?.displayName || 'Profil'}</p>
                   <p className="text-[10px] opacity-40 truncate font-black uppercase tracking-widest mt-2">
                     {userData?.role === 'student' ? (userData?.targetExam || 'Profil') : userData?.role?.toUpperCase().replace('_', ' ')}
                   </p>
@@ -229,7 +247,7 @@ export default function DashboardPage() {
               </div>
               <div className="space-y-1">
                  <h1 className="text-4xl font-black text-primary uppercase tracking-tighter italic text-shadow-premium">
-                   {isSimulating ? 'ÖĞRENCİ SİMÜLASYONU' : userData?.role === 'student' ? `${userData?.targetExam || 'LGS'} PANALİ` : `${userData?.role?.toUpperCase().replace('_', ' ')} PANALİ`}
+                   {getPageTitle()}
                  </h1>
                  <div className="flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground italic">
                     <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span> SİSTEM ÇEVRİMİÇİ
@@ -247,7 +265,7 @@ export default function DashboardPage() {
                 onClick={() => setIsProfileDialogOpen(true)}
                 className="h-16 w-16 rounded-[1.5rem] bg-accent overflow-hidden cursor-pointer shadow-2xl transition-all hover:scale-110 flex items-center justify-center font-black text-white text-2xl italic border-4 border-white/20"
               >
-                {userData?.displayName?.charAt(0)}
+                {userData?.displayName?.charAt(0) || <User className="h-8 w-8" />}
               </div>
             </div>
           </header>

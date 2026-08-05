@@ -2,25 +2,30 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
 import { 
   Brain, 
   Sparkles, 
   Zap, 
   Target, 
   TrendingUp, 
-  ShieldCheck, 
-  Cpu, 
-  MessageSquare,
-  ArrowRight,
   ChevronLeft,
   Home
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@/firebase';
 
 export default function AiVisionPage() {
   const router = useRouter();
+  const { user } = useUser();
+
+  const handleHomeClick = () => {
+    if (user) {
+      router.push('/dashboard');
+    } else {
+      router.push('/');
+    }
+  };
 
   const aiFeatures = [
     { 
@@ -57,7 +62,7 @@ export default function AiVisionPage() {
              <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-primary/5 hover:bg-primary hover:text-white transition-all">
                 <ChevronLeft className="h-6 w-6" />
              </Button>
-             <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-primary/5 hover:bg-primary hover:text-white transition-all">
+             <Button variant="ghost" size="icon" onClick={handleHomeClick} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-primary/5 hover:bg-primary hover:text-white transition-all">
                 <Home className="h-6 w-6" />
              </Button>
           </div>

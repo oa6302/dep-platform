@@ -13,7 +13,7 @@ import {
   Settings, Bell, Eye, XCircle, Search, Brain, Headset, 
   Sparkles, Compass, AlertCircle, ChevronRight, Loader2,
   Home, ArrowLeft, BarChart3, ClipboardCheck, Library,
-  Timer, ScrollText, PieChart
+  Timer, ScrollText, PieChart, ArrowRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
@@ -46,19 +46,26 @@ export default function DashboardPage() {
   const currentViewData = simulatedUserData || userData;
   const isSimulating = !!simulatedUserId;
 
-  // Seçilen sınava göre dinamik menü setini oluştur
   const dynamicMenu = useMemo(() => {
-    if (!currentViewData || currentViewData.role !== 'student') return [];
-    const config = EXAM_CONFIGS[currentViewData.targetExam || 'LGS'] || EXAM_CONFIGS['LGS'];
+    if (!currentViewData) return [];
     
-    // Her sınav için standart olanlar + özel modüller
+    // Öğretmen/Admin Menüsü
+    if (currentViewData.role !== 'student') {
+      return [
+        { label: 'Panelim', icon: LayoutDashboard, href: '/dashboard' },
+        { label: 'Uzman Keşfet', icon: Compass, href: '/dashboard/discover' },
+        { label: 'Destek', icon: Headset, href: '/dashboard/contact' },
+      ];
+    }
+
+    // Öğrenci Menüsü (Sınava Özel)
+    const config = EXAM_CONFIGS[currentViewData.targetExam || 'LGS'] || EXAM_CONFIGS['LGS'];
     const items = [
       { label: 'Panelim', icon: LayoutDashboard, href: '/dashboard' },
       { label: 'AI Analiz', icon: Brain, href: '/dashboard/ai-analysis', accent: true },
       { label: 'Uzman Keşfet', icon: Compass, href: '/dashboard/discover' },
     ];
 
-    // Sınava özel ikonik menüler ekle
     config.modules.slice(0, 4).forEach(mod => {
       items.push({ label: mod.title, icon: mod.icon, href: '#' });
     });
@@ -109,10 +116,6 @@ export default function DashboardPage() {
         createdAt: serverTimestamp(),
       }, { merge: true });
       toast({ title: 'Profil Hazır', description: 'Hesabınız yapılandırıldı.' });
-      
-      if (targetRole === 'student') {
-        router.push('/dashboard/select-exam');
-      }
     } catch (error) {
       toast({ variant: 'destructive', title: 'Hata', description: 'Profil oluşturulamadı.' });
     } finally {
@@ -188,10 +191,9 @@ export default function DashboardPage() {
       )}
 
       <div className="grid lg:grid-cols-[340px_1fr] min-h-screen">
-        {/* Dynamic Sidebar */}
         <aside className="bg-primary text-white hidden lg:flex flex-col border-r border-white/5 shadow-[40px_0_100px_-20px_rgba(15,23,42,0.2)] z-50 sticky top-0 h-screen overflow-hidden">
           <div className="p-10">
-            <Link href="/" className="flex items-center gap-5 group">
+            <div onClick={() => router.push('/dashboard')} className="flex items-center gap-5 group cursor-pointer">
               <div className="relative h-16 w-16 overflow-hidden rounded-[1.75rem] bg-white p-2 shadow-[0_20px_40px_-5px_rgba(255,255,255,0.2)] transition-all duration-500 group-hover:rotate-6 group-hover:scale-110">
                 <Image src={logoUrl} alt="DEK Logo" fill className="object-contain" />
               </div>
@@ -199,7 +201,7 @@ export default function DashboardPage() {
                 <span className="font-black text-3xl block tracking-tighter leading-none italic text-shadow-premium uppercase">DEK</span>
                 <span className="text-[9px] opacity-40 block font-black uppercase tracking-[0.3em] mt-2">Geleceğin Eğitim Platformu</span>
               </div>
-            </Link>
+            </div>
           </div>
           
           <nav className="flex-1 px-8 space-y-2 mt-8 overflow-y-auto scrollbar-hide">
@@ -246,7 +248,7 @@ export default function DashboardPage() {
           <header className="h-32 bg-white/70 backdrop-blur-3xl border-b border-primary/5 flex items-center justify-between px-12 sticky top-0 z-40">
             <div className="flex items-center gap-10 flex-1">
               <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-14 w-14 rounded-2xl bg-[#F1F5F9] hover:bg-primary hover:text-white transition-all shadow-sm">
+                <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-14 w-14 rounded-2xl bg-[#F1F5F9] hover:bg-primary hover:text-white transition-all shadow-sm">
                   <Home className="h-6 w-6" />
                 </Button>
                 <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-14 w-14 rounded-2xl bg-[#F1F5F9] hover:bg-primary hover:text-white transition-all shadow-sm">

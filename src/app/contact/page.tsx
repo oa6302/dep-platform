@@ -10,23 +10,30 @@ import {
   Headset, 
   Mail, 
   Phone, 
-  MapPin, 
   Send, 
-  Sparkles, 
   ChevronLeft, 
   Home,
-  MessageSquare,
-  Building,
-  Globe
+  Building
 } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@/firebase';
+import { cn } from '@/lib/utils';
 
 export default function PublicContactPage() {
   const router = useRouter();
+  const { user } = useUser();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+
+  const handleHomeClick = () => {
+    if (user) {
+      router.push('/dashboard');
+    } else {
+      router.push('/');
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +56,7 @@ export default function PublicContactPage() {
              <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-primary/5 hover:bg-primary hover:text-white transition-all">
                 <ChevronLeft className="h-6 w-6" />
              </Button>
-             <Button variant="ghost" size="icon" onClick={() => router.push('/')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-primary/5 hover:bg-primary hover:text-white transition-all">
+             <Button variant="ghost" size="icon" onClick={handleHomeClick} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-primary/5 hover:bg-primary hover:text-white transition-all">
                 <Home className="h-6 w-6" />
              </Button>
           </div>

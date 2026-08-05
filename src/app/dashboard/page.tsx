@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useDoc, useAuth } from '@/firebase';
@@ -7,7 +8,7 @@ import { StudentView } from '@/components/dashboard/student-view';
 import { TeacherView } from '@/components/dashboard/teacher-view';
 import { AdminView } from '@/components/dashboard/admin-view';
 import { SchoolAdminView } from '@/components/dashboard/school-admin-view';
-import { LogOut, LayoutDashboard, Calendar, CheckCircle2, User, Settings, Bell, Eye, XCircle, Search, Brain, Headset } from 'lucide-react';
+import { LogOut, LayoutDashboard, Calendar, CheckCircle2, User, Settings, Bell, Eye, XCircle, Search, Brain, Headset, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
@@ -30,7 +31,11 @@ export default function DashboardPage() {
     if (!authLoading && !user) {
       router.push('/login');
     }
-  }, [user, authLoading, router]);
+    // Student logic: Force exam selection if not set
+    if (!docLoading && userData && userData.role === 'student' && !userData.targetExam && !simulatedUserId) {
+      router.push('/dashboard/select-exam');
+    }
+  }, [user, authLoading, router, userData, docLoading, simulatedUserId]);
 
   if (authLoading || docLoading || (simulatedUserId && simLoading)) {
     return (
@@ -150,6 +155,14 @@ export default function DashboardPage() {
                   Destek Merkezi
                 </Link>
               </Button>
+              {userData?.role === 'student' && (
+                <Button variant="ghost" className="w-full justify-start rounded-2xl bg-accent/10 hover:bg-accent font-black transition-all h-14 group border border-accent/20" asChild>
+                  <Link href="/dashboard/select-exam">
+                    <Sparkles className="mr-4 h-5 w-5 transition-transform group-hover:scale-110 text-accent" />
+                    Hedef Değiştir
+                  </Link>
+                </Button>
+              )}
               <Button variant="ghost" className="w-full justify-start rounded-2xl hover:bg-white/5 font-black transition-all opacity-60 hover:opacity-100 h-14 group">
                 <Settings className="mr-4 h-5 w-5 transition-transform group-hover:scale-110" />
                 Sistem Ayarları
@@ -163,7 +176,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <p className="text-sm font-black truncate tracking-tight">{userData?.displayName}</p>
-                  <p className="text-[9px] opacity-40 truncate font-black uppercase tracking-widest">{roleLabels[userData?.role || 'student']}</p>
+                  <p className="text-[9px] opacity-40 truncate font-black uppercase tracking-widest">{userData?.targetExam || roleLabels[userData?.role || 'student']}</p>
                 </div>
                 <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-destructive rounded-xl transition-all" onClick={handleLogout}>
                   <LogOut className="h-5 w-5" />
@@ -180,6 +193,11 @@ export default function DashboardPage() {
               <h1 className="text-2xl font-black text-primary uppercase tracking-tighter italic shrink-0">
                 {isSimulating ? 'Öğrenci Paneli' : roleLabels[userData?.role] || 'Panel'}
               </h1>
+              {userData?.targetExam && (
+                <div className="px-5 py-2 bg-accent rounded-2xl text-white font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-accent/20 italic">
+                  Aktif Modül: {userData.targetExam}
+                </div>
+              )}
               <div className="relative w-full hidden md:block">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 

@@ -3,13 +3,14 @@
   "entities": {
     "UserProfile": {
       "title": "Kullanıcı Profili",
-      "description": "Öğrenci, Öğretmen ve Yönetici bilgilerini ve rollerini saklar.",
+      "description": "Öğrenci, Öğretmen ve Yönetici bilgilerini, rollerini ve hedef sınavlarını saklar.",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "displayName": { "type": "string" },
         "role": { "type": "string", "enum": ["student", "teacher", "school_admin", "admin"] },
+        "targetExam": { "type": "string", "description": "Kullanıcının hazırlandığı sınav (LGS, YKS, KPSS vb.)" },
         "coachId": { "type": "string", "description": "Öğrenciye atanan koçun UID'si." },
         "activationCode": { "type": "string", "description": "Öğretmenler için benzersiz aktivasyon kodu." },
         "school": { "type": "string" },
@@ -54,7 +55,7 @@
   "firestore": {
     "/users/{userId}": {
       "schema": "UserProfile",
-      "description": "Kullanıcılar (Öğrenci, Öğretmen, Okul Yönetimi, Admin) bu koleksiyonda saklanır."
+      "description": "Kullanıcılar bu koleksiyonda saklanır."
     },
     "/sessions/{sessionId}": {
       "schema": "CoachingSession",

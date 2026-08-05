@@ -1,30 +1,17 @@
+
 'use client';
 
 import { useCollection, useFirestore } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
-  Calendar, 
-  CheckCircle2, 
-  Clock, 
-  TrendingUp, 
-  Target, 
-  Brain, 
-  Award, 
-  Play, 
-  BookOpen, 
-  Zap, 
-  Star,
-  MapPin,
-  LineChart,
-  ClipboardCheck,
-  Library,
-  ArrowRight
+  Calendar, CheckCircle2, Clock, TrendingUp, Target, Brain, Award, Play, BookOpen, Zap, Star, MapPin, LineChart, ClipboardCheck, Library, ArrowRight, Sparkles 
 } from 'lucide-react';
 import { where, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useState, useEffect } from 'react';
+import { EXAM_CONFIGS } from '@/lib/exam-configs';
 
 interface StudentViewProps {
   user: any;
@@ -36,6 +23,8 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const db = useFirestore();
   const [timer, setTimer] = useState(25 * 60);
   const [isActive, setIsActive] = useState(false);
+
+  const examConfig = EXAM_CONFIGS[userData?.targetExam || 'LGS'];
 
   useEffect(() => {
     let interval: any;
@@ -82,15 +71,15 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const pendingTasks = tasks.filter(t => t.status === 'pending');
   const upcomingSessions = sessions.filter(s => s.status === 'scheduled');
 
-  const modules = [
-    { title: "Ders Takibi", icon: BookOpen, color: "bg-blue-500", desc: "Derslerin ve devamsızlık durumun" },
-    { title: "Konu Analizi", icon: LineChart, color: "bg-purple-500", desc: "Başarı haritan" },
-    { title: "Deneme Sonuçları", icon: ClipboardCheck, color: "bg-orange-500", desc: "Tüm sınav analizlerin" },
+  const examModules = [
+    { title: "Ders Takibi", icon: BookOpen, color: "bg-blue-500", desc: `${examConfig.title} derslerin ve devamsızlık durumun` },
+    { title: "Konu Analizi", icon: LineChart, color: "bg-purple-500", desc: "Sınav müfredatına göre başarı haritan" },
+    { title: "Deneme Sonuçları", icon: ClipboardCheck, color: "bg-orange-500", desc: "Tüm deneme ve puan analizlerin" },
     { title: "Çalışma Takvimi", icon: Calendar, color: "bg-green-500", desc: "Akademik takvimin" },
-    { title: "Günlük Hedefler", icon: Target, color: "bg-red-500", desc: "Bugünkü hedeflerin" },
-    { title: "AI Koç", icon: Brain, color: "bg-indigo-500", desc: "Yapay zeka asistanın" },
-    { title: "Dijital Kütüphane", icon: Library, color: "bg-cyan-500", desc: "Binlerce kaynak" },
-    { title: "Başarı Karnesi", icon: Award, color: "bg-yellow-500", desc: "Dijital karnen" },
+    { title: "Günlük Hedefler", icon: Target, color: "bg-red-500", desc: "Bugünkü ders hedeflerin" },
+    { title: "AI Koç", icon: Brain, color: "bg-indigo-500", desc: `${examConfig.title} için yapay zeka asistanın` },
+    { title: "Dijital Kütüphane", icon: Library, color: "bg-cyan-500", desc: "Binlerce sınav odaklı kaynak" },
+    { title: "Başarı Karnesi", icon: Award, color: "bg-yellow-500", desc: "Dijital başarı grafiğin" },
   ];
 
   return (
@@ -105,17 +94,17 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                 {userData?.displayName?.charAt(0) || 'S'}
              </div>
              <div className="absolute -bottom-2 -right-2 h-12 w-12 bg-accent rounded-2xl flex items-center justify-center text-white shadow-xl border-4 border-white">
-                <Star className="h-6 w-6 fill-current" />
+                <examConfig.icon className="h-6 w-6" />
              </div>
           </div>
           <div className="space-y-4">
             <h2 className="text-5xl font-black tracking-tighter italic text-primary text-shadow-deep">{userData?.displayName}</h2>
             <div className="flex flex-wrap gap-4">
               <span className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest px-6 py-2.5 bg-primary/5 text-primary rounded-2xl border border-primary/10 shadow-sm">
-                <BookOpen className="h-4 w-4" /> {userData?.school || 'Sınav Grubu'}
+                <Sparkles className="h-4 w-4 text-accent" /> Hedef: {examConfig.title}
               </span>
               <span className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest px-6 py-2.5 bg-accent/10 text-accent rounded-2xl border border-accent/20 shadow-sm">
-                <Zap className="h-4 w-4" /> {userData?.grade || '12. Sınıf'} - {userData?.branch || 'SAY'}
+                <Zap className="h-4 w-4" /> {userData?.grade || 'Aktif Öğrenci'} - {userData?.branch || 'MF'}
               </span>
             </div>
           </div>
@@ -133,11 +122,23 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
         </div>
       </div>
 
+      {/* Dynamic Exam Lessons Header */}
+      <div className="space-y-8 animate-in slide-in-from-right duration-700">
+        <h3 className="text-3xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep">Derslerin ({examConfig.title})</h3>
+        <div className="flex flex-wrap gap-4">
+          {examConfig.lessons.map((lesson) => (
+            <div key={lesson} className="px-8 py-6 bg-white rounded-[2rem] shadow-xl border border-primary/5 font-black text-sm text-primary italic uppercase tracking-widest hover:bg-primary hover:text-white transition-all cursor-default group">
+              <span className="group-hover:translate-x-1 inline-block transition-transform">{lesson}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Modules Section */}
       <div className="space-y-10">
         <h3 className="text-4xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep">Eğitim Modüllerin</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {modules.map((mod, i) => (
+          {examModules.map((mod, i) => (
             <Card key={i} className="group relative overflow-hidden rounded-[3rem] border-none shadow-[0_30px_60px_-15px_rgba(15,23,42,0.06)] bg-white p-10 transition-all hover:-translate-y-4 hover:shadow-[0_50px_100px_-20px_rgba(15,23,42,0.12)] cursor-pointer">
               <div className={`absolute top-0 right-0 w-32 h-32 ${mod.color} opacity-5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 group-hover:opacity-10 transition-opacity`}></div>
               <div className="space-y-8">
@@ -169,7 +170,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
               <div className="space-y-4 flex-1">
                 <p className="text-[11px] font-black uppercase tracking-[0.3em] text-accent-foreground bg-accent px-6 py-1.5 rounded-full inline-block shadow-xl">AI Koç Önerisi</p>
                 <h3 className="text-3xl font-black italic tracking-tight leading-relaxed text-shadow-deep">
-                  "Matematik-Geometri netlerinde son 3 haftada %12 artış gözlemlendi. Bu hafta Türev konusuna yoğunlaşman kritik."
+                   {examConfig.aiFocus}
                 </h3>
               </div>
               <Button className="h-20 px-12 rounded-[2rem] bg-accent hover:bg-white hover:text-primary transition-all font-black text-sm uppercase tracking-widest shadow-2xl shadow-accent/20 shrink-0">

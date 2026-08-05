@@ -54,7 +54,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const { toast } = useToast();
 
-  const categories = ['ORTAOKUL', 'ÜNİVERSİTE', 'KAMU', 'DİL', 'DİNÎ', 'AKADEMİK', 'ÖZEL'] as const;
+  const categories = ['ORTAOKUL', 'ÜNİVERSİTE', 'KAMU', 'ÜNİVERSİTE GEÇİŞ', 'DİL', 'DİNÎ', 'AKADEMİK', 'ÖZEL'] as const;
 
   const categorizedExams = useMemo(() => {
     const grouped: Record<string, any[]> = {};

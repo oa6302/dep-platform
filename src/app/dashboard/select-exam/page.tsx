@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useFirestore } from '@/firebase';
@@ -19,7 +20,7 @@ export default function SelectExamPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
 
-  const categories = ['ORTAOKUL', 'ÜNİVERSİTE', 'KAMU', 'DİL', 'DİNÎ', 'AKADEMİK', 'ÖZEL'];
+  const categories = ['ORTAOKUL', 'ÜNİVERSİTE', 'KAMU', 'ÜNİVERSİTE GEÇİŞ', 'DİL', 'DİNÎ', 'AKADEMİK', 'ÖZEL'];
 
   const handleSelect = async (examId: string) => {
     if (!user || !db) return;

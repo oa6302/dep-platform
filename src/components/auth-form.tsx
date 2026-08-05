@@ -21,6 +21,7 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { EXAM_CONFIGS } from '@/lib/exam-configs';
 
 interface AuthFormProps {
   mode: 'login' | 'register';
@@ -55,13 +56,27 @@ export function AuthForm({ mode }: AuthFormProps) {
 
   const categories = ['ORTAOKUL', 'ÜNİVERSİTE', 'KAMU', 'ÜNİVERSİTE GEÇİŞ', 'DİL', 'DİNÎ', 'AKADEMİK', 'ÖZEL'] as const;
 
+  // Veritabanından gelen veya varsayılan konfigürasyondan gelen sınavları kategorize et
   const categorizedExams = useMemo(() => {
     const grouped: Record<string, any[]> = {};
+    
+    // Önce veritabanındaki dinamik programları ekle
     dbPrograms.forEach(exam => {
       const cat = exam.category || 'ÖZEL';
       if (!grouped[cat]) grouped[cat] = [];
-      grouped[cat].push(exam);
+      grouped[cat].push({ ...exam, source: 'db' });
     });
+
+    // Eğer veritabanı boşsa veya belirli bir kategori eksikse EXAM_CONFIGS'den tamamla
+    Object.values(EXAM_CONFIGS).forEach(exam => {
+      const cat = exam.category;
+      if (!grouped[cat]) grouped[cat] = [];
+      // Eğer bu ID zaten veritabanından gelmediyse ekle
+      if (!grouped[cat].find(e => e.id === exam.id)) {
+        grouped[cat].push({ ...exam, source: 'config' });
+      }
+    });
+
     return grouped;
   }, [dbPrograms]);
 
@@ -90,15 +105,12 @@ export function AuthForm({ mode }: AuthFormProps) {
         };
 
         if (role === 'teacher') userData.activationCode = generateTeacherCode();
+        if (role === 'student' && targetExam) userData.targetExam = targetExam;
 
         await setDoc(userDocRef, userData);
         toast({ title: 'Hoş Geldiniz', description: `Hesabınız ${role === 'teacher' ? 'Öğretmen' : 'Öğrenci'} olarak oluşturuldu.` });
         
-        if (role === 'student' && !targetExam) {
-          router.push('/dashboard/select-exam');
-        } else {
-          router.push('/dashboard');
-        }
+        router.push('/dashboard');
       } else {
         toast({ title: 'Giriş Başarılı', description: 'Hoş geldiniz!' });
         router.push('/dashboard');
@@ -163,7 +175,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           setDoc(doc(db, 'users', user.uid), userData)
         ]);
 
-        toast({ title: 'Kayıt Başarılı', description: role === 'teacher' ? `Öğretmen hesabınız oluşturuldu. Kodunuz: ${userData.activationCode}` : `Sistem yapılandırıldı.` });
+        toast({ title: 'Kayıt Başarılı', description: role === 'teacher' ? `Öğretmen hesabınız oluşturuldu.` : `Sistem yapılandırıldı.` });
       } else {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: 'Giriş Başarılı', description: 'Hoş geldiniz!' });
@@ -184,8 +196,8 @@ export function AuthForm({ mode }: AuthFormProps) {
           <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 italic">Sistemi Nasıl Kullanacaksınız?</Label>
           <div className="grid grid-cols-3 gap-3">
             {[
-              { id: 'student', label: 'Öğrenci', icon: User },
-              { id: 'teacher', label: 'Öğretmen', icon: UserRound },
+              { id: 'student', label: 'Öğrenci', icon: UserRound },
+              { id: 'teacher', label: 'Öğretmen', icon: Brain },
               { id: 'school_admin', label: 'Okul', icon: Building },
             ].map((r) => (
               <button
@@ -227,6 +239,65 @@ export function AuthForm({ mode }: AuthFormProps) {
 
             {role === 'student' && (
               <div className="space-y-8 animate-in slide-in-from-top duration-500">
+                <div className="space-y-4">
+                  <Label className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2 italic">
+                     <Target className="h-4 w-4 text-accent" /> HEDEF PROGRAMINIZI SEÇİN
+                  </Label>
+                  
+                  <div className="bg-slate-50 p-4 rounded-[2rem] border-2 border-primary/5 shadow-inner">
+                    <ScrollArea className="h-[400px] pr-4">
+                       <div className="space-y-10">
+                          {categories.map((category) => (
+                            categorizedExams[category]?.length > 0 && (
+                              <div key={category} className="space-y-4">
+                                 <div className="flex items-center gap-3">
+                                    <div className="h-1 w-8 bg-accent rounded-full"></div>
+                                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/40">{category}</h3>
+                                 </div>
+                                 <div className="grid grid-cols-1 gap-3">
+                                    {categorizedExams[category]?.map((exam) => {
+                                      const Icon = exam.icon || Grid3X3;
+                                      return (
+                                        <button
+                                          key={exam.id}
+                                          type="button"
+                                          onClick={() => setTargetExam(exam.id)}
+                                          className={cn(
+                                            "flex items-center justify-between p-5 rounded-2xl border-2 transition-all group text-left",
+                                            targetExam === exam.id 
+                                              ? "border-accent bg-white shadow-xl shadow-accent/5 ring-4 ring-accent/5" 
+                                              : "border-white bg-white/50 hover:border-primary/10 hover:bg-white"
+                                          )}
+                                        >
+                                           <div className="flex items-center gap-5">
+                                              <div className={cn(
+                                                "h-12 w-12 rounded-xl flex items-center justify-center transition-all",
+                                                targetExam === exam.id ? "bg-accent text-white" : "bg-primary/5 text-primary"
+                                              )}>
+                                                 <Icon className="h-6 w-6" />
+                                              </div>
+                                              <div>
+                                                 <p className={cn("font-black text-sm uppercase tracking-tight", targetExam === exam.id ? "text-primary" : "text-primary/70")}>{exam.title}</p>
+                                                 <p className="text-[9px] font-bold opacity-40 uppercase tracking-widest">{exam.targetGroup || 'Aktif Müfredat'}</p>
+                                              </div>
+                                           </div>
+                                           {targetExam === exam.id ? (
+                                              <CheckCircle2 className="h-5 w-5 text-accent animate-in zoom-in duration-300" />
+                                           ) : (
+                                              <ChevronRight className="h-4 w-4 text-muted-foreground opacity-20 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                                           )}
+                                        </button>
+                                      );
+                                    })}
+                                 </div>
+                              </div>
+                            )
+                          ))}
+                       </div>
+                    </ScrollArea>
+                  </div>
+                </div>
+
                 <div className="space-y-3">
                    <Label className="text-xs font-black uppercase tracking-widest opacity-60 italic">Kullanım Modu</Label>
                    <RadioGroup value={studentMode} onValueChange={(v: any) => setStudentMode(v)} className="grid grid-cols-2 gap-4">
@@ -236,7 +307,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                       )} onClick={() => setStudentMode('individual')}>
                         <RadioGroupItem value="individual" id="individual" className="hidden" />
                         <CheckCircle2 className={cn("h-5 w-5", studentMode === 'individual' ? "text-accent" : "text-muted-foreground")} />
-                        <Label htmlFor="individual" className="font-black text-[10px] uppercase tracking-widest cursor-pointer">Bireysel Devam Et</Label>
+                        <Label htmlFor="individual" className="font-black text-[10px] uppercase tracking-widest cursor-pointer">Bireysel</Label>
                       </div>
                       <div className={cn(
                         "flex items-center space-x-2 rounded-xl p-4 border-2 transition-all cursor-pointer shadow-sm",
@@ -244,7 +315,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                       )} onClick={() => setStudentMode('connected')}>
                         <RadioGroupItem value="connected" id="connected" className="hidden" />
                         <UserRound className={cn("h-5 w-5", studentMode === 'connected' ? "text-white" : "text-muted-foreground")} />
-                        <Label htmlFor="connected" className="font-black text-[10px] uppercase tracking-widest cursor-pointer">Öğretmene Bağlan</Label>
+                        <Label htmlFor="connected" className="font-black text-[10px] uppercase tracking-widest cursor-pointer">Öğretmenli</Label>
                       </div>
                    </RadioGroup>
                 </div>
@@ -267,66 +338,6 @@ export function AuthForm({ mode }: AuthFormProps) {
                     </div>
                   </div>
                 )}
-
-                <div className="space-y-4">
-                  <Label className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2 italic">
-                     <Target className="h-4 w-4 text-accent" /> HEDEF PROGRAMINIZI SEÇİN
-                  </Label>
-                  
-                  <div className="bg-slate-50 p-4 rounded-[2rem] border-2 border-primary/5 shadow-inner">
-                    <ScrollArea className="h-[450px] pr-4">
-                       {programsLoading ? (
-                         <div className="py-20 text-center opacity-30 animate-pulse font-black uppercase tracking-widest text-xs italic">Müfredat Motoru Hazırlanıyor...</div>
-                       ) : (
-                         <div className="space-y-10">
-                            {categories.map((category) => (
-                              categorizedExams[category] && (
-                                <div key={category} className="space-y-4">
-                                   <div className="flex items-center gap-3">
-                                      <div className="h-1 w-8 bg-accent rounded-full"></div>
-                                      <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/40">{category}</h3>
-                                   </div>
-                                   <div className="grid grid-cols-1 gap-3">
-                                      {categorizedExams[category]?.map((exam) => (
-                                        <button
-                                          key={exam.id}
-                                          type="button"
-                                          onClick={() => setTargetExam(exam.id)}
-                                          className={cn(
-                                            "flex items-center justify-between p-5 rounded-2xl border-2 transition-all group text-left",
-                                            targetExam === exam.id 
-                                              ? "border-accent bg-white shadow-xl shadow-accent/5 ring-4 ring-accent/5" 
-                                              : "border-white bg-white/50 hover:border-primary/10 hover:bg-white"
-                                          )}
-                                        >
-                                           <div className="flex items-center gap-5">
-                                              <div className={cn(
-                                                "h-12 w-12 rounded-xl flex items-center justify-center transition-all",
-                                                targetExam === exam.id ? "bg-accent text-white" : "bg-primary/5 text-primary"
-                                              )}>
-                                                 <Grid3X3 className="h-6 w-6" />
-                                              </div>
-                                              <div>
-                                                 <p className={cn("font-black text-sm uppercase tracking-tight", targetExam === exam.id ? "text-primary" : "text-primary/70")}>{exam.title}</p>
-                                                 <p className="text-[9px] font-bold opacity-40 uppercase tracking-widest">{exam.targetGroup || 'Aktif Müfredat'}</p>
-                                              </div>
-                                           </div>
-                                           {targetExam === exam.id ? (
-                                              <CheckCircle2 className="h-5 w-5 text-accent animate-in zoom-in duration-300" />
-                                           ) : (
-                                              <ChevronRight className="h-4 w-4 text-muted-foreground opacity-20 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                                           )}
-                                        </button>
-                                      ))}
-                                   </div>
-                                </div>
-                              )
-                            ))}
-                         </div>
-                       )}
-                    </ScrollArea>
-                  </div>
-                </div>
               </div>
             )}
 

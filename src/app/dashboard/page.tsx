@@ -71,17 +71,14 @@ export default function DashboardPage() {
     if (!authLoading && !user) {
       router.push('/login');
     }
-    if (!docLoading && userData && userData.role === 'student' && !userData.targetExam && !simulatedUserId) {
-      router.push('/dashboard/select-exam');
-    }
-  }, [user, authLoading, router, userData, docLoading, simulatedUserId]);
+  }, [user, authLoading, router]);
 
   if (authLoading || docLoading || (simulatedUserId && simLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
         <div className="flex flex-col items-center gap-8">
           <div className="h-20 w-20 animate-spin rounded-[2.5rem] border-[6px] border-accent border-t-transparent shadow-[0_0_60px_rgba(245,158,11,0.2)]" />
-          <p className="text-[10px] text-primary font-black uppercase tracking-[0.5em] animate-pulse italic">Müfredat Motoru Yapılandırılıyor...</p>
+          <p className="text-[10px] text-primary font-black uppercase tracking-[0.5em] animate-pulse italic">Akademik Motor Hazırlanıyor...</p>
         </div>
       </div>
     );
@@ -111,8 +108,11 @@ export default function DashboardPage() {
         role: targetRole,
         createdAt: serverTimestamp(),
       }, { merge: true });
-      toast({ title: 'Profil Hazır', description: 'Hesabınız yapılandırıldı, lütfen sayfayı yenileyin.' });
-      window.location.reload();
+      toast({ title: 'Profil Hazır', description: 'Hesabınız yapılandırıldı.' });
+      
+      if (targetRole === 'student') {
+        router.push('/dashboard/select-exam');
+      }
     } catch (error) {
       toast({ variant: 'destructive', title: 'Hata', description: 'Profil oluşturulamadı.' });
     } finally {
@@ -143,6 +143,23 @@ export default function DashboardPage() {
            </div>
         </div>
       );
+    }
+
+    if (currentViewData.role === 'student' && !currentViewData.targetExam && !isSimulating) {
+       return (
+         <div className="p-20 flex flex-col items-center justify-center text-center space-y-12 animate-in fade-in zoom-in-95 duration-1000">
+            <div className="h-24 w-24 rounded-[2.5rem] bg-accent/10 flex items-center justify-center shadow-inner">
+               <Sparkles className="h-12 w-12 text-accent" />
+            </div>
+            <div className="space-y-4">
+               <h2 className="text-5xl font-black text-primary tracking-tighter uppercase italic">Hedef Seçilmedi</h2>
+               <p className="text-muted-foreground font-medium italic max-w-md mx-auto">Dashboard'unuzu yapılandırmak için bir eğitim programı seçmelisiniz.</p>
+            </div>
+            <Button onClick={() => router.push('/dashboard/select-exam')} className="h-20 px-12 rounded-[2rem] bg-primary hover:bg-accent font-black uppercase text-xs tracking-widest gap-4 shadow-2xl transition-all">
+               Hedef Belirle <ArrowRight className="h-6 w-6" />
+            </Button>
+         </div>
+       );
     }
 
     switch (currentViewData.role) {
@@ -180,7 +197,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <span className="font-black text-3xl block tracking-tighter leading-none italic text-shadow-premium uppercase">DEK</span>
-                <span className="text-[9px] opacity-40 block font-black uppercase tracking-[0.3em] mt-2">Dinamik Sınav Motoru</span>
+                <span className="text-[9px] opacity-40 block font-black uppercase tracking-[0.3em] mt-2">Geleceğin Eğitim Platformu</span>
               </div>
             </Link>
           </div>
@@ -238,7 +255,7 @@ export default function DashboardPage() {
               </div>
               <div className="space-y-1">
                  <h1 className="text-3xl font-black text-primary uppercase tracking-tighter italic text-shadow-premium">
-                   {isSimulating ? 'Öğrenci Simülasyonu' : userData?.targetExam ? `${userData.targetExam} Paneli` : 'Dashboard'}
+                   {isSimulating ? 'Öğrenci Simülasyonu' : userData?.targetExam ? `${userData.targetExam} Paneli` : 'Panelim'}
                  </h1>
                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground italic">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Sistem Çevrimiçi

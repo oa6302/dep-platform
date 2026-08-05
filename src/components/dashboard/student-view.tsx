@@ -73,7 +73,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
             <h2 className="text-5xl font-black tracking-tighter italic text-primary text-shadow-deep leading-none">{userData?.displayName}</h2>
             <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
               <span className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest px-6 py-2.5 bg-primary/5 text-primary rounded-2xl border border-primary/10 shadow-sm">
-                <Sparkles className="h-4 w-4 text-accent" /> Hedef: {examConfig.title}
+                <Sparkles className="h-4 w-4 text-accent" /> {examConfig.title}
               </span>
               <span className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest px-6 py-2.5 bg-accent/10 text-accent rounded-2xl border border-accent/20 shadow-sm">
                 <Zap className="h-4 w-4" /> {examConfig.category}
@@ -84,12 +84,12 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
         <div className="flex gap-12 relative z-10 bg-[#F8FAFC] p-10 rounded-[3rem] border border-primary/5 shadow-inner">
           <div className="text-center">
             <p className="text-5xl font-black text-primary tracking-tighter text-shadow-deep">%{Math.floor(Math.random() * 20) + 70}</p>
-            <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mt-1">Uyum Skoru</p>
+            <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mt-1">AI Uyum Skoru</p>
           </div>
           <div className="w-px h-20 bg-primary/10 self-center"></div>
           <div className="text-center">
             <p className="text-5xl font-black text-accent tracking-tighter text-shadow-accent">S</p>
-            <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mt-1">Seviye</p>
+            <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mt-1">Akademik Seviye</p>
           </div>
         </div>
       </div>
@@ -97,8 +97,8 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
       {/* Dinamik Modüller - Sınava Göre Değişen Bölümler */}
       <div className="space-y-10">
         <div className="flex items-center justify-between">
-           <h3 className="text-4xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep">Aktif Eğitim Paneli</h3>
-           <Badge variant="outline" className="h-10 px-6 rounded-full font-black text-[10px] uppercase tracking-widest bg-white shadow-sm">{examConfig.title} Müfredatı</Badge>
+           <h3 className="text-4xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep">Eğitim Kütüphanem</h3>
+           <Badge variant="outline" className="h-10 px-6 rounded-full font-black text-[10px] uppercase tracking-widest bg-white shadow-sm">{examConfig.title} Aktif Modülleri</Badge>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">

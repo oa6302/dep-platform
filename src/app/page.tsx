@@ -25,6 +25,7 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function HomePage() {
   const { user, loading } = useUser();
@@ -32,6 +33,8 @@ export default function HomePage() {
   const { toast } = useToast();
   const [seeding, setSeeding] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl || "https://picsum.photos/seed/edu-logo-102/400/400";
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -76,7 +79,7 @@ export default function HomePage() {
         <div className="container mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-4 group">
             <div className="relative h-12 w-12 overflow-hidden rounded-2xl bg-white p-1 shadow-2xl transition-all group-hover:rotate-6">
-              <Image src="/logo.png" alt="Logo" fill className="object-contain" />
+              <Image src={logoUrl} alt="DEK Logo" fill className="object-contain" data-ai-hint="education logo" />
             </div>
             <div className="hidden sm:block">
               <span className="font-black text-2xl block text-primary leading-tight tracking-tighter italic text-shadow-premium uppercase">DEK</span>
@@ -220,7 +223,7 @@ export default function HomePage() {
           <div className="col-span-2 space-y-12">
             <Link href="/" className="flex items-center gap-5 group">
               <div className="relative h-16 w-16 overflow-hidden rounded-[1.5rem] bg-white p-1 shadow-2xl transition-transform group-hover:rotate-6">
-                <Image src="/logo.png" alt="Logo" fill className="object-contain" />
+                <Image src={logoUrl} alt="Logo" fill className="object-contain" />
               </div>
               <div className="space-y-1">
                 <span className="font-black text-4xl tracking-tighter block leading-none italic text-shadow-premium uppercase">DEK</span>

@@ -6,6 +6,12 @@
       "description": "Dijital Eğitim Koçu Resmi Logosu - Mavi ve Altın Sarısı Eğitim Temalı",
       "imageUrl": "https://picsum.photos/seed/edu-logo-102/400/400",
       "imageHint": "education logo blue gold"
+    },
+    {
+      "id": "default-avatar",
+      "description": "Varsayılan kullanıcı profil fotoğrafı",
+      "imageUrl": "https://picsum.photos/seed/avatar-99/200/200",
+      "imageHint": "user profile avatar"
     }
   ]
 }

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useDoc, useAuth, useFirestore } from '@/firebase';
@@ -21,6 +22,8 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { ProfileEditDialog } from '@/components/profile-edit-dialog';
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useUser();
@@ -31,11 +34,15 @@ export default function DashboardPage() {
   const searchParams = useSearchParams();
   const simulatedUserId = searchParams.get('simulate');
   const [fixingProfile, setFixingProfile] = useState(false);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
 
   const userDocQuery = user?.uid ? `users/${user.uid}` : null;
   const { data: userData, loading: docLoading } = useDoc<any>(userDocQuery);
   
   const { data: simulatedUserData, loading: simLoading } = useDoc<any>(simulatedUserId ? `users/${simulatedUserId}` : null);
+
+  const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl || "https://picsum.photos/seed/edu-logo-102/400/400";
+  const defaultAvatar = PlaceHolderImages.find(img => img.id === 'default-avatar')?.imageUrl || "https://picsum.photos/seed/avatar-99/200/200";
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -138,14 +145,7 @@ export default function DashboardPage() {
       case 'admin':
         return <AdminView user={user} userData={currentViewData} />;
       default:
-        return (
-          <div className="p-20 text-center space-y-6">
-            <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-destructive text-white font-black text-xs uppercase tracking-widest shadow-2xl">
-              <AlertCircle className="h-4 w-4" /> Yetkilendirme Hatası
-            </div>
-            <p className="text-xl font-black text-primary italic uppercase tracking-tighter text-shadow-deep">Bilinmeyen Kullanıcı Rolü: {role}</p>
-          </div>
-        );
+        return null;
     }
   };
 
@@ -171,7 +171,7 @@ export default function DashboardPage() {
           <div className="p-10">
             <Link href="/" className="flex items-center gap-5 group">
               <div className="relative h-16 w-16 overflow-hidden rounded-[1.75rem] bg-white p-1.5 shadow-[0_20px_40px_-5px_rgba(255,255,255,0.2)] transition-all duration-500 group-hover:rotate-6 group-hover:scale-110">
-                <Image src="/logo.png" alt="DEK Logo" fill className="object-contain" />
+                <Image src={logoUrl} alt="DEK Logo" fill className="object-contain" data-ai-hint="education logo" />
               </div>
               <div className="overflow-hidden">
                 <span className="font-black text-3xl block tracking-tighter leading-none italic text-shadow-premium uppercase">DEK</span>
@@ -199,17 +199,24 @@ export default function DashboardPage() {
           </nav>
 
           <div className="p-8 mt-auto">
-            <div className="p-6 bg-white/5 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden group/profile">
+            <div 
+              onClick={() => setIsProfileDialogOpen(true)}
+              className="p-6 bg-white/5 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden group/profile cursor-pointer hover:bg-white/10 transition-all"
+            >
               <div className="absolute top-0 right-0 w-24 h-24 bg-accent/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 group-hover/profile:bg-accent/20 transition-all"></div>
               <div className="flex items-center gap-4 relative z-10">
-                <div className="h-14 w-14 rounded-2xl bg-accent flex items-center justify-center text-white font-black shadow-xl shadow-accent/20 text-2xl italic border-4 border-white/10 transition-transform group-hover/profile:rotate-3">
-                  {userData?.displayName?.charAt(0) || user?.displayName?.charAt(0) || 'U'}
+                <div className="h-14 w-14 rounded-2xl bg-accent overflow-hidden flex items-center justify-center text-white font-black shadow-xl shadow-accent/20 text-2xl italic border-4 border-white/10 transition-transform group-hover/profile:rotate-3">
+                  {userData?.photoUrl ? (
+                    <Image src={userData.photoUrl} alt="Profil" fill className="object-cover" unoptimized />
+                  ) : (
+                    userData?.displayName?.charAt(0) || user?.displayName?.charAt(0) || 'U'
+                  )}
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <p className="text-sm font-black truncate tracking-tight text-shadow-deep">{userData?.displayName || user?.displayName}</p>
                   <p className="text-[9px] opacity-40 truncate font-black uppercase tracking-widest mt-0.5">{userData?.targetExam || roleLabels[userData?.role || 'student']}</p>
                 </div>
-                <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-destructive rounded-xl transition-all shadow-sm" onClick={handleLogout}>
+                <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-destructive rounded-xl transition-all shadow-sm" onClick={(e) => { e.stopPropagation(); handleLogout(); }}>
                   <LogOut className="h-5 w-5" />
                 </Button>
               </div>
@@ -264,6 +271,18 @@ export default function DashboardPage() {
                 <Bell className="h-7 w-7 text-primary group-hover:text-accent transition-colors" />
                 {!isSimulating && <span className="absolute top-4 right-4 h-3.5 w-3.5 bg-accent rounded-full border-[4px] border-white shadow-xl animate-bounce"></span>}
               </Button>
+              
+              <div 
+                onClick={() => setIsProfileDialogOpen(true)}
+                className="h-14 w-14 rounded-2xl bg-accent overflow-hidden cursor-pointer shadow-xl transition-all hover:scale-110 relative"
+              >
+                {userData?.photoUrl ? (
+                  <Image src={userData.photoUrl} alt="Avatar" fill className="object-cover" unoptimized />
+                ) : (
+                  <div className="flex items-center justify-center h-full w-full font-black text-white">{userData?.displayName?.charAt(0)}</div>
+                )}
+              </div>
+
               <div className="lg:hidden">
                 <Button variant="ghost" size="icon" className="h-14 w-14 rounded-2xl bg-destructive/5 text-destructive" onClick={handleLogout}>
                   <LogOut className="h-7 w-7" />
@@ -277,6 +296,12 @@ export default function DashboardPage() {
           </div>
         </main>
       </div>
+
+      <ProfileEditDialog 
+        isOpen={isProfileDialogOpen} 
+        onOpenChange={setIsProfileDialogOpen} 
+        userData={userData} 
+      />
     </div>
   );
 }

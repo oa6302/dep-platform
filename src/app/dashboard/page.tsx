@@ -8,7 +8,7 @@ import { StudentView } from '@/components/dashboard/student-view';
 import { TeacherView } from '@/components/dashboard/teacher-view';
 import { AdminView } from '@/components/dashboard/admin-view';
 import { SchoolAdminView } from '@/components/dashboard/school-admin-view';
-import { LogOut, LayoutDashboard, Calendar, CheckCircle2, User, Settings, Bell, Eye, XCircle, Search, Brain, Headset, Sparkles } from 'lucide-react';
+import { LogOut, LayoutDashboard, Calendar, CheckCircle2, User, Settings, Bell, Eye, XCircle, Search, Brain, Headset, Sparkles, Compass } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
@@ -118,7 +118,7 @@ export default function DashboardPage() {
                   />
                 </div>
                 <div className="overflow-hidden">
-                  <span className="font-black text-2xl block tracking-tighter leading-none italic">DEK</span>
+                  <span className="font-black text-2xl block tracking-tighter leading-none italic text-shadow-premium uppercase">DEK</span>
                   <span className="text-[8px] opacity-40 block font-black uppercase tracking-[0.2em] mt-1">Dijital Eğitim Koçu</span>
                 </div>
               </Link>
@@ -137,6 +137,14 @@ export default function DashboardPage() {
                   AI Asistanım
                 </Link>
               </Button>
+              {userData?.role === 'student' && (
+                <Button variant="ghost" className="w-full justify-start rounded-2xl hover:bg-white/5 font-black transition-all opacity-60 hover:opacity-100 h-14 group" asChild>
+                  <Link href="/dashboard/discover">
+                    <Compass className="mr-4 h-5 w-5 transition-transform group-hover:scale-110 text-accent" />
+                    Uzman Keşfet
+                  </Link>
+                </Button>
+              )}
               <Button variant="ghost" className="w-full justify-start rounded-2xl hover:bg-white/5 font-black transition-all opacity-60 hover:opacity-100 h-14 group">
                 <Calendar className="mr-4 h-5 w-5 transition-transform group-hover:scale-110" />
                 Takvim
@@ -190,7 +198,7 @@ export default function DashboardPage() {
         <main className="flex flex-col relative">
           <header className="h-28 bg-white/70 backdrop-blur-2xl border-b border-primary/5 flex items-center justify-between px-10 sticky top-0 z-40">
             <div className="flex items-center gap-10 flex-1 max-w-2xl">
-              <h1 className="text-2xl font-black text-primary uppercase tracking-tighter italic shrink-0">
+              <h1 className="text-2xl font-black text-primary uppercase tracking-tighter italic shrink-0 text-shadow-premium">
                 {isSimulating ? 'Öğrenci Paneli' : roleLabels[userData?.role] || 'Panel'}
               </h1>
               {userData?.targetExam && (

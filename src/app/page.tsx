@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -39,7 +40,8 @@ import {
   Lock,
   Code2,
   HardDrive,
-  Bell
+  Bell,
+  UserCheck
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { doc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -91,6 +93,13 @@ export default function HomePage() {
         email: 'mehmet@test.com',
         role: 'teacher',
         activationCode: 'DK-TR7X-5K92',
+        branch: 'Matematik',
+        targetExam: 'YKS',
+        experience: 12,
+        rating: 4.9,
+        reviewCount: 154,
+        badges: ['verified', 'diploma', 'premium'],
+        bio: 'Boğaziçi Mezunu, 12 yıllık YKS hazırlık tecrübesi ile öğrencilere koçluk yapmaktayım.',
         createdAt: serverTimestamp(),
       });
 
@@ -104,6 +113,7 @@ export default function HomePage() {
         school: 'Atatürk Lisesi',
         grade: '12. Sınıf',
         branch: 'SAY',
+        targetExam: 'YKS',
         createdAt: serverTimestamp(),
       });
 
@@ -117,7 +127,7 @@ export default function HomePage() {
         createdAt: serverTimestamp(),
       });
 
-      toast({ title: 'Sistem Hazır', description: 'Örnek veriler başarıyla oluşturuldu.' });
+      toast({ title: 'Sistem Hazır', description: 'Örnek veriler (Keşfedilebilir Uzmanlar dahil) oluşturuldu.' });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Hata', description: error.message });
     } finally {
@@ -134,7 +144,7 @@ export default function HomePage() {
         { icon: Brain, title: "AI Eğitim Koçu", desc: "Öğrenme stilini analiz eden kişiye özel asistan." },
         { icon: Calendar, title: "Akıllı Ders Planı", desc: "Zayıf konularına odaklanan dinamik takvim." },
         { icon: BarChart3, title: "Deneme Analizi", desc: "Sınav sonuçlarını derinlemesine analiz eder." },
-        { icon: Target, title: "Hedef Yönetimi", desc: "Kısa ve uzun vadeli akademik hedeflerini izle." },
+        { icon: UserCheck, title: "Uzman Keşfet", desc: "Sana en uygun koç ve öğretmeni AI ile bul." },
       ]
     },
     teacher: {
@@ -184,7 +194,7 @@ export default function HomePage() {
               <Image src="/logo.png" alt="Logo" fill className="object-contain" />
             </div>
             <div className="hidden sm:block">
-              <span className="font-black text-2xl block text-primary leading-tight tracking-tighter italic text-shadow-deep uppercase">DEK</span>
+              <span className="font-black text-2xl block text-primary leading-tight tracking-tighter italic text-shadow-premium uppercase">DEK</span>
               <span className="text-[9px] text-muted-foreground block font-black uppercase tracking-[0.2em] opacity-40">Dijital Eğitim Koçu</span>
             </div>
           </Link>
@@ -265,7 +275,7 @@ export default function HomePage() {
                        <div className="h-12 w-12 rounded-2xl bg-accent flex items-center justify-center shadow-2xl">
                           <TrendingUp className="h-7 w-7" />
                        </div>
-                       <span className="font-black text-xl italic tracking-tight uppercase text-shadow-deep">Akademik Başarı</span>
+                       <span className="font-black text-xl italic tracking-tight uppercase text-shadow-premium">Akademik Başarı</span>
                     </div>
                  </div>
                  <div className="p-12 grid grid-cols-2 gap-10">
@@ -298,7 +308,7 @@ export default function HomePage() {
                              <Brain className="h-10 w-10 text-accent" />
                           </div>
                           <div className="space-y-2">
-                             <p className="font-black text-white text-2xl italic tracking-tight text-shadow-deep uppercase">AI Koç Tavsiyesi</p>
+                             <p className="font-black text-white text-2xl italic tracking-tight text-shadow-premium uppercase">AI Koç Tavsiyesi</p>
                              <p className="text-white/60 font-medium">Bu hafta Türev sorularına odaklanmalısın.</p>
                           </div>
                        </div>
@@ -315,7 +325,7 @@ export default function HomePage() {
         <section id="features" className="py-40 bg-white relative overflow-hidden">
           <div className="container mx-auto px-6">
             <div className="text-center max-w-4xl mx-auto mb-20 space-y-8">
-               <div className="inline-block px-6 py-2 rounded-full bg-primary text-white font-black text-[10px] uppercase tracking-widest">Özellikler</div>
+               <div className="inline-block px-6 py-2 rounded-full bg-primary text-white font-black text-[10px] uppercase tracking-widest shadow-xl">Özellikler</div>
                <h2 className="text-6xl md:text-8xl font-black text-primary tracking-tighter leading-none italic text-shadow-premium uppercase">Yapay Zeka ile <br /><span className="text-accent text-shadow-accent">Daha Akıllı</span> Eğitim.</h2>
                <p className="text-2xl text-muted-foreground font-medium leading-relaxed italic">Başarı tesadüf değildir, doğru analiz edilmiş bir süreçtir.</p>
             </div>
@@ -341,10 +351,10 @@ export default function HomePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     {group.items.map((item, i) => (
                       <div key={i} className="group p-10 bg-[#F8FAFC] rounded-[3rem] border border-primary/5 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
-                        <div className="h-16 w-16 rounded-2xl bg-primary/5 flex items-center justify-center mb-8 group-hover:bg-accent group-hover:text-white transition-all">
+                        <div className="h-16 w-16 rounded-2xl bg-primary/5 flex items-center justify-center mb-8 group-hover:bg-accent group-hover:text-white transition-all shadow-inner">
                           <item.icon className="h-8 w-8" />
                         </div>
-                        <h3 className="text-xl font-black text-primary mb-4 tracking-tight italic text-shadow-deep uppercase">{item.title}</h3>
+                        <h3 className="text-xl font-black text-primary mb-4 tracking-tight italic text-shadow-premium uppercase">{item.title}</h3>
                         <p className="text-muted-foreground leading-relaxed font-medium text-sm mb-6 opacity-70 italic">{item.desc}</p>
                       </div>
                     ))}
@@ -364,7 +374,7 @@ export default function HomePage() {
           <div className="container mx-auto px-6 text-center max-w-3xl">
             <div className="bg-white p-16 rounded-[4rem] shadow-[0_60px_120px_-30px_rgba(15,23,42,0.1)] border border-primary/5 space-y-12">
               <div className="space-y-4">
-                 <h3 className="text-4xl font-black text-primary tracking-tighter italic uppercase text-shadow-deep">Sistemi Başlat</h3>
+                 <h3 className="text-4xl font-black text-primary tracking-tighter italic uppercase text-shadow-premium">Sistemi Başlat</h3>
                  <p className="text-xl text-muted-foreground font-medium italic">Platformu tüm rolleriyle test etmek için örnek verileri yükleyin.</p>
               </div>
               <Button 
@@ -389,7 +399,7 @@ export default function HomePage() {
                 <Image src="/logo.png" alt="Logo" fill className="object-contain" />
               </div>
               <div className="space-y-1">
-                <span className="font-black text-4xl tracking-tighter block leading-none italic text-shadow-deep uppercase">DEK</span>
+                <span className="font-black text-4xl tracking-tighter block leading-none italic text-shadow-premium uppercase">DEK</span>
                 <span className="text-[11px] text-white/40 font-black uppercase tracking-[0.2em]">Dijital Eğitim Koçu</span>
               </div>
             </Link>

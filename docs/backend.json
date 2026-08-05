@@ -15,8 +15,15 @@
         "activationCode": { "type": "string", "description": "Öğretmenler için benzersiz aktivasyon kodu." },
         "school": { "type": "string" },
         "grade": { "type": "string" },
-        "branch": { "type": "string" },
-        "bio": { "type": "string" },
+        "branch": { "type": "string", "description": "Öğretmenin uzmanlık alanı veya öğrencinin bölümü." },
+        "bio": { "type": "string", "description": "Uzman hakkında kısa bilgi." },
+        "experience": { "type": "number", "description": "Deneyim yılı." },
+        "rating": { "type": "number", "description": "Ortalama başarı puanı." },
+        "reviewCount": { "type": "number", "description": "Toplam değerlendirme sayısı." },
+        "badges": { "type": "array", "items": { "type": "string" }, "description": "Rozetler: verified, diploma, premium vb." },
+        "coachType": { "type": "string", "description": "Akademik, Sınav, Motivasyon vb." },
+        "meetingType": { "type": "string", "enum": ["online", "physical", "both"] },
+        "photoUrl": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "email", "role"]
@@ -47,6 +54,19 @@
         "status": { "type": "string", "enum": ["pending", "completed"] }
       },
       "required": ["studentId", "title", "status"]
+    },
+    "ConnectionRequest": {
+      "title": "Bağlantı İsteği",
+      "description": "Öğrenci ve öğretmen arasındaki eşleşme talebi.",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "teacherId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentId", "teacherId", "status"]
     }
   },
   "auth": {
@@ -64,6 +84,10 @@
     "/tasks/{taskId}": {
       "schema": "Task",
       "description": "Öğrenci görevleri."
+    },
+    "/requests/{requestId}": {
+      "schema": "ConnectionRequest",
+      "description": "Bağlantı talepleri."
     }
   }
 }

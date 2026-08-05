@@ -53,7 +53,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const { toast } = useToast();
 
-  const categories = ['ORTAOKUL', 'ÜNİVERSİTE', 'KAMU', 'DİL', 'DİNÎ', 'AKADEMİK', 'ÖZEL'];
+  const categories = ['ORTAOKUL', 'ÜNİVERSİTE', 'KAMU', 'DİL', 'DİNÎ', 'AKADEMİK', 'ÖZEL'] as const;
 
   const categorizedExams = useMemo(() => {
     const grouped: Record<string, any[]> = {};
@@ -138,7 +138,8 @@ export function AuthForm({ mode }: AuthFormProps) {
           userData.activationCode = generateTeacherCode();
           userData.school = schoolName;
         } else if (role === 'student') {
-          userData.targetExam = targetExam;
+          // Normalize prefix
+          userData.targetExam = targetExam.replace('fav-', '');
           if (coachId) userData.coachId = coachId;
         } else if (role === 'school_admin') {
           userData.school = schoolName;
@@ -149,7 +150,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           setDoc(doc(db, 'users', user.uid), userData)
         ]);
 
-        toast({ title: 'Kayıt Başarılı', description: role === 'teacher' ? `Öğretmen hesabınız oluşturuldu. Kodunuz: ${userData.activationCode}` : `Sistem ${targetExam} moduna göre yapılandırıldı.` });
+        toast({ title: 'Kayıt Başarılı', description: role === 'teacher' ? `Öğretmen hesabınız oluşturuldu. Kodunuz: ${userData.activationCode}` : `Sistem ${userData.targetExam} moduna göre yapılandırıldı.` });
       } else {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: 'Giriş Başarılı', description: 'Hoş geldiniz!' });
@@ -268,8 +269,8 @@ export function AuthForm({ mode }: AuthFormProps) {
                              <SelectLabel className="text-[10px] font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2 p-4">
                                 <Star className="h-3 w-3 fill-current" /> Favoriler & Son Kullanılan
                              </SelectLabel>
-                             <SelectItem key="fav-LGS" value="LGS" className="font-black py-3 px-6 hover:bg-accent/10">LGS (Ortaokul)</SelectItem>
-                             <SelectItem key="fav-YKS" value="YKS" className="font-black py-3 px-6 hover:bg-accent/10">YKS (Üniversite)</SelectItem>
+                             <SelectItem key="fav-LGS" value="fav-LGS" className="font-black py-3 px-6 hover:bg-accent/10">LGS (Ortaokul)</SelectItem>
+                             <SelectItem key="fav-YKS" value="fav-YKS" className="font-black py-3 px-6 hover:bg-accent/10">YKS (Üniversite)</SelectItem>
                           </SelectGroup>
                           
                           <SelectSeparator className="bg-primary/5" />

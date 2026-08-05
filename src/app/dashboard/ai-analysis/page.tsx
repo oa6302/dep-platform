@@ -5,14 +5,16 @@ import { useState, useEffect } from 'react';
 import { handleGetAiInsights } from '@/app/actions';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Brain, Sparkles, TrendingUp, Target, AlertTriangle, Lightbulb, ArrowRight, Loader2, RefreshCcw, CheckCircle2 } from 'lucide-react';
+import { Brain, Sparkles, TrendingUp, Target, AlertTriangle, Lightbulb, ArrowRight, Loader2, RefreshCcw, CheckCircle2, Home, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { GenerateAiInsightsOutput } from '@/ai/flows/generate-ai-insights';
+import { useRouter } from 'next/navigation';
 
 export default function AiAnalysisPage() {
   const { user } = useUser();
+  const router = useRouter();
   const { data: userData } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
   const [insights, setInsights] = useState<GenerateAiInsightsOutput | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,13 +62,35 @@ export default function AiAnalysisPage() {
   return (
     <div className="p-6 lg:p-10 space-y-12 max-w-7xl mx-auto w-full animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-white font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20">
-            <Sparkles className="h-3 w-3" /> Canlı Analiz Aktif
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => router.back()} 
+              className="h-12 w-12 rounded-xl bg-slate-100 hover:bg-primary hover:text-white transition-all shadow-sm"
+              title="Geri Dön"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => router.push('/')} 
+              className="h-12 w-12 rounded-xl bg-slate-100 hover:bg-primary hover:text-white transition-all shadow-sm"
+              title="Ana Sayfa"
+            >
+              <Home className="h-5 w-5" />
+            </Button>
           </div>
-          <h2 className="text-5xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-deep">
-            Yapay Zeka <br /><span className="text-accent text-shadow-accent">Analiz Merkezi</span>
-          </h2>
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-white font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20">
+              <Sparkles className="h-3 w-3" /> Canlı Analiz Aktif
+            </div>
+            <h2 className="text-5xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-deep">
+              Yapay Zeka <br /><span className="text-accent text-shadow-accent">Analiz Merkezi</span>
+            </h2>
+          </div>
         </div>
         <Button 
           onClick={fetchInsights} 
@@ -80,7 +104,6 @@ export default function AiAnalysisPage() {
 
       {insights && (
         <>
-          {/* Summary Card */}
           <Card className="rounded-[3rem] border-none shadow-[0_60px_100px_-20px_rgba(15,23,42,0.15)] bg-primary text-white p-12 relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-96 h-96 bg-accent/20 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-accent/30 transition-all duration-1000"></div>
             <div className="relative z-10 flex flex-col md:flex-row gap-10 items-center">
@@ -96,7 +119,6 @@ export default function AiAnalysisPage() {
             </div>
           </Card>
 
-          {/* Insights Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {insights.insights.map((item, i) => {
               const Icon = {
@@ -142,7 +164,6 @@ export default function AiAnalysisPage() {
             })}
           </div>
 
-          {/* Next Steps Section */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
             <Card className="rounded-[3.5rem] border-none shadow-[0_60px_120px_-30px_rgba(15,23,42,0.12)] bg-white p-12 space-y-10">
               <div className="flex items-center justify-between">

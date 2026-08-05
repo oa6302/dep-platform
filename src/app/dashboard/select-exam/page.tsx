@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useFirestore } from '@/firebase';
@@ -9,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useMemo } from 'react';
-import { Loader2, ArrowRight, Sparkles, Star, History } from 'lucide-react';
+import { Loader2, ArrowRight, Sparkles, Star, History, Home, ArrowLeft } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
@@ -51,6 +50,29 @@ export default function SelectExamPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] py-12 px-6">
       <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+        <header className="flex items-center justify-between mb-8">
+           <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => router.back()} 
+              className="h-14 w-14 rounded-2xl bg-white hover:bg-primary hover:text-white transition-all shadow-sm group/nav"
+              title="Geri Dön"
+            >
+              <ArrowLeft className="h-6 w-6 group-hover/nav:scale-110" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => router.push('/')} 
+              className="h-14 w-14 rounded-2xl bg-white hover:bg-primary hover:text-white transition-all shadow-sm group/nav"
+              title="Ana Sayfa"
+            >
+              <Home className="h-6 w-6 group-hover/nav:scale-110" />
+            </Button>
+          </div>
+        </header>
+
         <div className="text-center space-y-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/10 text-accent font-black text-[10px] uppercase tracking-widest border border-accent/20">
             <Sparkles className="h-3 w-3" /> Akıllı Modül Motoru v2.0
@@ -59,7 +81,6 @@ export default function SelectExamPage() {
           <p className="text-xl text-muted-foreground font-medium italic">Yapay zekâ destekli kişiselleştirilmiş eğitim deneyimi için programınızı belirleyin.</p>
         </div>
 
-        {/* Quick Access Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
            <Card className="p-8 rounded-[3rem] border-none shadow-xl bg-primary text-white space-y-6 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-accent/20 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
@@ -85,7 +106,6 @@ export default function SelectExamPage() {
            </Card>
         </div>
 
-        {/* Categorized List */}
         <div className="space-y-16">
           {categories.map((category) => (
             <div key={category} className="space-y-8">

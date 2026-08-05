@@ -19,10 +19,11 @@ import {
   Search, Users, Star, ShieldCheck, GraduationCap, 
   Brain, Sparkles, Filter, ArrowRight, UserCheck,
   Target, Zap, MessageSquare, Compass, ShieldAlert,
-  Hash, QrCode, CheckCircle2, Loader2
+  Hash, QrCode, CheckCircle2, Loader2, Home, ArrowLeft
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
@@ -49,6 +50,7 @@ const exams = [
 export default function DiscoverPage() {
   const { user } = useUser();
   const db = useFirestore();
+  const router = useRouter();
   const { toast } = useToast();
   const { data: userData } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
   const { data: teachers, loading } = useCollection<any>('users', (q: any) => q); 
@@ -59,12 +61,10 @@ export default function DiscoverPage() {
   const [selectedExam, setSelectedExam] = useState('all');
   const [isAiMatching, setIsAiMatching] = useState(false);
   
-  // Activation Code States
   const [teacherCode, setTeacherCode] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Filter logic
   const teacherList = useMemo(() => {
     return (teachers || []).filter(t => t.role === 'teacher');
   }, [teachers]);
@@ -170,16 +170,38 @@ export default function DiscoverPage() {
   return (
     <div className="p-6 lg:p-10 space-y-12 max-w-7xl mx-auto w-full animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-white font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20">
-            <UserCheck className="h-3 w-3" /> Uzman Havuzu
+        <div className="flex flex-col gap-6 w-full md:w-auto">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => router.push('/dashboard')} 
+              className="h-12 w-12 rounded-xl bg-slate-100 hover:bg-primary hover:text-white transition-all shadow-sm"
+              title="Panelim"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => router.push('/')} 
+              className="h-12 w-12 rounded-xl bg-slate-100 hover:bg-primary hover:text-white transition-all shadow-sm"
+              title="Ana Sayfa"
+            >
+              <Home className="h-5 w-5" />
+            </Button>
           </div>
-          <h2 className="text-5xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-deep">
-            Geleceğini <br /><span className="text-accent text-shadow-accent">Doğru Kişiyle Planla</span>
-          </h2>
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-white font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20">
+              <UserCheck className="h-3 w-3" /> Uzman Havuzu
+            </div>
+            <h2 className="text-5xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-deep">
+              Geleceğini <br /><span className="text-accent text-shadow-accent">Doğru Kişiyle Planla</span>
+            </h2>
+          </div>
         </div>
         
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4 w-full md:w-auto">
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button 
@@ -234,7 +256,6 @@ export default function DiscoverPage() {
         </div>
       </div>
 
-      {/* Advanced Filter Bar */}
       <Card className="rounded-[3rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.1)] bg-white p-8 md:p-12 space-y-8">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           <div className="relative group">
@@ -282,7 +303,6 @@ export default function DiscoverPage() {
         </div>
       </Card>
 
-      {/* Results Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
         {filteredTeachers.map((teacher, i) => {
           const matchScore = calculateMatchScore(teacher);

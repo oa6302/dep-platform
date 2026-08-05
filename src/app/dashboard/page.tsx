@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useDoc, useAuth, useFirestore } from '@/firebase';
@@ -11,7 +10,8 @@ import { SchoolAdminView } from '@/components/dashboard/school-admin-view';
 import { 
   LogOut, LayoutDashboard, Calendar, CheckCircle2, User, 
   Settings, Bell, Eye, XCircle, Search, Brain, Headset, 
-  Sparkles, Compass, AlertCircle, ChevronRight, Loader2
+  Sparkles, Compass, AlertCircle, ChevronRight, Loader2,
+  Home, ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
@@ -41,7 +41,6 @@ export default function DashboardPage() {
     if (!authLoading && !user) {
       router.push('/login');
     }
-    // Student logic: Force exam selection if not set
     if (!docLoading && userData && userData.role === 'student' && !userData.targetExam && !simulatedUserId) {
       router.push('/dashboard/select-exam');
     }
@@ -152,7 +151,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] selection:bg-accent selection:text-white">
-      {/* Simulation Banner */}
       {isSimulating && (
         <div className="bg-destructive text-white px-6 py-4 flex items-center justify-between sticky top-0 z-[100] shadow-[0_20px_50px_-10px_rgba(239,68,68,0.3)] animate-in slide-in-from-top duration-500">
           <div className="flex items-center gap-4 text-xs font-black uppercase tracking-widest italic">
@@ -169,17 +167,11 @@ export default function DashboardPage() {
       )}
 
       <div className="grid lg:grid-cols-[340px_1fr] min-h-screen">
-        {/* Apple Style Sidebar */}
         <aside className="bg-primary text-white hidden lg:flex flex-col border-r border-white/5 shadow-[40px_0_100px_-20px_rgba(15,23,42,0.15)] z-50 sticky top-0 h-screen overflow-hidden">
           <div className="p-10">
             <Link href="/" className="flex items-center gap-5 group">
               <div className="relative h-16 w-16 overflow-hidden rounded-[1.75rem] bg-white p-1.5 shadow-[0_20px_40px_-5px_rgba(255,255,255,0.2)] transition-all duration-500 group-hover:rotate-6 group-hover:scale-110">
-                <Image 
-                  src="/logo.png" 
-                  alt="DEK Logo" 
-                  fill 
-                  className="object-contain"
-                />
+                <Image src="/logo.png" alt="DEK Logo" fill className="object-contain" />
               </div>
               <div className="overflow-hidden">
                 <span className="font-black text-3xl block tracking-tighter leading-none italic text-shadow-premium uppercase">DEK</span>
@@ -198,7 +190,6 @@ export default function DashboardPage() {
             <SidebarNavItem href="#" icon={CheckCircle2} label="Görevlerim" />
             <SidebarNavItem href="#" icon={User} label="Profilim" />
             <SidebarNavItem href="/dashboard/contact" icon={Headset} label="Destek Merkezi" accent />
-            
             {userData?.role === 'student' && (
               <div className="pt-8 mt-8 border-t border-white/10 space-y-2">
                  <SidebarNavItem href="/dashboard/select-exam" icon={Sparkles} label="Hedef Değiştir" accent />
@@ -226,10 +217,30 @@ export default function DashboardPage() {
           </div>
         </aside>
 
-        {/* Dynamic Main Content */}
         <main className="flex flex-col relative">
           <header className="h-32 bg-white/70 backdrop-blur-3xl border-b border-primary/5 flex items-center justify-between px-12 sticky top-0 z-40">
             <div className="flex items-center gap-12 flex-1 max-w-3xl">
+              <div className="flex items-center gap-4 mr-2">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => router.push('/')} 
+                  className="h-14 w-14 rounded-2xl bg-[#F1F5F9] hover:bg-primary hover:text-white transition-all shadow-sm group/nav"
+                  title="Ana Sayfa"
+                >
+                  <Home className="h-6 w-6 group-hover/nav:scale-110 transition-transform" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => router.back()} 
+                  className="h-14 w-14 rounded-2xl bg-[#F1F5F9] hover:bg-primary hover:text-white transition-all shadow-sm group/nav"
+                  title="Geri Dön"
+                >
+                  <ArrowLeft className="h-6 w-6 group-hover/nav:scale-110 transition-transform" />
+                </Button>
+              </div>
+
               <div className="space-y-1">
                  <h1 className="text-3xl font-black text-primary uppercase tracking-tighter italic shrink-0 text-shadow-premium">
                    {isSimulating ? 'Öğrenci Simülasyonu' : roleLabels[userData?.role] || 'Panel'}
@@ -253,8 +264,6 @@ export default function DashboardPage() {
                 <Bell className="h-7 w-7 text-primary group-hover:text-accent transition-colors" />
                 {!isSimulating && <span className="absolute top-4 right-4 h-3.5 w-3.5 bg-accent rounded-full border-[4px] border-white shadow-xl animate-bounce"></span>}
               </Button>
-              
-              {/* Mobile Logout */}
               <div className="lg:hidden">
                 <Button variant="ghost" size="icon" className="h-14 w-14 rounded-2xl bg-destructive/5 text-destructive" onClick={handleLogout}>
                   <LogOut className="h-7 w-7" />
@@ -274,21 +283,9 @@ export default function DashboardPage() {
 
 function SidebarNavItem({ href, icon: Icon, label, active = false, accent = false }: { href: string, icon: any, label: string, active?: boolean, accent?: boolean }) {
   return (
-    <Button 
-      variant="ghost" 
-      className={cn(
-        "w-full justify-start rounded-2xl transition-all h-16 group relative overflow-hidden",
-        active 
-          ? "bg-white/10 text-white font-black shadow-2xl shadow-black/20" 
-          : "hover:bg-white/5 font-bold opacity-60 hover:opacity-100"
-      )} 
-      asChild
-    >
+    <Button variant="ghost" className={cn("w-full justify-start rounded-2xl transition-all h-16 group relative overflow-hidden", active ? "bg-white/10 text-white font-black shadow-2xl shadow-black/20" : "hover:bg-white/5 font-bold opacity-60 hover:opacity-100")} asChild>
       <Link href={href}>
-        <Icon className={cn(
-          "mr-5 h-6 w-6 transition-transform group-hover:scale-125 duration-500", 
-          accent && "text-accent"
-        )} />
+        <Icon className={cn("mr-5 h-6 w-6 transition-transform group-hover:scale-125 duration-500", accent && "text-accent")} />
         <span className="tracking-tight italic">{label}</span>
         {active && <div className="absolute right-0 top-0 h-full w-1.5 bg-accent rounded-l-full shadow-[0_0_20px_rgba(245,158,11,1)]"></div>}
       </Link>

@@ -19,12 +19,16 @@ import {
   Zap, 
   Brain, 
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Home,
+  ArrowLeft
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 export default function ContactPage() {
   const { user } = useUser();
+  const router = useRouter();
   const { data: userData } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
 
   const role = userData?.role || 'student';
@@ -66,13 +70,35 @@ export default function ContactPage() {
   return (
     <div className="p-6 lg:p-10 space-y-10 max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-white font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20">
-            <Headset className="h-3 w-3" /> Destek Merkezi
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => router.back()} 
+              className="h-12 w-12 rounded-xl bg-slate-100 hover:bg-primary hover:text-white transition-all shadow-sm"
+              title="Geri Dön"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => router.push('/')} 
+              className="h-12 w-12 rounded-xl bg-slate-100 hover:bg-primary hover:text-white transition-all shadow-sm"
+              title="Ana Sayfa"
+            >
+              <Home className="h-5 w-5" />
+            </Button>
           </div>
-          <h2 className="text-5xl font-black tracking-tighter italic text-primary uppercase leading-none">
-            Size Nasıl <br /><span className="text-accent">Yardımcı Olabiliriz?</span>
-          </h2>
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-white font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20">
+              <Headset className="h-3 w-3" /> Destek Merkezi
+            </div>
+            <h2 className="text-5xl font-black tracking-tighter italic text-primary uppercase leading-none">
+              Size Nasıl <br /><span className="text-accent">Yardımcı Olabiliriz?</span>
+            </h2>
+          </div>
         </div>
       </div>
 
@@ -102,7 +128,6 @@ export default function ContactPage() {
         ))}
       </div>
 
-      {/* AI Motivation & Fast Access */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
         <Card className="xl:col-span-2 rounded-[3.5rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.1)] bg-primary text-white p-10 relative overflow-hidden group">
           <div className="absolute -top-20 -right-20 w-80 h-80 bg-accent/20 blur-[100px] rounded-full group-hover:scale-125 transition-transform duration-1000"></div>

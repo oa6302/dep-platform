@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useDoc, useUser } from '@/firebase';
@@ -10,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Star, Award, ShieldCheck, GraduationCap, MapPin, 
   Brain, Sparkles, CheckCircle2, Clock, MessageSquare, 
-  ChevronLeft, Calendar, FileText, TrendingUp, Zap, Target
+  ChevronLeft, Calendar, FileText, TrendingUp, Zap, Target,
+  Home, ArrowLeft
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -44,13 +44,27 @@ export default function TeacherProfilePage() {
   return (
     <div className="p-6 lg:p-10 space-y-12 max-w-7xl mx-auto w-full animate-in slide-in-from-bottom-4 duration-700">
       <header className="flex items-center justify-between">
-        <Button 
-          variant="ghost" 
-          onClick={() => router.back()}
-          className="text-primary font-black uppercase text-[10px] tracking-widest gap-2 hover:bg-primary/5 rounded-xl h-12"
-        >
-          <ChevronLeft className="h-4 w-4" /> Keşfet'e Dön
-        </Button>
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => router.back()} 
+            className="h-12 w-12 rounded-xl bg-slate-100 hover:bg-primary hover:text-white transition-all shadow-sm group/nav"
+            title="Geri Dön"
+          >
+            <ArrowLeft className="h-5 w-5 group-hover/nav:scale-110" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => router.push('/')} 
+            className="h-12 w-12 rounded-xl bg-slate-100 hover:bg-primary hover:text-white transition-all shadow-sm group/nav"
+            title="Ana Sayfa"
+          >
+            <Home className="h-5 w-5 group-hover/nav:scale-110" />
+          </Button>
+          <span className="ml-4 font-black uppercase text-[10px] tracking-widest text-muted-foreground hidden sm:block">Uzman Profili</span>
+        </div>
         <div className="flex gap-4">
            <Button variant="outline" className="h-12 px-6 rounded-xl border-2 font-black text-[10px] uppercase tracking-widest gap-3">
              <MessageSquare className="h-4 w-4" /> Soru Sor
@@ -66,7 +80,6 @@ export default function TeacherProfilePage() {
         </div>
       </header>
 
-      {/* Profile Hero */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         <div className="lg:col-span-4 space-y-10">
            <Card className="rounded-[4rem] border-none shadow-[0_40px_100px_-20px_rgba(15,23,42,0.12)] bg-white p-12 text-center space-y-8 relative overflow-hidden group">
@@ -76,7 +89,7 @@ export default function TeacherProfilePage() {
               </div>
               <div className="space-y-3">
                  <h2 className="text-3xl font-black text-primary italic uppercase tracking-tighter">{teacher.displayName}</h2>
-                 <p className="text-sm font-black text-accent uppercase tracking-[0.2em]">{teacher.branch} Uzmanı</p>
+                 <p className="text-sm font-black text-accent uppercase tracking-[0.2em]">{teacher.hideBranch ? (teacher.coachType || "Eğitim Koçu") : `${teacher.branch} Uzmanı`}</p>
                  <div className="flex items-center justify-center gap-2">
                     {[1,2,3,4,5].map(s => <Star key={s} className="h-4 w-4 fill-accent text-accent" />)}
                     <span className="text-xs font-black ml-2">5.0 (42 Yorum)</span>
@@ -116,7 +129,7 @@ export default function TeacherProfilePage() {
               <div className="space-y-6">
                  <h3 className="text-3xl font-black italic tracking-tighter text-primary uppercase">Hakkında</h3>
                  <p className="text-lg leading-relaxed font-medium text-muted-foreground italic">
-                    "{teacher.bio || "Eğitim yolculuğunda öğrencilere sadece ders anlatmakla kalmıyor, onların öğrenme stillerini analiz ederek kişiye özel akademik yol haritaları oluşturuyorum. 8 yıllık deneyimimle TYT-AYT sürecinde net artışı garantili koçluk desteği sağlamaktayım."}"
+                    "{teacher.bio || "Eğitim yolculuğunda öğrencilere sadece ders anlatmakla kalmıyor, onların öğrenme stillerini analiz ederek kişiye özel akademik yol haritaları oluşturuyorum."}"
                   </p>
               </div>
 
@@ -172,7 +185,7 @@ export default function TeacherProfilePage() {
                  <div className="bg-[#F8FAFC] rounded-[3rem] p-8 flex flex-col justify-center items-center text-center space-y-4">
                     <Zap className="h-12 w-12 text-accent" />
                     <h5 className="text-2xl font-black text-primary italic uppercase tracking-tighter">AI Mentor Önerisi</h5>
-                    <p className="text-xs font-medium text-muted-foreground italic">"Hedefindeki Boğaziçi Mühendislik için {teacher.displayName} hocamızın koçluk yaklaşımı geçmiş yıllardaki öğrenci profillerinle %98 uyumlu."</p>
+                    <p className="text-xs font-medium text-muted-foreground italic">"Hedefindeki başarı kriterleri için {teacher.displayName} hocamızın koçluk yaklaşımı geçmiş yıllardaki öğrenci profillerinle %98 uyumlu."</p>
                  </div>
               </div>
            </Card>

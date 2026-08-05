@@ -6,7 +6,8 @@ import {
   Search, MessageSquare, LineChart, ClipboardCheck,
   Calendar, Award, Library as LibraryIcon, Cpu,
   Bookmark, Mic, Headphones, PenTool, BookOpenCheck,
-  TrendingUp, RefreshCw, Sun, FileText, PencilLine
+  TrendingUp, RefreshCw, Sun, FileText, PencilLine,
+  CheckCircle2
 } from 'lucide-react';
 
 export type ExamModule = {
@@ -273,7 +274,7 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
     title: 'İHL Meslek Dersleri',
     icon: ScrollText,
     description: 'İmam Hatip Liseleri Meslek Dersleri Takibi',
-    targetGroup: 'İHL Öğrencileri',
+    targetGroup: 'IHL Öğrencileri',
     lessons: ['Fıkıh', 'Tefsir', 'Hadis', 'Siyer', 'Akait'],
     modules: [
       { title: "Müfredat Takibi", icon: BookOpen, color: "bg-emerald-700", desc: "Meslek dersleri konuları" },

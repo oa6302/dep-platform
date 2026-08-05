@@ -10,17 +10,19 @@ import {
   Database, 
   ShieldCheck, 
   Activity, 
-  PlusCircle, 
   Loader2, 
   Server, 
-  BarChart3, 
   Globe, 
   Lock,
   RefreshCcw,
   Zap,
-  LayoutDashboard
+  Building,
+  Key,
+  Code,
+  ArrowRight,
+  ArrowUpRight
 } from 'lucide-react';
-import { orderBy, limit } from 'firebase/firestore';
+import { orderBy } from 'firebase/firestore';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
@@ -49,6 +51,16 @@ export function AdminView({ user, userData }: AdminViewProps) {
     }, 1500);
   };
 
+  const modules = [
+    { title: "Sistem Modülleri", icon: Settings, color: "bg-slate-700", desc: "Genel sistem ayarları ve modül yönetimi" },
+    { title: "Yetkilendirme", icon: ShieldCheck, color: "bg-red-800", desc: "Rol ve izin tabanlı erişim kontrolü" },
+    { title: "Kurum Yönetimi", icon: Building, color: "bg-indigo-800", desc: "Okullar ve kurumsal lisans sahipleri" },
+    { title: "Lisanslar", icon: Key, color: "bg-amber-600", desc: "Aktif abonelikler ve lisans anahtarları" },
+    { title: "API Yönetimi", icon: Code, color: "bg-emerald-700", desc: "Harici servisler ve veri entegrasyonu" },
+    { title: "Sunucu Durumu", icon: Server, color: "bg-blue-800", desc: "Altyapı performansı ve cluster yönetimi" },
+    { title: "Sistem Logları", icon: Database, color: "bg-zinc-800", desc: "Tüm kritik veritabanı ve kullanıcı kayıtları" },
+  ];
+
   return (
     <div className="p-6 lg:p-10 space-y-10 max-w-7xl mx-auto w-full">
       {/* Admin Header */}
@@ -61,10 +73,6 @@ export function AdminView({ user, userData }: AdminViewProps) {
            <Button variant="outline" onClick={handleSystemRefresh} disabled={refreshing} className="h-14 px-8 rounded-2xl border-2 font-black text-xs uppercase tracking-widest gap-3">
              {refreshing ? <Loader2 className="h-5 w-5 animate-spin" /> : <RefreshCcw className="h-5 w-5" />}
              Sistemi Tazele
-           </Button>
-           <Button className="h-14 px-8 rounded-2xl bg-primary shadow-xl shadow-primary/20 font-black text-xs uppercase tracking-widest gap-3">
-             <Settings className="h-5 w-5" />
-             Ayarlar
            </Button>
         </div>
       </div>
@@ -91,8 +99,31 @@ export function AdminView({ user, userData }: AdminViewProps) {
         ))}
       </div>
 
+      {/* Modules Section */}
+      <div className="space-y-8">
+        <h3 className="text-3xl font-black italic tracking-tighter text-primary uppercase">Sistem Modülleri</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {modules.map((mod, i) => (
+            <Card key={i} className="group relative overflow-hidden rounded-[2.5rem] border-none shadow-[0_20px_40px_-15px_rgba(15,23,42,0.1)] bg-white p-8 transition-all hover:-translate-y-2 cursor-pointer border border-primary/5">
+              <div className={`absolute top-0 right-0 w-32 h-32 ${mod.color} opacity-5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 group-hover:opacity-10 transition-opacity`}></div>
+              <div className="space-y-6">
+                <div className={`h-14 w-14 rounded-2xl ${mod.color} text-white flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all`}>
+                  <mod.icon className="h-7 w-7" />
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-black text-xl italic tracking-tight text-primary">{mod.title}</h4>
+                  <p className="text-xs text-muted-foreground font-medium leading-relaxed">{mod.desc}</p>
+                </div>
+                <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 transition-all">
+                  Yönetimi Aç <ArrowRight className="ml-2 h-3 w-3" />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
-        {/* Server & System Health */}
         <div className="xl:col-span-1 space-y-10">
            <Card className="rounded-[3.5rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.1)] bg-white p-10 space-y-10">
               <div className="flex items-center justify-between">
@@ -115,13 +146,6 @@ export function AdminView({ user, userData }: AdminViewProps) {
                     </div>
                     <Progress value={42} className="h-3 rounded-full bg-[#F1F5F9]" />
                  </div>
-                 <div className="space-y-3">
-                    <div className="flex justify-between text-xs font-black uppercase tracking-widest text-muted-foreground">
-                       <span>Veritabanı I/O</span>
-                       <span>12%</span>
-                    </div>
-                    <Progress value={12} className="h-3 rounded-full bg-[#F1F5F9]" />
-                 </div>
               </div>
 
               <div className="p-6 bg-primary rounded-[2.5rem] text-white flex items-center gap-6">
@@ -132,28 +156,8 @@ export function AdminView({ user, userData }: AdminViewProps) {
                  </div>
               </div>
            </Card>
-
-           <Card className="rounded-[3.5rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.1)] bg-white p-10 space-y-6">
-              <h4 className="text-2xl font-black italic tracking-tighter">Lisans Yönetimi</h4>
-              <div className="space-y-4">
-                 {[
-                   { name: 'Kolej A', expiry: '12.08.2026', type: 'Premium' },
-                   { name: 'Fen Lisesi B', expiry: '05.09.2026', type: 'Standard' },
-                 ].map((lic, i) => (
-                   <div key={i} className="flex items-center justify-between p-5 bg-[#F8FAFC] rounded-2xl border border-primary/5">
-                      <div>
-                         <p className="font-bold text-sm text-primary">{lic.name}</p>
-                         <p className="text-[10px] uppercase font-black tracking-widest opacity-40">{lic.expiry}</p>
-                      </div>
-                      <span className="text-[10px] font-black px-3 py-1 bg-accent/10 text-accent rounded-lg border border-accent/20">{lic.type}</span>
-                   </div>
-                 ))}
-              </div>
-              <Button variant="ghost" className="w-full font-black text-[10px] uppercase tracking-widest h-12 rounded-xl">Tüm Lisanslar</Button>
-           </Card>
         </div>
 
-        {/* System Logs & User Activity */}
         <div className="xl:col-span-2 space-y-10">
            <Card className="rounded-[3.5rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.1)] bg-white overflow-hidden">
               <CardHeader className="p-10 border-b border-primary/5 flex flex-row items-center justify-between bg-muted/5">

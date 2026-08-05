@@ -18,7 +18,12 @@ import {
   Brain, 
   FileText,
   BarChart3,
-  Search
+  Search,
+  LayoutDashboard,
+  ClipboardList,
+  Sparkles,
+  PieChart,
+  ArrowRight
 } from 'lucide-react';
 import { where, orderBy } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -58,6 +63,17 @@ export function TeacherView({ user, userData }: TeacherViewProps) {
   const simulateStudent = (studentId: string) => {
     router.push(`/dashboard?simulate=${studentId}`);
   };
+
+  const modules = [
+    { title: "Öğrenci Yönetimi", icon: Users, color: "bg-blue-600", desc: "Tüm öğrencilerinin detaylı listesi" },
+    { title: "Öğrenci Simülasyonu", icon: Eye, color: "bg-purple-600", desc: "Öğrenci panelini onun gözünden gör" },
+    { title: "Sınıf Yönetimi", icon: LayoutDashboard, color: "bg-indigo-600", desc: "Şubeler ve sınıf bazlı genel bakış" },
+    { title: "Ödevler", icon: FileText, color: "bg-orange-600", desc: "Ödev atama ve kontrol merkezi" },
+    { title: "Denemeler", icon: ClipboardList, color: "bg-red-600", desc: "Sınav sonuçları ve analiz takibi" },
+    { title: "Kazanım Analizi", icon: BarChart3, color: "bg-green-600", desc: "Müfredat uyumu ve başarı haritası" },
+    { title: "AI Ders Planlayıcı", icon: Sparkles, color: "bg-pink-600", desc: "AI ile saniyeler içinde plan yap" },
+    { title: "Raporlar", icon: PieChart, color: "bg-cyan-600", desc: "Akademik ve kurumsal çıktı merkezi" },
+  ];
 
   return (
     <div className="p-6 lg:p-10 space-y-10 max-w-7xl mx-auto w-full">
@@ -105,6 +121,30 @@ export function TeacherView({ user, userData }: TeacherViewProps) {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Modules Section */}
+      <div className="space-y-8">
+        <h3 className="text-3xl font-black italic tracking-tighter text-primary uppercase">Eğitmen Araçları</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {modules.map((mod, i) => (
+            <Card key={i} className="group relative overflow-hidden rounded-[2.5rem] border-none shadow-[0_20px_40px_-15px_rgba(15,23,42,0.1)] bg-white p-8 transition-all hover:-translate-y-2 cursor-pointer border border-primary/5">
+              <div className={`absolute top-0 right-0 w-32 h-32 ${mod.color} opacity-5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 group-hover:opacity-10 transition-opacity`}></div>
+              <div className="space-y-6">
+                <div className={`h-14 w-14 rounded-2xl ${mod.color} text-white flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all`}>
+                  <mod.icon className="h-7 w-7" />
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-black text-xl italic tracking-tight text-primary">{mod.title}</h4>
+                  <p className="text-xs text-muted-foreground font-medium leading-relaxed">{mod.desc}</p>
+                </div>
+                <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 transition-all">
+                  Yönet <ArrowRight className="ml-2 h-3 w-3" />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
@@ -187,24 +227,6 @@ export function TeacherView({ user, userData }: TeacherViewProps) {
                 </div>
               </div>
            </div>
-
-           {/* Quick Actions */}
-           <Card className="rounded-[3.5rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.1)] bg-white overflow-hidden p-10 space-y-8">
-              <h4 className="text-xl font-black italic tracking-tighter flex items-center gap-3">
-                <BarChart3 className="h-5 w-5 text-accent" /> Hızlı Raporlar
-              </h4>
-              <div className="grid gap-4">
-                 <Button variant="outline" className="w-full h-14 justify-start rounded-2xl border-primary/5 bg-[#F8FAFC] hover:bg-white hover:shadow-lg font-bold text-sm transition-all">
-                    <FileText className="mr-3 h-5 w-5 text-primary" /> Haftalık Sınıf Raporu
-                 </Button>
-                 <Button variant="outline" className="w-full h-14 justify-start rounded-2xl border-primary/5 bg-[#F8FAFC] hover:bg-white hover:shadow-lg font-bold text-sm transition-all">
-                    <TrendingUp className="mr-3 h-5 w-5 text-accent" /> Deneme Başarı İstatistikleri
-                 </Button>
-                 <Button variant="outline" className="w-full h-14 justify-start rounded-2xl border-primary/5 bg-[#F8FAFC] hover:bg-white hover:shadow-lg font-bold text-sm transition-all">
-                    <Users className="mr-3 h-5 w-5 text-primary" /> Veli Bilgilendirme Bülteni
-                 </Button>
-              </div>
-           </Card>
 
            {/* Support Badge */}
            <div className="bg-accent/10 border border-accent/20 rounded-[3rem] p-8 flex items-center gap-6">

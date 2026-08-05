@@ -12,17 +12,21 @@ import {
   Target, 
   Brain, 
   Award, 
-  Lock, 
   Play, 
   BookOpen, 
   Zap, 
   Star,
-  MapPin
+  MapPin,
+  LineChart,
+  ClipboardCheck,
+  Library,
+  ArrowRight
 } from 'lucide-react';
 import { where, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 interface StudentViewProps {
   user: any;
@@ -80,6 +84,17 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const pendingTasks = tasks.filter(t => t.status === 'pending');
   const upcomingSessions = sessions.filter(s => s.status === 'scheduled');
 
+  const modules = [
+    { title: "Ders Takibi", icon: BookOpen, color: "bg-blue-500", desc: "Derslerin ve devamsızlık durumun" },
+    { title: "Konu Analizi", icon: LineChart, color: "bg-purple-500", desc: "Hangi konuda ne kadar başarılısın?" },
+    { title: "Deneme Sonuçları", icon: ClipboardCheck, color: "bg-orange-500", desc: "Tüm deneme sınavı analizlerin" },
+    { title: "Çalışma Takvimi", icon: Calendar, color: "bg-green-500", desc: "Kişiselleştirilmiş akademik takvim" },
+    { title: "Günlük Hedefler", icon: Target, color: "bg-red-500", desc: "Bugün tamamlaman gereken hedefler" },
+    { title: "AI Koç", icon: Brain, color: "bg-indigo-500", desc: "Yapay zeka asistanınla görüş" },
+    { title: "Dijital Kütüphane", icon: Library, color: "bg-cyan-500", desc: "Binlerce kaynak ve video ders" },
+    { title: "Başarı Karnesi", icon: Award, color: "bg-yellow-500", desc: "Gelişimini özetleyen dijital karne" },
+  ];
+
   return (
     <div className="p-6 lg:p-10 space-y-10 max-w-7xl mx-auto w-full">
       {/* Premium Hero Profile Card */}
@@ -120,12 +135,33 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
         </div>
       </div>
 
+      {/* Modules Section */}
+      <div className="space-y-8">
+        <h3 className="text-3xl font-black italic tracking-tighter text-primary uppercase">Eğitim Modüllerin</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {modules.map((mod, i) => (
+            <Card key={i} className="group relative overflow-hidden rounded-[2.5rem] border-none shadow-[0_20px_40px_-15px_rgba(15,23,42,0.1)] bg-white p-8 transition-all hover:-translate-y-2 cursor-pointer">
+              <div className={`absolute top-0 right-0 w-32 h-32 ${mod.color} opacity-5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 group-hover:opacity-10 transition-opacity`}></div>
+              <div className="space-y-6">
+                <div className={`h-14 w-14 rounded-2xl ${mod.color} text-white flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all`}>
+                  <mod.icon className="h-7 w-7" />
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-black text-xl italic tracking-tight text-primary">{mod.title}</h4>
+                  <p className="text-xs text-muted-foreground font-medium leading-relaxed">{mod.desc}</p>
+                </div>
+                <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 transition-all">
+                  Şimdi Aç <ArrowRight className="ml-2 h-3 w-3" />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        {/* Left Column - 8/12 */}
         <div className="lg:col-span-8 space-y-10">
-          
-          {/* AI Coach Card */}
           <div className="bg-primary rounded-[3rem] p-10 text-white shadow-2xl shadow-primary/30 relative overflow-hidden group">
             <div className="absolute -top-24 -right-24 w-64 h-64 bg-accent/20 blur-[100px] rounded-full group-hover:scale-125 transition-transform duration-1000"></div>
             <div className="flex flex-col md:flex-row gap-10 items-center relative z-10">
@@ -145,7 +181,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-             {/* Tasks List */}
              <Card className="rounded-[3rem] border-none shadow-[0_30px_60px_-15px_rgba(15,23,42,0.1)] bg-white overflow-hidden">
                 <CardHeader className="p-10 border-b border-primary/5 flex flex-row items-center justify-between bg-muted/5">
                   <div>
@@ -183,7 +218,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                 </CardContent>
              </Card>
 
-             {/* Sessions */}
              <Card className="rounded-[3rem] border-none shadow-[0_30px_60px_-15px_rgba(15,23,42,0.1)] bg-white overflow-hidden">
                 <CardHeader className="p-10 border-b border-primary/5 flex flex-row items-center justify-between bg-muted/5">
                   <div>
@@ -216,9 +250,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
           </div>
         </div>
 
-        {/* Right Column - 4/12 */}
         <div className="lg:col-span-4 space-y-10">
-           {/* Pomodoro Card */}
            <Card className="rounded-[3rem] border-none shadow-[0_30px_60px_-15px_rgba(15,23,42,0.1)] bg-white overflow-hidden p-10">
               <div className="text-center space-y-6">
                  <p className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground">Pomodoro Sayaç</p>
@@ -249,7 +281,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
               </div>
            </Card>
 
-           {/* Achievements */}
            <Card className="rounded-[3rem] border-none shadow-[0_30px_60px_-15px_rgba(15,23,42,0.1)] bg-white overflow-hidden p-10">
               <div className="space-y-8">
                 <div className="flex items-center justify-between">
@@ -267,7 +298,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
               </div>
            </Card>
 
-           {/* Motivation Card */}
            <div className="bg-accent rounded-[3rem] p-10 text-primary-foreground shadow-2xl shadow-accent/30 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
               <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mb-4">Günün Sözü</p>

@@ -31,7 +31,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [role, setRole] = useState<'student' | 'teacher' | 'admin'>('student');
+  const [role, setRole] = useState<'student' | 'teacher'>('student');
   const [loading, setLoading] = useState(false);
   
   const auth = useAuth();
@@ -109,7 +109,6 @@ export function AuthForm({ mode }: AuthFormProps) {
               <SelectContent>
                 <SelectItem value="student">Öğrenci</SelectItem>
                 <SelectItem value="teacher">Öğretmen (Koç)</SelectItem>
-                <SelectItem value="admin">Yönetici</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -264,24 +264,23 @@ export function AuthForm({ mode }: AuthFormProps) {
                     </SelectTrigger>
                     <SelectContent className="max-h-[400px] rounded-2xl border-none shadow-2xl">
                        <ScrollArea className="h-[350px]">
-                          {/* Recently Used / Favorites Simulation */}
                           <SelectGroup>
                              <SelectLabel className="text-[10px] font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2 p-4">
                                 <Star className="h-3 w-3 fill-current" /> Favoriler & Son Kullanılan
                              </SelectLabel>
-                             <SelectItem value="LGS" className="font-black py-3 px-6 hover:bg-accent/10">LGS (Ortaokul)</SelectItem>
-                             <SelectItem value="YKS" className="font-black py-3 px-6 hover:bg-accent/10">YKS (Üniversite)</SelectItem>
+                             <SelectItem key="fav-LGS" value="LGS" className="font-black py-3 px-6 hover:bg-accent/10">LGS (Ortaokul)</SelectItem>
+                             <SelectItem key="fav-YKS" value="YKS" className="font-black py-3 px-6 hover:bg-accent/10">YKS (Üniversite)</SelectItem>
                           </SelectGroup>
                           
                           <SelectSeparator className="bg-primary/5" />
 
                           {categories.map((category) => (
-                            <SelectGroup key={category}>
+                            <SelectGroup key={`cat-group-${category}`}>
                               <SelectLabel className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground opacity-40 p-4 pt-6">
                                 {category}
                               </SelectLabel>
                               {categorizedExams[category]?.map((exam) => (
-                                <SelectItem key={exam.id} value={exam.id} className="font-bold py-3 px-6 cursor-pointer">
+                                <SelectItem key={`cat-item-${category}-${exam.id}`} value={exam.id} className="font-bold py-3 px-6 cursor-pointer">
                                   <div className="flex items-center gap-3">
                                      <exam.icon className="h-4 w-4 text-accent" />
                                      <span>{exam.title}</span>

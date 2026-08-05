@@ -7,10 +7,11 @@ import { useEffect } from 'react';
 import { StudentView } from '@/components/dashboard/student-view';
 import { TeacherView } from '@/components/dashboard/teacher-view';
 import { AdminView } from '@/components/dashboard/admin-view';
-import { GraduationCap, LogOut, LayoutDashboard, Calendar, CheckCircle2, User, Settings, Bell } from 'lucide-react';
+import { LogOut, LayoutDashboard, Calendar, CheckCircle2, User, Settings, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useUser();
@@ -70,12 +71,18 @@ export default function DashboardPage() {
           <div className="flex flex-col h-full">
             <div className="p-8">
               <Link href="/" className="flex items-center gap-3 group">
-                <div className="bg-accent text-white p-2 rounded-xl">
-                  <GraduationCap className="h-6 w-6" />
+                <div className="relative h-10 w-10 overflow-hidden rounded-xl bg-white p-0.5">
+                  <Image 
+                    src="/logo.png" 
+                    alt="Logo" 
+                    fill 
+                    className="object-contain"
+                    data-ai-hint="education logo"
+                  />
                 </div>
                 <div className="overflow-hidden">
-                  <span className="font-black text-xl block tracking-tighter">DEK</span>
-                  <span className="text-[9px] opacity-60 block -mt-1 font-bold uppercase tracking-widest">Dijital Eğitim Koçu</span>
+                  <span className="font-black text-xl block tracking-tighter leading-none">DEK</span>
+                  <span className="text-[9px] opacity-60 block font-bold uppercase tracking-widest">Dijital Eğitim Koçu</span>
                 </div>
               </Link>
             </div>

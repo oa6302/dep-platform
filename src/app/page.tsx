@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useUser, useFirestore } from '@/firebase';
 import { 
-  GraduationCap, 
   Database, 
   Loader2, 
   Globe, 
@@ -27,6 +26,7 @@ import { useState, useEffect } from 'react';
 import { doc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 export default function HomePage() {
   const { user, loading } = useUser();
@@ -107,12 +107,18 @@ export default function HomePage() {
       )}>
         <div className="container mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="bg-primary text-white p-2 rounded-xl group-hover:bg-accent transition-colors">
-              <GraduationCap className="h-6 w-6" />
+            <div className="relative h-12 w-12 overflow-hidden rounded-xl">
+              <Image 
+                src="/logo.png" 
+                alt="Dijital Eğitim Koçu Logo" 
+                fill 
+                className="object-contain"
+                data-ai-hint="education logo"
+              />
             </div>
             <div>
-              <span className="font-bold text-xl block text-primary">Dijital Eğitim Koçu</span>
-              <span className="text-[10px] text-muted-foreground block -mt-1 font-medium">AI Destekli Akademik Platform</span>
+              <span className="font-bold text-xl block text-primary leading-tight">Dijital Eğitim Koçu</span>
+              <span className="text-[10px] text-muted-foreground block font-medium uppercase tracking-wider">AI Destekli Akademik Platform</span>
             </div>
           </Link>
           
@@ -393,8 +399,14 @@ export default function HomePage() {
         <div className="container mx-auto px-6 grid md:grid-cols-4 gap-12 pb-16 border-b border-white/10">
           <div className="col-span-2 space-y-8">
             <div className="flex items-center gap-3">
-              <div className="bg-accent text-white p-2 rounded-xl">
-                <GraduationCap className="h-6 w-6" />
+              <div className="relative h-12 w-12 overflow-hidden rounded-xl bg-white p-1">
+                <Image 
+                  src="/logo.png" 
+                  alt="Dijital Eğitim Koçu Logo" 
+                  fill 
+                  className="object-contain"
+                  data-ai-hint="education logo"
+                />
               </div>
               <span className="font-black text-2xl tracking-tighter">Dijital Eğitim Koçu</span>
             </div>

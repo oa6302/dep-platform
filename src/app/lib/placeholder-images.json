@@ -1,0 +1,11 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "app-logo",
+      "description": "Dijital Eğitim Koçu Resmi Logosu",
+      "imageUrl": "https://picsum.photos/seed/67/400/400",
+      "imageHint": "education logo"
+    }
+  ]
+}

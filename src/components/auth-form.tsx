@@ -54,14 +54,13 @@ export function AuthForm({ mode }: AuthFormProps) {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Check if user exists in Firestore
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (!userDoc.exists()) {
         await setDoc(doc(db, 'users', user.uid), {
           uid: user.uid,
           email: user.email,
           displayName: user.displayName,
-          role: 'student', // Default role for social login
+          role: 'student', 
           createdAt: serverTimestamp(),
         });
       }
@@ -89,7 +88,6 @@ export function AuthForm({ mode }: AuthFormProps) {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Run profile update and Firestore setDoc in parallel for speed
         await Promise.all([
           updateProfile(user, { displayName }),
           setDoc(doc(db, 'users', user.uid), {

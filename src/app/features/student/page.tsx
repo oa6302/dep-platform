@@ -3,10 +3,20 @@
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { 
-  Brain, Calendar, BarChart3, Target, BookOpen, Award, Clock, Zap,
-  ArrowRight, Sparkles, Star, TrendingUp, ChevronLeft
+  Brain, 
+  Calendar, 
+  BarChart3, 
+  Target, 
+  BookOpen, 
+  Award, 
+  Clock, 
+  Zap,
+  ArrowRight, 
+  Sparkles, 
+  Star, 
+  TrendingUp, 
+  ChevronLeft 
 } from 'lucide-react';
-import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 export default function StudentFeaturesPage() {
@@ -32,7 +42,6 @@ export default function StudentFeaturesPage() {
       </header>
 
       <main className="container mx-auto px-6 pb-32 space-y-24">
-        {/* Hero Section */}
         <section className="text-center space-y-8 max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-accent/10 text-accent font-black text-[10px] uppercase tracking-widest border border-accent/20">
             <Star className="h-3 w-3 fill-current" /> Öğrenci Deneyimi
@@ -43,9 +52,8 @@ export default function StudentFeaturesPage() {
           <p className="text-2xl text-muted-foreground font-medium leading-relaxed italic">
             Yapay zeka desteğiyle ders çalışma alışkanlıklarını modernize et, potansiyelini zirveye taşı.
           </p>
-        </div>
+        </section>
 
-        {/* Feature Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
           {features.map((feature, i) => (
             <div key={i} className="group p-12 bg-white rounded-[3rem] border border-primary/5 shadow-[0_30px_60px_-15px_rgba(15,23,42,0.08)] hover:shadow-[0_50px_100px_-20px_rgba(15,23,42,0.15)] transition-all duration-500 hover:-translate-y-3 relative overflow-hidden">
@@ -59,7 +67,6 @@ export default function StudentFeaturesPage() {
           ))}
         </div>
 
-        {/* Action Card */}
         <div className="bg-primary rounded-[4rem] p-16 text-white text-center space-y-10 relative overflow-hidden shadow-[0_60px_120px_-30px_rgba(15,23,42,0.4)]">
           <div className="absolute top-0 left-0 w-96 h-96 bg-accent/20 blur-[120px] rounded-full -translate-x-1/2 -translate-y-1/2"></div>
           <div className="relative z-10 space-y-6">

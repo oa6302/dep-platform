@@ -174,7 +174,6 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F8FAFC]">
-      {/* Premium Navbar */}
       <nav className={cn(
         "fixed top-0 w-full z-50 transition-all duration-500 px-6 py-4",
         scrolled ? "bg-white/70 backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(15,23,42,0.1)] translate-y-0" : "bg-transparent translate-y-2"
@@ -219,7 +218,6 @@ export default function HomePage() {
       </nav>
 
       <main>
-        {/* Hero Section */}
         <section className="pt-48 pb-32 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-accent/5 blur-[150px] rounded-full -translate-y-1/2 translate-x-1/2"></div>
           <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary/5 blur-[150px] rounded-full translate-y-1/2 -translate-x-1/2"></div>
@@ -229,21 +227,13 @@ export default function HomePage() {
               <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-accent/10 text-accent font-black text-[10px] uppercase tracking-[0.3em] border border-accent/20 shadow-xl shadow-accent/5">
                 ✨ Türkiye'nin Yeni Nesil Eğitim Platformu
               </div>
-              
-              <div className="space-y-2">
-                <h1 className="text-7xl md:text-[8rem] font-black text-primary leading-[0.8] tracking-tighter italic text-shadow-premium uppercase">
-                  Geleceğini <br />
-                  Dijital <br />
-                  Yönet, <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-orange-600 text-shadow-accent">Başarını</span> <br />
-                  Yükselt.
-                </h1>
-              </div>
-
+              <h1 className="text-7xl md:text-[8rem] font-black text-primary leading-[0.8] tracking-tighter italic text-shadow-premium uppercase">
+                Geleceğini <br /> Dijital <br /> Yönet, <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-orange-600 text-shadow-accent">Başarını</span> <br /> Yükselt.
+              </h1>
               <p className="text-2xl text-muted-foreground leading-relaxed max-w-xl font-medium italic">
                 YKS, LGS ve akademik başarınızı yapay zeka destekli analizlerle takip edin. Profesyonel koçluk parmaklarınızın ucunda.
               </p>
-
               <div className="flex flex-col sm:flex-row gap-6 pt-6">
                 <Button size="lg" className="bg-primary hover:bg-accent transition-all rounded-[1.75rem] px-12 h-20 text-xl font-black shadow-[0_30px_60px_-15px_rgba(15,23,42,0.3)] group" asChild>
                   <Link href="/login?tab=register">Ücretsiz Başla <ArrowRight className="ml-4 h-7 w-7 transition-transform group-hover:translate-x-2" /></Link>
@@ -252,7 +242,6 @@ export default function HomePage() {
                   <Play className="mr-4 h-7 w-7 fill-current text-accent" /> Canlı Demo
                 </Button>
               </div>
-
               <div className="grid grid-cols-2 md:grid-cols-4 gap-12 pt-20 border-t border-primary/5">
                 {[
                   { label: 'Analiz', val: '150K+' },
@@ -268,11 +257,9 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Dashboard Mockup */}
             <div className="relative group perspective-2000">
               <div className="absolute -inset-20 bg-accent/20 blur-[120px] rounded-full opacity-30 group-hover:opacity-50 transition-opacity duration-1000"></div>
               <div className="relative bg-white/40 backdrop-blur-3xl rounded-[4rem] shadow-[0_80px_160px_-40px_rgba(15,23,42,0.4)] border-[12px] border-white/80 overflow-hidden transform-gpu transition-all duration-1000 group-hover:rotate-y-[-8deg] group-hover:rotate-x-[4deg]">
-                 {/* Mockup Body */}
                  <div className="bg-primary p-10 flex justify-between items-center text-white">
                     <div className="flex items-center gap-5">
                        <div className="h-12 w-12 rounded-2xl bg-accent flex items-center justify-center shadow-2xl">
@@ -325,7 +312,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Features Tabs Section */}
         <section id="features" className="py-40 bg-white relative overflow-hidden">
           <div className="container mx-auto px-6">
             <div className="text-center max-w-4xl mx-auto mb-20 space-y-8">
@@ -374,7 +360,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Database Seed Section */}
         <section className="py-32 bg-[#F1F5F9]/50">
           <div className="container mx-auto px-6 text-center max-w-3xl">
             <div className="bg-white p-16 rounded-[4rem] shadow-[0_60px_120px_-30px_rgba(15,23,42,0.1)] border border-primary/5 space-y-12">
@@ -396,7 +381,6 @@ export default function HomePage() {
         </section>
       </main>
 
-      {/* Premium Footer */}
       <footer className="bg-primary text-white pt-48 pb-20 relative overflow-hidden">
         <div className="container mx-auto px-6 grid md:grid-cols-4 gap-24 pb-24 border-b border-white/5">
           <div className="col-span-2 space-y-12">

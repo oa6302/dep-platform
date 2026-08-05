@@ -3,10 +3,17 @@
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { 
-  Building, UserRound, Layers, PieChart, Globe, LayoutDashboard, 
-  CalendarCheck, Bell, ArrowRight, School, ChevronLeft
+  Building, 
+  UserRound, 
+  Layers, 
+  PieChart, 
+  Globe, 
+  LayoutDashboard, 
+  CalendarCheck, 
+  Bell, 
+  School, 
+  ChevronLeft 
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 export default function SchoolFeaturesPage() {
   const features = [
@@ -31,7 +38,6 @@ export default function SchoolFeaturesPage() {
       </header>
 
       <main className="container mx-auto px-6 pb-32 space-y-24">
-        {/* Hero Section */}
         <section className="text-center space-y-8 max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-accent text-white font-black text-[10px] uppercase tracking-widest">
             <School className="h-3 w-3" /> Kurumsal Deneyim
@@ -42,9 +48,8 @@ export default function SchoolFeaturesPage() {
           <p className="text-2xl text-muted-foreground font-medium leading-relaxed italic">
             Okulunuzu veriye dayalı yönetim stratejileriyle bir üst seviyeye taşıyın.
           </p>
-        </div>
+        </section>
 
-        {/* Feature Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((feature, i) => (
             <div key={i} className="group p-10 bg-white rounded-[3rem] border border-primary/5 shadow-[0_30px_60px_-15px_rgba(15,23,42,0.08)] hover:shadow-[0_50px_100px_-20px_rgba(15,23,42,0.15)] transition-all duration-500 hover:-translate-y-3 relative overflow-hidden">

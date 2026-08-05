@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useFirestore } from '@/firebase';
@@ -85,17 +84,10 @@ export default function SelectExamPage() {
               <Home className="h-6 w-6 group-hover/nav:scale-110" />
             </Button>
           </div>
-          <div className="hidden sm:flex items-center gap-3">
-             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-             <span className="font-black text-[10px] uppercase tracking-widest text-primary/40">Dinamik Sınav Motoru Aktif</span>
-          </div>
         </header>
 
-        <div className="text-center space-y-6 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent/10 text-accent font-black text-[10px] uppercase tracking-widest border border-accent/20 shadow-xl shadow-accent/5">
-            <Sparkles className="h-3.5 w-3.5" /> Hangi Programa Hazırlanıyorsunuz?
-          </div>
-          <h1 className="text-6xl md:text-7xl font-black text-primary tracking-tighter italic uppercase text-shadow-premium leading-none">
+        <div className="text-center space-y-6 max-w-3xl mx-auto pt-8">
+          <h1 className="text-6xl md:text-8xl font-black text-primary tracking-tighter italic uppercase text-shadow-premium leading-none">
             Hedefini <span className="text-accent text-shadow-accent">Belirle</span>
           </h1>
           <p className="text-xl text-muted-foreground font-medium italic">
@@ -130,7 +122,7 @@ export default function SelectExamPage() {
                         </div>
                         <div className="space-y-3">
                           <h3 className="text-3xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep group-hover:text-accent transition-colors leading-none">{exam.title}</h3>
-                          <p className="text-sm text-muted-foreground font-medium leading-relaxed italic line-clamp-2">{exam.description}</p>
+                          <p className="text-sm text-muted-foreground font-medium italic line-clamp-2">{exam.description}</p>
                         </div>
                         <div className="pt-6 border-t border-primary/5 flex items-center justify-between">
                            <span className="text-[10px] font-black uppercase tracking-widest text-primary/40">{exam.targetGroup}</span>

@@ -57,24 +57,20 @@ export function AuthForm({ mode }: AuthFormProps) {
 
   const { data: dbPrograms, loading: programsLoading } = useCollection<any>('programs', orderBy('title', 'asc'));
 
-  const categories = ['ORTAOKUL', 'ÜNİVERSİTE', 'KAMU', 'ÜNİVERSİTE GEÇİŞ', 'DİL', 'DİNÎ', 'AKADEMİK', 'ÖZEL'] as const;
+  const categories = ['ORTAOKUL', 'ÜNİVERSİTE', 'MEB SINAVLARI', 'KAMU SINAVLARI', 'AKADEMİK', 'YABANCI DİL', 'ÜNİVERSİTE GEÇİŞ', 'DİNÎ EĞİTİM', 'AKADEMİK DESTEK', 'ÖZEL PROGRAMLAR'] as const;
 
-  // Veritabanından gelen veya varsayılan konfigürasyondan gelen sınavları kategorize et
   const categorizedExams = useMemo(() => {
     const grouped: Record<string, any[]> = {};
     
-    // Önce veritabanındaki dinamik programları ekle
     dbPrograms.forEach(exam => {
-      const cat = exam.category || 'ÖZEL';
+      const cat = exam.category || 'ÖZEL PROGRAMLAR';
       if (!grouped[cat]) grouped[cat] = [];
       grouped[cat].push({ ...exam, source: 'db' });
     });
 
-    // Eğer veritabanı boşsa veya belirli bir kategori eksikse EXAM_CONFIGS'den tamamla
     Object.values(EXAM_CONFIGS).forEach(exam => {
       const cat = exam.category;
       if (!grouped[cat]) grouped[cat] = [];
-      // Eğer bu ID zaten veritabanından gelmediyse ekle
       if (!grouped[cat].find(e => e.id === exam.id)) {
         grouped[cat].push({ ...exam, source: 'config' });
       }
@@ -243,10 +239,6 @@ export function AuthForm({ mode }: AuthFormProps) {
             {role === 'student' && (
               <div className="space-y-8 animate-in slide-in-from-top duration-500">
                 <div className="space-y-4">
-                  <Label className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2 italic">
-                     <Target className="h-4 w-4 text-accent" /> HEDEF PROGRAMINIZI SEÇİN
-                  </Label>
-                  
                   <div className="bg-slate-50 p-4 rounded-[2rem] border-2 border-primary/5 shadow-inner">
                     <ScrollArea className="h-[400px] pr-4">
                        <div className="space-y-10">

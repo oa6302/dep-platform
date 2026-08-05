@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { doc, onSnapshot, DocumentData } from 'firebase/firestore';
 import { useFirestore } from '../provider';
 import { errorEmitter } from '../error-emitter';
@@ -14,18 +14,20 @@ export function useDoc<T = DocumentData>(path: string | null) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    // Reset state when path changes
+    setLoading(!!path);
+    
     if (!db || !path) {
       setData(null);
       setLoading(false);
       return;
     }
 
-    setLoading(true);
     const docRef = doc(db, path);
     const unsubscribe = onSnapshot(
       docRef,
       (snapshot) => {
-        setData(snapshot.exists() ? (snapshot.data() as T) : null);
+        setData(snapshot.exists() ? ({ id: snapshot.id, ...snapshot.data() } as T) : null);
         setLoading(false);
       },
       async (err) => {

@@ -34,7 +34,9 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const simulatedUserId = searchParams.get('simulate');
+  
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [isWaitTimeOver, setIsWaitTimeOver] = useState(false);
 
   const { data: userData, loading: docLoading } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
   const { data: simulatedUserData, loading: simLoading } = useDoc<any>(simulatedUserId ? `users/${simulatedUserId}` : null);
@@ -43,6 +45,16 @@ export default function DashboardPage() {
   
   const currentViewData = simulatedUserData || userData;
   const isSimulating = !!simulatedUserId;
+
+  // Profil verisinin gerçekten olmadığını doğrulamak için kısa bir bekleme süresi
+  useEffect(() => {
+    if (!authLoading && user && !docLoading && !userData) {
+      const timer = setTimeout(() => setIsWaitTimeOver(true), 2000);
+      return () => clearTimeout(timer);
+    } else {
+      setIsWaitTimeOver(false);
+    }
+  }, [authLoading, user, docLoading, userData]);
 
   const dynamicMenu = useMemo(() => {
     if (!currentViewData) return [];
@@ -82,7 +94,7 @@ export default function DashboardPage() {
     ];
 
     const config = EXAM_CONFIGS[currentViewData.targetExam || 'LGS'] || EXAM_CONFIGS['LGS'];
-    config.modules.slice(0, 3).forEach(mod => {
+    config.modules?.slice(0, 3).forEach(mod => {
       items.push({ label: mod.title, icon: mod.icon, href: '#' });
     });
 
@@ -96,7 +108,8 @@ export default function DashboardPage() {
     }
   }, [user, authLoading, router]);
 
-  if (authLoading || docLoading || (simulatedUserId && simLoading)) {
+  // Loading state handling
+  if (authLoading || docLoading || (simulatedUserId && simLoading) || (user && !userData && !isWaitTimeOver)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
         <div className="flex flex-col items-center gap-8">
@@ -127,10 +140,14 @@ export default function DashboardPage() {
            <div className="h-24 w-24 rounded-[2.5rem] bg-destructive/10 flex items-center justify-center shadow-inner">
               <AlertCircle className="h-12 w-12 text-destructive" />
            </div>
-           <h2 className="text-5xl font-black text-primary tracking-tighter uppercase italic text-shadow-deep">Profil Saptanamadı</h2>
-           <p className="text-muted-foreground max-w-md mx-auto italic font-medium">Hesabınızla eşleşen bir profil verisi bulunamadı. Lütfen yeniden kayıt olmayı deneyin veya teknik destekle iletişime geçin.</p>
-           <Button onClick={() => router.push('/login?tab=register')} className="h-20 px-12 rounded-[2rem] bg-primary text-white font-black uppercase text-xs tracking-widest flex items-center gap-4 shadow-2xl">
-              <User className="h-6 w-6 text-accent" /> Yeniden Kayıt Ol
+           <div className="space-y-4">
+             <h2 className="text-5xl font-black text-primary tracking-tighter uppercase italic text-shadow-deep">Profil Kaydı Eksik</h2>
+             <p className="text-muted-foreground max-w-md mx-auto italic font-medium text-lg">
+                Giriş yaptınız ancak {user?.email} adresiyle eşleşen bir akademik profil bulunamadı.
+             </p>
+           </div>
+           <Button onClick={() => router.push('/login?tab=register')} className="h-20 px-12 rounded-[2rem] bg-primary text-white font-black uppercase text-xs tracking-widest flex items-center gap-4 shadow-2xl transition-all hover:scale-105">
+              <User className="h-6 w-6 text-accent" /> Profili Şimdi Oluştur
            </Button>
         </div>
       );

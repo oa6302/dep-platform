@@ -17,13 +17,15 @@ export function useCollection<T = DocumentData>(
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    // Reset state when path changes
+    setLoading(!!pathOrQuery);
+
     if (!db || !pathOrQuery) {
       setData([]);
       setLoading(false);
       return;
     }
 
-    setLoading(true);
     const collectionRef = typeof pathOrQuery === 'string' 
       ? query(collection(db, pathOrQuery), ...constraints)
       : pathOrQuery;

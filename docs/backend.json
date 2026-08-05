@@ -1,0 +1,64 @@
+
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores user details and roles (student, teacher, admin).",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "teacher", "admin"] },
+        "coachId": { "type": "string", "description": "The UID of the coach assigned to a student." },
+        "bio": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "CoachingSession": {
+      "title": "Coaching Session",
+      "description": "Represents a scheduled meeting between a coach and a student.",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "teacherId": { "type": "string" },
+        "scheduledAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["scheduled", "completed", "cancelled"] },
+        "notes": { "type": "string" }
+      },
+      "required": ["studentId", "teacherId", "scheduledAt"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Assignments or goals set by a coach for a student.",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "teacherId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["pending", "completed"] }
+      },
+      "required": ["studentId", "title", "status"]
+    }
+  },
+  "auth": {
+    "providers": ["email", "google"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profiles and roles."
+    },
+    "/sessions/{sessionId}": {
+      "schema": "CoachingSession",
+      "description": "Coaching session records."
+    },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Student tasks and assignments."
+    }
+  }
+}

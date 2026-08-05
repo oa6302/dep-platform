@@ -12,7 +12,7 @@ import {
   ChevronRight, Play, AlertCircle, History,
   LayoutDashboard, BarChart3, LineChart as LineIcon,
   Flame, Award, Search, ArrowUpRight, ArrowRight,
-  BookOpenCheck, PencilLine
+  BookOpen, Pencil
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { 
@@ -93,8 +93,8 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-12 mt-12 border-t border-primary/5">
               {[
                 { label: 'Görev', val: '4', sub: 'Tamamlanan: 2', icon: CheckCircle2, color: 'text-emerald-500' },
-                { label: 'Konu', val: '3', sub: 'Bugünkü Hedef', icon: BookOpenCheck, color: 'text-blue-500' },
-                { label: 'Soru', val: '120', sub: 'Çözülen: 84', icon: PencilLine, color: 'text-orange-500' },
+                { label: 'Konu', val: '3', sub: 'Bugünkü Hedef', icon: BookOpen, color: 'text-blue-500' },
+                { label: 'Soru', val: '120', sub: 'Çözülen: 84', icon: Pencil, color: 'text-orange-500' },
                 { label: 'Çalışma', val: '3s', sub: 'Gerçekleşen: 1.5s', icon: Clock, color: 'text-accent' },
               ].map((item, i) => (
                 <div key={i} className="space-y-1">
@@ -432,9 +432,9 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
       <section className="grid grid-cols-2 md:grid-cols-5 gap-6">
          {[
            { label: 'TOPLAM ÇALIŞMA', val: '425s', icon: Timer, color: 'text-primary' },
-           { label: 'TOPLAM SORU', val: '18.4k', icon: PencilLine, color: 'text-accent' },
+           { label: 'TOPLAM SORU', val: '18.4k', icon: Pencil, color: 'text-accent' },
            { label: 'TOPLAM DENEME', val: '126', icon: ClipboardCheck, color: 'text-emerald-500' },
-           { label: 'BİTEN KONU', val: '382', icon: BookOpenCheck, color: 'text-blue-500' },
+           { label: 'BİTEN KONU', val: '382', icon: BookOpen, color: 'text-blue-500' },
            { label: 'BAŞARI ORANI', val: '%91', icon: Award, color: 'text-indigo-500' },
          ].map((stat, i) => (
            <Card key={i} className="p-8 rounded-[2.5rem] border-none shadow-lg bg-white group hover:-translate-y-2 transition-all">

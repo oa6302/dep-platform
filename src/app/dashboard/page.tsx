@@ -109,19 +109,6 @@ export default function DashboardPage() {
     );
   }
 
-  // Veri hala gelmediyse ve yükleme bittiyse, bir saniye daha bekle (Firebase race condition koruması)
-  if (user && !userData && !docLoading) {
-     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
-           <div className="text-center space-y-6">
-              <Loader2 className="h-12 w-12 animate-spin mx-auto text-accent" />
-              <p className="text-sm font-black uppercase tracking-widest text-primary/40">Profil Doğrulanıyor...</p>
-              <Button onClick={() => window.location.reload()} variant="outline" className="rounded-xl">Yeniden Dene</Button>
-           </div>
-        </div>
-     );
-  }
-
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth);

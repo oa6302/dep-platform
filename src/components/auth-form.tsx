@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,9 +17,9 @@ import { doc, setDoc, serverTimestamp, getDoc, collection, query, where, getDocs
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { 
-  Loader2, Mail, Lock, User, School, Hash, Target, 
+  Loader2, Mail, Lock, User, School, Hash, 
   Sparkles, UserRound, Building, CheckCircle2, QrCode, 
-  Star, History, ChevronRight, Grid3X3, Brain 
+  ChevronRight, Grid3X3, Brain 
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -55,7 +56,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const { toast } = useToast();
 
-  const { data: dbPrograms, loading: programsLoading } = useCollection<any>('programs', orderBy('title', 'asc'));
+  const { data: dbPrograms } = useCollection<any>('programs', orderBy('title', 'asc'));
 
   const categories = ['ORTAOKUL', 'ÜNİVERSİTE', 'MEB SINAVLARI', 'KAMU SINAVLARI', 'AKADEMİK', 'YABANCI DİL', 'ÜNİVERSİTE GEÇİŞ', 'DİNÎ EĞİTİM', 'AKADEMİK DESTEK', 'ÖZEL PROGRAMLAR'] as const;
 
@@ -107,16 +108,11 @@ export function AuthForm({ mode }: AuthFormProps) {
         if (role === 'student' && targetExam) userData.targetExam = targetExam;
 
         await setDoc(userDocRef, userData);
-        toast({ title: 'Hoş Geldiniz', description: `Hesabınız ${role === 'teacher' ? 'Öğretmen' : 'Öğrenci'} olarak oluşturuldu.` });
-        
-        router.push('/dashboard');
-      } else {
-        toast({ title: 'Giriş Başarılı', description: 'Hoş geldiniz!' });
-        router.push('/dashboard');
+        toast({ title: 'Profil Hazır', description: `Hoş geldiniz!` });
       }
+      router.push('/dashboard');
     } catch (error: any) {
-      console.error(error);
-      toast({ variant: 'destructive', title: 'Giriş Başarısız', description: 'Google ile giriş yapılamadı.' });
+      toast({ variant: 'destructive', title: 'Hata', description: 'Google ile giriş yapılamadı.' });
     } finally {
       setLoading(false);
     }
@@ -161,7 +157,6 @@ export function AuthForm({ mode }: AuthFormProps) {
         if (role === 'teacher') {
           userData.activationCode = generateTeacherCode();
           userData.school = schoolName;
-          userData.branch = 'Genel';
         } else if (role === 'student') {
           userData.targetExam = targetExam;
           if (coachId) userData.coachId = coachId;
@@ -174,7 +169,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           setDoc(doc(db, 'users', user.uid), userData)
         ]);
 
-        toast({ title: 'Kayıt Başarılı', description: role === 'teacher' ? `Öğretmen hesabınız oluşturuldu.` : `Sistem yapılandırıldı.` });
+        toast({ title: 'Kayıt Başarılı', description: 'Sisteme hoş geldiniz!' });
       } else {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: 'Giriş Başarılı', description: 'Hoş geldiniz!' });
@@ -182,7 +177,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       router.push('/dashboard');
     } catch (error: any) {
       const description = errorMessageMap[error.code] || 'Bir hata oluştu.';
-      toast({ variant: 'destructive', title: 'İşlem Başarısız', description });
+      toast({ variant: 'destructive', title: 'Hata', description });
     } finally {
       setLoading(false);
     }
@@ -192,7 +187,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     <div className="space-y-6">
       {mode === 'register' && (
         <div className="space-y-3">
-          <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 italic">Sistemi Nasıl Kullanacaksınız?</Label>
+          <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 italic">Rolünüzü Seçin</Label>
           <div className="grid grid-cols-3 gap-3">
             {[
               { id: 'student', label: 'Öğrenci', icon: UserRound },
@@ -208,7 +203,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                   role === r.id ? "border-accent bg-accent/5 text-primary" : "border-primary/5 bg-white text-muted-foreground hover:border-primary/20"
                 )}
               >
-                <r.icon className={cn("h-6 w-6 transition-transform group-hover:scale-110", role === r.id ? "text-accent" : "text-muted-foreground")} />
+                <r.icon className={cn("h-6 w-6", role === r.id ? "text-accent" : "text-muted-foreground")} />
                 <span className="text-[10px] font-black uppercase tracking-tighter italic">{r.label}</span>
               </button>
             ))}
@@ -227,7 +222,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 <User className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="name"
-                  placeholder={role === 'school_admin' ? 'Örn: Atatürk Koleji' : 'Adınız Soyadınız'}
+                  placeholder={role === 'school_admin' ? 'Örn: Atatürk Lisesi' : 'Adınız Soyadınız'}
                   className="pl-10 rounded-xl h-12 bg-[#F8FAFC] border-none shadow-inner font-bold"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
@@ -250,40 +245,37 @@ export function AuthForm({ mode }: AuthFormProps) {
                                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/40">{category}</h3>
                                  </div>
                                  <div className="grid grid-cols-1 gap-3">
-                                    {categorizedExams[category]?.map((exam) => {
-                                      const Icon = exam.icon || Grid3X3;
-                                      return (
-                                        <button
-                                          key={exam.id}
-                                          type="button"
-                                          onClick={() => setTargetExam(exam.id)}
-                                          className={cn(
-                                            "flex items-center justify-between p-5 rounded-2xl border-2 transition-all group text-left",
-                                            targetExam === exam.id 
-                                              ? "border-accent bg-white shadow-xl shadow-accent/5 ring-4 ring-accent/5" 
-                                              : "border-white bg-white/50 hover:border-primary/10 hover:bg-white"
-                                          )}
-                                        >
-                                           <div className="flex items-center gap-5">
-                                              <div className={cn(
-                                                "h-12 w-12 rounded-xl flex items-center justify-center transition-all",
-                                                targetExam === exam.id ? "bg-accent text-white" : "bg-primary/5 text-primary"
-                                              )}>
-                                                 <Icon className="h-6 w-6" />
-                                              </div>
-                                              <div>
-                                                 <p className={cn("font-black text-sm uppercase tracking-tight", targetExam === exam.id ? "text-primary" : "text-primary/70")}>{exam.title}</p>
-                                                 <p className="text-[9px] font-bold opacity-40 uppercase tracking-widest">{exam.targetGroup || 'Aktif Müfredat'}</p>
-                                              </div>
-                                           </div>
-                                           {targetExam === exam.id ? (
-                                              <CheckCircle2 className="h-5 w-5 text-accent animate-in zoom-in duration-300" />
-                                           ) : (
-                                              <ChevronRight className="h-4 w-4 text-muted-foreground opacity-20 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                                           )}
-                                        </button>
-                                      );
-                                    })}
+                                    {categorizedExams[category]?.map((exam) => (
+                                      <button
+                                        key={exam.id}
+                                        type="button"
+                                        onClick={() => setTargetExam(exam.id)}
+                                        className={cn(
+                                          "flex items-center justify-between p-5 rounded-2xl border-2 transition-all group text-left",
+                                          targetExam === exam.id 
+                                            ? "border-accent bg-white shadow-xl ring-4 ring-accent/5" 
+                                            : "border-white bg-white/50 hover:border-primary/10 hover:bg-white"
+                                        )}
+                                      >
+                                         <div className="flex items-center gap-5">
+                                            <div className={cn(
+                                              "h-12 w-12 rounded-xl flex items-center justify-center transition-all",
+                                              targetExam === exam.id ? "bg-accent text-white" : "bg-primary/5 text-primary"
+                                            )}>
+                                               {exam.icon ? <exam.icon className="h-6 w-6" /> : <Grid3X3 className="h-6 w-6" />}
+                                            </div>
+                                            <div>
+                                               <p className={cn("font-black text-sm uppercase tracking-tight", targetExam === exam.id ? "text-primary" : "text-primary/70")}>{exam.title}</p>
+                                               <p className="text-[9px] font-bold opacity-40 uppercase tracking-widest">{exam.targetGroup || 'Müfredat Motoru'}</p>
+                                            </div>
+                                         </div>
+                                         {targetExam === exam.id ? (
+                                            <CheckCircle2 className="h-5 w-5 text-accent animate-in zoom-in" />
+                                         ) : (
+                                            <ChevronRight className="h-4 w-4 text-muted-foreground opacity-20" />
+                                         )}
+                                      </button>
+                                    ))}
                                  </div>
                               </div>
                             )
@@ -300,17 +292,15 @@ export function AuthForm({ mode }: AuthFormProps) {
                         "flex items-center space-x-2 rounded-xl p-4 border-2 transition-all cursor-pointer shadow-sm",
                         studentMode === 'individual' ? "border-primary bg-primary text-white" : "border-primary/5 bg-white"
                       )} onClick={() => setStudentMode('individual')}>
-                        <RadioGroupItem value="individual" id="individual" className="hidden" />
                         <CheckCircle2 className={cn("h-5 w-5", studentMode === 'individual' ? "text-accent" : "text-muted-foreground")} />
-                        <Label htmlFor="individual" className="font-black text-[10px] uppercase tracking-widest cursor-pointer">Bireysel</Label>
+                        <Label className="font-black text-[10px] uppercase tracking-widest cursor-pointer">Bireysel</Label>
                       </div>
                       <div className={cn(
                         "flex items-center space-x-2 rounded-xl p-4 border-2 transition-all cursor-pointer shadow-sm",
                         studentMode === 'connected' ? "border-accent bg-accent text-white" : "border-primary/5 bg-white"
                       )} onClick={() => setStudentMode('connected')}>
-                        <RadioGroupItem value="connected" id="connected" className="hidden" />
                         <UserRound className={cn("h-5 w-5", studentMode === 'connected' ? "text-white" : "text-muted-foreground")} />
-                        <Label htmlFor="connected" className="font-black text-[10px] uppercase tracking-widest cursor-pointer">Öğretmenli</Label>
+                        <Label className="font-black text-[10px] uppercase tracking-widest cursor-pointer">Öğretmenli</Label>
                       </div>
                    </RadioGroup>
                 </div>
@@ -318,7 +308,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 {studentMode === 'connected' && (
                   <div className="space-y-2 animate-in slide-in-from-right">
                     <Label htmlFor="teacherCode" className="text-xs font-black uppercase tracking-widest text-accent flex items-center gap-2">
-                       <QrCode className="h-3 w-3" /> ÖĞRETMEN AKTİVASYON KODU
+                       <QrCode className="h-3 w-3" /> ÖĞRETMEN KODU
                     </Label>
                     <div className="relative">
                       <Hash className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
@@ -390,7 +380,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         <Button type="submit" className="w-full h-16 rounded-2xl bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest shadow-2xl shadow-primary/20 gap-3 mt-6" disabled={loading}>
           {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
             <>
-              {mode === 'login' ? 'Giriş Yap' : 'Hesabımı Yapılandır'}
+              {mode === 'login' ? 'Giriş Yap' : 'Profilimi Oluştur'}
               <Sparkles className="h-4 w-4" />
             </>
           )}
@@ -402,22 +392,18 @@ export function AuthForm({ mode }: AuthFormProps) {
           <Separator />
         </div>
         <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest italic">
-          <span className="bg-white px-4 text-muted-foreground">Veya Kurumsal Giriş</span>
+          <span className="bg-white px-4 text-muted-foreground">Veya Google İle</span>
         </div>
       </div>
 
-      <Button variant="outline" type="button" className="w-full h-14 rounded-2xl border-2 font-black text-xs uppercase tracking-widest transition-all hover:bg-[#F8FAFC] gap-3 shadow-sm" onClick={handleGoogleSignIn} disabled={loading}>
-        {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
-          <div className="flex items-center gap-3">
-            <svg className="h-5 w-5" viewBox="0 0 24 24">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-            </svg>
-            {role === 'teacher' ? 'Öğretmen Olarak Google ile Gir' : role === 'school_admin' ? 'Okul Olarak Google ile Gir' : 'Öğrenci Olarak Google ile Gir'}
-          </div>
-        )}
+      <Button variant="outline" type="button" className="w-full h-14 rounded-2xl border-2 font-black text-xs uppercase tracking-widest transition-all hover:bg-[#F8FAFC] gap-3" onClick={handleGoogleSignIn} disabled={loading}>
+        <svg className="h-5 w-5" viewBox="0 0 24 24">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+        </svg>
+        Google İle Devam Et
       </Button>
     </div>
   );

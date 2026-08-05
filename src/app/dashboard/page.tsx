@@ -19,7 +19,6 @@ import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -36,7 +35,6 @@ export default function DashboardPage() {
   const searchParams = useSearchParams();
   const simulatedUserId = searchParams.get('simulate');
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
-  const [fixingProfile, setFixingProfile] = useState(false);
 
   const { data: userData, loading: docLoading } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
   const { data: simulatedUserData, loading: simLoading } = useDoc<any>(simulatedUserId ? `users/${simulatedUserId}` : null);
@@ -49,28 +47,46 @@ export default function DashboardPage() {
   const dynamicMenu = useMemo(() => {
     if (!currentViewData) return [];
     
-    // Öğretmen/Admin Menüsü
-    if (currentViewData.role !== 'student') {
+    if (currentViewData.role === 'admin') {
       return [
-        { label: 'Panelim', icon: LayoutDashboard, href: '/dashboard' },
+        { label: 'Sistem Paneli', icon: LayoutDashboard, href: '/dashboard' },
+        { label: 'Müfredat Motoru', icon: Library, href: '/dashboard/admin/curriculum' },
+        { label: 'Uzmanlar', icon: Users, href: '/dashboard/discover' },
+        { label: 'Destek', icon: Headset, href: '/dashboard/contact' },
+      ];
+    }
+
+    if (currentViewData.role === 'school_admin') {
+      return [
+        { label: 'Okul Paneli', icon: LayoutDashboard, href: '/dashboard' },
+        { label: 'Öğretmenler', icon: User, href: '#' },
+        { label: 'Şubeler', icon: PieChart, href: '#' },
+        { label: 'Destek', icon: Headset, href: '/dashboard/contact' },
+      ];
+    }
+
+    if (currentViewData.role === 'teacher') {
+      return [
+        { label: 'Öğretmen Paneli', icon: LayoutDashboard, href: '/dashboard' },
+        { label: 'Öğrencilerim', icon: Users, href: '#' },
         { label: 'Uzman Keşfet', icon: Compass, href: '/dashboard/discover' },
         { label: 'Destek', icon: Headset, href: '/dashboard/contact' },
       ];
     }
 
     // Öğrenci Menüsü (Sınava Özel)
-    const config = EXAM_CONFIGS[currentViewData.targetExam || 'LGS'] || EXAM_CONFIGS['LGS'];
     const items = [
-      { label: 'Panelim', icon: LayoutDashboard, href: '/dashboard' },
+      { label: 'Akademik Panel', icon: LayoutDashboard, href: '/dashboard' },
       { label: 'AI Analiz', icon: Brain, href: '/dashboard/ai-analysis', accent: true },
       { label: 'Uzman Keşfet', icon: Compass, href: '/dashboard/discover' },
     ];
 
-    config.modules.slice(0, 4).forEach(mod => {
+    const config = EXAM_CONFIGS[currentViewData.targetExam || 'LGS'] || EXAM_CONFIGS['LGS'];
+    config.modules.slice(0, 3).forEach(mod => {
       items.push({ label: mod.title, icon: mod.icon, href: '#' });
     });
 
-    items.push({ label: 'Destek', icon: Headset, href: '/dashboard/contact' });
+    items.push({ label: 'Destek Hattı', icon: Headset, href: '/dashboard/contact' });
     return items;
   }, [currentViewData]);
 
@@ -104,25 +120,6 @@ export default function DashboardPage() {
     router.push(`/dashboard?${params.toString()}`);
   };
 
-  const handleCreateProfile = async (targetRole: 'student' | 'teacher') => {
-    if (!user || !db) return;
-    setFixingProfile(true);
-    try {
-      await setDoc(doc(db, 'users', user.uid), {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName || 'Kullanıcı',
-        role: targetRole,
-        createdAt: serverTimestamp(),
-      }, { merge: true });
-      toast({ title: 'Profil Hazır', description: 'Hesabınız yapılandırıldı.' });
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Hata', description: 'Profil oluşturulamadı.' });
-    } finally {
-      setFixingProfile(false);
-    }
-  };
-
   const renderView = () => {
     if (!currentViewData) {
       return (
@@ -130,37 +127,12 @@ export default function DashboardPage() {
            <div className="h-24 w-24 rounded-[2.5rem] bg-destructive/10 flex items-center justify-center shadow-inner">
               <AlertCircle className="h-12 w-12 text-destructive" />
            </div>
-           <div className="space-y-4">
-              <h2 className="text-5xl font-black text-primary tracking-tighter uppercase italic text-shadow-deep">Profil Saptanamadı</h2>
-              <p className="text-muted-foreground font-medium italic max-w-md mx-auto">Sistemde bir profil kaydı bulunamadı. Hemen modunuzu seçerek başlayın.</p>
-           </div>
-           <div className="flex gap-6">
-              <button onClick={() => handleCreateProfile('student')} className="h-20 px-12 rounded-[2rem] bg-primary text-white hover:bg-accent font-black uppercase text-xs tracking-widest flex items-center gap-4 shadow-2xl transition-all">
-                <User className="h-6 w-6 text-accent" /> Öğrenci Paneli Kur
-              </button>
-              <button onClick={() => handleCreateProfile('teacher')} className="h-20 px-12 rounded-[2rem] border-4 border-primary font-black uppercase text-xs tracking-widest flex items-center gap-4 shadow-xl transition-all hover:bg-primary hover:text-white group">
-                <Brain className="h-6 w-6 text-primary group-hover:text-accent" /> Öğretmen Paneli Kur
-              </button>
-           </div>
+           <h2 className="text-5xl font-black text-primary tracking-tighter uppercase italic text-shadow-deep">Profil Saptanamadı</h2>
+           <Button onClick={() => router.push('/login?tab=register')} className="h-20 px-12 rounded-[2rem] bg-primary text-white font-black uppercase text-xs tracking-widest flex items-center gap-4 shadow-2xl">
+              <User className="h-6 w-6 text-accent" /> Yeniden Kayıt Ol
+           </Button>
         </div>
       );
-    }
-
-    if (currentViewData.role === 'student' && !currentViewData.targetExam && !isSimulating) {
-       return (
-         <div className="p-20 flex flex-col items-center justify-center text-center space-y-12 animate-in fade-in zoom-in-95 duration-1000">
-            <div className="h-24 w-24 rounded-[2.5rem] bg-accent/10 flex items-center justify-center shadow-inner">
-               <Sparkles className="h-12 w-12 text-accent" />
-            </div>
-            <div className="space-y-4">
-               <h2 className="text-5xl font-black text-primary tracking-tighter uppercase italic">Hedef Seçilmedi</h2>
-               <p className="text-muted-foreground font-medium italic max-w-md mx-auto">Dashboard'unuzu yapılandırmak için bir eğitim programı seçmelisiniz.</p>
-            </div>
-            <Button onClick={() => router.push('/dashboard/select-exam')} className="h-20 px-12 rounded-[2rem] bg-primary hover:bg-accent font-black uppercase text-xs tracking-widest gap-4 shadow-2xl transition-all">
-               Hedef Belirle <ArrowRight className="h-6 w-6" />
-            </Button>
-         </div>
-       );
     }
 
     switch (currentViewData.role) {
@@ -168,7 +140,7 @@ export default function DashboardPage() {
       case 'teacher': return <TeacherView user={user} userData={currentViewData} />;
       case 'school_admin': return <SchoolAdminView user={user} userData={currentViewData} />;
       case 'admin': return <AdminView user={user} userData={currentViewData} />;
-      default: return null;
+      default: return <StudentView user={{ uid: currentViewData.uid }} userData={currentViewData} />;
     }
   };
 
@@ -232,7 +204,9 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <p className="text-base font-black truncate tracking-tight text-shadow-deep">{userData?.displayName}</p>
-                  <p className="text-[10px] opacity-40 truncate font-black uppercase tracking-widest mt-2">{userData?.targetExam || 'Profil Kuruluyor'}</p>
+                  <p className="text-[10px] opacity-40 truncate font-black uppercase tracking-widest mt-2">
+                    {userData?.role === 'student' ? (userData?.targetExam || 'Profil') : userData?.role?.toUpperCase().replace('_', ' ')}
+                  </p>
                 </div>
                 <Button variant="ghost" size="icon" className="h-12 w-12 hover:bg-destructive rounded-2xl transition-all" onClick={(e) => { e.stopPropagation(); handleLogout(); }}>
                   <LogOut className="h-6 w-6" />
@@ -255,7 +229,7 @@ export default function DashboardPage() {
               </div>
               <div className="space-y-1">
                  <h1 className="text-4xl font-black text-primary uppercase tracking-tighter italic text-shadow-premium">
-                   {isSimulating ? 'Öğrenci Simülasyonu' : userData?.targetExam ? `${userData.targetExam} PANALİ` : 'PANELİM'}
+                   {isSimulating ? 'ÖĞRENCİ SİMÜLASYONU' : userData?.role === 'student' ? `${userData?.targetExam || 'LGS'} PANALİ` : `${userData?.role?.toUpperCase().replace('_', ' ')} PANALİ`}
                  </h1>
                  <div className="flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground italic">
                     <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span> SİSTEM ÇEVRİMİÇİ

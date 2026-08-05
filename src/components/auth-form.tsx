@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -16,7 +15,11 @@ import {
 import { doc, setDoc, serverTimestamp, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, School, Hash, Target, Sparkles, UserRound, Building, CheckCircle2, QrCode, Star, History, ChevronRight, Grid3X3 } from 'lucide-react';
+import { 
+  Loader2, Mail, Lock, User, School, Hash, Target, 
+  Sparkles, UserRound, Building, CheckCircle2, QrCode, 
+  Star, History, ChevronRight, Grid3X3, Brain 
+} from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';

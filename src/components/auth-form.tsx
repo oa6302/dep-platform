@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,12 +16,13 @@ import {
 import { doc, setDoc, serverTimestamp, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, School, Hash, Target, Sparkles, UserRound, Building, CheckCircle2, QrCode } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, Mail, Lock, User, School, Hash, Target, Sparkles, UserRound, Building, CheckCircle2, QrCode, Star, History } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectSeparator } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface AuthFormProps {
   mode: 'login' | 'register';
@@ -51,6 +53,17 @@ export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const { toast } = useToast();
 
+  const categories = ['ORTAOKUL', 'ÜNİVERSİTE', 'KAMU', 'DİL', 'DİNÎ', 'AKADEMİK', 'ÖZEL'];
+
+  const categorizedExams = useMemo(() => {
+    const grouped: Record<string, any[]> = {};
+    Object.values(EXAM_CONFIGS).forEach(exam => {
+      if (!grouped[exam.category]) grouped[exam.category] = [];
+      grouped[exam.category].push(exam);
+    });
+    return grouped;
+  }, []);
+
   const generateTeacherCode = () => {
     return 'DK-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
   };
@@ -79,11 +92,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         router.push('/dashboard');
       }
     } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Giriş Başarısız',
-        description: 'Google ile giriş yapılamadı.',
-      });
+      toast({ variant: 'destructive', title: 'Giriş Başarısız', description: 'Google ile giriş yapılamadı.' });
     } finally {
       setLoading(false);
     }
@@ -94,7 +103,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     if (!auth || !db) return;
 
     if (mode === 'register' && role === 'student' && !targetExam) {
-      toast({ variant: 'destructive', title: 'Hata', description: 'Lütfen bir hedef sınav seçin.' });
+      toast({ variant: 'destructive', title: 'Hata', description: 'Lütfen bir hedef program seçin.' });
       return;
     }
 
@@ -140,7 +149,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           setDoc(doc(db, 'users', user.uid), userData)
         ]);
 
-        toast({ title: 'Kayıt Başarılı', description: role === 'teacher' ? `Öğretmen hesabınız oluşturuldu. Kodunuz: ${userData.activationCode}` : `Hoş geldin! Sistem ${targetExam} moduna göre yapılandırıldı.` });
+        toast({ title: 'Kayıt Başarılı', description: role === 'teacher' ? `Öğretmen hesabınız oluşturuldu. Kodunuz: ${userData.activationCode}` : `Sistem ${targetExam} moduna göre yapılandırıldı.` });
       } else {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: 'Giriş Başarılı', description: 'Hoş geldiniz!' });
@@ -148,11 +157,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       router.push('/dashboard');
     } catch (error: any) {
       const description = errorMessageMap[error.code] || 'Bir hata oluştu.';
-      toast({
-        variant: 'destructive',
-        title: 'İşlem Başarısız',
-        description,
-      });
+      toast({ variant: 'destructive', title: 'İşlem Başarısız', description });
     } finally {
       setLoading(false);
     }
@@ -162,7 +167,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     <div className="space-y-6">
       {mode === 'register' && (
         <div className="space-y-3">
-          <Label className="text-[10px] font-black uppercase tracking-widest opacity-40">Sistemi Nasıl Kullanacaksınız?</Label>
+          <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 italic">Sistemi Nasıl Kullanacaksınız?</Label>
           <div className="grid grid-cols-3 gap-3">
             {[
               { id: 'student', label: 'Öğrenci', icon: User },
@@ -197,7 +202,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 <User className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="name"
-                  placeholder={role === 'school_admin' ? 'Örn: Atatürk Lisesi' : 'Adınız Soyadınız'}
+                  placeholder={role === 'school_admin' ? 'Örn: Atatürk Koleji' : 'Adınız Soyadınız'}
                   className="pl-10 rounded-xl h-12 bg-[#F8FAFC] border-none shadow-inner font-bold"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
@@ -206,29 +211,13 @@ export function AuthForm({ mode }: AuthFormProps) {
               </div>
             </div>
 
-            {role === 'teacher' && (
-              <div className="space-y-2 animate-in slide-in-from-top">
-                <Label htmlFor="school" className="text-xs font-black uppercase tracking-widest opacity-60">Çalıştığınız Kurum (Opsiyonel)</Label>
-                <div className="relative">
-                  <School className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="school"
-                    placeholder="Kurum Adı"
-                    className="pl-10 rounded-xl h-12 bg-[#F8FAFC] border-none shadow-inner font-bold"
-                    value={schoolName}
-                    onChange={(e) => setSchoolName(e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
-
             {role === 'student' && (
               <div className="space-y-6 animate-in slide-in-from-top duration-500">
                 <div className="space-y-3">
-                   <Label className="text-xs font-black uppercase tracking-widest opacity-60">Kullanım Modu</Label>
+                   <Label className="text-xs font-black uppercase tracking-widest opacity-60 italic">Kullanım Modu</Label>
                    <RadioGroup value={studentMode} onValueChange={(v: any) => setStudentMode(v)} className="grid grid-cols-2 gap-4">
                       <div className={cn(
-                        "flex items-center space-x-2 rounded-xl p-4 border-2 transition-all cursor-pointer",
+                        "flex items-center space-x-2 rounded-xl p-4 border-2 transition-all cursor-pointer shadow-sm",
                         studentMode === 'individual' ? "border-primary bg-primary text-white" : "border-primary/5 bg-white"
                       )} onClick={() => setStudentMode('individual')}>
                         <RadioGroupItem value="individual" id="individual" className="hidden" />
@@ -236,7 +225,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                         <Label htmlFor="individual" className="font-black text-[10px] uppercase tracking-widest cursor-pointer">Bireysel Devam Et</Label>
                       </div>
                       <div className={cn(
-                        "flex items-center space-x-2 rounded-xl p-4 border-2 transition-all cursor-pointer",
+                        "flex items-center space-x-2 rounded-xl p-4 border-2 transition-all cursor-pointer shadow-sm",
                         studentMode === 'connected' ? "border-accent bg-accent text-white" : "border-primary/5 bg-white"
                       )} onClick={() => setStudentMode('connected')}>
                         <RadioGroupItem value="connected" id="connected" className="hidden" />
@@ -266,22 +255,42 @@ export function AuthForm({ mode }: AuthFormProps) {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="targetExam" className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                     <Target className="h-3 w-3" /> HAZIRLANDIĞIN SINAV
+                  <Label htmlFor="targetExam" className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2 italic">
+                     <Target className="h-3 w-3" /> HEDEF PROGRAMINIZ
                   </Label>
                   <Select value={targetExam} onValueChange={setTargetExam}>
-                    <SelectTrigger className="w-full h-12 bg-white border-2 border-primary/10 rounded-xl shadow-sm font-bold text-primary px-4">
-                      <SelectValue placeholder="Sınavını Seç" />
+                    <SelectTrigger className="w-full h-12 bg-white border-2 border-primary/10 rounded-xl shadow-xl font-black text-primary px-4">
+                      <SelectValue placeholder="Bir Program Seçin" />
                     </SelectTrigger>
-                    <SelectContent className="max-h-[300px] rounded-2xl">
-                       {Object.values(EXAM_CONFIGS).map((exam) => (
-                         <SelectItem key={exam.id} value={exam.id} className="font-bold py-3">
-                           <div className="flex items-center gap-3">
-                              <exam.icon className="h-4 w-4 text-accent" />
-                              <span>{exam.title}</span>
-                           </div>
-                         </SelectItem>
-                       ))}
+                    <SelectContent className="max-h-[400px] rounded-2xl border-none shadow-2xl">
+                       <ScrollArea className="h-[350px]">
+                          {/* Recently Used / Favorites Simulation */}
+                          <SelectGroup>
+                             <SelectLabel className="text-[10px] font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2 p-4">
+                                <Star className="h-3 w-3 fill-current" /> Favoriler & Son Kullanılan
+                             </SelectLabel>
+                             <SelectItem value="LGS" className="font-black py-3 px-6 hover:bg-accent/10">LGS (Ortaokul)</SelectItem>
+                             <SelectItem value="YKS" className="font-black py-3 px-6 hover:bg-accent/10">YKS (Üniversite)</SelectItem>
+                          </SelectGroup>
+                          
+                          <SelectSeparator className="bg-primary/5" />
+
+                          {categories.map((category) => (
+                            <SelectGroup key={category}>
+                              <SelectLabel className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground opacity-40 p-4 pt-6">
+                                {category}
+                              </SelectLabel>
+                              {categorizedExams[category]?.map((exam) => (
+                                <SelectItem key={exam.id} value={exam.id} className="font-bold py-3 px-6 cursor-pointer">
+                                  <div className="flex items-center gap-3">
+                                     <exam.icon className="h-4 w-4 text-accent" />
+                                     <span>{exam.title}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          ))}
+                       </ScrollArea>
                     </SelectContent>
                   </Select>
                 </div>
@@ -322,26 +331,26 @@ export function AuthForm({ mode }: AuthFormProps) {
           </div>
         </div>
 
-        <Button type="submit" className="w-full h-14 rounded-2xl bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 gap-3" disabled={loading}>
+        <Button type="submit" className="w-full h-14 rounded-2xl bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 gap-3 mt-4" disabled={loading}>
           {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
             <>
-              {mode === 'login' ? 'Giriş Yap' : 'Hesap Oluştur'}
+              {mode === 'login' ? 'Giriş Yap' : 'Hesabımı Yapılandır'}
               <Sparkles className="h-4 w-4" />
             </>
           )}
         </Button>
       </form>
 
-      <div className="relative">
+      <div className="relative my-8">
         <div className="absolute inset-0 flex items-center">
           <Separator />
         </div>
-        <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest">
-          <span className="bg-white px-4 text-muted-foreground">Veya</span>
+        <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest italic">
+          <span className="bg-white px-4 text-muted-foreground">Veya Kurumsal Giriş</span>
         </div>
       </div>
 
-      <Button variant="outline" type="button" className="w-full h-14 rounded-2xl border-2 font-black text-xs uppercase tracking-widest transition-all hover:bg-[#F8FAFC] gap-3" onClick={handleGoogleSignIn} disabled={loading}>
+      <Button variant="outline" type="button" className="w-full h-14 rounded-2xl border-2 font-black text-xs uppercase tracking-widest transition-all hover:bg-[#F8FAFC] gap-3 shadow-sm" onClick={handleGoogleSignIn} disabled={loading}>
         {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
           <div className="flex items-center gap-3">
             <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -350,7 +359,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
             </svg>
-            Google ile Giriş Yap
+            Google ile Hızlı Giriş
           </div>
         )}
       </Button>

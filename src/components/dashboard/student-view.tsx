@@ -10,7 +10,7 @@ import {
 import { where, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 
 interface StudentViewProps {
@@ -24,7 +24,9 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const [timer, setTimer] = useState(25 * 60);
   const [isActive, setIsActive] = useState(false);
 
-  const examConfig = EXAM_CONFIGS[userData?.targetExam || 'LGS'];
+  const examConfig = useMemo(() => {
+    return EXAM_CONFIGS[userData?.targetExam || 'LGS'] || EXAM_CONFIGS['LGS'];
+  }, [userData?.targetExam]);
 
   useEffect(() => {
     let interval: any;
@@ -71,17 +73,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const pendingTasks = tasks.filter(t => t.status === 'pending');
   const upcomingSessions = sessions.filter(s => s.status === 'scheduled');
 
-  const examModules = [
-    { title: "Ders Takibi", icon: BookOpen, color: "bg-blue-500", desc: `${examConfig.title} derslerin ve devamsızlık durumun` },
-    { title: "Konu Analizi", icon: LineChart, color: "bg-purple-500", desc: "Sınav müfredatına göre başarı haritan" },
-    { title: "Deneme Sonuçları", icon: ClipboardCheck, color: "bg-orange-500", desc: "Tüm deneme ve puan analizlerin" },
-    { title: "Çalışma Takvimi", icon: Calendar, color: "bg-green-500", desc: "Akademik takvimin" },
-    { title: "Günlük Hedefler", icon: Target, color: "bg-red-500", desc: "Bugünkü ders hedeflerin" },
-    { title: "AI Koç", icon: Brain, color: "bg-indigo-500", desc: `${examConfig.title} için yapay zeka asistanın` },
-    { title: "Dijital Kütüphane", icon: Library, color: "bg-cyan-500", desc: "Binlerce sınav odaklı kaynak" },
-    { title: "Başarı Karnesi", icon: Award, color: "bg-yellow-500", desc: "Dijital başarı grafiğin" },
-  ];
-
   return (
     <div className="p-6 lg:p-10 space-y-12 max-w-7xl mx-auto w-full">
       {/* Modern Hero Profile Card */}
@@ -124,7 +115,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
 
       {/* Dynamic Exam Lessons Header */}
       <div className="space-y-8 animate-in slide-in-from-right duration-700">
-        <h3 className="text-3xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep">Derslerin ({examConfig.title})</h3>
+        <h3 className="text-3xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep">Program Dersleri ({examConfig.title})</h3>
         <div className="flex flex-wrap gap-4">
           {examConfig.lessons.map((lesson) => (
             <div key={lesson} className="px-8 py-6 bg-white rounded-[2rem] shadow-xl border border-primary/5 font-black text-sm text-primary italic uppercase tracking-widest hover:bg-primary hover:text-white transition-all cursor-default group">
@@ -134,12 +125,12 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
         </div>
       </div>
 
-      {/* Modules Section */}
+      {/* Dynamic Modules Section */}
       <div className="space-y-10">
-        <h3 className="text-4xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep">Eğitim Modüllerin</h3>
+        <h3 className="text-4xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep">Aktif Eğitim Modülleri</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {examModules.map((mod, i) => (
-            <Card key={i} className="group relative overflow-hidden rounded-[3rem] border-none shadow-[0_30px_60px_-15px_rgba(15,23,42,0.06)] bg-white p-10 transition-all hover:-translate-y-4 hover:shadow-[0_50px_100px_-20px_rgba(15,23,42,0.12)] cursor-pointer">
+          {examConfig.modules.map((mod, i) => (
+            <Card key={i} className="group relative overflow-hidden rounded-[3rem] border-none shadow-[0_30px_60px_-15px_rgba(15,23,42,0.06)] bg-white p-10 transition-all hover:-translate-y-4 hover:shadow-[0_50px_100px_-20px_rgba(15,23,42,0.12)] cursor-pointer border border-primary/5">
               <div className={`absolute top-0 right-0 w-32 h-32 ${mod.color} opacity-5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 group-hover:opacity-10 transition-opacity`}></div>
               <div className="space-y-8">
                 <div className={`h-16 w-16 rounded-2xl ${mod.color} text-white flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all`}>
@@ -150,7 +141,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                   <p className="text-sm text-muted-foreground font-medium leading-relaxed">{mod.desc}</p>
                 </div>
                 <div className="flex items-center text-[11px] font-black uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 transition-all">
-                  Şimdi Aç <ArrowRight className="ml-2 h-4 w-4" />
+                  Modülü Aç <ArrowRight className="ml-2 h-4 w-4" />
                 </div>
               </div>
             </Card>
@@ -168,13 +159,13 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                 <Brain className="h-12 w-12 text-accent" />
               </div>
               <div className="space-y-4 flex-1">
-                <p className="text-[11px] font-black uppercase tracking-[0.3em] text-accent-foreground bg-accent px-6 py-1.5 rounded-full inline-block shadow-xl">AI Koç Önerisi</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.3em] text-accent-foreground bg-accent px-6 py-1.5 rounded-full inline-block shadow-xl">AI Kişiselleştirilmiş Analiz</p>
                 <h3 className="text-3xl font-black italic tracking-tight leading-relaxed text-shadow-deep">
                    {examConfig.aiFocus}
                 </h3>
               </div>
               <Button className="h-20 px-12 rounded-[2rem] bg-accent hover:bg-white hover:text-primary transition-all font-black text-sm uppercase tracking-widest shadow-2xl shadow-accent/20 shrink-0">
-                Analizi Gör
+                Detaylı Rapor
               </Button>
             </div>
           </div>
@@ -250,9 +241,9 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
         </div>
 
         <div className="lg:col-span-4 space-y-10">
-           <Card className="rounded-[3.5rem] border-none shadow-[0_60px_100px_-20px_rgba(15,23,42,0.12)] bg-white overflow-hidden p-12">
+           <Card className="rounded-[3.5rem] border-none shadow-[0_60px_100px_-20px_rgba(15,23,42,0.12)] bg-white overflow-hidden p-12 border border-primary/5">
               <div className="text-center space-y-10">
-                 <p className="text-[12px] font-black uppercase tracking-[0.4em] text-muted-foreground">Pomodoro Sayaç</p>
+                 <p className="text-[12px] font-black uppercase tracking-[0.4em] text-muted-foreground">Odaklanma Süresi</p>
                  <div className="relative inline-flex items-center justify-center">
                     <svg className="h-56 w-56 -rotate-90">
                       <circle cx="112" cy="112" r="100" fill="none" stroke="#F1F5F9" strokeWidth="12" />
@@ -265,7 +256,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                  <div className="flex gap-4">
                     <Button 
                       onClick={() => setIsActive(!isActive)}
-                      className={`flex-1 h-20 rounded-[2rem] font-black uppercase tracking-widest text-sm transition-all ${isActive ? 'bg-destructive shadow-[0_20px_40px_rgba(220,38,38,0.2)]' : 'bg-primary shadow-[0_20px_40px_rgba(15,23,42,0.2)]'}`}
+                      className={`flex-1 h-20 rounded-[2rem] font-black uppercase tracking-widest text-sm transition-all shadow-2xl ${isActive ? 'bg-destructive shadow-destructive/20' : 'bg-primary shadow-primary/20'}`}
                     >
                       {isActive ? 'Durdur' : 'Başlat'} <Play className="ml-2 h-5 w-5" />
                     </Button>
@@ -273,7 +264,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
               </div>
            </Card>
 
-           <Card className="rounded-[3.5rem] border-none shadow-[0_60px_100px_-20px_rgba(15,23,42,0.12)] bg-white overflow-hidden p-12">
+           <Card className="rounded-[3.5rem] border-none shadow-[0_60px_100px_-20px_rgba(15,23,42,0.12)] bg-white overflow-hidden p-12 border border-primary/5">
               <div className="space-y-10">
                 <div className="flex items-center justify-between">
                   <h4 className="text-2xl font-black italic tracking-tighter text-shadow-deep">Başarıların</h4>
@@ -286,17 +277,9 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                      </div>
                    ))}
                 </div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-center opacity-40">Yeni rozet için 3 görev kaldı!</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-center opacity-40 italic">Bir sonraki rozet için 3 görev kaldı!</p>
               </div>
            </Card>
-
-           <div className="bg-accent rounded-[3.5rem] p-12 text-primary-foreground shadow-[0_60px_120px_-30px_rgba(245,158,11,0.4)] relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
-              <p className="text-[11px] font-black uppercase tracking-[0.4em] opacity-50 mb-6">Günün Sözü</p>
-              <p className="text-2xl font-black italic tracking-tight leading-relaxed text-shadow-accent">
-                "Büyük işler, küçük başlangıçların eseridir. Bugün attığın her adım seni hedefine yaklaştırır."
-              </p>
-           </div>
         </div>
       </div>
     </div>

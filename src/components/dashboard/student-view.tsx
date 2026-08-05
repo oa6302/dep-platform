@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useCollection, useFirestore } from '@/firebase';
@@ -26,7 +25,6 @@ import { where, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firest
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 
 interface StudentViewProps {
   user: any;
@@ -86,72 +84,72 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
 
   const modules = [
     { title: "Ders Takibi", icon: BookOpen, color: "bg-blue-500", desc: "Derslerin ve devamsızlık durumun" },
-    { title: "Konu Analizi", icon: LineChart, color: "bg-purple-500", desc: "Hangi konuda ne kadar başarılısın?" },
-    { title: "Deneme Sonuçları", icon: ClipboardCheck, color: "bg-orange-500", desc: "Tüm deneme sınavı analizlerin" },
-    { title: "Çalışma Takvimi", icon: Calendar, color: "bg-green-500", desc: "Kişiselleştirilmiş akademik takvim" },
-    { title: "Günlük Hedefler", icon: Target, color: "bg-red-500", desc: "Bugün tamamlaman gereken hedefler" },
-    { title: "AI Koç", icon: Brain, color: "bg-indigo-500", desc: "Yapay zeka asistanınla görüş" },
-    { title: "Dijital Kütüphane", icon: Library, color: "bg-cyan-500", desc: "Binlerce kaynak ve video ders" },
-    { title: "Başarı Karnesi", icon: Award, color: "bg-yellow-500", desc: "Gelişimini özetleyen dijital karne" },
+    { title: "Konu Analizi", icon: LineChart, color: "bg-purple-500", desc: "Başarı haritan" },
+    { title: "Deneme Sonuçları", icon: ClipboardCheck, color: "bg-orange-500", desc: "Tüm sınav analizlerin" },
+    { title: "Çalışma Takvimi", icon: Calendar, color: "bg-green-500", desc: "Akademik takvimin" },
+    { title: "Günlük Hedefler", icon: Target, color: "bg-red-500", desc: "Bugünkü hedeflerin" },
+    { title: "AI Koç", icon: Brain, color: "bg-indigo-500", desc: "Yapay zeka asistanın" },
+    { title: "Dijital Kütüphane", icon: Library, color: "bg-cyan-500", desc: "Binlerce kaynak" },
+    { title: "Başarı Karnesi", icon: Award, color: "bg-yellow-500", desc: "Dijital karnen" },
   ];
 
   return (
-    <div className="p-6 lg:p-10 space-y-10 max-w-7xl mx-auto w-full">
-      {/* Premium Hero Profile Card */}
-      <div className="bg-white rounded-[3.5rem] p-12 shadow-[0_40px_100px_-20px_rgba(15,23,42,0.1)] border border-primary/5 flex flex-col lg:flex-row justify-between items-center gap-12 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-accent/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-accent/10 transition-colors"></div>
-        <div className="flex items-center gap-10 relative z-10">
+    <div className="p-6 lg:p-10 space-y-12 max-w-7xl mx-auto w-full">
+      {/* Modern Hero Profile Card */}
+      <div className="bg-white rounded-[4rem] p-12 shadow-[0_60px_120px_-30px_rgba(15,23,42,0.1)] border border-primary/5 flex flex-col lg:flex-row justify-between items-center gap-12 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2"></div>
+        <div className="flex items-center gap-12 relative z-10">
           <div className="relative">
-             <div className="absolute -inset-4 bg-accent/20 blur-2xl rounded-full opacity-50 group-hover:opacity-100 transition-opacity"></div>
-             <div className="h-28 w-28 rounded-[2.5rem] bg-primary flex items-center justify-center text-white font-black text-4xl italic shadow-2xl relative border-4 border-white">
+             <div className="absolute -inset-6 bg-accent/20 blur-3xl rounded-full opacity-50 group-hover:opacity-100 transition-opacity"></div>
+             <div className="h-32 w-32 rounded-[3rem] bg-primary flex items-center justify-center text-white font-black text-5xl italic shadow-2xl relative border-[6px] border-white text-shadow-deep">
                 {userData?.displayName?.charAt(0) || 'S'}
              </div>
-             <div className="absolute -bottom-2 -right-2 h-10 w-10 bg-accent rounded-2xl flex items-center justify-center text-white shadow-lg border-4 border-white">
-                <Star className="h-5 w-5 fill-current" />
+             <div className="absolute -bottom-2 -right-2 h-12 w-12 bg-accent rounded-2xl flex items-center justify-center text-white shadow-xl border-4 border-white">
+                <Star className="h-6 w-6 fill-current" />
              </div>
           </div>
-          <div className="space-y-3">
-            <h2 className="text-4xl font-black tracking-tighter italic text-primary">{userData?.displayName}</h2>
-            <div className="flex flex-wrap gap-3">
-              <span className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest px-4 py-1.5 bg-primary/5 text-primary rounded-xl border border-primary/10">
-                <BookOpen className="h-3.5 w-3.5" /> {userData?.school || 'Sınav Grubu'}
+          <div className="space-y-4">
+            <h2 className="text-5xl font-black tracking-tighter italic text-primary text-shadow-deep">{userData?.displayName}</h2>
+            <div className="flex flex-wrap gap-4">
+              <span className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest px-6 py-2.5 bg-primary/5 text-primary rounded-2xl border border-primary/10 shadow-sm">
+                <BookOpen className="h-4 w-4" /> {userData?.school || 'Sınav Grubu'}
               </span>
-              <span className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest px-4 py-1.5 bg-accent/10 text-accent rounded-xl border border-accent/20">
-                <Zap className="h-3.5 w-3.5" /> {userData?.grade || '12. Sınıf'} - {userData?.branch || 'SAY'}
+              <span className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest px-6 py-2.5 bg-accent/10 text-accent rounded-2xl border border-accent/20 shadow-sm">
+                <Zap className="h-4 w-4" /> {userData?.grade || '12. Sınıf'} - {userData?.branch || 'SAY'}
               </span>
             </div>
           </div>
         </div>
-        <div className="flex gap-10 relative z-10 bg-[#F8FAFC] p-8 rounded-[2.5rem] border border-primary/5 shadow-inner">
+        <div className="flex gap-12 relative z-10 bg-[#F8FAFC] p-10 rounded-[3rem] border border-primary/5 shadow-inner">
           <div className="text-center">
-            <p className="text-4xl font-black text-primary tracking-tighter">87%</p>
+            <p className="text-5xl font-black text-primary tracking-tighter text-shadow-deep">87%</p>
             <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mt-1">Gelişim</p>
           </div>
-          <div className="w-px h-16 bg-primary/10 self-center"></div>
+          <div className="w-px h-20 bg-primary/10 self-center"></div>
           <div className="text-center">
-            <p className="text-4xl font-black text-accent tracking-tighter">124</p>
+            <p className="text-5xl font-black text-accent tracking-tighter text-shadow-accent">124</p>
             <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mt-1">Puan</p>
           </div>
         </div>
       </div>
 
       {/* Modules Section */}
-      <div className="space-y-8">
-        <h3 className="text-3xl font-black italic tracking-tighter text-primary uppercase">Eğitim Modüllerin</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="space-y-10">
+        <h3 className="text-4xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep">Eğitim Modüllerin</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {modules.map((mod, i) => (
-            <Card key={i} className="group relative overflow-hidden rounded-[2.5rem] border-none shadow-[0_20px_40px_-15px_rgba(15,23,42,0.1)] bg-white p-8 transition-all hover:-translate-y-2 cursor-pointer">
+            <Card key={i} className="group relative overflow-hidden rounded-[3rem] border-none shadow-[0_30px_60px_-15px_rgba(15,23,42,0.06)] bg-white p-10 transition-all hover:-translate-y-4 hover:shadow-[0_50px_100px_-20px_rgba(15,23,42,0.12)] cursor-pointer">
               <div className={`absolute top-0 right-0 w-32 h-32 ${mod.color} opacity-5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 group-hover:opacity-10 transition-opacity`}></div>
-              <div className="space-y-6">
-                <div className={`h-14 w-14 rounded-2xl ${mod.color} text-white flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all`}>
-                  <mod.icon className="h-7 w-7" />
+              <div className="space-y-8">
+                <div className={`h-16 w-16 rounded-2xl ${mod.color} text-white flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all`}>
+                  <mod.icon className="h-8 w-8" />
                 </div>
-                <div className="space-y-2">
-                  <h4 className="font-black text-xl italic tracking-tight text-primary">{mod.title}</h4>
-                  <p className="text-xs text-muted-foreground font-medium leading-relaxed">{mod.desc}</p>
+                <div className="space-y-3">
+                  <h4 className="font-black text-2xl italic tracking-tight text-primary text-shadow-deep">{mod.title}</h4>
+                  <p className="text-sm text-muted-foreground font-medium leading-relaxed">{mod.desc}</p>
                 </div>
-                <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 transition-all">
-                  Şimdi Aç <ArrowRight className="ml-2 h-3 w-3" />
+                <div className="flex items-center text-[11px] font-black uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 transition-all">
+                  Şimdi Aç <ArrowRight className="ml-2 h-4 w-4" />
                 </div>
               </div>
             </Card>
@@ -162,87 +160,87 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         <div className="lg:col-span-8 space-y-10">
-          <div className="bg-primary rounded-[3rem] p-10 text-white shadow-2xl shadow-primary/30 relative overflow-hidden group">
-            <div className="absolute -top-24 -right-24 w-64 h-64 bg-accent/20 blur-[100px] rounded-full group-hover:scale-125 transition-transform duration-1000"></div>
-            <div className="flex flex-col md:flex-row gap-10 items-center relative z-10">
-              <div className="h-20 w-20 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-2xl">
-                <Brain className="h-10 w-10 text-accent" />
+          <div className="bg-primary rounded-[3.5rem] p-12 text-white shadow-[0_60px_120px_-30px_rgba(15,23,42,0.4)] relative overflow-hidden group">
+            <div className="absolute -top-24 -right-24 w-80 h-80 bg-accent/20 blur-[100px] rounded-full group-hover:scale-125 transition-transform duration-1000"></div>
+            <div className="flex flex-col md:flex-row gap-12 items-center relative z-10">
+              <div className="h-24 w-24 rounded-[2rem] bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-2xl">
+                <Brain className="h-12 w-12 text-accent" />
               </div>
-              <div className="space-y-3 flex-1">
-                <p className="text-[11px] font-black uppercase tracking-[0.3em] text-accent-foreground bg-accent px-4 py-1 rounded-full inline-block">AI Koç Önerisi</p>
-                <h3 className="text-2xl font-black italic tracking-tight leading-relaxed">
+              <div className="space-y-4 flex-1">
+                <p className="text-[11px] font-black uppercase tracking-[0.3em] text-accent-foreground bg-accent px-6 py-1.5 rounded-full inline-block shadow-xl">AI Koç Önerisi</p>
+                <h3 className="text-3xl font-black italic tracking-tight leading-relaxed text-shadow-deep">
                   "Matematik-Geometri netlerinde son 3 haftada %12 artış gözlemlendi. Bu hafta Türev konusuna yoğunlaşman kritik."
                 </h3>
               </div>
-              <Button className="h-16 px-10 rounded-[1.5rem] bg-accent hover:bg-white hover:text-primary transition-all font-black text-sm uppercase tracking-widest shadow-2xl shadow-accent/20 shrink-0">
+              <Button className="h-20 px-12 rounded-[2rem] bg-accent hover:bg-white hover:text-primary transition-all font-black text-sm uppercase tracking-widest shadow-2xl shadow-accent/20 shrink-0">
                 Analizi Gör
               </Button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-             <Card className="rounded-[3rem] border-none shadow-[0_30px_60px_-15px_rgba(15,23,42,0.1)] bg-white overflow-hidden">
+             <Card className="rounded-[3.5rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.1)] bg-white overflow-hidden">
                 <CardHeader className="p-10 border-b border-primary/5 flex flex-row items-center justify-between bg-muted/5">
                   <div>
-                    <CardTitle className="text-2xl font-black italic tracking-tighter">Görevlerin</CardTitle>
+                    <CardTitle className="text-3xl font-black italic tracking-tighter text-shadow-deep">Görevlerin</CardTitle>
                     <CardDescription className="font-bold opacity-60">Bugün odaklanman gerekenler</CardDescription>
                   </div>
-                  <Target className="h-6 w-6 text-accent" />
+                  <Target className="h-8 w-8 text-accent" />
                 </CardHeader>
-                <CardContent className="p-8 space-y-4">
+                <CardContent className="p-10 space-y-6">
                   {pendingTasks.length > 0 ? (
                     pendingTasks.slice(0, 3).map((task) => (
-                      <div key={task.id} className="p-6 bg-[#F8FAFC] rounded-[2rem] border border-primary/5 flex items-center justify-between group hover:bg-white hover:shadow-xl transition-all">
-                        <div className="space-y-1">
-                          <p className="font-black text-lg tracking-tight group-hover:text-primary transition-colors">{task.title}</p>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                             <Clock className="h-3 w-3" /> {formatDate(task.dueDate)}
+                      <div key={task.id} className="p-8 bg-[#F8FAFC] rounded-[2.5rem] border border-primary/5 flex items-center justify-between group hover:bg-white hover:shadow-2xl transition-all">
+                        <div className="space-y-2">
+                          <p className="font-black text-xl tracking-tight group-hover:text-primary transition-colors text-shadow-deep">{task.title}</p>
+                          <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                             <Clock className="h-4 w-4" /> {formatDate(task.dueDate)}
                           </p>
                         </div>
                         <Button 
                           onClick={() => handleCompleteTask(task.id)}
                           size="icon" 
                           variant="ghost" 
-                          className="h-12 w-12 rounded-2xl bg-white border border-primary/5 text-accent shadow-sm hover:bg-accent hover:text-white transition-all"
+                          className="h-14 w-14 rounded-[1.5rem] bg-white border border-primary/5 text-accent shadow-sm hover:bg-accent hover:text-white transition-all"
                         >
-                          <CheckCircle2 className="h-6 w-6" />
+                          <CheckCircle2 className="h-7 w-7" />
                         </Button>
                       </div>
                     ))
                   ) : (
-                    <div className="py-20 text-center flex flex-col items-center gap-4 opacity-30">
-                      <Award className="h-16 w-16" />
-                      <p className="text-[10px] font-black uppercase tracking-widest">Harika! Tüm görevler bitti.</p>
+                    <div className="py-20 text-center flex flex-col items-center gap-6 opacity-30">
+                      <Award className="h-20 w-20" />
+                      <p className="text-xs font-black uppercase tracking-widest">Harika! Tüm görevler bitti.</p>
                     </div>
                   )}
                 </CardContent>
              </Card>
 
-             <Card className="rounded-[3rem] border-none shadow-[0_30px_60px_-15px_rgba(15,23,42,0.1)] bg-white overflow-hidden">
+             <Card className="rounded-[3.5rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.1)] bg-white overflow-hidden">
                 <CardHeader className="p-10 border-b border-primary/5 flex flex-row items-center justify-between bg-muted/5">
                   <div>
-                    <CardTitle className="text-2xl font-black italic tracking-tighter">Görüşmeler</CardTitle>
+                    <CardTitle className="text-3xl font-black italic tracking-tighter text-shadow-deep">Görüşmeler</CardTitle>
                     <CardDescription className="font-bold opacity-60">Planlanmış seanslar</CardDescription>
                   </div>
-                  <Calendar className="h-6 w-6 text-primary" />
+                  <Calendar className="h-8 w-8 text-primary" />
                 </CardHeader>
-                <CardContent className="p-8 space-y-4">
+                <CardContent className="p-10 space-y-6">
                   {upcomingSessions.length > 0 ? (
                     upcomingSessions.slice(0, 3).map((session) => (
-                      <div key={session.id} className="p-6 bg-[#F8FAFC] rounded-[2rem] border border-primary/5 flex items-center justify-between group hover:bg-white hover:shadow-xl transition-all">
-                        <div className="space-y-1">
-                          <p className="font-black text-lg tracking-tight">{session.notes || 'Haftalık Koçluk'}</p>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                             <MapPin className="h-3 w-3" /> Online • {formatDate(session.scheduledAt)}
+                      <div key={session.id} className="p-8 bg-[#F8FAFC] rounded-[2.5rem] border border-primary/5 flex items-center justify-between group hover:bg-white hover:shadow-2xl transition-all">
+                        <div className="space-y-2">
+                          <p className="font-black text-xl tracking-tight text-shadow-deep">{session.notes || 'Haftalık Koçluk'}</p>
+                          <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                             <MapPin className="h-4 w-4" /> Online • {formatDate(session.scheduledAt)}
                           </p>
                         </div>
-                        <Button className="h-10 px-6 rounded-xl bg-primary text-white font-black text-[10px] uppercase tracking-widest shadow-lg">Katıl</Button>
+                        <Button className="h-12 px-8 rounded-2xl bg-primary text-white font-black text-[11px] uppercase tracking-widest shadow-xl">Katıl</Button>
                       </div>
                     ))
                   ) : (
-                    <div className="py-20 text-center flex flex-col items-center gap-4 opacity-30">
-                      <Calendar className="h-16 w-16" />
-                      <p className="text-[10px] font-black uppercase tracking-widest">Planlanmış görüşme yok.</p>
+                    <div className="py-20 text-center flex flex-col items-center gap-6 opacity-30">
+                      <Calendar className="h-20 w-20" />
+                      <p className="text-xs font-black uppercase tracking-widest">Planlanmış görüşme yok.</p>
                     </div>
                   )}
                 </CardContent>
@@ -251,57 +249,50 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
         </div>
 
         <div className="lg:col-span-4 space-y-10">
-           <Card className="rounded-[3rem] border-none shadow-[0_30px_60px_-15px_rgba(15,23,42,0.1)] bg-white overflow-hidden p-10">
-              <div className="text-center space-y-6">
-                 <p className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground">Pomodoro Sayaç</p>
+           <Card className="rounded-[3.5rem] border-none shadow-[0_60px_100px_-20px_rgba(15,23,42,0.12)] bg-white overflow-hidden p-12">
+              <div className="text-center space-y-10">
+                 <p className="text-[12px] font-black uppercase tracking-[0.4em] text-muted-foreground">Pomodoro Sayaç</p>
                  <div className="relative inline-flex items-center justify-center">
-                    <svg className="h-48 w-48 -rotate-90">
-                      <circle cx="96" cy="96" r="88" fill="none" stroke="#F1F5F9" strokeWidth="10" />
-                      <circle cx="96" cy="96" r="88" fill="none" stroke="#F59E0B" strokeWidth="10" strokeDasharray="552" strokeDashoffset={552 - (552 * timer / (25 * 60))} strokeLinecap="round" className="transition-all duration-1000" />
+                    <svg className="h-56 w-56 -rotate-90">
+                      <circle cx="112" cy="112" r="100" fill="none" stroke="#F1F5F9" strokeWidth="12" />
+                      <circle cx="112" cy="112" r="100" fill="none" stroke="#F59E0B" strokeWidth="12" strokeDasharray="628" strokeDashoffset={628 - (628 * timer / (25 * 60))} strokeLinecap="round" className="transition-all duration-1000 shadow-2xl" />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                       <span className="text-5xl font-black text-primary tracking-tighter tabular-nums">{formatTime(timer)}</span>
+                       <span className="text-6xl font-black text-primary tracking-tighter tabular-nums text-shadow-deep">{formatTime(timer)}</span>
                     </div>
                  </div>
                  <div className="flex gap-4">
                     <Button 
                       onClick={() => setIsActive(!isActive)}
-                      className={`flex-1 h-16 rounded-2xl font-black uppercase tracking-widest text-xs transition-all ${isActive ? 'bg-destructive shadow-destructive/20' : 'bg-primary shadow-primary/20'}`}
+                      className={`flex-1 h-20 rounded-[2rem] font-black uppercase tracking-widest text-sm transition-all ${isActive ? 'bg-destructive shadow-[0_20px_40px_rgba(220,38,38,0.2)]' : 'bg-primary shadow-[0_20px_40px_rgba(15,23,42,0.2)]'}`}
                     >
-                      {isActive ? 'Durdur' : 'Başlat'} <Play className="ml-2 h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => { setTimer(25 * 60); setIsActive(false); }}
-                      className="h-16 w-16 rounded-2xl border-2 font-black"
-                    >
-                      ↺
+                      {isActive ? 'Durdur' : 'Başlat'} <Play className="ml-2 h-5 w-5" />
                     </Button>
                  </div>
               </div>
            </Card>
 
-           <Card className="rounded-[3rem] border-none shadow-[0_30px_60px_-15px_rgba(15,23,42,0.1)] bg-white overflow-hidden p-10">
-              <div className="space-y-8">
+           <Card className="rounded-[3.5rem] border-none shadow-[0_60px_100px_-20px_rgba(15,23,42,0.12)] bg-white overflow-hidden p-12">
+              <div className="space-y-10">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xl font-black italic tracking-tighter">Başarıların</h4>
-                  <Award className="h-6 w-6 text-accent" />
+                  <h4 className="text-2xl font-black italic tracking-tighter text-shadow-deep">Başarıların</h4>
+                  <Award className="h-8 w-8 text-accent" />
                 </div>
                 <div className="grid grid-cols-3 gap-6">
                    {[1, 2, 3, 4, 5, 6].map(i => (
-                     <div key={i} className={`h-16 w-16 rounded-2xl flex items-center justify-center transition-all cursor-pointer border-2 ${i <= 3 ? 'bg-accent/10 border-accent/20 text-accent' : 'bg-[#F8FAFC] border-primary/5 text-muted-foreground grayscale opacity-30'}`}>
-                        <Star className={`h-8 w-8 ${i <= 3 ? 'fill-current' : ''}`} />
+                     <div key={i} className={`h-20 w-20 rounded-3xl flex items-center justify-center transition-all cursor-pointer border-2 ${i <= 3 ? 'bg-accent/10 border-accent/20 text-accent shadow-lg' : 'bg-[#F8FAFC] border-primary/5 text-muted-foreground grayscale opacity-20'}`}>
+                        <Star className={`h-10 w-10 ${i <= 3 ? 'fill-current' : ''}`} />
                      </div>
                    ))}
                 </div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-center opacity-40">Yeni bir rozet kazanmak için 3 görev daha tamamla!</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-center opacity-40">Yeni rozet için 3 görev kaldı!</p>
               </div>
            </Card>
 
-           <div className="bg-accent rounded-[3rem] p-10 text-primary-foreground shadow-2xl shadow-accent/30 relative overflow-hidden">
+           <div className="bg-accent rounded-[3.5rem] p-12 text-primary-foreground shadow-[0_60px_120px_-30px_rgba(245,158,11,0.4)] relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mb-4">Günün Sözü</p>
-              <p className="text-lg font-black italic tracking-tight leading-relaxed">
+              <p className="text-[11px] font-black uppercase tracking-[0.4em] opacity-50 mb-6">Günün Sözü</p>
+              <p className="text-2xl font-black italic tracking-tight leading-relaxed text-shadow-accent">
                 "Büyük işler, küçük başlangıçların eseridir. Bugün attığın her adım seni hedefine yaklaştırır."
               </p>
            </div>

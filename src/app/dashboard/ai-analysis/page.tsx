@@ -51,27 +51,27 @@ export default function AiAnalysisPage() {
         </div>
         <div className="text-center space-y-2">
           <p className="text-xl font-black text-primary uppercase tracking-tighter italic">AI Analiz Merkezi Hazırlanıyor</p>
-          <p className="text-sm text-muted-foreground font-medium italic">Verileriniz işleniyor ve size özel stratejiler oluşturuluyor...</p>
+          <p className="text-sm text-muted-foreground font-medium italic">Verileriniz işleniyor...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 lg:p-10 space-y-10 max-w-7xl mx-auto w-full animate-in fade-in duration-700">
+    <div className="p-6 lg:p-10 space-y-12 max-w-7xl mx-auto w-full animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-white font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20">
             <Sparkles className="h-3 w-3" /> Canlı Analiz Aktif
           </div>
-          <h2 className="text-5xl font-black tracking-tighter italic text-primary uppercase leading-none">
-            Yapay Zeka <br /><span className="text-accent">Analiz Merkezi</span>
+          <h2 className="text-5xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-deep">
+            Yapay Zeka <br /><span className="text-accent text-shadow-accent">Analiz Merkezi</span>
           </h2>
         </div>
         <Button 
           onClick={fetchInsights} 
           disabled={loading}
-          className="h-16 px-8 rounded-2xl bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest gap-3 shadow-2xl shadow-primary/20"
+          className="h-16 px-8 rounded-2xl bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest gap-3 shadow-[0_20px_50px_-10px_rgba(15,23,42,0.3)]"
         >
           {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <RefreshCcw className="h-5 w-5" />}
           Analizleri Güncelle
@@ -81,15 +81,15 @@ export default function AiAnalysisPage() {
       {insights && (
         <>
           {/* Summary Card */}
-          <Card className="rounded-[3rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.1)] bg-primary text-white p-10 relative overflow-hidden group">
+          <Card className="rounded-[3rem] border-none shadow-[0_60px_100px_-20px_rgba(15,23,42,0.15)] bg-primary text-white p-12 relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-96 h-96 bg-accent/20 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-accent/30 transition-all duration-1000"></div>
             <div className="relative z-10 flex flex-col md:flex-row gap-10 items-center">
               <div className="h-24 w-24 rounded-[2rem] bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-2xl shrink-0">
                 <Brain className="h-12 w-12 text-accent" />
               </div>
               <div className="space-y-4">
-                <h3 className="text-3xl font-black italic tracking-tight">Durum Özeti</h3>
-                <p className="text-lg leading-relaxed font-medium opacity-90 italic">
+                <h3 className="text-3xl font-black italic tracking-tight text-shadow-deep">Durum Özeti</h3>
+                <p className="text-xl leading-relaxed font-medium opacity-90 italic">
                   "{insights.summary}"
                 </p>
               </div>
@@ -109,7 +109,7 @@ export default function AiAnalysisPage() {
               }[item.type] || Target;
 
               return (
-                <Card key={i} className="group relative overflow-hidden rounded-[2.5rem] border-none shadow-[0_20px_40px_-15px_rgba(15,23,42,0.1)] bg-white p-8 transition-all hover:-translate-y-2 border border-primary/5">
+                <Card key={i} className="group relative overflow-hidden rounded-[2.5rem] border-none shadow-[0_30px_60px_-15px_rgba(15,23,42,0.08)] bg-white p-8 transition-all hover:-translate-y-3 hover:shadow-[0_40px_80px_-20px_rgba(15,23,42,0.15)] border border-primary/5">
                   <div className={cn(
                     "absolute top-0 right-0 w-32 h-32 opacity-5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2",
                     item.type === 'risk' ? 'bg-destructive' : 'bg-accent'
@@ -133,14 +133,9 @@ export default function AiAnalysisPage() {
                           {item.priority} Önem
                         </span>
                       </div>
-                      <h4 className="font-black text-xl italic tracking-tight text-primary leading-tight">{item.title}</h4>
+                      <h4 className="font-black text-xl italic tracking-tight text-primary leading-tight text-shadow-deep">{item.title}</h4>
                       <p className="text-xs text-muted-foreground font-medium leading-relaxed">{item.description}</p>
                     </div>
-                    {item.actionLabel && (
-                      <Button variant="ghost" className="p-0 h-auto text-[10px] font-black uppercase tracking-widest text-accent group-hover:translate-x-2 transition-transform">
-                        {item.actionLabel} <ArrowRight className="ml-2 h-3 w-3" />
-                      </Button>
-                    )}
                   </div>
                 </Card>
               );
@@ -149,44 +144,44 @@ export default function AiAnalysisPage() {
 
           {/* Next Steps Section */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
-            <Card className="rounded-[3.5rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.1)] bg-white p-10 space-y-8">
+            <Card className="rounded-[3.5rem] border-none shadow-[0_60px_120px_-30px_rgba(15,23,42,0.12)] bg-white p-12 space-y-10">
               <div className="flex items-center justify-between">
-                <h4 className="text-2xl font-black italic tracking-tighter uppercase">AI Aksiyon Planı</h4>
+                <h4 className="text-3xl font-black italic tracking-tighter uppercase text-shadow-deep">AI Aksiyon Planı</h4>
                 <Target className="h-8 w-8 text-accent" />
               </div>
               <div className="space-y-4">
                 {insights.nextSteps.map((step, i) => (
-                  <div key={i} className="flex items-center gap-5 p-6 bg-[#F8FAFC] rounded-[2rem] border border-primary/5 hover:bg-white hover:shadow-xl transition-all group">
-                    <div className="h-10 w-10 rounded-xl bg-primary/5 text-primary font-black flex items-center justify-center shrink-0 group-hover:bg-accent group-hover:text-white transition-all">
+                  <div key={i} className="flex items-center gap-5 p-8 bg-[#F8FAFC] rounded-[2.5rem] border border-primary/5 hover:bg-white hover:shadow-2xl transition-all group">
+                    <div className="h-12 w-12 rounded-2xl bg-primary/5 text-primary font-black flex items-center justify-center shrink-0 group-hover:bg-accent group-hover:text-white transition-all text-shadow-deep">
                       {i + 1}
                     </div>
-                    <p className="text-sm font-bold text-primary italic leading-tight">{step}</p>
-                    <CheckCircle2 className="ml-auto h-5 w-5 text-accent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <p className="text-lg font-bold text-primary italic leading-tight">{step}</p>
+                    <CheckCircle2 className="ml-auto h-6 w-6 text-accent opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 ))}
               </div>
             </Card>
 
             <div className="space-y-8">
-              <Card className="rounded-[3rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.1)] bg-accent text-white p-10 space-y-6 relative overflow-hidden group">
-                <Lightbulb className="absolute top-6 right-6 h-12 w-12 opacity-20 group-hover:scale-125 transition-transform" />
-                <h4 className="text-xl font-black italic tracking-tight uppercase">AI Motivasyon</h4>
-                <p className="text-lg font-bold italic leading-relaxed">
+              <Card className="rounded-[3.5rem] border-none shadow-[0_60px_120px_-30px_rgba(15,23,42,0.12)] bg-accent text-white p-12 space-y-6 relative overflow-hidden group">
+                <Lightbulb className="absolute top-8 right-8 h-16 w-16 opacity-20 group-hover:scale-125 transition-transform" />
+                <h4 className="text-2xl font-black italic tracking-tight uppercase text-shadow-deep">AI Motivasyon</h4>
+                <p className="text-2xl font-bold italic leading-relaxed text-shadow-deep">
                   "Başarı bir varış noktası değil, bir yolculuktur. Senin bu disiplinli çalışman, hedefine ulaşmak için en büyük gücün olacak."
                 </p>
-                <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden">
+                <div className="h-3 w-full bg-white/20 rounded-full overflow-hidden">
                   <div className="h-full bg-white w-3/4 animate-pulse"></div>
                 </div>
               </Card>
 
               <div className="grid grid-cols-2 gap-6">
-                <div className="bg-white p-8 rounded-[2.5rem] border border-primary/5 shadow-xl space-y-2">
+                <div className="bg-white p-10 rounded-[3rem] border border-primary/5 shadow-2xl space-y-2">
                    <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Doğruluk Tahmini</p>
-                   <p className="text-4xl font-black text-primary italic">%94</p>
+                   <p className="text-5xl font-black text-primary italic text-shadow-deep">%94</p>
                 </div>
-                <div className="bg-white p-8 rounded-[2.5rem] border border-primary/5 shadow-xl space-y-2">
+                <div className="bg-white p-10 rounded-[3rem] border border-primary/5 shadow-2xl space-y-2">
                    <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Veri Puanı</p>
-                   <p className="text-4xl font-black text-accent italic">A+</p>
+                   <p className="text-5xl font-black text-accent italic text-shadow-deep">A+</p>
                 </div>
               </div>
             </div>

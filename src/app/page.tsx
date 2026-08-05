@@ -7,8 +7,6 @@ import {
   Database, 
   Loader2, 
   Globe, 
-  Moon, 
-  Bell, 
   ArrowRight, 
   Play, 
   CheckCircle2, 
@@ -40,7 +38,8 @@ import {
   Settings,
   Lock,
   Code2,
-  HardDrive
+  HardDrive,
+  Bell
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { doc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -190,7 +189,7 @@ export default function HomePage() {
       {/* Premium Navbar */}
       <nav className={cn(
         "fixed top-0 w-full z-50 transition-all duration-500 px-6 py-4",
-        scrolled ? "bg-white/70 backdrop-blur-2xl shadow-[0_10px_40px_-15px_rgba(15,23,42,0.1)] translate-y-0" : "bg-transparent translate-y-2"
+        scrolled ? "bg-white/70 backdrop-blur-2xl shadow-[0_20px_50px_-15px_rgba(15,23,42,0.1)] translate-y-0" : "bg-transparent translate-y-2"
       )}>
         <div className="container mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-4 group">
@@ -233,7 +232,7 @@ export default function HomePage() {
       </nav>
 
       <main>
-        {/* Premium Hero Section */}
+        {/* Ultra-Modern Hero Section */}
         <section className="pt-48 pb-32 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-accent/5 blur-[150px] rounded-full -translate-y-1/2 translate-x-1/2"></div>
           <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary/5 blur-[150px] rounded-full translate-y-1/2 -translate-x-1/2"></div>
@@ -241,30 +240,28 @@ export default function HomePage() {
           <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-20 items-center relative z-10">
             <div className="space-y-12">
               <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-accent/10 text-accent font-black text-[10px] uppercase tracking-[0.3em] border border-accent/20 shadow-xl shadow-accent/5">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent"></span>
-                </span>
                 ✨ Türkiye'nin Yeni Nesil Eğitim Platformu
               </div>
               
-              <h1 className="text-7xl md:text-[7.5rem] font-black text-primary leading-[0.85] tracking-tighter italic">
-                Geleceğini <br />
-                Dijital <br />
-                Yönet, <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-orange-600">Başarını</span> <br />
-                Yükselt.
-              </h1>
+              <div className="space-y-2">
+                <h1 className="text-7xl md:text-[8rem] font-black text-primary leading-[0.8] tracking-tighter italic text-shadow-premium">
+                  Geleceğini <br />
+                  Dijital <br />
+                  Yönet, <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-orange-600 text-shadow-accent">Başarını</span> <br />
+                  Yükselt.
+                </h1>
+              </div>
 
               <p className="text-2xl text-muted-foreground leading-relaxed max-w-xl font-medium">
                 YKS, LGS ve akademik başarınızı yapay zeka destekli analizlerle takip edin. Profesyonel koçluk parmaklarınızın ucunda.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-6 pt-6">
-                <Button size="lg" className="bg-primary hover:bg-accent transition-all rounded-[1.75rem] px-12 h-20 text-xl font-black shadow-3xl shadow-primary/30 group" asChild>
+                <Button size="lg" className="bg-primary hover:bg-accent transition-all rounded-[1.75rem] px-12 h-20 text-xl font-black shadow-[0_30px_60px_-15px_rgba(15,23,42,0.3)] group" asChild>
                   <Link href="/login?tab=register">Ücretsiz Başla <ArrowRight className="ml-4 h-7 w-7 transition-transform group-hover:translate-x-2" /></Link>
                 </Button>
-                <Button size="lg" variant="outline" className="border-4 border-primary/10 rounded-[1.75rem] px-12 h-20 text-xl font-black group hover:bg-white transition-all bg-transparent backdrop-blur-sm">
+                <Button size="lg" variant="outline" className="border-4 border-primary/10 rounded-[1.75rem] px-12 h-20 text-xl font-black group hover:bg-white transition-all bg-transparent backdrop-blur-sm shadow-xl">
                   <Play className="mr-4 h-7 w-7 fill-current text-accent" /> Canlı Demo
                 </Button>
               </div>
@@ -277,7 +274,7 @@ export default function HomePage() {
                   { label: 'Öğretmen', val: '3500+' },
                 ].map((stat, i) => (
                   <div key={i} className="space-y-1 group cursor-default">
-                    <p className="text-4xl font-black text-primary tracking-tighter group-hover:text-accent transition-colors">{stat.val}</p>
+                    <p className="text-4xl font-black text-primary tracking-tighter group-hover:text-accent transition-colors text-shadow-deep">{stat.val}</p>
                     <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-60">{stat.label}</p>
                   </div>
                 ))}
@@ -285,16 +282,16 @@ export default function HomePage() {
             </div>
 
             {/* Dashboard Mockup - Premium Presentation */}
-            <div className="relative group perspective-1000">
+            <div className="relative group perspective-2000">
               <div className="absolute -inset-20 bg-accent/20 blur-[120px] rounded-full opacity-30 group-hover:opacity-50 transition-opacity duration-1000"></div>
-              <div className="relative bg-white/40 backdrop-blur-3xl rounded-[4rem] shadow-[0_60px_120px_-20px_rgba(15,23,42,0.4)] border-[12px] border-white/80 overflow-hidden transform-gpu transition-all duration-1000 group-hover:rotate-y-[-5deg] group-hover:rotate-x-[2deg]">
+              <div className="relative bg-white/40 backdrop-blur-3xl rounded-[4rem] shadow-[0_80px_160px_-40px_rgba(15,23,42,0.4)] border-[12px] border-white/80 overflow-hidden transform-gpu transition-all duration-1000 group-hover:rotate-y-[-8deg] group-hover:rotate-x-[4deg]">
                  {/* Mockup Header */}
                  <div className="bg-primary p-10 flex justify-between items-center text-white">
                     <div className="flex items-center gap-5">
                        <div className="h-12 w-12 rounded-2xl bg-accent flex items-center justify-center shadow-2xl">
                           <TrendingUp className="h-7 w-7" />
                        </div>
-                       <span className="font-black text-xl italic tracking-tight uppercase">Akademik Başarı</span>
+                       <span className="font-black text-xl italic tracking-tight uppercase text-shadow-deep">Akademik Başarı</span>
                     </div>
                     <div className="flex gap-3">
                        <div className="h-10 w-10 rounded-xl bg-white/10"></div>
@@ -332,7 +329,7 @@ export default function HomePage() {
                              <Brain className="h-10 w-10 text-accent" />
                           </div>
                           <div className="space-y-2">
-                             <p className="font-black text-white text-2xl italic tracking-tight">AI Koç Tavsiyesi</p>
+                             <p className="font-black text-white text-2xl italic tracking-tight text-shadow-deep">AI Koç Tavsiyesi</p>
                              <p className="text-white/60 font-medium">Bu hafta Türev sorularına odaklanmalısın.</p>
                           </div>
                        </div>
@@ -346,18 +343,18 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Features - Premium Role-Based Section */}
+        {/* Features - Role-Based Section */}
         <section id="features" className="py-40 bg-white relative overflow-hidden">
           <div className="container mx-auto px-6">
             <div className="text-center max-w-4xl mx-auto mb-20 space-y-8">
                <div className="inline-block px-6 py-2 rounded-full bg-primary text-white font-black text-[10px] uppercase tracking-widest">Özellikler</div>
-               <h2 className="text-6xl md:text-8xl font-black text-primary tracking-tighter leading-none italic">Yapay Zeka ile <br /><span className="text-accent">Daha Akıllı</span> Eğitim.</h2>
+               <h2 className="text-6xl md:text-8xl font-black text-primary tracking-tighter leading-none italic text-shadow-premium">Yapay Zeka ile <br /><span className="text-accent text-shadow-accent">Daha Akıllı</span> Eğitim.</h2>
                <p className="text-2xl text-muted-foreground font-medium leading-relaxed">Başarı tesadüf değildir, doğru analiz edilmiş bir süreçtir.</p>
             </div>
             
             <Tabs defaultValue="student" className="w-full">
               <div className="flex justify-center mb-16">
-                <TabsList className="bg-[#F1F5F9] p-2 rounded-[2rem] h-20 md:h-24">
+                <TabsList className="bg-[#F1F5F9] p-2 rounded-[2rem] h-20 md:h-24 shadow-inner">
                   {Object.entries(featureGroups).map(([key, group]) => (
                     <TabsTrigger 
                       key={key} 
@@ -375,11 +372,11 @@ export default function HomePage() {
                 <TabsContent key={key} value={key} className="mt-0 outline-none">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     {group.items.map((item, i) => (
-                      <div key={i} className="group p-10 bg-[#F8FAFC] rounded-[3rem] border-2 border-transparent hover:border-accent/10 hover:bg-white hover:shadow-[0_40px_80px_-20px_rgba(15,23,42,0.1)] transition-all duration-500 hover:-translate-y-2 flex flex-col">
+                      <div key={i} className="group p-10 bg-[#F8FAFC] rounded-[3rem] border-2 border-transparent hover:border-accent/10 hover:bg-white shadow-[0_30px_60px_-15px_rgba(15,23,42,0.05)] hover:shadow-[0_40px_80px_-20px_rgba(15,23,42,0.12)] transition-all duration-500 hover:-translate-y-2 flex flex-col">
                         <div className="h-16 w-16 rounded-2xl bg-primary/5 flex items-center justify-center mb-8 group-hover:bg-accent group-hover:text-white transition-all duration-500">
                           <item.icon className="h-8 w-8" />
                         </div>
-                        <h3 className="text-xl font-black text-primary mb-4 tracking-tight italic">{item.title}</h3>
+                        <h3 className="text-xl font-black text-primary mb-4 tracking-tight italic text-shadow-deep">{item.title}</h3>
                         <p className="text-muted-foreground leading-relaxed font-medium text-sm mb-6 flex-grow">{item.desc}</p>
                         <Link href="#" className="inline-flex items-center text-[10px] font-black uppercase tracking-widest text-accent group-hover:translate-x-2 transition-transform">
                           Daha Fazla <ArrowRight className="ml-2 h-3 w-3" />
@@ -393,29 +390,23 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Database Seed Section - Premium UI */}
+        {/* Database Seed Section */}
         <section className="py-32 bg-[#F1F5F9]/50">
           <div className="container mx-auto px-6 text-center max-w-3xl">
-            <div className="bg-white p-16 rounded-[4rem] shadow-[0_40px_80px_-20px_rgba(15,23,42,0.1)] border border-primary/5 space-y-12">
+            <div className="bg-white p-16 rounded-[4rem] shadow-[0_60px_120px_-30px_rgba(15,23,42,0.1)] border border-primary/5 space-y-12">
               <div className="space-y-4">
-                 <h3 className="text-4xl font-black text-primary tracking-tighter italic uppercase">Sistemi Başlat</h3>
-                 <p className="text-xl text-muted-foreground font-medium">Platformu tüm rolleriyle (Öğrenci, Öğretmen, Okul Admin) test etmek için örnek verileri yükleyin.</p>
+                 <h3 className="text-4xl font-black text-primary tracking-tighter italic uppercase text-shadow-deep">Sistemi Başlat</h3>
+                 <p className="text-xl text-muted-foreground font-medium">Platformu tüm rolleriyle test etmek için örnek verileri yükleyin.</p>
               </div>
               <Button 
                 size="lg" 
-                className="h-24 px-16 bg-accent hover:bg-primary transition-all rounded-[2rem] font-black text-2xl shadow-3xl shadow-accent/30 group"
+                className="h-24 px-16 bg-accent hover:bg-primary transition-all rounded-[2rem] font-black text-2xl shadow-[0_30px_60px_-15px_rgba(245,158,11,0.4)] group"
                 onClick={handleSeedData}
                 disabled={seeding}
               >
                 {seeding ? <Loader2 className="mr-4 h-8 w-8 animate-spin" /> : <Database className="mr-4 h-8 w-8 transition-transform group-hover:scale-110" />}
                 Örnek Verileri Yükle
               </Button>
-              <div className="flex justify-center gap-10 opacity-30 grayscale pt-6">
-                 <Users className="h-8 w-8" />
-                 <BookOpen className="h-8 w-8" />
-                 <Zap className="h-8 w-8" />
-                 <Star className="h-8 w-8" />
-              </div>
             </div>
           </div>
         </section>
@@ -431,12 +422,12 @@ export default function HomePage() {
                 <Image src="/logo.png" alt="Logo" fill className="object-contain" />
               </div>
               <div className="space-y-1">
-                <span className="font-black text-4xl tracking-tighter block leading-none italic">DEK</span>
+                <span className="font-black text-4xl tracking-tighter block leading-none italic text-shadow-deep">DEK</span>
                 <span className="text-[11px] text-white/40 font-black uppercase tracking-[0.2em]">Dijital Eğitim Koçu</span>
               </div>
             </Link>
             <p className="text-white/50 text-2xl leading-relaxed max-w-xl font-medium italic">
-              Yapay Zeka destekli eğitim teknolojileri ile akademik başarıyı tesadüf olmaktan çıkarıyoruz. Geleceğin eğitim platformuna hoş geldiniz.
+              Yapay Zeka destekli eğitim teknolojileri ile akademik başarıyı tesadüf olmaktan çıkarıyoruz.
             </p>
           </div>
           <div className="space-y-10">
@@ -445,7 +436,6 @@ export default function HomePage() {
               <li><Link href="#" className="hover:text-white transition-colors">KVKK ve Gizlilik</Link></li>
               <li><Link href="#" className="hover:text-white transition-colors">Kullanım Koşulları</Link></li>
               <li><Link href="#" className="hover:text-white transition-colors">Yardım Merkezi</Link></li>
-              <li><Link href="#" className="hover:text-white transition-colors">Akademik Blog</Link></li>
             </ul>
           </div>
           <div className="space-y-10">
@@ -461,11 +451,6 @@ export default function HomePage() {
         </div>
         <div className="container mx-auto px-6 pt-16 flex flex-col md:flex-row justify-between items-center gap-8 text-white/20 text-xs font-black uppercase tracking-[0.3em]">
           <p>© 2026 Dijital Eğitim Koçu. Tüm hakları saklıdır.</p>
-          <div className="flex gap-12">
-             <Link href="#" className="hover:text-white transition-colors">Instagram</Link>
-             <Link href="#" className="hover:text-white transition-colors">LinkedIn</Link>
-             <Link href="#" className="hover:text-white transition-colors">YouTube</Link>
-          </div>
         </div>
       </footer>
     </div>

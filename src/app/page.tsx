@@ -3,11 +3,88 @@
 
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useUser } from '@/firebase';
-import { BookOpen, Calendar, CheckSquare, GraduationCap, Users } from 'lucide-react';
+import { useUser, useFirestore } from '@/firebase';
+import { BookOpen, Calendar, CheckSquare, GraduationCap, Users, Database, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { doc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 export default function HomePage() {
   const { user, loading } = useUser();
+  const db = useFirestore();
+  const { toast } = useToast();
+  const [seeding, setSeeding] = useState(false);
+
+  const handleSeedData = async () => {
+    if (!db) return;
+    setSeeding(true);
+    try {
+      // Create a sample admin
+      const sampleAdminId = 'sample-admin-999';
+      await setDoc(doc(db, 'users', sampleAdminId), {
+        uid: sampleAdminId,
+        displayName: 'Sistem Yöneticisi',
+        email: 'admin@kocumyanimda.com',
+        role: 'admin',
+        createdAt: serverTimestamp(),
+      });
+
+      // Create a sample teacher
+      const sampleTeacherId = 'sample-teacher-111';
+      await setDoc(doc(db, 'users', sampleTeacherId), {
+        uid: sampleTeacherId,
+        displayName: 'Ahmet Koç',
+        email: 'ahmet@test.com',
+        role: 'teacher',
+        createdAt: serverTimestamp(),
+      });
+
+      // Create a sample student
+      const sampleStudentId = 'sample-student-222';
+      await setDoc(doc(db, 'users', sampleStudentId), {
+        uid: sampleStudentId,
+        displayName: 'Mehmet Öğrenci',
+        email: 'mehmet@test.com',
+        role: 'student',
+        coachId: sampleTeacherId,
+        createdAt: serverTimestamp(),
+      });
+
+      // Create a sample task
+      await addDoc(collection(db, 'tasks'), {
+        studentId: sampleStudentId,
+        teacherId: sampleTeacherId,
+        title: 'Matematik Ödevi #1',
+        description: 'Logaritma konusundaki testleri bitir.',
+        dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+        status: 'pending',
+        createdAt: serverTimestamp(),
+      });
+
+      // Create a sample session
+      await addDoc(collection(db, 'sessions'), {
+        studentId: sampleStudentId,
+        teacherId: sampleTeacherId,
+        scheduledAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
+        status: 'scheduled',
+        notes: 'Haftalık gelişim değerlendirmesi',
+        createdAt: serverTimestamp(),
+      });
+
+      toast({
+        title: 'Veritabanı Başlatıldı',
+        description: 'Firestore koleksiyonları (users, tasks, sessions) ve örnek veriler başarıyla oluşturuldu.',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Hata',
+        description: 'Veriler oluşturulurken bir sorun çıktı: ' + error.message,
+      });
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -56,10 +133,20 @@ export default function HomePage() {
               <Button size="lg" className="px-8" asChild>
                 <Link href="/login?tab=register">Hemen Başla</Link>
               </Button>
-              <Button size="lg" variant="outline" className="px-8" asChild>
-                <Link href="#features">Daha Fazla Bilgi</Link>
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="px-8 border-primary text-primary hover:bg-primary/5"
+                onClick={handleSeedData}
+                disabled={seeding}
+              >
+                {seeding ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Database className="mr-2 h-5 w-5" />}
+                Veritabanını Örnek Verilerle Doldur
               </Button>
             </div>
+            <p className="mt-4 text-xs text-muted-foreground italic">
+              * Bu buton Firestore koleksiyonlarını (users, tasks, sessions) anında oluşturur ve Firebase panelinde görmenizi sağlar.
+            </p>
           </div>
         </section>
 
@@ -82,30 +169,6 @@ export default function HomePage() {
                 <Users className="h-12 w-12 text-primary mb-4" />
                 <h3 className="text-xl font-semibold mb-2">Uzman Kadro</h3>
                 <p className="text-muted-foreground">Alanında uzman öğretmenler ve eğitim danışmanları ile çalışın.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Roles Section */}
-        <section className="py-20 bg-muted/50">
-          <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center mb-12">Platform Rollerimiz</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="flex flex-col items-center p-8 bg-card rounded-2xl shadow-sm text-center">
-                <GraduationCap className="h-16 w-16 mb-4 text-primary" />
-                <h3 className="text-2xl font-bold mb-2">Öğrenci</h3>
-                <p className="text-sm text-muted-foreground mb-4">Gelişiminizi takip edin, ödevlerinizi yapın ve koçunuzla iletişimde kalın.</p>
-              </div>
-              <div className="flex flex-col items-center p-8 bg-card rounded-2xl shadow-sm text-center border-2 border-primary">
-                <Users className="h-16 w-16 mb-4 text-primary" />
-                <h3 className="text-2xl font-bold mb-2">Öğretmen (Koç)</h3>
-                <p className="text-sm text-muted-foreground mb-4">Öğrencilerinizi yönetin, onlara özel programlar hazırlayın ve raporlar sunun.</p>
-              </div>
-              <div className="flex flex-col items-center p-8 bg-card rounded-2xl shadow-sm text-center">
-                <BookOpen className="h-16 w-16 mb-4 text-primary" />
-                <h3 className="text-2xl font-bold mb-2">Yönetici</h3>
-                <p className="text-sm text-muted-foreground mb-4">Tüm sistemi, koçları ve öğrencileri merkezi bir panelden denetleyin.</p>
               </div>
             </div>
           </div>

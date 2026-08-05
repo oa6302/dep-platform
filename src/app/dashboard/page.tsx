@@ -1,8 +1,9 @@
+
 'use client';
 
-import { useUser, useDoc, useAuth } from '@/firebase';
+import { useUser, useDoc, useAuth, useFirestore } from '@/firebase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { StudentView } from '@/components/dashboard/student-view';
 import { TeacherView } from '@/components/dashboard/teacher-view';
 import { AdminView } from '@/components/dashboard/admin-view';
@@ -10,7 +11,7 @@ import { SchoolAdminView } from '@/components/dashboard/school-admin-view';
 import { 
   LogOut, LayoutDashboard, Calendar, CheckCircle2, User, 
   Settings, Bell, Eye, XCircle, Search, Brain, Headset, 
-  Sparkles, Compass, AlertCircle, ChevronRight
+  Sparkles, Compass, AlertCircle, ChevronRight, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
@@ -18,13 +19,18 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useUser();
   const auth = useAuth();
+  const db = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
   const searchParams = useSearchParams();
   const simulatedUserId = searchParams.get('simulate');
+  const [fixingProfile, setFixingProfile] = useState(false);
 
   const userDocQuery = user?.uid ? `users/${user.uid}` : null;
   const { data: userData, loading: docLoading } = useDoc<any>(userDocQuery);
@@ -59,6 +65,28 @@ export default function DashboardPage() {
     }
   };
 
+  const handleCreateProfile = async (targetRole: 'student' | 'teacher') => {
+    if (!user || !db) return;
+    setFixingProfile(true);
+    try {
+      const userData = {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName || 'Kullanıcı',
+        role: targetRole,
+        createdAt: serverTimestamp(),
+        ...(targetRole === 'teacher' ? { activationCode: 'DK-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase(), branch: 'Genel' } : {})
+      };
+      await setDoc(doc(db, 'users', user.uid), userData);
+      toast({ title: 'Profil Oluşturuldu', description: `Hesabınız ${targetRole === 'teacher' ? 'Öğretmen' : 'Öğrenci'} olarak yapılandırıldı.` });
+      window.location.reload();
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Hata', description: 'Profil oluşturulamadı.' });
+    } finally {
+      setFixingProfile(false);
+    }
+  };
+
   const stopSimulation = () => {
     const params = new URLSearchParams(searchParams);
     params.delete('simulate');
@@ -84,11 +112,18 @@ export default function DashboardPage() {
            </div>
            <div className="space-y-4">
               <h2 className="text-4xl font-black text-primary tracking-tighter uppercase italic text-shadow-deep">Profil Bulunamadı</h2>
-              <p className="text-muted-foreground font-medium italic max-w-md mx-auto">Sistemde size ait bir profil kaydı saptanamadı. Lütfen destek merkezi ile iletişime geçin veya örnek verileri yükleyin.</p>
+              <p className="text-muted-foreground font-medium italic max-w-md mx-auto">Sistemde size ait bir profil kaydı saptanamadı. Lütfen aşağıdaki seçeneklerden birini seçerek profilinizi hemen oluşturun.</p>
            </div>
-           <Button variant="outline" className="h-14 px-10 rounded-2xl border-2 font-black uppercase tracking-widest text-xs" asChild>
-              <Link href="/">Ana Sayfaya Dön</Link>
-           </Button>
+           <div className="flex gap-4">
+              <Button onClick={() => handleCreateProfile('student')} disabled={fixingProfile} className="h-14 px-8 rounded-2xl bg-primary hover:bg-accent font-black uppercase text-xs tracking-widest gap-3">
+                {fixingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : <User className="h-4 w-4" />}
+                Öğrenci Profili Kur
+              </Button>
+              <Button onClick={() => handleCreateProfile('teacher')} disabled={fixingProfile} variant="outline" className="h-14 px-8 rounded-2xl border-2 font-black uppercase text-xs tracking-widest gap-3">
+                {fixingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
+                Öğretmen Profili Kur
+              </Button>
+           </div>
         </div>
       );
     }
@@ -98,11 +133,11 @@ export default function DashboardPage() {
       case 'student':
         return <StudentView user={{ uid: currentViewData.uid }} userData={currentViewData} isReadOnly={isSimulating} />;
       case 'teacher':
-        return <TeacherView user={user} userData={userData} />;
+        return <TeacherView user={user} userData={currentViewData} />;
       case 'school_admin':
-        return <SchoolAdminView user={user} userData={userData} />;
+        return <SchoolAdminView user={user} userData={currentViewData} />;
       case 'admin':
-        return <AdminView user={user} userData={userData} />;
+        return <AdminView user={user} userData={currentViewData} />;
       default:
         return (
           <div className="p-20 text-center space-y-6">
@@ -177,10 +212,10 @@ export default function DashboardPage() {
               <div className="absolute top-0 right-0 w-24 h-24 bg-accent/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 group-hover/profile:bg-accent/20 transition-all"></div>
               <div className="flex items-center gap-4 relative z-10">
                 <div className="h-14 w-14 rounded-2xl bg-accent flex items-center justify-center text-white font-black shadow-xl shadow-accent/20 text-2xl italic border-4 border-white/10 transition-transform group-hover/profile:rotate-3">
-                  {userData?.displayName?.charAt(0) || 'U'}
+                  {userData?.displayName?.charAt(0) || user?.displayName?.charAt(0) || 'U'}
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <p className="text-sm font-black truncate tracking-tight text-shadow-deep">{userData?.displayName}</p>
+                  <p className="text-sm font-black truncate tracking-tight text-shadow-deep">{userData?.displayName || user?.displayName}</p>
                   <p className="text-[9px] opacity-40 truncate font-black uppercase tracking-widest mt-0.5">{userData?.targetExam || roleLabels[userData?.role || 'student']}</p>
                 </div>
                 <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-destructive rounded-xl transition-all shadow-sm" onClick={handleLogout}>

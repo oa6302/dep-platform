@@ -76,22 +76,36 @@ export function AuthForm({ mode }: AuthFormProps) {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+      
       if (!userDoc.exists()) {
-        await setDoc(doc(db, 'users', user.uid), {
+        const userData: any = {
           uid: user.uid,
           email: user.email,
           displayName: user.displayName,
-          role: 'student', 
+          role: role, // Use currently selected role in UI
           createdAt: serverTimestamp(),
-        });
-        toast({ title: 'Hoş Geldiniz', description: 'Lütfen hedefinizi belirleyin.' });
-        router.push('/dashboard/select-exam');
+        };
+
+        if (role === 'teacher') {
+          userData.activationCode = generateTeacherCode();
+        }
+
+        await setDoc(userDocRef, userData);
+        toast({ title: 'Hoş Geldiniz', description: `Hesabınız ${role === 'teacher' ? 'Öğretmen' : 'Öğrenci'} olarak oluşturuldu.` });
+        
+        if (role === 'student') {
+          router.push('/dashboard/select-exam');
+        } else {
+          router.push('/dashboard');
+        }
       } else {
         toast({ title: 'Giriş Başarılı', description: 'Hoş geldiniz!' });
         router.push('/dashboard');
       }
     } catch (error: any) {
+      console.error(error);
       toast({ variant: 'destructive', title: 'Giriş Başarısız', description: 'Google ile giriş yapılamadı.' });
     } finally {
       setLoading(false);
@@ -137,9 +151,9 @@ export function AuthForm({ mode }: AuthFormProps) {
         if (role === 'teacher') {
           userData.activationCode = generateTeacherCode();
           userData.school = schoolName;
+          userData.branch = 'Genel'; // Default branch
         } else if (role === 'student') {
-          // Normalize prefix
-          userData.targetExam = targetExam.replace('fav-', '');
+          userData.targetExam = targetExam.replace('fav-', '').replace('cat-', '');
           if (coachId) userData.coachId = coachId;
         } else if (role === 'school_admin') {
           userData.school = schoolName;
@@ -281,7 +295,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                                 {category}
                               </SelectLabel>
                               {categorizedExams[category]?.map((exam) => (
-                                <SelectItem key={`cat-item-${category}-${exam.id}`} value={exam.id} className="font-bold py-3 px-6 cursor-pointer">
+                                <SelectItem key={`cat-item-${category}-${exam.id}`} value={`cat-${exam.id}`} className="font-bold py-3 px-6 cursor-pointer">
                                   <div className="flex items-center gap-3">
                                      <exam.icon className="h-4 w-4 text-accent" />
                                      <span>{exam.title}</span>
@@ -293,6 +307,23 @@ export function AuthForm({ mode }: AuthFormProps) {
                        </ScrollArea>
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+            )}
+
+            {(role === 'teacher' || role === 'school_admin') && (
+              <div className="space-y-2 animate-in fade-in">
+                <Label htmlFor="school" className="text-xs font-black uppercase tracking-widest opacity-60">Kurum / Okul Adı</Label>
+                <div className="relative">
+                  <Building className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="school"
+                    placeholder="Görev yaptığınız okul"
+                    className="pl-10 rounded-xl h-12 bg-[#F8FAFC] border-none shadow-inner font-bold"
+                    value={schoolName}
+                    onChange={(e) => setSchoolName(e.target.value)}
+                    required
+                  />
                 </div>
               </div>
             )}
@@ -359,7 +390,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
             </svg>
-            Google ile Hızlı Giriş
+            {role === 'teacher' ? 'Öğretmen Olarak Google ile Gir' : role === 'school_admin' ? 'Okul Olarak Google ile Gir' : 'Öğrenci Olarak Google ile Gir'}
           </div>
         )}
       </Button>

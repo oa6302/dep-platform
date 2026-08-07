@@ -1,8 +1,7 @@
-
 'use server';
 
 /**
- * @fileOverview Rol ve Sınav bazlı AI analiz ve öneri üretim akışı.
+ * @fileOverview DEK AI - Veri Odaklı Analiz ve Strateji Motoru.
  */
 
 import { ai } from '@/ai/genkit';
@@ -19,15 +18,15 @@ const InsightSchema = z.object({
 const GenerateAiInsightsInputSchema = z.object({
   role: z.enum(['student', 'teacher', 'school_admin', 'admin']),
   userName: z.string(),
-  targetExam: z.string().optional().describe('Kullanıcının hazırlandığı sınav (LGS, YKS, KPSS, Dil vb.)'),
+  targetExam: z.string().optional(),
   contextData: z.any().optional(),
 });
 export type GenerateAiInsightsInput = z.infer<typeof GenerateAiInsightsInputSchema>;
 
 const GenerateAiInsightsOutputSchema = z.object({
-  summary: z.string().describe('Genel durum özeti.'),
-  insights: z.array(InsightSchema).describe('Rol ve sınava spesifik analiz ve aksiyon önerileri.'),
-  nextSteps: z.array(z.string()).describe('Kullanıcının atması gereken somut adımlar.'),
+  summary: z.string().describe('Profesyonel durum özeti.'),
+  insights: z.array(InsightSchema).describe('Veri odaklı analizler.'),
+  nextSteps: z.array(z.string()).describe('Somut ve uygulanabilir adımlar.'),
 });
 export type GenerateAiInsightsOutput = z.infer<typeof GenerateAiInsightsOutputSchema>;
 
@@ -39,28 +38,22 @@ const prompt = ai.definePrompt({
   name: 'generateAiInsightsPrompt',
   input: { schema: GenerateAiInsightsInputSchema },
   output: { schema: GenerateAiInsightsOutputSchema },
-  prompt: `Sen "Dijital Eğitim Koçu" platformunun uzman yapay zeka asistanısın. 
-  Kullanıcı adı: {{{userName}}}
-  Rol: {{{role}}}
-  Hedef Sınav: {{{targetExam}}}
-  Ek Veri: {{{contextData}}}
+  prompt: `
+  --- SYSTEM PROMPT (ANA BEYİN) ---
+  Sen DEK AI isimli profesyonel akademik koçsun. Görevin öğrenciyi YKS hedeflerine ulaştırmaktır.
+  TEMEL PRENSİPLERİN:
+  • Bilimsel çalışma teknikleri kullan.
+  • Öğrenciyi gereksiz motive etmeye çalışma; verilere odaklan.
+  • Her öneri öğrencinin performansına göre değişsin.
+  • Net artırmayı önceliklendir. Eksik kazanımları önce tamamlat.
+  • YKS müfredatı dışına çıkma. Cevapların kısa, profesyonel ve uygulanabilir olsun.
+  • Asla rastgele öneri yapma. Her karar veriye dayalı olsun.
 
-  Görevin: Kullanıcının rolüne VE hazırlandığı sınava göre derinlemesine analizler, gelecek tahminleri ve somut aksiyon planları oluşturmaktır.
+  Görevin: {{{userName}}} için (Rol: {{{role}}}, Hedef: {{{targetExam}}}) mevcut verileri analiz ederek profesyonel bir strateji raporu oluşturmaktır.
+  Veri: {{{contextData}}}
 
-  **Sınav Bazlı Odak Noktaların:**
-  - **LGS:** Kazanım odaklı analiz, temel derslerin (Matematik, Fen) güçlendirilmesi, okul başarı puanı etkisi.
-  - **YKS:** Net artışı, TYT/AYT dengesi, sıralama tahmini, tercih robotu uyumluluğu, zaman yönetimi.
-  - **KPSS:** Atama tahminleri, genel kültür-genel yetenek dengesi, alan bilgisi (ÖABT) eksikleri.
-  - **DİL:** CEFR seviye tahmini, kelime dağarcığı, okuma ve dinleme yetkinliği gelişimi.
-  - **HAFIZLIK:** Unutma riski analizi, tekrar periyotları, günlük sayfa ezber performansı.
-
-  **Rol bazlı odak noktaların:**
-  - **student (Öğrenci):** Günlük çalışma planı, eksik konu analizi, başarı tahmini, motivasyon.
-  - **teacher (Öğretmen):** Öğrenci bazlı risk analizi, başarı tahminleri, kazanım eksikleri haritası.
-  - **school_admin (Okul Yönetimi):** Şube bazlı başarı analizi, öğretmen performans metrikleri.
-  - **admin (Sistem Yöneticisi):** Sistem kullanım trendleri, performans optimizasyon raporları.
-
-  Lütfen çıktıları profesyonel, yapıcı ve aksiyon odaklı bir dille oluştur.`,
+  Çıktı Formatı: JSON. Yapıcı ama doğrudan, profesyonel ve net odaklı bir dil kullan.
+  `,
 });
 
 const generateAiInsightsFlow = ai.defineFlow(

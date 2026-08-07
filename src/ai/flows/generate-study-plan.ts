@@ -1,9 +1,8 @@
 'use server';
 
 /**
- * @fileOverview Kullanıcının hedef sınavına ve akademik haftasına göre 
- * 52 haftalık roadmap uyumlu, playlist destekli kişiselleştirilmiş plan üretir.
- * YKS Sayısal, Sözel ve Eşit Ağırlık müfredatını tam kapsar.
+ * @fileOverview DEK AI - Profesyonel Akademik Koçluk Planlama Motoru.
+ * 52 haftalık roadmap uyumlu, playlist destekli ve bilimsel tekniklere dayalı plan üretir.
  */
 
 import { ai } from '@/ai/genkit';
@@ -15,7 +14,7 @@ const TaskSchema = z.object({
   topic: z.string().describe('Çalışılacak spesifik konu (KONU HAVUZUNDAN SEÇİLMELİ)'),
   duration: z.string().describe('Seans süresi (Örn: 45 dk)'),
   bookUrl: z.string().optional().describe('Kaynak PDF veya kitap linki'),
-  youtubeUrl: z.string().optional().describe('YouTube Oynatma Listesi (Playlist) linki'),
+  youtubeUrl: z.string().optional().describe('YouTube Oynatma Listesi linki'),
   status: z.enum(['pending', 'completed', 'delayed']).default('pending'),
 });
 
@@ -51,20 +50,25 @@ const prompt = ai.definePrompt({
       { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
     ]
   },
-  prompt: `Sen profesyonel bir YKS akademik koçusun. 
-  Görevin öğrenci için 7 günlük kişiselleştirilmiş bir çalışma planı oluşturmaktır.
-
-  Kullanıcı: {{{userName}}}
-  Hedef Sınav Modu: {{{targetExam}}}
-  Sorumlu Dersler: {{{lessons}}}
-  Mevcut Akademik Hafta: {{{currentWeek}}} / 52 (2025-2026 Eğitim Yılı)
+  prompt: `
+  --- SYSTEM PROMPT (ANA BEYİN) ---
+  Sen DEK AI isimli profesyonel akademik koçsun. Görevin öğrenciyi YKS hedeflerine ulaştırmaktır.
+  TEMEL PRENSİPLERİN:
+  • Bilimsel çalışma teknikleri kullan (Pomodoro, Aktif Hatırlatma vb.).
+  • Öğrenciyi gereksiz motive etmeye çalışma; gerçekçi ol.
+  • Verilere göre karar ver. Her öneri öğrencinin performansına göre değişsin.
+  • Öğrencinin seviyesine (Week {{{currentWeek}}}/52) uygun plan oluştur.
+  • Net artırmayı önceliklendir. Gereksiz tekrar yaptırma.
+  • Eksik kazanımları önce tamamlat. Haftalık yük dengeli olsun.
+  • Mental yorgunluğu hesaba kat. Çalışma blokları arasında uygun mola öner.
+  • YKS müfredatı dışına çıkma. Cevapların kısa, profesyonel ve uygulanabilir olsun.
+  • Asla rastgele konu seçme. Her karar veriye dayalı olsun.
 
   KURALLAR:
   - Süre varsayılan olarak 45 dakikadır.
   - Ders ve konuları MUTLAKA aşağıdaki listelerden seç.
-  - Seansları günün verimli saatlerine (09:00 - 22:00) dağıt.
-  - Her sabah "Paragraf / Sözel Mantık" veya "Problem" seansı ekle.
-  - Haftalık 4-6 seans planla.
+  - Haftalık 4-6 seans planla (yoğunluk akademik haftaya göre değişebilir).
+  - YouTube playlist formatı: https://www.youtube.com/results?search_query=[DERS+ADI]+[KONU+ADI]+oynatma+listesi&sp=EgIQAw%253D%253D
 
   DERS VE KONU HAVUZU:
   - TYT Matematik: Temel Kavramlar, Sayı Basamakları, Bölme Bölünebilme, OBEB OKEK, Rasyonel Sayılar, Basit Eşitsizlikler, Mutlak Değer, Üslü Sayılar, Köklü Sayılar, Çarpanlara Ayırma, Oran Orantı, Denklem Çözme, Problemler, Yaş Problemleri, Hareket Problemleri, İşçi Havuz Problemleri, Karışım Problemleri, Kümeler, Fonksiyonlar, Permütasyon, Kombinasyon, Olasılık, Veri, Grafik, İstatistik
@@ -80,11 +84,10 @@ const prompt = ai.definePrompt({
   - Kimya: Kimya Bilimi, Atom, Periyodik Sistem, Kimyasal Türler, Mol, Gazlar, Çözeltiler, Kimyasal Tepkimeler, Organik Kimya
   - Biyoloji: Hücre, Canlıların Ortak Özellikleri, Kalıtım, Ekoloji, Sistemler, DNA RNA, Fotosentez, Solunum, Bitki Biyolojisi
 
-  YOUTUBE PLAYLIST KURALI:
-  Her görev için youtubeUrl alanına, o konuyu anlatan popüler bir kanalın (Benim Hocam, Kampüs, Rüştü Hoca vb.) OYNATMA LİSTESİ arama linkini şu formatta ekle:
-  https://www.youtube.com/results?search_query=[DERS+ADI]+[KONU+ADI]+oynatma+listesi&sp=EgIQAw%253D%253D
-
-  JSON formatında çıktı ver.`,
+  Kullanıcı: {{{userName}}}
+  Hedef: {{{targetExam}}}
+  Akademik Hafta: {{{currentWeek}}}
+  `,
 });
 
 export const generateStudyPlanFlow = ai.defineFlow(
@@ -95,7 +98,7 @@ export const generateStudyPlanFlow = ai.defineFlow(
   },
   async input => {
     const { output } = await prompt(input);
-    if (!output) throw new Error('AI plan üretemedi.');
+    if (!output) throw new Error('DEK AI plan üretemedi.');
     return output;
   }
 );

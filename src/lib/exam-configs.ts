@@ -11,7 +11,7 @@ import {
   Presentation, FileSpreadsheet, LayoutDashboard,
   Compass, Briefcase, Atom, FlaskConical, Calculator,
   Globe2, History as HistoryIcon, Languages as LangIcon,
-  Zap, Flame
+  Zap, Flame, FileCode, Users
 } from 'lucide-react';
 
 export type ExamModule = {
@@ -31,35 +31,10 @@ export type ExamType = {
   lessons: string[];
   modules: ExamModule[];
   aiFocus: string;
-  roadmap?: {
-    phase: string;
-    weeks: string;
-    topics: string[];
-  }[];
 };
 
 export const EXAM_CONFIGS: Record<string, ExamType> = {
-  YKS_SOZ: {
-    id: 'YKS_SOZ',
-    category: 'ÜNİVERSİTE',
-    title: 'YKS Sözel 2026',
-    icon: HistoryIcon,
-    description: 'TYT + AYT Sözel Puan Türü Tam Paket',
-    targetGroup: '12. Sınıf ve Mezunlar',
-    lessons: ['Türkçe', 'Edebiyat', 'Tarih', 'Coğrafya', 'Felsefe', 'Din Kültürü'],
-    modules: [
-      { title: "Sözel Analiz", icon: ScrollText, color: "bg-amber-600", desc: "Konu derinliği" },
-      { title: "Deneme Takibi", icon: ClipboardCheck, color: "bg-emerald-500", desc: "Sözel denemeler" },
-      { title: "Eser-Yazar", icon: LibraryIcon, color: "bg-rose-500", desc: "Ezber kartları" },
-    ],
-    aiFocus: 'Bu hafta Cumhuriyet Dönemi Şiir ve İnkılap Tarihi konularındaki %15 net artışı hedefine odaklanacağız.',
-    roadmap: [
-      { phase: "Temel İnşa", weeks: "1-12", topics: ["Sözcük ve Cümlede Anlam", "İslamiyet Öncesi", "İlk Çağ", "Harita Bilgisi"] },
-      { phase: "Gelişim", weeks: "13-24", topics: ["Divan Edebiyatı", "Osmanlı Tarihi", "İklim", "Psikoloji/Sosyoloji"] },
-      { phase: "İleri Kazanım", weeks: "25-36", topics: ["Cumhuriyet Dönemi", "20. YY Dünya Tarihi", "Türkiye Coğrafyası"] },
-      { phase: "Final Revizyon", weeks: "37-52", topics: ["Genel Tekrar", "Deneme Kampı", "Sözel Mantık"] }
-    ]
-  },
+  // YKS GRUBU
   YKS_SAY: {
     id: 'YKS_SAY',
     category: 'ÜNİVERSİTE',
@@ -70,9 +45,9 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
     lessons: ['TYT Matematik', 'AYT Matematik', 'Geometri', 'Fizik', 'Kimya', 'Biyoloji', 'Türkçe'],
     modules: [
       { title: "Net Analizi", icon: TrendingUp, color: "bg-orange-500", desc: "Sayısal net artışı" },
-      { title: "AI Koç", icon: Brain, color: "bg-indigo-500", desc: "Sıralama tahmini" },
+      { title: "Sıralama Robotu", icon: Target, color: "bg-blue-600", desc: "Tahmin motoru" },
     ],
-    aiFocus: 'AYT Matematik netlerin hedefindeki mühendislik fakültesi için %88 uyumlu görünüyor.'
+    aiFocus: 'AYT Matematik ve Fen branşlarındaki dengeyi korumak bu hafta ana stratejimiz.'
   },
   YKS_EA: {
     id: 'YKS_EA',
@@ -84,10 +59,74 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
     lessons: ['TYT Matematik', 'AYT Matematik', 'Edebiyat', 'Tarih', 'Coğrafya', 'Türkçe', 'Geometri'],
     modules: [
       { title: "EA Denge", icon: Target, color: "bg-blue-600", desc: "Mat-Sözel dengesi" },
-      { title: "Yol Haritası", icon: Map, color: "bg-emerald-600", desc: "Haftalık gelişim" },
+      { title: "Konu Takibi", icon: BookOpenCheck, color: "bg-emerald-600", desc: "Haftalık gelişim" },
     ],
-    aiFocus: 'Edebiyat ve AYT Matematik netlerin arasındaki dengeyi koruman sıralamanı %12 yukarı çekecektir.'
+    aiFocus: 'Edebiyat ve AYT Matematik netleri arasındaki %15lik farkı kapatmaya odaklanacağız.'
   },
+  YKS_SOZ: {
+    id: 'YKS_SOZ',
+    category: 'ÜNİVERSİTE',
+    title: 'YKS Sözel 2026',
+    icon: HistoryIcon,
+    description: 'TYT + AYT Sözel Puan Türü Tam Paket',
+    targetGroup: '12. Sınıf ve Mezunlar',
+    lessons: ['Türkçe', 'Edebiyat', 'Tarih', 'Coğrafya', 'Felsefe', 'Din Kültürü'],
+    modules: [
+      { title: "Sözel Analiz", icon: ScrollText, color: "bg-amber-600", desc: "Konu derinliği" },
+      { title: "Eser-Yazar", icon: LibraryIcon, color: "bg-rose-500", desc: "Hafıza teknikleri" },
+    ],
+    aiFocus: 'Cumhuriyet Dönemi Edebiyatı ve İnkılap Tarihi konularında %100 kazanım hedefliyoruz.'
+  },
+
+  // KPSS GRUBU
+  KPSS_LISANS: {
+    id: 'KPSS_LISANS',
+    category: 'KAMU SINAVLARI',
+    title: 'KPSS Lisans 2026',
+    icon: Landmark,
+    description: 'Genel Yetenek & Genel Kültür Hazırlık',
+    targetGroup: 'Lisans Mezunları',
+    lessons: ['Türkçe', 'Matematik', 'Tarih', 'Coğrafya', 'Vatandaşlık', 'Güncel Bilgiler'],
+    modules: [
+      { title: "Atama Robotu", icon: Users, color: "bg-indigo-600", desc: "Puan hesaplama" },
+      { title: "Vatandaşlık Notları", icon: Gavel, color: "bg-slate-700", desc: "Özet kartlar" },
+    ],
+    aiFocus: 'Tarih ve Coğrafya derslerindeki güncel müfredat değişimlerini planımıza dahil ettik.'
+  },
+
+  // AKADEMİK GRUP
+  ALES: {
+    id: 'ALES',
+    category: 'AKADEMİK',
+    title: 'ALES 2026',
+    icon: Brain,
+    description: 'Akademik Personel ve Lisansüstü Eğitimi',
+    targetGroup: 'Lisans Mezunları ve Son Sınıflar',
+    lessons: ['Sayısal Mantık', 'Sözel Mantık', 'Matematik', 'Türkçe'],
+    modules: [
+      { title: "Hız Analizi", icon: Timer, color: "bg-red-600", desc: "Süre yönetimi" },
+      { title: "Mantık Kampı", icon: Zap, color: "bg-accent", desc: "Özel mantık soruları" },
+    ],
+    aiFocus: 'Sözel mantık çözüm hızını %20 artırmak için süre odaklı denemeler planlıyoruz.'
+  },
+
+  // DİL GRUBU
+  YDS: {
+    id: 'YDS',
+    category: 'YABANCI DİL',
+    title: 'YDS / YÖKDİL 2026',
+    icon: Languages,
+    description: 'Yabancı Dil Bilgisi Seviye Tespit Sınavı',
+    targetGroup: 'Dil Puanı Hedefleyenler',
+    lessons: ['Reading', 'Grammar', 'Vocabulary', 'Listening', 'Writing'],
+    modules: [
+      { title: "Kelime Deposu", icon: BookMarked, color: "bg-blue-500", desc: "Günlük kelime" },
+      { title: "Okuma Kampı", icon: Mic, color: "bg-emerald-500", desc: "Paragraf teknikleri" },
+    ],
+    aiFocus: 'Akademik okuma becerilerini geliştirmek için her gün 2 makale analizi ekliyoruz.'
+  },
+
+  // MEB GRUBU
   LGS: {
     id: 'LGS',
     category: 'ORTAOKUL',
@@ -97,9 +136,9 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
     targetGroup: '8. Sınıf Öğrencileri',
     lessons: ['Türkçe', 'Matematik', 'Fen Bilimleri', 'İnkılap Tarihi', 'Din Kültürü', 'İngilizce'],
     modules: [
-      { title: "Dersler", icon: BookOpen, color: "bg-blue-600", desc: "LGS müfredatı" },
-      { title: "Denemeler", icon: ClipboardCheck, color: "bg-orange-500", desc: "Sonuç analizi" },
+      { title: "Yeni Nesil", icon: Zap, color: "bg-orange-500", desc: "Beceri temelli sorular" },
+      { title: "Deneme Takibi", icon: ClipboardCheck, color: "bg-blue-600", desc: "Sonuç analizi" },
     ],
-    aiFocus: 'Matematik ve Fen Bilimleri kazanımlarındaki eksiklerini tamamlaman bu hafta en büyük önceliğimiz olmalı.'
+    aiFocus: 'Matematik yeni nesil sorularındaki mantık yürütme becerilerini güçlendireceğiz.'
   }
 };

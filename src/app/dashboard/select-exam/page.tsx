@@ -8,8 +8,7 @@ import { Button } from '@/components/ui/button';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useMemo } from 'react';
-import { Loader2, ArrowRight, Sparkles, Star, History, Home, ArrowLeft, ChevronRight } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Loader2, ArrowLeft, Home, ChevronRight, Sparkles, Trophy, Globe, GraduationCap, Landmark } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function SelectExamPage() {
@@ -20,16 +19,11 @@ export default function SelectExamPage() {
   const [loading, setLoading] = useState<string | null>(null);
 
   const categories = [
-    'ORTAOKUL', 
-    'ÜNİVERSİTE', 
-    'MEB SINAVLARI', 
-    'KAMU SINAVLARI', 
-    'AKADEMİK', 
-    'YABANCI DİL', 
-    'ÜNİVERSİTE GEÇİŞ', 
-    'DİNÎ EĞİTİM', 
-    'AKADEMİK DESTEK', 
-    'ÖZEL PROGRAMLAR'
+    { id: 'ÜNİVERSİTE', label: 'ÜNİVERSİTEYE GEÇİŞ', icon: GraduationCap },
+    { id: 'KAMU SINAVLARI', label: 'KAMU PERSONELİ (KPSS)', icon: Landmark },
+    { id: 'AKADEMİK', label: 'AKADEMİK KARİYER (ALES)', icon: Trophy },
+    { id: 'YABANCI DİL', label: 'YABANCI DİL (YDS/YÖKDİL)', icon: Globe },
+    { id: 'ORTAOKUL', label: 'ORTAOKUL (LGS)', icon: Sparkles },
   ];
 
   const handleSelect = async (examId: string) => {
@@ -87,24 +81,30 @@ export default function SelectExamPage() {
         </header>
 
         <div className="text-center space-y-6 max-w-3xl mx-auto pt-8">
+          <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-white font-black text-[10px] uppercase tracking-widest shadow-xl">
+             <Trophy className="h-4 w-4 text-accent" /> Hedef Belirleme Terminali
+          </div>
           <h1 className="text-6xl md:text-8xl font-black text-primary tracking-tighter italic uppercase text-shadow-premium leading-none">
-            Hedefini <span className="text-accent text-shadow-accent">Belirle</span>
+            Yolunu <span className="text-accent text-shadow-accent">Seç</span>
           </h1>
           <p className="text-xl text-muted-foreground font-medium italic">
-            Size en doğru eğitim deneyimini sunabilmemiz için hazırlanmak istediğiniz programı seçin. Sistem tamamen size özel yapılandırılacaktır.
+            Hazırlandığınız programa göre DEK AI tüm müfredatını, analizlerini ve çalışma temposunu tamamen size özel yapılandıracaktır.
           </p>
         </div>
 
         <div className="space-y-24 pt-12">
-          {categories.map((category) => (
-            categorizedExams[category]?.length > 0 && (
-              <div key={category} className="space-y-10">
+          {categories.map((cat) => (
+            categorizedExams[cat.id]?.length > 0 && (
+              <div key={cat.id} className="space-y-10">
                 <div className="flex items-center gap-6">
-                  <h2 className="text-2xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep">{category}</h2>
+                  <div className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg">
+                     <cat.icon className="h-6 w-6" />
+                  </div>
+                  <h2 className="text-2xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep">{cat.label}</h2>
                   <div className="h-px flex-1 bg-primary/5 shadow-inner"></div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {categorizedExams[category]?.map((exam) => (
+                  {categorizedExams[cat.id]?.map((exam) => (
                     <Card 
                       key={exam.id} 
                       className="group relative overflow-hidden rounded-[3.5rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.08)] bg-white p-10 transition-all hover:-translate-y-4 hover:shadow-[0_60px_120px_-30px_rgba(15,23,42,0.15)] cursor-pointer border border-primary/5"
@@ -116,9 +116,6 @@ export default function SelectExamPage() {
                           <div className="h-20 w-20 rounded-[2rem] bg-primary/5 flex items-center justify-center text-primary group-hover:bg-accent group-hover:text-white transition-all shadow-inner group-hover:rotate-6">
                             <exam.icon className="h-10 w-10" />
                           </div>
-                          <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest px-3 py-1 bg-slate-50 border-primary/5">
-                             {exam.lessons.length} Modül
-                          </Badge>
                         </div>
                         <div className="space-y-3">
                           <h3 className="text-3xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep group-hover:text-accent transition-colors leading-none">{exam.title}</h3>
@@ -146,8 +143,4 @@ export default function SelectExamPage() {
       </div>
     </div>
   );
-}
-
-function Badge({ className, children, variant }: any) {
-  return <div className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors", className)}>{children}</div>;
 }

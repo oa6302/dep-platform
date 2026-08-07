@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useDoc, useFirestore } from '@/firebase';
 import { 
-  CheckCircle2, 
+  CheckCircle, 
   Clock, 
   Calendar, 
   Brain, 
@@ -88,21 +88,20 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     { label: 'TOPLAM XP', val: xp.toLocaleString(), icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50' },
     { label: 'ÇALIŞMA', val: `${Math.floor(totalTasksCompleted * 0.75)} SAAT`, icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50' },
     { label: 'NET ORT.', val: '84.5', icon: Target, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { label: 'GÜNLÜK SERİ', val: '16 GÜN', icon: Flame, color: 'text-rose-500', bg: 'bg-rose-50' },
   ];
 
   const academicBalance = [
-    { subject: 'Edebiyat', val: 85, color: '#F59E0B' },
-    { subject: 'Tarih', val: 72, color: '#0F172A' },
-    { subject: 'Coğrafya', val: 90, color: '#F59E0B' },
-    { subject: 'Felsefe', val: 64, color: '#0F172A' },
+    { subject: 'Matematik', val: 85, color: '#F59E0B' },
+    { subject: 'Edebiyat', val: 72, color: '#0F172A' },
+    { subject: 'Tarih', val: 90, color: '#F59E0B' },
+    { subject: 'Coğrafya', val: 64, color: '#0F172A' },
     { subject: 'Türkçe', val: 94, color: '#F59E0B' },
   ];
 
   const handleQuickAddSession = async (taskData: any) => {
     if (!db || !user) return;
     const newSchedule = studyPlan?.schedule ? [...studyPlan.schedule] : [];
-    let dayIndex = newSchedule.findIndex(s => s.day === today);
+    let dayIndex = newSchedule.findIndex((s: any) => s.day === today);
     
     const newTask = {
         ...taskData,
@@ -138,9 +137,8 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     setIsRecLoading(true);
     const exam = userData?.targetExam || 'YKS_SAY';
     
-    // AI Tavsiyesi (Gerçek senaryoda AI flow'undan gelebilir)
     const recommendedTask = {
-      subject: exam.includes('SOZ') ? 'AYT Edebiyat' : 'TYT Matematik',
+      subject: exam.includes('SOZ') ? 'Edebiyat' : 'TYT Matematik',
       topic: exam.includes('SOZ') ? 'Cumhuriyet Dönemi' : 'Problemler',
       time: '14:00',
       duration: '45 dk',
@@ -163,7 +161,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     <div className="p-8 lg:p-12 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000">
       
       {/* 4-COLUMN TOP STATS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {stats.map((stat, i) => (
           <Card key={i} className="p-8 rounded-[2.5rem] border-none shadow-[0_20px_40px_-10px_rgba(0,0,0,0.05)] bg-white flex items-center gap-6 group hover:shadow-xl transition-all hover:-translate-y-1 border border-primary/5">
             <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:rotate-6 shadow-sm", stat.bg)}>
@@ -175,6 +173,20 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
             </div>
           </Card>
         ))}
+
+        {/* IMAGE SYNCED STREAK CARD */}
+        <Card className="p-8 rounded-[2.5rem] border-none shadow-[0_20px_40px_-10px_rgba(0,0,0,0.05)] bg-white flex items-center justify-between group hover:shadow-xl transition-all hover:-translate-y-1 border border-primary/5 cursor-pointer">
+          <div className="flex items-center gap-6">
+            <div className="h-16 w-16 rounded-[1.5rem] bg-[#FFF1F2] flex items-center justify-center shrink-0 transition-transform group-hover:scale-110">
+              <Flame className="h-8 w-8 text-[#FF4D4D] fill-current" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#94A3B8] mb-0.5">GÜNLÜK SERİ</p>
+              <p className="text-4xl font-black text-[#0F172A] tracking-tighter italic">16 GÜN</p>
+            </div>
+          </div>
+          <ChevronRight className="h-6 w-6 text-[#E2E8F0] group-hover:text-primary transition-colors" />
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-12">
@@ -182,7 +194,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
         {/* OPERATIONAL AREA (8 COLUMNS) */}
         <div className="xl:col-span-8 space-y-12">
           
-          {/* PERSONAL COMMAND PANEL (HERO) */}
           <Card className="rounded-[4rem] border-none shadow-[0_60px_100px_-20px_rgba(15,23,42,0.12)] bg-white p-14 relative overflow-hidden group border border-primary/5">
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-accent/10 transition-all duration-1000"></div>
             <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-12">
@@ -219,7 +230,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
             </div>
           </Card>
 
-          {/* TODAY'S OPERATIONAL SCHEDULE */}
           <div className="space-y-8">
              <div className="flex justify-between items-end px-6">
                 <div className="space-y-2">
@@ -255,11 +265,19 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                           {task.bookUrl && <Button size="icon" variant="ghost" className="h-12 w-12 rounded-[1.25rem] bg-slate-50 hover:bg-primary hover:text-white transition-all"><Book className="h-5 w-5" /></Button>}
                           {task.youtubeUrl && <Button size="icon" variant="ghost" className="h-12 w-12 rounded-[1.25rem] bg-rose-50 hover:bg-rose-500 hover:text-white transition-all text-rose-500"><PlaySquare className="h-5 w-5" /></Button>}
                        </div>
-                       <Button size="icon" className={cn(
-                        "h-16 w-16 rounded-[1.75rem] shadow-2xl transition-all group-hover:rotate-6 group-active:scale-90",
-                        task.status === 'completed' ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-[#0F172A] text-white hover:bg-accent shadow-primary/20"
+                       <Button 
+                        size="icon" 
+                        onClick={() => {
+                          const ns = [...studyPlan.schedule];
+                          const di = ns.findIndex((s: any) => s.day === today);
+                          ns[di].tasks[i].status = task.status === 'completed' ? 'pending' : 'completed';
+                          setDoc(doc(db!, 'studyPlans', user.uid), { schedule: ns }, { merge: true });
+                        }}
+                        className={cn(
+                          "h-16 w-16 rounded-[1.75rem] shadow-2xl transition-all group-hover:rotate-6 group-active:scale-90",
+                          task.status === 'completed' ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-[#0F172A] text-white hover:bg-accent shadow-primary/20"
                        )}>
-                         {task.status === 'completed' ? <CheckCircle2 className="h-8 w-8" /> : <Play className="h-8 w-8 fill-current" />}
+                         {task.status === 'completed' ? <CheckCircle className="h-8 w-8" /> : <Play className="h-8 w-8 fill-current" />}
                        </Button>
                     </div>
                   </Card>
@@ -273,7 +291,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            {/* WEEKLY ACADEMIC TREND */}
             <Card className="p-12 rounded-[3.5rem] border-none shadow-[0_40px_80px_-20px_rgba(0,0,0,0.06)] bg-white space-y-10 border border-primary/5">
               <div className="flex justify-between items-center">
                 <div className="space-y-1">
@@ -300,19 +317,8 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                    </AreaChart>
                 </ResponsiveContainer>
               </div>
-              <div className="flex justify-between items-end border-t border-primary/5 pt-8">
-                <div className="space-y-1">
-                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-40">HAFTALIK ORAN</p>
-                   <p className="text-4xl font-black text-primary italic tracking-tighter">%82</p>
-                </div>
-                <div className="text-right">
-                   <p className="text-sm font-black text-emerald-500 uppercase tracking-widest">↑ %14 ARTIŞ</p>
-                   <p className="text-[10px] font-bold text-muted-foreground italic uppercase opacity-40">vs GEÇEN HAFTA</p>
-                </div>
-              </div>
             </Card>
 
-            {/* ACADEMIC BALANCE (BARS) */}
             <Card className="p-12 rounded-[3.5rem] border-none shadow-[0_40px_80px_-20px_rgba(0,0,0,0.06)] bg-white space-y-10 border border-primary/5">
               <div className="flex justify-between items-center">
                 <div className="space-y-1">
@@ -354,40 +360,21 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
             </div>
             
             <div className="p-12 space-y-12">
-               {/* STREAK */}
-               <div className="flex items-center justify-between group cursor-pointer">
-                  <div className="flex items-center gap-6">
-                    <div className="h-16 w-16 rounded-[1.5rem] bg-rose-50 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-sm">
-                      <Flame className="h-8 w-8 text-rose-500 fill-current" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest mb-0.5">GÜNLÜK SERİ</p>
-                      <p className="text-2xl font-black text-primary italic tracking-tighter">16 GÜN</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="h-6 w-6 text-muted-foreground opacity-20 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
-               </div>
-
                {/* LEVEL CARD */}
                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                     <div className="flex items-center gap-6">
-                        <div className="h-16 w-16 rounded-[1.5rem] bg-amber-50 flex items-center justify-center shadow-sm">
-                          <Award className="h-8 w-8 text-amber-500" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest mb-0.5">AKADEMİK RÜTBE</p>
-                          <p className="text-2xl font-black text-primary italic tracking-tighter">LEVEL {level}</p>
-                        </div>
-                     </div>
-                     <span className="text-[11px] font-black text-muted-foreground tracking-tighter">{currentXpInLevel} / {xpToNextLevel} XP</span>
+                  <div className="flex items-center gap-6">
+                    <div className="h-16 w-16 rounded-[1.5rem] bg-amber-50 flex items-center justify-center shadow-sm">
+                      <Award className="h-8 w-8 text-amber-500" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest mb-0.5">AKADEMİK RÜTBE</p>
+                      <p className="text-2xl font-black text-primary italic tracking-tighter">LEVEL {level}</p>
+                    </div>
                   </div>
                   <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden p-1 shadow-inner">
                      <div className="h-full bg-accent rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(245,158,11,0.5)]" style={{ width: `${progressToNextLevel}%` }}></div>
                   </div>
                </div>
-
-               <div className="h-px w-full bg-primary/5"></div>
 
                {/* XP ENGINE SUMMARY */}
                <div className="flex items-center justify-between">
@@ -399,8 +386,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                     <TrendingUp className="h-8 w-8 text-emerald-500 group-hover:text-white transition-colors" />
                   </div>
                </div>
-
-               <div className="h-px w-full bg-primary/5"></div>
 
                {/* FOCUS TERMINAL (POMODORO) */}
                <div className="p-10 bg-[#F8FAFC] rounded-[3.5rem] border border-primary/5 space-y-8 shadow-inner relative overflow-hidden group">
@@ -427,7 +412,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
             </div>
             <div className="space-y-6 relative z-10">
               <p className="text-xl leading-relaxed font-bold italic text-shadow-deep">
-                "Bugün <span className="underline decoration-4 decoration-white/40 underline-offset-8">{userData?.targetExam?.includes('SOZ') ? 'AYT Edebiyat' : 'TYT Matematik'} - {userData?.targetExam?.includes('SOZ') ? 'Cumhuriyet Dönemi' : 'Problemler'}</span> çalışırsan hedef netine <span className="text-white">+0.2 katkı</span> sağlayabilirsin."
+                "Bugün <span className="underline decoration-4 decoration-white/40 underline-offset-8">{userData?.targetExam?.includes('SOZ') ? 'Edebiyat' : 'TYT Matematik'} - {userData?.targetExam?.includes('SOZ') ? 'Cumhuriyet Dönemi' : 'Problemler'}</span> çalışırsan hedef netine <span className="text-white">+0.2 katkı</span> sağlayabilirsin."
               </p>
               <Button 
                 onClick={handleCreateRecommendedTask}
@@ -466,7 +451,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                  </div>
                ))}
             </div>
-            <Button variant="link" className="w-full text-[10px] font-black text-primary/40 uppercase tracking-[0.4em] hover:text-accent">Tüm Başarıları Gör →</Button>
           </Card>
 
         </div>

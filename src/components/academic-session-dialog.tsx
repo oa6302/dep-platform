@@ -96,8 +96,8 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
 
   const handleApplyAiRecommendation = () => {
     setMode('ai');
-    setSubject('TYT Matematik');
-    setTopic('Problemler');
+    setSubject(exam.includes('SOZ') ? 'Edebiyat' : 'TYT Matematik');
+    setTopic(exam.includes('SOZ') ? 'Cumhuriyet Dönemi' : 'Problemler');
     setDifficulty('hard');
     setStudyType('questions');
     setStartTime('14:00');

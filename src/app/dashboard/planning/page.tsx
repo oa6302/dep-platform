@@ -2,9 +2,11 @@
 'use client';
 
 import { useUser, useDoc, useFirestore } from '@/firebase';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { 
   Calendar, 
   Sparkles, 
@@ -17,12 +19,30 @@ import {
   Save,
   Trash2,
   Timer,
-  Zap
+  Zap,
+  Edit3,
+  X
 } from 'lucide-react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function PlanningPage() {
   const { user } = useUser();
@@ -32,25 +52,39 @@ export default function PlanningPage() {
   const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [selectedDay, setSelectedDay] = useState('Pazartesi');
+  
+  // Yerel düzenleme state'i
+  const [localSchedule, setLocalSchedule] = useState<any[]>([]);
+  const [editingTask, setEditingTask] = useState<{ day: string, index: number, data: any } | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const days = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
 
+  // Veri yüklendiğinde yerel state'i güncelle
+  useEffect(() => {
+    if (studyPlan?.schedule) {
+      setLocalSchedule(studyPlan.schedule);
+    } else {
+      setLocalSchedule(days.map(day => ({ day, tasks: [] })));
+    }
+  }, [studyPlan]);
+
   const currentDayTasks = useMemo(() => {
-    return studyPlan?.schedule?.find((s: any) => s.day === selectedDay)?.tasks || [];
-  }, [studyPlan, selectedDay]);
+    return localSchedule.find((s: any) => s.day === selectedDay)?.tasks || [];
+  }, [localSchedule, selectedDay]);
 
   const handleGeneratePlan = async () => {
-    if (!db || !user || !userData) return;
+    if (!userData) return;
     setIsGenerating(true);
     
     // Prototip: AI Simülasyonu ile Plan Oluşturma
-    setTimeout(async () => {
+    setTimeout(() => {
       const examConfig = EXAM_CONFIGS[userData.targetExam || 'LGS'] || EXAM_CONFIGS['LGS'];
       const lessons = examConfig.lessons;
 
       const newSchedule = days.map(day => {
-        // Sözel öğrencisi için özel dağılım
         const isSozel = userData.targetExam?.includes('SOZ');
         const tasks = isSozel ? [
           { time: '09:00', subject: lessons[0], topic: 'Eser-Yazar Analizi', duration: '60 dk', status: 'pending' },
@@ -67,25 +101,96 @@ export default function PlanningPage() {
         return { day, tasks };
       });
 
-      try {
-        await setDoc(doc(db, 'studyPlans', user.uid), {
-          userId: user.uid,
-          examId: userData.targetExam || 'LGS',
-          schedule: newSchedule,
-          updatedAt: serverTimestamp()
-        });
-        toast({
-          title: 'Plan Oluşturuldu',
-          description: `Haftalık programınız ${userData.targetExam} müfredatına göre AI tarafından optimize edildi.`,
-          className: "bg-primary text-white rounded-[2rem]"
-        });
-      } catch (e) {
-        toast({ variant: 'destructive', title: 'Hata', description: 'Plan kaydedilemedi.' });
-      } finally {
-        setIsGenerating(false);
-      }
-    }, 2000);
+      setLocalSchedule(newSchedule);
+      setIsGenerating(false);
+      toast({
+        title: 'Taslak Hazır',
+        description: 'AI planı oluşturuldu. Kaydet butonuna basarak onaylayabilirsiniz.',
+        className: "bg-accent text-primary rounded-[2rem]"
+      });
+    }, 1500);
   };
+
+  const handleSaveToFirestore = async () => {
+    if (!db || !user || !userData) return;
+    setIsSaving(true);
+    try {
+      await setDoc(doc(db, 'studyPlans', user.uid), {
+        userId: user.uid,
+        examId: userData.targetExam || 'LGS',
+        schedule: localSchedule,
+        updatedAt: serverTimestamp()
+      });
+      toast({
+        title: 'Değişiklikler Kaydedildi',
+        description: 'Haftalık programınız başarıyla güncellendi.',
+        className: "bg-primary text-white rounded-[2rem]"
+      });
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Hata', description: 'Plan kaydedilemedi.' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteTask = (index: number) => {
+    const newSchedule = [...localSchedule];
+    const dayIndex = newSchedule.findIndex(s => s.day === selectedDay);
+    if (dayIndex > -1) {
+      newSchedule[dayIndex].tasks = newSchedule[dayIndex].tasks.filter((_: any, i: number) => i !== index);
+      setLocalSchedule(newSchedule);
+    }
+  };
+
+  const handleOpenEdit = (task: any, index: number) => {
+    setEditingTask({ day: selectedDay, index, data: { ...task } });
+    setIsDialogOpen(true);
+  };
+
+  const handleOpenAdd = () => {
+    setEditingTask({ 
+      day: selectedDay, 
+      index: -1, 
+      data: { time: '09:00', subject: '', topic: '', duration: '45 dk', status: 'pending' } 
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleSaveTask = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingTask) return;
+
+    const formData = new FormData(e.currentTarget);
+    const updatedTask = {
+      ...editingTask.data,
+      time: formData.get('time'),
+      subject: formData.get('subject'),
+      topic: formData.get('topic'),
+      duration: formData.get('duration'),
+    };
+
+    const newSchedule = [...localSchedule];
+    const dayIndex = newSchedule.findIndex(s => s.day === selectedDay);
+    
+    if (dayIndex > -1) {
+      if (editingTask.index === -1) {
+        // Yeni ekle
+        newSchedule[dayIndex].tasks = [...newSchedule[dayIndex].tasks, updatedTask];
+      } else {
+        // Düzenle
+        newSchedule[dayIndex].tasks[editingTask.index] = updatedTask;
+      }
+      setLocalSchedule(newSchedule);
+    }
+
+    setIsDialogOpen(false);
+    setEditingTask(null);
+  };
+
+  const lessons = useMemo(() => {
+    const config = EXAM_CONFIGS[userData?.targetExam || 'LGS'] || EXAM_CONFIGS['LGS'];
+    return config.lessons;
+  }, [userData]);
 
   return (
     <div className="p-8 lg:p-12 space-y-12 max-w-7xl mx-auto w-full animate-in fade-in duration-1000">
@@ -98,14 +203,23 @@ export default function PlanningPage() {
             Akademik <br /><span className="text-accent text-shadow-accent">Planlama</span>
           </h2>
         </div>
-        <Button 
-          onClick={handleGeneratePlan}
-          disabled={isGenerating}
-          className="h-20 px-10 rounded-[2rem] bg-primary hover:bg-accent transition-all duration-500 font-black text-sm uppercase tracking-widest gap-4 shadow-2xl shadow-primary/20"
-        >
-          {isGenerating ? <Loader2 className="h-7 w-7 animate-spin" /> : <Brain className="h-7 w-7 text-accent" />}
-          AI İle {userData?.targetExam} Planı Üret
-        </Button>
+        <div className="flex gap-4">
+          <Button 
+            onClick={handleGeneratePlan}
+            disabled={isGenerating}
+            variant="outline"
+            className="h-20 px-10 rounded-[2rem] border-2 border-primary/5 bg-white hover:bg-slate-50 transition-all font-black text-sm uppercase tracking-widest gap-4 shadow-xl"
+          >
+            {isGenerating ? <Loader2 className="h-7 w-7 animate-spin" /> : <Brain className="h-7 w-7 text-accent" />}
+            AI Önerisi Al
+          </Button>
+          <Button 
+            onClick={handleOpenAdd}
+            className="h-20 px-10 rounded-[2rem] bg-primary hover:bg-accent transition-all duration-500 font-black text-sm uppercase tracking-widest gap-4 shadow-2xl shadow-primary/20 text-white"
+          >
+            <Plus className="h-7 w-7 text-accent" /> Yeni Seans Ekle
+          </Button>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-12">
@@ -162,10 +276,25 @@ export default function PlanningPage() {
                     <p className="text-sm font-medium text-muted-foreground italic">{task.topic} • {task.duration}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl text-muted-foreground opacity-20 hover:opacity-100 hover:text-rose-500"><Trash2 className="h-5 w-5" /></Button>
-                    <Button className="h-14 w-14 rounded-2xl bg-primary text-white shadow-xl group-hover:bg-accent transition-all group-hover:rotate-3">
-                      <CheckCircle2 className="h-6 w-6" />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => handleOpenEdit(task, i)}
+                      className="h-12 w-12 rounded-xl text-muted-foreground opacity-20 hover:opacity-100 hover:text-primary"
+                    >
+                      <Edit3 className="h-5 w-5" />
                     </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => handleDeleteTask(i)}
+                      className="h-12 w-12 rounded-xl text-muted-foreground opacity-20 hover:opacity-100 hover:text-rose-500"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </Button>
+                    <div className="h-14 w-14 rounded-2xl bg-white border border-primary/5 flex items-center justify-center text-primary shadow-sm group-hover:bg-accent group-hover:text-white transition-all group-hover:rotate-3">
+                      <CheckCircle2 className="h-6 w-6" />
+                    </div>
                   </div>
                 </div>
               )) : (
@@ -177,46 +306,71 @@ export default function PlanningPage() {
               )}
             </div>
 
-            {currentDayTasks.length > 0 && (
-              <div className="pt-8 border-t border-primary/5 flex justify-between items-center relative z-10">
-                <p className="text-xs font-bold text-muted-foreground italic">* Planlanan her seans için AI Koçunuz 15dk önce bildirim gönderir.</p>
-                <Button className="h-14 px-8 rounded-2xl bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest gap-3 shadow-xl">
-                  <Save className="h-5 w-5" /> Değişiklikleri Kaydet
-                </Button>
-              </div>
-            )}
+            <div className="pt-8 border-t border-primary/5 flex justify-between items-center relative z-10">
+              <p className="text-xs font-bold text-muted-foreground italic">* Planlanan her seans için AI Koçunuz 15dk önce bildirim gönderir.</p>
+              <Button 
+                onClick={handleSaveToFirestore}
+                disabled={isSaving}
+                className="h-14 px-8 rounded-2xl bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest gap-3 shadow-xl text-white"
+              >
+                {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                Değişiklikleri Kaydet
+              </Button>
+            </div>
           </Card>
-
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-             <Card className="rounded-[3rem] border-none shadow-xl bg-[#0F172A] p-10 text-white space-y-6 relative overflow-hidden">
-                <Zap className="h-12 w-12 text-accent absolute top-8 right-8 opacity-20" />
-                <h4 className="text-xl font-black italic uppercase tracking-widest">Haftalık Verimlilik</h4>
-                <div className="space-y-4">
-                   <div className="flex justify-between items-end">
-                      <span className="text-4xl font-black italic">84%</span>
-                      <span className="text-[10px] font-bold opacity-40 uppercase">Plan Uyumu</span>
-                   </div>
-                   <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                      <div className="h-full bg-accent transition-all duration-1000" style={{ width: '84%' }}></div>
-                   </div>
-                </div>
-             </Card>
-             <Card className="rounded-[3rem] border-none shadow-xl bg-accent p-10 text-primary space-y-6 relative overflow-hidden">
-                <Timer className="h-12 w-12 text-white absolute top-8 right-8 opacity-20" />
-                <h4 className="text-xl font-black italic uppercase tracking-widest">Odaklanma Süresi</h4>
-                <div className="space-y-4">
-                   <div className="flex justify-between items-end">
-                      <span className="text-4xl font-black italic">14.5s</span>
-                      <span className="text-[10px] font-bold opacity-40 uppercase">Bu Hafta Toplam</span>
-                   </div>
-                   <div className="h-2 w-full bg-primary/10 rounded-full overflow-hidden">
-                      <div className="h-full bg-primary transition-all duration-1000" style={{ width: '65%' }}></div>
-                   </div>
-                </div>
-             </Card>
-          </section>
         </main>
       </div>
+
+      {/* Edit/Add Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="rounded-[3rem] border-none shadow-2xl p-12 bg-white max-w-lg">
+          <DialogHeader className="space-y-4">
+            <DialogTitle className="text-4xl font-black italic tracking-tighter text-primary uppercase">
+              {editingTask?.index === -1 ? 'Yeni Seans' : 'Seansı Düzenle'}
+            </DialogTitle>
+            <DialogDescription className="font-medium italic">
+              {selectedDay} günü için çalışma detaylarını belirleyin.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSaveTask} className="space-y-8 pt-8">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <Label className="text-xs font-black uppercase tracking-widest opacity-40 ml-2 italic">Başlangıç Saati</Label>
+                <Input name="time" type="time" required defaultValue={editingTask?.data?.time} className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-black text-xl" />
+              </div>
+              <div className="space-y-3">
+                <Label className="text-xs font-black uppercase tracking-widest opacity-40 ml-2 italic">Süre</Label>
+                <Input name="duration" required placeholder="Örn: 45 dk" defaultValue={editingTask?.data?.duration} className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold text-lg" />
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <Label className="text-xs font-black uppercase tracking-widest opacity-40 ml-2 italic">Ders Seçimi</Label>
+              <Select name="subject" required defaultValue={editingTask?.data?.subject}>
+                <SelectTrigger className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold text-lg">
+                  <SelectValue placeholder="Ders Seçiniz" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl">
+                  {lessons.map(l => <SelectItem key={l} value={l} className="font-bold">{l}</SelectItem>)}
+                  <SelectItem value="Paragraf" className="font-bold">Paragraf</SelectItem>
+                  <SelectItem value="Deneme" className="font-bold">Deneme Sınavı</SelectItem>
+                  <SelectItem value="Tekrar" className="font-bold">Genel Tekrar</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-xs font-black uppercase tracking-widest opacity-40 ml-2 italic">Konu Başlığı</Label>
+              <Input name="topic" required placeholder="Örn: Cumhuriyet Dönemi Şairleri..." defaultValue={editingTask?.data?.topic} className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold" />
+            </div>
+
+            <Button type="submit" className="w-full h-20 rounded-[2rem] bg-primary hover:bg-accent transition-all font-black text-sm uppercase tracking-widest gap-3 shadow-2xl text-white">
+              <CheckCircle2 className="h-6 w-6" />
+              Programa Ekle
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

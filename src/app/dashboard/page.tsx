@@ -12,7 +12,7 @@ import {
   LogOut, LayoutDashboard, User, 
   Brain, Headset, Library,
   Users, PieChart, Eye, XCircle, Loader2,
-  Home, AlertCircle, Compass
+  Home, AlertCircle, Compass, Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
@@ -41,8 +41,8 @@ function DashboardContent() {
   const currentViewData = simulatedUserData || userData;
   const isSimulating = !!simulatedUserId;
 
-  // Yükleme durumu: Auth yükleniyor olmalı VEYA kullanıcı varken döküman henüz yüklenmiş olmalı
-  const isGlobalLoading = authLoading || (!!user && docLoading);
+  // Global Yükleme Durumu
+  const isGlobalLoading = authLoading || (user && docLoading);
 
   const dynamicMenu = useMemo(() => {
     if (!currentViewData) return [];
@@ -97,7 +97,7 @@ function DashboardContent() {
     }
   }, [user, authLoading, router]);
 
-  // Eğer veri yüklenmişse ve hala userData yoksa, demek ki profil dökümanı hiç oluşmamış.
+  // Profil verisi gerçekten yoksa login'e yönlendir
   useEffect(() => {
     if (!authLoading && user && !docLoading && !userData) {
       router.push('/login');
@@ -107,9 +107,15 @@ function DashboardContent() {
   if (isGlobalLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
-        <div className="flex flex-col items-center gap-8">
-          <div className="h-24 w-24 animate-spin rounded-[3rem] border-[8px] border-accent border-t-transparent shadow-[0_0_80px_rgba(245,158,11,0.25)]" />
-          <p className="text-[12px] text-primary font-black uppercase tracking-[0.6em] animate-pulse italic">Akademik Motor Hazırlanıyor...</p>
+        <div className="flex flex-col items-center gap-10">
+          <div className="relative">
+            <div className="h-32 w-32 animate-spin rounded-[3.5rem] border-[10px] border-accent border-t-transparent shadow-[0_0_80px_rgba(245,158,11,0.3)]" />
+            <Sparkles className="absolute inset-0 m-auto h-10 w-10 text-accent animate-pulse" />
+          </div>
+          <div className="text-center space-y-2">
+            <p className="text-[14px] text-primary font-black uppercase tracking-[0.6em] animate-pulse italic">Akademik Motor Hazırlanıyor</p>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest italic opacity-40">Lütfen Bekleyin...</p>
+          </div>
         </div>
       </div>
     );

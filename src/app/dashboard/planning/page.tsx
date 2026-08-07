@@ -90,7 +90,7 @@ export default function PlanningPage() {
         setLocalSchedule(result.data);
         toast({
           title: 'Akademik Plan Hazır',
-          description: 'AI, sözel müfredatınıza özel 7 günlük programınızı oluşturdu.',
+          description: 'AI, 2025 müfredatına özel 7 günlük güncel programınızı oluşturdu.',
           className: "bg-accent text-primary rounded-[2rem]"
         });
       } else {
@@ -306,7 +306,7 @@ export default function PlanningPage() {
                       disabled={isGenerating}
                       className="text-xl font-black text-accent uppercase tracking-[0.3em] underline underline-offset-[12px] hover:text-primary transition-colors disabled:opacity-50"
                     >
-                      {isGenerating ? "AI PLANI OLUŞTURUYOR..." : "AI İLE HEMEN OLUŞTUR"}
+                      {isGenerating ? "AI 2025 MÜFREDATINI ANALİZ EDİYOR..." : "AI İLE HEMEN OLUŞTUR"}
                     </button>
                   </div>
                 </div>

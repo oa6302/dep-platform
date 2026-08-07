@@ -2,6 +2,7 @@
 
 /**
  * @fileOverview Kullanıcının hedef sınavına göre kişiselleştirilmiş 7 günlük çalışma planı üreten AI akışı.
+ * Güncel YKS 2025-2026 Sözel müfredatını (Edebiyat, Tarih, Coğrafya, Felsefe) temel alır.
  */
 
 import { ai } from '@/ai/genkit';
@@ -42,15 +43,22 @@ const prompt = ai.definePrompt({
   Hedef Sınav: {{{targetExam}}}
   Sorumlu Olduğu Dersler: {{{lessons}}}
 
-  Görevin: Kullanıcı için 7 günlük, dolu dolu ve akademik olarak verimli bir ders çalışma programı oluşturmaktır.
+  Görevin: Kullanıcı için 7 günlük, akademik olarak en verimli ve GÜNCEL MÜFREDAT odaklı bir ders çalışma programı oluşturmaktır.
   
-  **YKS Sözel (YKS_SOZ) özel talimatları:**
-  - Edebiyat (Eser-Yazar-Dönem), Tarih ve Coğrafya-2 derslerine ağırlık ver.
-  - Her gün mutlaka "Paragraf Hız Çalışması" veya "Sözel Mantık" seansı ekle.
-  - Akşamları gün sonu tekrarı ekle.
-  - Konular güncel YKS müfredatına (2025-2026) uygun olmalıdır.
+  **YKS Sözel (YKS_SOZ) 2025-2026 Müfredat Talimatları:**
+  - **Edebiyat:** Cumhuriyet Dönemi (Şiir, Roman, Tiyatro), Divan Edebiyatı (Sanatçılar ve Akımlar), Halk Edebiyatı, Batı Akımları ve Söz Sanatları konularına ağırlık ver.
+  - **Tarih:** İnkılap Tarihi ve Atatürkçülük, Çağdaş Türk ve Dünya Tarihi, Osmanlı Dağılma Dönemi ve 20. Yüzyıl Başlarında Dünya konularını plana yay.
+  - **Coğrafya-2:** Türkiye Ekonomisi, Küresel Ortam ve Ülkeler, Çevre ve Toplum, Ekosistem ve Madde Döngüsü konularına odaklan.
+  - **Felsefe Grubu:** Psikoloji (Öğrenme, Bellek), Sosyoloji (Toplumsal Yapı), Mantık (Sembolik Mantık) ve Felsefe Tarihi seansları ekle.
   
-  **Format:** Her gün için en az 4 seans (task) planla. Zamanlar mantıklı bir akışta (sabah, öğle, öğleden sonra, akşam) olmalıdır.`,
+  **Özel Seanslar:**
+  - Her sabah mutlaka "Paragraf Hız ve Anlam" veya "Sözel Mantık Muhakeme" seansı ekle (30-45 dk).
+  - Hafta sonuna (Pazar) mutlaka "Sözel Genel Deneme" ve "Deneme Analizi" seansı yerleştir.
+  - Her akşam için 30 dakikalık "Günün Özeti ve Eser-Yazar Tekrarı" ekle.
+  
+  **Format:** 
+  - Her gün için mantıklı bir akışta (sabah, öğle, öğleden sonra, akşam) en az 4, en fazla 6 seans (task) planla.
+  - Konular güncel 2025 müfredatına uygun ve spesifik olmalıdır (Örn: "Cumhuriyet Dönemi Saf Şiir" yerine sadece "Edebiyat" yazma).`,
 });
 
 export const generateStudyPlanFlow = ai.defineFlow(

@@ -58,13 +58,29 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const { data: studyPlan } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   const examConfig = EXAM_CONFIGS[userData?.targetExam || 'YKS_SOZ'] || EXAM_CONFIGS['YKS_SOZ'];
 
+  // Tamamlanan görev sayısına göre gerçek seviye hesaplama
   const totalTasks = useMemo(() => {
     if (!studyPlan?.schedule) return 0;
-    return studyPlan.schedule.reduce((acc: number, day: any) => acc + (day.tasks?.length || 0), 0);
+    let count = 0;
+    studyPlan.schedule.forEach((day: any) => {
+      day.tasks?.forEach((task: any) => {
+        if (task.status === 'completed') count++;
+      });
+    });
+    return count;
   }, [studyPlan]);
 
-  const level = Math.floor(totalTasks / 5) + 18; 
-  const progressToNextLevel = (totalTasks % 5) * 20 || 84;
+  // Seviye 1'den başlar, her 10 tamamlanan görevde bir seviye artar
+  const level = Math.floor(totalTasks / 10) + 1; 
+  const progressToNextLevel = (totalTasks % 10) * 10;
+  
+  // Rozet ismini seviyeye göre dinamik belirle
+  const badgeName = useMemo(() => {
+    if (level < 5) return "AKADEMİK ÇAYLAK";
+    if (level < 10) return "BİLGİ AVCISI";
+    if (level < 15) return "DİSİPLİN ÜSTADI";
+    return "EDEBİYAT USTASI";
+  }, [level]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -105,7 +121,9 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                        HOŞ GELDİN, <br /><span className="text-accent text-shadow-accent">{userData?.displayName?.split(' ')[0] || 'DEK'} 👋</span>
                     </h1>
                     <p className="text-2xl text-muted-foreground font-medium italic opacity-60 max-w-xl">
-                       Akademik zekanız bugün %14 daha verimli çalışıyor. Hedefinize {userData?.targetExam} planıyla bir adım daha yaklaştınız.
+                       {totalTasks === 0 
+                         ? "Akademik yolculuğuna başlamak için ilk görevini tamamla!" 
+                         : `Bugüne kadar ${totalTasks} akademik görevi başarıyla tamamladın.`}
                     </p>
                  </div>
               </div>
@@ -113,7 +131,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                  <div className="space-y-2">
                     <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40 italic">AI ACADEMIC SCORE</p>
                     <div className="flex items-baseline gap-2">
-                       <p className="text-7xl font-black italic tracking-tighter text-accent">82</p>
+                       <p className="text-7xl font-black italic tracking-tighter text-accent">{60 + (level * 2)}</p>
                        <span className="text-2xl font-black opacity-20">/100</span>
                     </div>
                  </div>
@@ -121,7 +139,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                     <div className="h-12 w-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
                        <TrendingUp className="h-6 w-6 text-emerald-400" />
                     </div>
-                    <p className="text-xs font-bold italic opacity-60">Geçen haftaya göre <br /><span className="text-emerald-400">+12% yükseliş</span></p>
+                    <p className="text-xs font-bold italic opacity-60">Gelişim Durumu <br /><span className="text-emerald-400">Aktif Analiz</span></p>
                  </div>
               </div>
            </div>
@@ -134,23 +152,23 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
               <div className="h-32 w-32 rounded-full bg-accent flex items-center justify-center text-white shadow-[0_25px_50px_-12px_rgba(245,158,11,0.5)] transition-all duration-700 group-hover:scale-110">
                  <Flame className="h-16 w-14 fill-white animate-pulse" />
               </div>
-              <div className="absolute -top-4 -right-4 h-14 w-14 bg-primary rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-2xl border-4 border-white rotate-12">18</div>
+              <div className="absolute -top-4 -right-4 h-14 w-14 bg-primary rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-2xl border-4 border-white rotate-12">{totalTasks}</div>
            </div>
 
            <div className="text-center space-y-4">
               <p className="text-[12px] font-black uppercase tracking-[0.5em] text-muted-foreground/30 italic">CURRENT ACADEMIC LEVEL</p>
-              <h2 className="text-8xl font-black italic tracking-tighter text-primary uppercase">LVL {level}</h2>
+              <h2 className="text-8xl font-black italic tracking-tighter text-primary uppercase text-shadow-premium">LVL {level}</h2>
               <Badge variant="outline" className="px-6 py-2 rounded-xl border-primary/5 bg-slate-50 text-accent font-black text-[10px] uppercase tracking-widest">
-                 <Award className="h-3.5 w-3.5 mr-2" /> EDEBİYAT USTASI ROZETİ
+                 <Award className="h-3.5 w-3.5 mr-2" /> {badgeName} ROZETİ
               </Badge>
            </div>
 
            <div className="w-full space-y-5 pt-4 border-t border-primary/5">
               <div className="h-5 w-full bg-slate-100 rounded-full overflow-hidden p-1 shadow-inner">
-                 <div className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-1000" style={{ width: `${progressToNextLevel}%` }}></div>
+                 <div className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-1000" style={{ width: `${progressToNextLevel || 2}%` }}></div>
               </div>
               <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                 <span className="text-muted-foreground">XP {progressToNextLevel * 10} / 1000</span>
+                 <span className="text-muted-foreground">XP {totalTasks * 100} / {level * 1000}</span>
                  <span className="text-primary italic">%{progressToNextLevel} COMPLETION</span>
               </div>
            </div>

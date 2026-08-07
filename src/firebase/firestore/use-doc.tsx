@@ -10,13 +10,13 @@ import { FirestorePermissionError } from '../errors';
 export function useDoc<T = DocumentData>(path: string | null) {
   const db = useFirestore();
   const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Default to true to prevent flash of empty state
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (!db || !path) {
       setData(null);
-      setLoading(false);
+      setLoading(!!path); // Only stop loading if path is explicitly null, otherwise wait
       return;
     }
 

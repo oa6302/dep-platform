@@ -7,6 +7,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ChevronLeft, Sparkles, Loader2 } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+
+function AuthContent() {
+  const searchParams = useSearchParams();
+  const mode = searchParams.get('tab') === 'register' ? 'register' : 'login';
+  
+  return <AuthForm mode={mode} />;
+}
 
 export default function LoginPage() {
   const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl || "https://picsum.photos/seed/edu-logo-102/400/400";
@@ -40,7 +48,7 @@ export default function LoginPage() {
 
         <div className="bg-white rounded-[4rem] shadow-[0_80px_160px_-40px_rgba(15,23,42,0.12)] border border-primary/5 overflow-hidden">
           <Suspense fallback={<div className="p-20 text-center"><Loader2 className="h-10 w-10 animate-spin mx-auto text-accent" /></div>}>
-            <AuthForm mode="register" />
+            <AuthContent />
           </Suspense>
         </div>
 

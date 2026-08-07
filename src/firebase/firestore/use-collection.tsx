@@ -13,13 +13,13 @@ export function useCollection<T = DocumentData>(
 ) {
   const db = useFirestore();
   const [data, setData] = useState<T[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (!db || !pathOrQuery) {
       setData([]);
-      setLoading(false);
+      setLoading(!!pathOrQuery);
       return;
     }
 

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,8 +11,7 @@ import {
   createUserWithEmailAndPassword, 
   updateProfile,
   signInWithPopup,
-  GoogleAuthProvider,
-  fetchSignInMethodsForEmail
+  GoogleAuthProvider
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -30,7 +29,8 @@ import { EXAM_CONFIGS } from '@/lib/exam-configs';
 type Step = 'choice' | 'identity' | 'auth' | 'details' | 'goal';
 
 export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) {
-  const [step, setStep] = useState<Step>(initialMode === 'register' ? 'identity' : 'choice');
+  // If mode is login, go straight to email/password screen
+  const [step, setStep] = useState<Step>(initialMode === 'login' ? 'auth' : 'choice');
   const [authMode, setAuthMode] = useState<'login' | 'register'>(initialMode);
   const [role, setRole] = useState<'student' | 'teacher' | 'school_admin'>('student');
   const [email, setEmail] = useState('');
@@ -77,7 +77,7 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
   }, [dbPrograms]);
 
   const handleNextStep = () => {
-    if (step === 'choice') setStep('auth');
+    if (step === 'choice') setStep(authMode === 'login' ? 'auth' : 'identity');
     else if (step === 'identity') setStep('auth');
     else if (step === 'auth') {
       if (authMode === 'login') handleAuthSubmit();
@@ -92,7 +92,10 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
 
   const handleBackStep = () => {
     if (step === 'identity') setStep('choice');
-    else if (step === 'auth') setStep(authMode === 'login' ? 'choice' : 'identity');
+    else if (step === 'auth') {
+        if (initialMode === 'login') router.push('/'); // If they came for login, back goes home
+        else setStep(authMode === 'login' ? 'choice' : 'identity');
+    }
     else if (step === 'details') setStep('auth');
     else if (step === 'goal') setStep('details');
   };
@@ -128,18 +131,23 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
     if (e) e.preventDefault();
     if (!auth || !db) return;
 
+    if (!email || !password) {
+        toast({ variant: 'destructive', title: 'Hata', description: 'Lütfen tüm alanları doldurun.' });
+        return;
+    }
+
     setLoading(true);
     try {
       if (authMode === 'login') {
         await signInWithEmailAndPassword(auth, email, password);
         router.push('/dashboard');
       } else {
-        // Registration will happen in handleFinalize
         setStep('details');
       }
     } catch (error: any) {
       const msg = error.code === 'auth/user-not-found' ? 'Hesap bulunamadı.' : 
-                  error.code === 'auth/wrong-password' ? 'Şifre hatalı.' : 'Kimlik doğrulama hatası.';
+                  error.code === 'auth/wrong-password' ? 'Şifre hatalı.' : 
+                  error.code === 'auth/invalid-credential' ? 'E-posta veya şifre hatalı.' : 'Kimlik doğrulama hatası.';
       toast({ variant: 'destructive', title: 'Hata', description: msg });
     } finally {
       setLoading(false);
@@ -180,10 +188,9 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
         userData.school = schoolName;
       }
 
-      await Promise.all([
-        updateProfile(user, { displayName }),
-        setDoc(doc(db, 'users', user.uid), userData)
-      ]);
+      // Profile creation MUST happen before navigating to dashboard
+      await updateProfile(user, { displayName });
+      await setDoc(doc(db, 'users', user.uid), userData);
 
       toast({ title: 'Sistem Yapılandırıldı', description: 'Profiliniz başarıyla oluşturuldu.' });
       router.push('/dashboard');
@@ -281,6 +288,9 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
               </button>
             ))}
           </div>
+          <p className="text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 italic">
+               Zaten bir hesabınız mı var? <button onClick={() => { setAuthMode('login'); setStep('auth'); }} className="text-primary hover:underline">Giriş Yapın</button>
+          </p>
         </div>
       )}
 
@@ -330,6 +340,11 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
            {authMode === 'login' && (
              <p className="text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 italic">
                Hesabınız yok mu? <button onClick={() => { setAuthMode('register'); setStep('identity'); }} className="text-accent hover:underline">Kayıt Olun</button>
+             </p>
+           )}
+           {authMode === 'register' && (
+             <p className="text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 italic">
+               Zaten üye misiniz? <button onClick={() => { setAuthMode('login'); setStep('auth'); }} className="text-primary hover:underline">Giriş Yapın</button>
              </p>
            )}
         </div>

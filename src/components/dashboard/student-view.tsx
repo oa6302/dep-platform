@@ -28,7 +28,8 @@ import {
   Activity,
   PlaySquare,
   Book,
-  MoreVertical
+  MoreVertical,
+  Loader2
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { 
@@ -54,6 +55,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const [activeTimer, setActiveTimer] = useState(false);
   const [timeLeft, setTimerLeft] = useState(25 * 60);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isRecLoading, setIsRecLoading] = useState(false);
 
   const { data: studyPlan } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   
@@ -98,24 +100,57 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   ];
 
   const handleQuickAddSession = async (taskData: any) => {
-    if (!db || !user || !studyPlan) return;
-    const newSchedule = studyPlan.schedule ? [...studyPlan.schedule] : [];
+    if (!db || !user) return;
+    const newSchedule = studyPlan?.schedule ? [...studyPlan.schedule] : [];
     let dayIndex = newSchedule.findIndex(s => s.day === today);
+    
+    const newTask = {
+        ...taskData,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+    };
+
     if (dayIndex === -1) {
-      newSchedule.push({ day: today, tasks: [taskData] });
+      newSchedule.push({ day: today, tasks: [newTask] });
     } else {
-      newSchedule[dayIndex].tasks = [...newSchedule[dayIndex].tasks, taskData];
+      newSchedule[dayIndex].tasks = [...newSchedule[dayIndex].tasks, newTask];
     }
+    
     try {
       await setDoc(doc(db, 'studyPlans', user.uid), {
-        ...studyPlan,
+        userId: user.uid,
+        examId: userData?.targetExam || 'YKS_SAY',
         schedule: newSchedule,
         updatedAt: serverTimestamp()
+      }, { merge: true });
+      
+      toast({ 
+        title: 'Görev Senkronize Edildi', 
+        description: `${taskData.subject} seansı bugünlük planınıza eklendi.`, 
+        className: "bg-primary text-white rounded-[2rem]" 
       });
-      toast({ title: 'Görev Eklendi', description: 'Planınıza yeni seans eklendi.', className: "bg-primary text-white rounded-[2rem]" });
     } catch (e) {
-      toast({ variant: 'destructive', title: 'Hata', description: 'Eklenemedi.' });
+      toast({ variant: 'destructive', title: 'Hata', description: 'Görev eklenirken bir sorun oluştu.' });
     }
+  };
+
+  const handleCreateRecommendedTask = async () => {
+    setIsRecLoading(true);
+    const exam = userData?.targetExam || 'YKS_SAY';
+    
+    // AI Tavsiyesi (Gerçek senaryoda AI flow'undan gelebilir)
+    const recommendedTask = {
+      subject: exam.includes('SOZ') ? 'AYT Edebiyat' : 'TYT Matematik',
+      topic: exam.includes('SOZ') ? 'Cumhuriyet Dönemi' : 'Problemler',
+      time: '14:00',
+      duration: '45 dk',
+      difficulty: 'hard',
+      xp: 75,
+      studyType: 'questions'
+    };
+
+    await handleQuickAddSession(recommendedTask);
+    setIsRecLoading(false);
   };
 
   const formatTime = (s: number) => {
@@ -392,9 +427,16 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
             </div>
             <div className="space-y-6 relative z-10">
               <p className="text-xl leading-relaxed font-bold italic text-shadow-deep">
-                "Bugün <span className="underline decoration-4 decoration-white/40 underline-offset-8">AYT Edebiyat - Cumhuriyet Dönemi</span> çalışırsan hedef netine <span className="text-white">+0.8 katkı</span> sağlayabilir ve %94 uyuma ulaşabilirsin."
+                "Bugün <span className="underline decoration-4 decoration-white/40 underline-offset-8">{userData?.targetExam?.includes('SOZ') ? 'AYT Edebiyat' : 'TYT Matematik'} - {userData?.targetExam?.includes('SOZ') ? 'Cumhuriyet Dönemi' : 'Problemler'}</span> çalışırsan hedef netine <span className="text-white">+0.2 katkı</span> sağlayabilirsin."
               </p>
-              <Button className="w-full h-14 rounded-2xl bg-white/20 hover:bg-white/40 text-primary font-black text-[11px] uppercase tracking-widest border border-white/20 shadow-sm transition-all active:scale-95">Görevi Hemen Oluştur</Button>
+              <Button 
+                onClick={handleCreateRecommendedTask}
+                disabled={isRecLoading}
+                className="w-full h-14 rounded-2xl bg-white/20 hover:bg-white/40 text-primary font-black text-[11px] uppercase tracking-widest border border-white/20 shadow-sm transition-all active:scale-95 gap-3"
+              >
+                {isRecLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                Görevi Hemen Oluştur
+              </Button>
             </div>
           </Card>
 

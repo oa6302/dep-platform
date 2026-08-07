@@ -49,7 +49,7 @@ const MASTER_CURRICULUM: Record<string, Record<string, string[]>> = {
     'Tarih': ['İlk Çağ', 'İslam Tarihi', 'Osmanlı Kuruluş', 'Osmanlı Yükselme', 'Osmanlı Duraklama', 'Islahatlar', 'Kurtuluş Savaşı', 'Atatürk İlkeleri', 'Çağdaş Türk Tarihi'],
     'Coğrafya': ['Harita Bilgisi', 'Dünya\'nın Şekli', 'İklim', 'Nüfus', 'Göçler', 'Yerleşme', 'Tarım', 'Sanayi', 'Türkiye Coğrafyası'],
     'Felsefe': ['Bilgi Felsefesi', 'Varlık Felsefesi', 'Ahlak Felsefesi', 'Siyaset Felsefesi', 'Din Felsefesi', 'Bilim Felsefesi'],
-    'Din Kültürü': ['İnanç', 'İbadet', 'Ahlak', 'Kur\'an', 'Hz. Muhammed', 'İslam Düşüncesi'],
+    'Din Kültürü': ['Inanç', 'İbadet', 'Ahlak', 'Kur\'an', 'Hz. Muhammed', 'İslam Düşüncesi'],
     'Fizik': ['Fizik Bilimine Giriş', 'Hareket', 'Kuvvet', 'Enerji', 'Elektrik', 'Manyetizma', 'Basınç', 'Isı Sıcaklık', 'Dalgalar', 'Optik'],
     'Kimya': ['Kimya Bilimi', 'Atom', 'Periyodik Sistem', 'Kimyasal Türler', 'Mol', 'Gazlar', 'Çözeltiler', 'Kimyasal Tepkimeler', 'Organik Kimya'],
     'Biyoloji': ['Hücre', 'Canlıların Ortak Özellikleri', 'Kalıtım', 'Ekoloji', 'Sistemler', 'DNA RNA', 'Fotosentez', 'Solunum', 'Bitki Biyolojisi'],
@@ -80,6 +80,7 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
   const [priority, setPriority] = useState(initialData?.priority || 'normal');
   const [studyType, setStudyType] = useState(initialData?.studyType || 'new');
   const [isSpacedRepetition, setIsSpacedRepetition] = useState(false);
+  const [startTime, setStartTime] = useState(initialData?.time || '09:00');
 
   const subjects = useMemo(() => MASTER_CURRICULUM[exam] || {}, [exam]);
   const topics = useMemo(() => subjects[subject] || [], [subject, subjects]);
@@ -93,12 +94,21 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
 
   const estimatedNet = useMemo(() => (xpValue / 250).toFixed(2), [xpValue]);
 
+  const handleApplyAiRecommendation = () => {
+    setMode('ai');
+    setSubject('TYT Matematik');
+    setTopic('Problemler');
+    setDifficulty('hard');
+    setStudyType('questions');
+    setStartTime('14:00');
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
     const data = {
-      time: formData.get('time'),
+      time: startTime,
       duration: formData.get('duration'),
       exam,
       subject,
@@ -131,8 +141,8 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
                   <ShieldCheck className="h-3.5 w-3.5 text-accent" /> AOS Terminal v4.8
                 </div>
                 <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-2">
-                   <button onClick={() => setMode('ai')} className={cn("px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all", mode === 'ai' ? "bg-white text-primary shadow-sm scale-105" : "text-muted-foreground hover:bg-white/50")}>🤖 AI Planlasın</button>
-                   <button onClick={() => setMode('manual')} className={cn("px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all", mode === 'manual' ? "bg-white text-primary shadow-sm scale-105" : "text-muted-foreground hover:bg-white/50")}>✍️ Manuel</button>
+                   <button type="button" onClick={() => setMode('ai')} className={cn("px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all", mode === 'ai' ? "bg-white text-primary shadow-sm scale-105" : "text-muted-foreground hover:bg-white/50")}>🤖 AI Planlasın</button>
+                   <button type="button" onClick={() => setMode('manual')} className={cn("px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all", mode === 'manual' ? "bg-white text-primary shadow-sm scale-105" : "text-muted-foreground hover:bg-white/50")}>✍️ Manuel</button>
                 </div>
               </div>
               <DialogTitle className="text-6xl font-black italic tracking-tighter text-primary uppercase leading-none">
@@ -153,7 +163,13 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                      <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-2">Başlangıç</Label>
-                        <Input name="time" type="time" defaultValue={initialData?.time || '09:00'} className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-black text-xl text-center" />
+                        <Input 
+                          name="time" 
+                          type="time" 
+                          value={startTime}
+                          onChange={(e) => setStartTime(e.target.value)}
+                          className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-black text-xl text-center" 
+                        />
                      </div>
                      <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-2">Süre</Label>
@@ -293,7 +309,14 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
                    <p className="text-sm font-bold italic leading-relaxed relative z-10">
                       "Son denemende <span className="text-accent underline">Fonksiyonlar</span> başarısı %48'de kaldı. Bugün bu konuyu çalışmanı öneririm."
                    </p>
-                   <Button size="sm" className="w-full h-11 rounded-xl bg-white/10 hover:bg-white/20 text-white font-black text-[9px] uppercase tracking-widest border border-white/10">AI İLE OLUŞTUR</Button>
+                   <Button 
+                    type="button"
+                    onClick={handleApplyAiRecommendation}
+                    size="sm" 
+                    className="w-full h-11 rounded-xl bg-white/10 hover:bg-white/20 text-white font-black text-[9px] uppercase tracking-widest border border-white/10 transition-all active:scale-95"
+                   >
+                     AI İLE DOLDUR
+                   </Button>
                 </Card>
 
                 <div className="bg-white p-8 rounded-[2.5rem] border border-primary/5 space-y-6 shadow-sm">

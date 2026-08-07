@@ -10,21 +10,22 @@ import {
   createUserWithEmailAndPassword, 
   updateProfile,
   signInWithPopup,
-  GoogleAuthProvider
+  GoogleAuthProvider,
+  fetchSignInMethodsForEmail
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Loader2, Mail, Lock, User, School, Hash, 
-  Sparkles, UserRound, Building, CheckCircle2, QrCode, 
-  ChevronRight, Grid3X3, Brain, ArrowRight, ArrowLeft, Key
+  UserRound, Building, CheckCircle2, 
+  ChevronRight, Grid3X3, Brain, ArrowLeft, Key, Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 
-type Step = 'identity' | 'auth' | 'details' | 'goal' | 'finish';
+type Step = 'identity' | 'auth' | 'details' | 'goal';
 
 export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) {
   const [step, setStep] = useState<Step>('identity');
@@ -36,7 +37,6 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
   const [schoolName, setSchoolName] = useState('');
   const [teacherCode, setTeacherCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   
   const auth = useAuth();
   const db = useFirestore();
@@ -50,13 +50,13 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
     const categories = ['ORTAOKUL', 'ÜNİVERSİTE', 'MEB SINAVLARI', 'KAMU SINAVLARI', 'AKADEMİK', 'YABANCI DİL', 'ÜNİVERSİTE GEÇİŞ', 'DİNÎ EĞİTİM', 'AKADEMİK DESTEK', 'ÖZEL PROGRAMLAR'];
     
     categories.forEach(cat => grouped[cat] = []);
-
-    dbPrograms.forEach(exam => {
-      const cat = exam.category || 'ÖZEL PROGRAMLAR';
-      if (!grouped[cat]) grouped[cat] = [];
-      grouped[cat].push({ ...exam, source: 'db' });
-    });
-
+    if (dbPrograms) {
+      dbPrograms.forEach(exam => {
+        const cat = exam.category || 'ÖZEL PROGRAMLAR';
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push({ ...exam, source: 'db' });
+      });
+    }
     Object.values(EXAM_CONFIGS).forEach(exam => {
       const cat = exam.category;
       if (!grouped[cat]) grouped[cat] = [];
@@ -64,13 +64,12 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
         grouped[cat].push({ ...exam, source: 'config' });
       }
     });
-
     return grouped;
   }, [dbPrograms]);
 
   const handleNextStep = () => {
     if (step === 'identity') setStep('auth');
-    else if (step === 'auth' && authMode === 'register') setStep('details');
+    else if (step === 'auth') setStep('details');
     else if (step === 'details') {
       if (role === 'student') setStep('goal');
       else handleFinalize();
@@ -98,13 +97,13 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
       if (!userDoc.exists()) {
         setDisplayName(user.displayName || '');
         setEmail(user.email || '');
-        setAuthMode('register');
         setStep('details');
       } else {
+        toast({ title: 'Hoş Geldiniz', description: `Tekrar merhaba, ${userDoc.data().displayName}!` });
         router.push('/dashboard');
       }
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Hata', description: 'Google ile giriş yapılamadı.' });
+      toast({ variant: 'destructive', title: 'Hata', description: 'Google ile bağlantı kurulamadı.' });
     } finally {
       setLoading(false);
     }
@@ -116,20 +115,32 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
 
     setLoading(true);
     try {
-      if (authMode === 'login') {
+      // Önce bu email kayıtlı mı kontrol et
+      const methods = await fetchSignInMethodsForEmail(auth, email);
+      
+      if (methods.length > 0) {
+        // Kullanıcı var, giriş yap
         await signInWithEmailAndPassword(auth, email, password);
-        toast({ title: 'Giriş Başarılı', description: 'Sisteme hoş geldiniz!' });
-        router.push('/dashboard');
+        const user = auth.currentUser;
+        if (user) {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            toast({ title: 'Giriş Başarılı', description: 'Akademik paneline yönlendiriliyorsun.' });
+            router.push('/dashboard');
+            return;
+          }
+        }
+        setStep('details');
       } else {
-        // Just move to details, create at the very end
+        // Kullanıcı yok, detaylara geç
         setStep('details');
       }
     } catch (error: any) {
-      if (error.code === 'auth/user-not-found') {
-        setAuthMode('register');
-        setStep('details');
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+        toast({ variant: 'destructive', title: 'Giriş Hatası', description: 'Email veya şifre hatalı.' });
       } else {
-        toast({ variant: 'destructive', title: 'Hata', description: 'Giriş bilgileri hatalı.' });
+        // Yeni kayıt için detaylara devam et
+        setStep('details');
       }
     } finally {
       setLoading(false);
@@ -141,14 +152,7 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
     setLoading(true);
 
     try {
-      let coachId = '';
-      if (role === 'student' && teacherCode) {
-        const q = query(collection(db, 'users'), where('activationCode', '==', teacherCode), where('role', '==', 'teacher'));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) coachId = querySnapshot.docs[0].id;
-      }
-
-      let user: any = auth.currentUser;
+      let user = auth.currentUser;
       
       if (!user) {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -169,7 +173,11 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
         userData.school = schoolName;
       } else if (role === 'student') {
         userData.targetExam = targetExam;
-        if (coachId) userData.coachId = coachId;
+        if (teacherCode) {
+          const q = query(collection(db, 'users'), where('activationCode', '==', teacherCode), where('role', '==', 'teacher'));
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) userData.coachId = querySnapshot.docs[0].id;
+        }
       } else if (role === 'school_admin') {
         userData.school = schoolName;
       }
@@ -179,7 +187,7 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
         setDoc(doc(db, 'users', user.uid), userData)
       ]);
 
-      toast({ title: 'Sistem Hazır', description: 'Akademik profiliniz oluşturuldu.', className: "bg-primary text-white rounded-[2rem]" });
+      toast({ title: 'Sistem Yapılandırıldı', description: 'Akademik profilin başarıyla oluşturuldu.', className: "bg-primary text-white rounded-[2rem]" });
       router.push('/dashboard');
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Hata', description: error.message });
@@ -190,7 +198,6 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
 
   return (
     <div className="p-10 md:p-16 space-y-12">
-      {/* 1. ADIM: KİMLİK SEÇİMİ */}
       {step === 'identity' && (
         <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div className="text-center space-y-4">
@@ -227,12 +234,11 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
         </div>
       )}
 
-      {/* 2. ADIM: AUTH (GİRİŞ/MAGIC) */}
       {step === 'auth' && (
         <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-700">
            <div className="flex items-center gap-4">
               <Button variant="ghost" size="icon" onClick={handleBackStep} className="h-12 w-12 rounded-xl bg-slate-50"><ArrowLeft className="h-5 w-5" /></Button>
-              <h2 className="text-3xl font-black italic tracking-tighter uppercase">GİRİŞ YAPIN</h2>
+              <h2 className="text-3xl font-black italic tracking-tighter uppercase">BAĞLANTI KUR</h2>
            </div>
            
            <form onSubmit={handleAuthSubmit} className="space-y-6">
@@ -262,7 +268,7 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
               </div>
 
               <Button type="submit" disabled={loading} className="w-full h-18 rounded-[1.75rem] bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest gap-3 shadow-2xl">
-                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (authMode === 'login' ? 'DEVAM ET' : 'KAYIT OL VE DEVAM ET')}
+                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'DEVAM ET'}
                  <ChevronRight className="h-5 w-5" />
               </Button>
            </form>
@@ -279,7 +285,6 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
         </div>
       )}
 
-      {/* 3. ADIM: PROFİL DETAYLARI */}
       {step === 'details' && (
         <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-700">
            <div className="flex items-center gap-4">
@@ -327,7 +332,6 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
                           placeholder="DK-XXXX-XXXX"
                        />
                     </div>
-                    <p className="text-[8px] font-bold text-muted-foreground italic px-2">Bağlı olduğunuz bir koç varsa kodunu buraya girin.</p>
                  </div>
               )}
            </div>
@@ -339,7 +343,6 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
         </div>
       )}
 
-      {/* 4. ADIM: HEDEF SEÇİMİ (Sadece Öğrenci) */}
       {step === 'goal' && (
         <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-700">
            <div className="flex items-center gap-4">

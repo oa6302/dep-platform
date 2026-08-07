@@ -42,8 +42,7 @@ function DashboardContent() {
   const currentViewData = simulatedUserData || userData;
   const isSimulating = !!simulatedUserId;
 
-  // Global Yükleme Durumu
-  // SADECE kullanıcı varsa ve döküman yükleniyorsa bekleriz.
+  // Global Yükleme Durumu: Auth yükleniyorsa veya kullanıcı varken döküman bekleniyorsa
   const isGlobalLoading = authLoading || (user && docLoading);
 
   const dynamicMenu = useMemo(() => {
@@ -99,7 +98,7 @@ function DashboardContent() {
     }
   }, [user, authLoading, router]);
 
-  // Sınav seçilmemişse yönlendir (Döngüyü engellemek için sadece öğrenci ise)
+  // Sınav seçilmemişse yönlendir (Döngüyü engellemek için sadece öğrenci ise ve verinin gelmiş olduğundan eminsek)
   useEffect(() => {
     if (!authLoading && user && !docLoading && userData) {
       if (userData.role === 'student' && !userData.targetExam) {
@@ -125,8 +124,7 @@ function DashboardContent() {
     );
   }
 
-  // Eğer kullanıcı varsa ama profil dökümanı YOKSA, yönlendirme döngüsüne girmemek için 
-  // doğrudan burada kayıt formunu gösteriyoruz.
+  // Eğer kullanıcı varsa ama döküman yüklenmiş ve hala profil YOKSA
   if (user && !docLoading && !userData) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6">
@@ -136,7 +134,7 @@ function DashboardContent() {
                  <ShieldCheck className="h-4 w-4 text-accent" /> Sistem Kimlik Doğrulama
               </div>
               <h2 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-none">PROFİLİNİZİ <span className="text-accent">TAMAMLAYIN</span></h2>
-              <p className="text-muted-foreground font-medium italic">Giriş yaptınız ancak akademik profiliniz henüz oluşturulmamış. Lütfen devam edin.</p>
+              <p className="text-muted-foreground font-medium italic">Akademik profiliniz henüz oluşturulmamış. Lütfen devam edin.</p>
            </div>
            <div className="bg-white rounded-[4rem] shadow-2xl border border-primary/5 overflow-hidden">
               <AuthForm mode="register" />

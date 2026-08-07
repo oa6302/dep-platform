@@ -10,17 +10,14 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   updateProfile,
-  signInWithPopup,
-  GoogleAuthProvider
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Loader2, Mail, Lock, User, School, 
   UserRound, Building, CheckCircle2, 
-  ChevronRight, Brain, Key, Sparkles,
-  Zap, LogIn, UserPlus
+  Brain, Key, UserPlus, LogIn
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -145,6 +142,7 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
       <div className="flex justify-center">
         <div className="bg-slate-50 p-1.5 rounded-[2rem] flex gap-2">
            <button 
+            type="button"
             onClick={() => setAuthMode('login')}
             className={cn(
               "px-8 py-3 rounded-[1.75rem] font-black text-[10px] uppercase tracking-widest transition-all",
@@ -154,6 +152,7 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
               Giriş Yap
            </button>
            <button 
+            type="button"
             onClick={() => setAuthMode('register')}
             className={cn(
               "px-8 py-3 rounded-[1.75rem] font-black text-[10px] uppercase tracking-widest transition-all",
@@ -167,9 +166,9 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
 
       {authMode === 'login' ? (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="text-center space-y-4">
-            <h2 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-none">BAĞLANTI KUR</h2>
-            <p className="text-sm font-medium text-muted-foreground italic">Mevcut hesabınıza erişerek akademik takibi sürdürün.</p>
+          <div className="text-center space-y-2">
+            <h2 className="text-4xl font-black italic tracking-tighter text-primary uppercase leading-none">AKADEMİK ERİŞİM</h2>
+            <p className="text-xs font-medium text-muted-foreground italic">Kimlik bilgilerinizi doğrulayın.</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-8">
@@ -206,13 +205,12 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
         </div>
       ) : (
         <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-700">
-          <div className="text-center space-y-4">
-            <h2 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-none">PROFİL OLUŞTUR</h2>
-            <p className="text-sm font-medium text-muted-foreground italic">Tek sayfada tüm detayları belirleyin ve sistemi başlatın.</p>
+          <div className="text-center space-y-2">
+            <h2 className="text-4xl font-black italic tracking-tighter text-primary uppercase leading-none">PROFİL OLUŞTUR</h2>
+            <p className="text-xs font-medium text-muted-foreground italic">Akademik kaydınızı tek adımda tamamlayın.</p>
           </div>
 
           <form onSubmit={handleRegister} className="space-y-10">
-            {/* ROL SEÇİMİ */}
             <div className="space-y-4">
               <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2">KİMLİK TÜRÜ</Label>
               <div className="grid grid-cols-3 gap-4">
@@ -237,7 +235,6 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
               </div>
             </div>
 
-            {/* BİLGİLER */}
             <div className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-3">
@@ -283,7 +280,6 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
                 )}
               </div>
 
-              {/* HEDEF SEÇİMİ (Sadece Öğrenci) */}
               {role === 'student' && (
                 <div className="space-y-4">
                   <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2">AKADEMİK HEDEFİNİZ *</Label>

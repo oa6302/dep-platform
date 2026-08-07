@@ -100,7 +100,7 @@ function DashboardContent() {
   // Profil verisi gerçekten yoksa login'e yönlendir
   useEffect(() => {
     if (!authLoading && user && !docLoading && !userData) {
-      router.push('/login');
+      router.push('/login?tab=register');
     }
   }, [authLoading, user, docLoading, userData, router]);
 
@@ -114,7 +114,7 @@ function DashboardContent() {
           </div>
           <div className="text-center space-y-2">
             <p className="text-[14px] text-primary font-black uppercase tracking-[0.6em] animate-pulse italic">Akademik Motor Hazırlanıyor</p>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest italic opacity-40">Lütfen Bekleyin...</p>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest italic opacity-40">Verileriniz Senkronize Ediliyor...</p>
           </div>
         </div>
       </div>

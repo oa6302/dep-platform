@@ -193,13 +193,15 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                             {(task.bookUrl || task.youtubeUrl) && <div className="w-px h-4 bg-primary/10"></div>}
                             <div className="flex gap-2">
                                {task.bookUrl && (
-                                 <a href={task.bookUrl} target="_blank" rel="noopener noreferrer" title="Ders Kitabı" className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center border border-primary/5 hover:bg-primary hover:text-white transition-all">
+                                 <a href={task.bookUrl} target="_blank" rel="noopener noreferrer" title="Ders Kitabı" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-primary/5 hover:bg-primary hover:text-white transition-all">
                                    <Book className="h-3.5 w-3.5 text-[#F59E0B]" />
+                                   <span className="text-[8px] font-black uppercase ml-1.5">KAYNAK</span>
                                  </a>
                                )}
                                {task.youtubeUrl && (
-                                 <a href={task.youtubeUrl} target="_blank" rel="noopener noreferrer" title="YouTube Oynatma Listesi" className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center border border-primary/5 hover:bg-rose-500 hover:text-white transition-all">
+                                 <a href={task.youtubeUrl} target="_blank" rel="noopener noreferrer" title="YouTube Oynatma Listesi" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-primary/5 hover:bg-rose-500 hover:text-white transition-all">
                                    <PlaySquare className="h-3.5 w-3.5 text-rose-500" />
+                                   <span className="text-[8px] font-black uppercase ml-1.5">PLAYLIST</span>
                                  </a>
                                )}
                             </div>

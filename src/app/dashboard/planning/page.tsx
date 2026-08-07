@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
   Calendar, 
-  Sparkles, 
   Brain, 
   Clock, 
   CheckCircle2, 
@@ -21,9 +20,8 @@ import {
   Edit3,
   CalendarCheck,
   Book,
-  Youtube,
-  Link as LinkIcon,
-  PlaySquare
+  PlaySquare,
+  Search
 } from 'lucide-react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';

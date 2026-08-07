@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useDoc, useFirestore } from '@/firebase';
@@ -29,6 +28,7 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
+import { handleGenerateAiStudyPlan } from '@/app/actions';
 import {
   Dialog,
   DialogContent,
@@ -77,29 +77,34 @@ export default function PlanningPage() {
     if (!userData) return;
     setIsGenerating(true);
     
-    // AI Önerisi Simülasyonu
-    setTimeout(() => {
-      const examConfig = EXAM_CONFIGS[userData.targetExam || 'YKS_SOZ'] || EXAM_CONFIGS['YKS_SOZ'];
-      const lessons = examConfig.lessons;
-
-      const newSchedule = days.map(day => {
-        const tasks = [
-          { time: '09:00', subject: lessons[0], topic: 'Eser-Yazar Analizi', duration: '60 dk', status: 'pending', bookUrl: '', youtubeUrl: '' },
-          { time: '11:30', subject: lessons[1] || lessons[0], topic: 'Tarih Özet Tekrar', duration: '45 dk', status: 'pending', bookUrl: '', youtubeUrl: '' },
-          { time: '14:00', subject: 'Paragraf', topic: '40 Soru Hız Testi', duration: '30 dk', status: 'pending', bookUrl: '', youtubeUrl: '' },
-          { time: '16:00', subject: lessons[2] || lessons[0], topic: 'Coğrafya Harita Çalışması', duration: '45 dk', status: 'pending', bookUrl: '', youtubeUrl: '' },
-        ];
-        return { day, tasks };
+    const examConfig = EXAM_CONFIGS[userData.targetExam || 'YKS_SOZ'] || EXAM_CONFIGS['YKS_SOZ'];
+    
+    try {
+      const result = await handleGenerateAiStudyPlan({
+        targetExam: userData.targetExam || 'YKS_SOZ',
+        userName: userData.displayName || 'Öğrenci',
+        lessons: examConfig.lessons
       });
 
-      setLocalSchedule(newSchedule);
-      setIsGenerating(false);
+      if (result.success && result.data) {
+        setLocalSchedule(result.data);
+        toast({
+          title: 'Akademik Plan Hazır',
+          description: 'AI, sözel müfredatınıza özel 7 günlük programınızı oluşturdu.',
+          className: "bg-accent text-primary rounded-[2rem]"
+        });
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
       toast({
-        title: 'Taslak Hazır',
-        description: 'YKS Sözel odaklı AI planı oluşturuldu. Kaydet butonuna basarak onaylayabilirsiniz.',
-        className: "bg-accent text-primary rounded-[2rem]"
+        variant: 'destructive',
+        title: 'Hata',
+        description: 'AI planı oluşturulurken bir sorun oluştu.'
       });
-    }, 1200);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleSaveToFirestore = async () => {
@@ -187,11 +192,11 @@ export default function PlanningPage() {
     <div className="p-8 lg:p-16 space-y-12 max-w-7xl mx-auto w-full animate-in fade-in duration-1000">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
         <div className="space-y-4">
-          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#F59E0B] text-white font-black text-[10px] uppercase tracking-widest shadow-xl">
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-accent text-white font-black text-[10px] uppercase tracking-widest shadow-xl">
              AKILLI PROGRAM MOTORU
           </div>
           <h2 className="text-7xl font-black tracking-tighter italic text-primary uppercase leading-none">
-             AKADEMİK <br /><span className="text-[#F59E0B]">PLANLAMA</span>
+             AKADEMİK <br /><span className="text-accent text-shadow-accent">PLANLAMA</span>
           </h2>
         </div>
         <div className="flex gap-6">
@@ -200,14 +205,14 @@ export default function PlanningPage() {
             disabled={isGenerating}
             className="h-16 px-10 rounded-2xl bg-white border-none text-primary hover:bg-slate-50 transition-all font-black text-xs uppercase tracking-widest gap-4 shadow-xl shadow-black/5"
           >
-            {isGenerating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Brain className="h-5 w-5 text-[#F59E0B]" />}
+            {isGenerating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Brain className="h-5 w-5 text-accent" />}
             AI ÖNERİSİ AL
           </Button>
           <Button 
             onClick={handleOpenAdd}
             className="h-16 px-10 rounded-2xl bg-[#0F172A] hover:bg-black transition-all font-black text-xs uppercase tracking-widest gap-4 shadow-2xl text-white"
           >
-            <Plus className="h-5 w-5 text-[#F59E0B]" /> YENİ SEANS EKLE
+            <Plus className="h-5 w-5 text-accent" /> YENİ SEANS EKLE
           </Button>
         </div>
       </header>
@@ -229,7 +234,7 @@ export default function PlanningPage() {
                   )}
                 >
                   <span className="font-black text-lg uppercase italic tracking-tight">{day}</span>
-                  <ChevronRight className={cn("h-5 w-5 transition-transform group-hover:translate-x-1", selectedDay === day ? "text-[#F59E0B]" : "opacity-10")} />
+                  <ChevronRight className={cn("h-5 w-5 transition-transform group-hover:translate-x-1", selectedDay === day ? "text-accent" : "opacity-10")} />
                 </button>
               ))}
             </div>
@@ -244,7 +249,7 @@ export default function PlanningPage() {
                 <h3 className="text-5xl font-black italic tracking-tighter text-primary uppercase">{selectedDay.toUpperCase()} PLANI</h3>
               </div>
               <div className="flex items-center gap-4 bg-[#F8FAFC] px-6 py-3 rounded-2xl border border-primary/5">
-                <Clock className="h-5 w-5 text-[#F59E0B]" />
+                <Clock className="h-5 w-5 text-accent" />
                 <span className="font-black text-xs text-primary">{currentDayTasks.length} Seans Planlandı</span>
               </div>
             </div>
@@ -267,7 +272,7 @@ export default function PlanningPage() {
                         <div className="flex gap-4">
                            {task.bookUrl && (
                              <a href={task.bookUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-primary/5 text-primary font-black text-[10px] uppercase hover:bg-primary hover:text-white transition-all shadow-sm">
-                               <Book className="h-4 w-4 text-[#F59E0B]" /> Kitap/PDF
+                               <Book className="h-4 w-4 text-accent" /> Kitap/PDF
                              </a>
                            )}
                            {task.youtubeUrl && (
@@ -284,7 +289,7 @@ export default function PlanningPage() {
                         <Button variant="ghost" size="icon" onClick={() => handleDeleteTask(i)} className="h-14 w-14 rounded-2xl text-muted-foreground opacity-20 hover:opacity-100 hover:text-rose-500 transition-all">
                           <Trash2 className="h-6 w-6" />
                         </Button>
-                        <div className="h-16 w-16 rounded-3xl bg-white border border-primary/5 flex items-center justify-center text-primary shadow-sm group-hover:bg-[#F59E0B] group-hover:text-white transition-all">
+                        <div className="h-16 w-16 rounded-3xl bg-white border border-primary/5 flex items-center justify-center text-primary shadow-sm group-hover:bg-accent group-hover:text-white transition-all">
                           <CheckCircle2 className="h-8 w-8" />
                         </div>
                       </div>
@@ -296,8 +301,12 @@ export default function PlanningPage() {
                   <CalendarCheck className="h-40 w-40 mx-auto text-primary" />
                   <div className="space-y-4">
                     <p className="text-3xl font-black uppercase tracking-[0.2em] italic text-primary">BU GÜN İÇİN HENÜZ BİR PLAN OLUŞTURULMAMIŞ.</p>
-                    <button onClick={handleGeneratePlan} className="text-xl font-black text-[#F59E0B] uppercase tracking-[0.3em] underline underline-offset-[12px] hover:text-primary transition-colors">
-                      AI İLE HEMEN OLUŞTUR
+                    <button 
+                      onClick={handleGeneratePlan} 
+                      disabled={isGenerating}
+                      className="text-xl font-black text-accent uppercase tracking-[0.3em] underline underline-offset-[12px] hover:text-primary transition-colors disabled:opacity-50"
+                    >
+                      {isGenerating ? "AI PLANI OLUŞTURUYOR..." : "AI İLE HEMEN OLUŞTUR"}
                     </button>
                   </div>
                 </div>
@@ -313,7 +322,7 @@ export default function PlanningPage() {
                 disabled={isSaving}
                 className="h-20 px-12 rounded-[2rem] bg-[#0F172A] hover:bg-black transition-all font-black text-sm uppercase tracking-widest gap-4 shadow-2xl text-white"
               >
-                {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6 text-[#F59E0B]" />}
+                {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6 text-accent" />}
                 DEĞİŞİKLİKLERİ KAYDET
               </Button>
             </footer>
@@ -365,7 +374,7 @@ export default function PlanningPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-[#F59E0B] ml-2 italic flex items-center gap-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-accent ml-2 italic flex items-center gap-2">
                   <Book className="h-3 w-3" /> DERS KİTABI / PDF LİNKİ
                 </Label>
                 <Input name="bookUrl" placeholder="https://..." defaultValue={editingTask?.data?.bookUrl} className="h-14 rounded-xl bg-slate-50 border-none shadow-inner font-medium text-sm" />
@@ -379,7 +388,7 @@ export default function PlanningPage() {
             </div>
 
             <Button type="submit" className="w-full h-20 rounded-[2rem] bg-[#0F172A] hover:bg-black transition-all font-black text-sm uppercase tracking-widest gap-4 shadow-2xl text-white">
-              <CheckCircle2 className="h-6 w-6 text-[#F59E0B]" />
+              <CheckCircle2 className="h-6 w-6 text-accent" />
               PROGRAMA EKLE
             </Button>
           </form>

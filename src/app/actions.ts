@@ -1,4 +1,3 @@
-
 'use server';
 
 import {
@@ -17,12 +16,26 @@ import {
   generateAiInsights,
   GenerateAiInsightsInput,
 } from '@/ai/flows/generate-ai-insights';
+import {
+  generateStudyPlanFlow,
+  GenerateStudyPlanInput,
+} from '@/ai/flows/generate-study-plan';
 
 import HTMLtoDOCX from 'html-to-docx';
 
+// Study Plan Actions
+export async function handleGenerateAiStudyPlan(input: GenerateStudyPlanInput) {
+  try {
+    const result = await generateStudyPlanFlow(input);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Error in handleGenerateAiStudyPlan:', error);
+    return { success: false, error: 'Yapay zeka planı oluşturulurken bir hata oluştu.' };
+  }
+}
+
 // Curriculum Actions
 export async function handleSaveProgram(data: any) {
-  // Bu bir prototip eylemidir. UI tarafında Firestore SDK kullanılmaktadır.
   console.log('Program Kaydedildi:', data);
   return { success: true };
 }

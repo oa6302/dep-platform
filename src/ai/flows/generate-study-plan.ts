@@ -1,8 +1,9 @@
+
 'use server';
 
 /**
- * @fileOverview Kullanıcının hedef sınavına göre kişiselleştirilmiş 7 günlük çalışma planı üreten AI akışı.
- * Güncel YKS 2025-2026 Sözel müfredatını (Edebiyat, Tarih, Coğrafya, Felsefe) temel alır.
+ * @fileOverview Kullanıcının hedef sınavına ve yılın hangi haftasında olduğuna göre 
+ * kişiselleştirilmiş 7 günlük çalışma planı üreten AI akışı.
  */
 
 import { ai } from '@/ai/genkit';
@@ -27,6 +28,7 @@ const GenerateStudyPlanInputSchema = z.object({
   targetExam: z.string().describe('Hedef Sınav (Örn: YKS_SOZ, LGS, YKS_SAY)'),
   userName: z.string(),
   lessons: z.array(z.string()).describe('Kullanıcının sorumlu olduğu dersler'),
+  currentWeek: z.number().optional().default(1).describe('Akademik takvimin kaçıncı haftasında olduğu (1-52)'),
 });
 
 export type GenerateStudyPlanInput = z.infer<typeof GenerateStudyPlanInputSchema>;
@@ -42,23 +44,25 @@ const prompt = ai.definePrompt({
   Kullanıcı adı: {{{userName}}}
   Hedef Sınav: {{{targetExam}}}
   Sorumlu Olduğu Dersler: {{{lessons}}}
+  Mevcut Hafta: {{{currentWeek}}} / 52
 
-  Görevin: Kullanıcı için 7 günlük, akademik olarak en verimli ve GÜNCEL MÜFREDAT odaklı bir ders çalışma programı oluşturmaktır.
+  Görevin: Kullanıcı için 7 günlük, 52 HAFTALIK YOL HARİTASINA uygun, akademik olarak en verimli ve GÜNCEL MÜFREDAT odaklı bir ders çalışma programı oluşturmaktır.
   
-  **YKS Sözel (YKS_SOZ) 2025-2026 Müfredat Talimatları:**
-  - **Edebiyat:** Cumhuriyet Dönemi (Şiir, Roman, Tiyatro), Divan Edebiyatı (Sanatçılar ve Akımlar), Halk Edebiyatı, Batı Akımları ve Söz Sanatları konularına ağırlık ver.
-  - **Tarih:** İnkılap Tarihi ve Atatürkçülük, Çağdaş Türk ve Dünya Tarihi, Osmanlı Dağılma Dönemi ve 20. Yüzyıl Başlarında Dünya konularını plana yay.
-  - **Coğrafya-2:** Türkiye Ekonomisi, Küresel Ortam ve Ülkeler, Çevre ve Toplum, Ekosistem ve Madde Döngüsü konularına odaklan.
-  - **Felsefe Grubu:** Psikoloji (Öğrenme, Bellek), Sosyoloji (Toplumsal Yapı), Mantık (Sembolik Mantık) ve Felsefe Tarihi seansları ekle.
+  **YKS Sözel 1 Yıllık Planlama Stratejisi:**
+  - **Hafta 1-12 (Temel):** Temel kavramlar, Paragraf hızı ve Tarih başlangıç konuları.
+  - **Hafta 13-24 (Detay):** Divan Edebiyatı, Osmanlı Tarihi, İklim ve Yerleşme detayları.
+  - **Hafta 25-36 (İleri):** Cumhuriyet Edebiyatı, Çağdaş Dünya Tarihi, Mantık konuları.
+  - **Hafta 37-52 (Final):** Sürekli deneme, karma testler ve yoğun tekrar.
+
+  Şu an {{{currentWeek}}}. haftadayız. Lütfen bu haftanın ağırlığına uygun konular seç.
   
   **Özel Seanslar:**
-  - Her sabah mutlaka "Paragraf Hız ve Anlam" veya "Sözel Mantık Muhakeme" seansı ekle (30-45 dk).
-  - Hafta sonuna (Pazar) mutlaka "Sözel Genel Deneme" ve "Deneme Analizi" seansı yerleştir.
-  - Her akşam için 30 dakikalık "Günün Özeti ve Eser-Yazar Tekrarı" ekle.
+  - Her sabah mutlaka "Paragraf Hız ve Anlam" seansı ekle.
+  - Hafta sonuna (Pazar) mutlaka "Genel Deneme" seansı yerleştir.
   
   **Format:** 
-  - Her gün için mantıklı bir akışta (sabah, öğle, öğleden sonra, akşam) en az 4, en fazla 6 seans (task) planla.
-  - Konular güncel 2025 müfredatına uygun ve spesifik olmalıdır (Örn: "Cumhuriyet Dönemi Saf Şiir" yerine sadece "Edebiyat" yazma).`,
+  - Günlük en az 4, en fazla 6 seans planla.
+  - Konular spesifik ve güncel olmalıdır.`,
 });
 
 export const generateStudyPlanFlow = ai.defineFlow(

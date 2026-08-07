@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,15 +15,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card } from '@/components/ui/card';
 import { 
   CheckCircle, Clock, Book, PlaySquare, Zap, Target, 
   Layers, Brain, Sparkles, AlertTriangle, ShieldCheck, 
   ArrowRight, Timer, Bookmark, FileText, RefreshCcw, 
-  Settings2, Hash
+  Settings2, Hash, Calendar as CalendarIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -81,6 +87,8 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
   const [studyType, setStudyType] = useState(initialData?.studyType || 'new');
   const [isSpacedRepetition, setIsSpacedRepetition] = useState(false);
   const [startTime, setStartTime] = useState(initialData?.time || '09:00');
+  const [startDate, setStartDate] = useState(initialData?.startDate || '');
+  const [endDate, setEndDate] = useState(initialData?.endDate || '');
 
   const subjects = useMemo(() => MASTER_CURRICULUM[exam] || {}, [exam]);
   const topics = useMemo(() => subjects[subject] || [], [subject, subjects]);
@@ -109,6 +117,8 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
     
     const data = {
       time: startTime,
+      startDate: startDate,
+      endDate: endDate,
       duration: formData.get('duration'),
       exam,
       subject,
@@ -198,6 +208,34 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
                               {STUDY_TYPES.map(t => <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>)}
                            </SelectContent>
                         </Select>
+                     </div>
+                  </div>
+
+                  {/* START AND END DATE ROW */}
+                  <div className="grid grid-cols-2 gap-6 pt-2">
+                     <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-2">Başlangıç Tarihi</Label>
+                        <div className="relative">
+                          <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            type="date" 
+                            value={startDate} 
+                            onChange={(e) => setStartDate(e.target.value)} 
+                            className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold pl-12" 
+                          />
+                        </div>
+                     </div>
+                     <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-2">Bitiş Tarihi</Label>
+                        <div className="relative">
+                          <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            type="date" 
+                            value={endDate} 
+                            onChange={(e) => setEndDate(e.target.value)} 
+                            className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold pl-12" 
+                          />
+                        </div>
                      </div>
                   </div>
                </div>

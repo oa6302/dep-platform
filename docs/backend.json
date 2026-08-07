@@ -19,6 +19,39 @@
       },
       "required": ["uid", "email", "role"]
     },
+    "StudyPlan": {
+      "title": "Çalışma Planı",
+      "description": "Kullanıcının haftalık ders çalışma programını saklar.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "examId": { "type": "string" },
+        "schedule": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "day": { "type": "string" },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "time": { "type": "string" },
+                    "subject": { "type": "string" },
+                    "topic": { "type": "string" },
+                    "duration": { "type": "string" },
+                    "status": { "type": "string", "enum": ["pending", "completed", "delayed"] }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "schedule"]
+    },
     "Program": {
       "title": "Sınav Programı",
       "description": "LGS, YKS, KPSS gibi ana program tanımları.",
@@ -104,6 +137,10 @@
     "/users/{userId}": {
       "schema": "UserProfile",
       "description": "Kullanıcı profilleri."
+    },
+    "/studyPlans/{userId}": {
+      "schema": "StudyPlan",
+      "description": "Kullanıcıların haftalık çalışma programları."
     },
     "/programs/{programId}": {
       "schema": "Program",

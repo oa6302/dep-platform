@@ -48,9 +48,6 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
       { title: "Dersler", icon: BookOpen, color: "bg-blue-600", desc: "LGS müfredatı takibi" },
       { title: "Denemeler", icon: ClipboardCheck, color: "bg-orange-500", desc: "LGS deneme sonuçları" },
       { title: "Konu Analizi", icon: LineChart, color: "bg-purple-600", desc: "Kazanım başarı haritası" },
-      { title: "AI Koç", icon: Brain, color: "bg-indigo-600", desc: "Kazanım odaklı analiz" },
-      { title: "Hedefler", icon: Target, color: "bg-red-500", desc: "Lise hedef yönetimi" },
-      { title: "Kütüphane", icon: LibraryIcon, color: "bg-cyan-500", desc: "LGS soru bankaları" },
     ],
     aiFocus: 'Matematik ve Fen Bilimleri kazanımlarındaki eksiklerini tamamlaman bu hafta en büyük önceliğimiz olmalı.'
   },
@@ -81,7 +78,6 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
     modules: [
       { title: "Net Analizi", icon: TrendingUp, color: "bg-orange-500", desc: "Sayısal net artışı" },
       { title: "AI Koç", icon: Brain, color: "bg-indigo-500", desc: "Sıralama tahmini" },
-      { title: "Fen Kampı", icon: Atom, color: "bg-blue-500", desc: "AYT Fen uzmanlığı" },
     ],
     aiFocus: 'AYT Matematik netlerin hedefindeki mühendislik fakültesi için %88 uyumlu görünüyor.'
   },
@@ -126,7 +122,6 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
     modules: [
       { title: "GY-GK Analiz", icon: Brain, color: "bg-blue-500", desc: "Puan hesaplama" },
       { title: "Güncel Bilgiler", icon: Globe2, color: "bg-emerald-500", desc: "Anlık güncel veri" },
-      { title: "Atama Botu", icon: Target, color: "bg-purple-500", desc: "Kadrolar ve puanlar" },
     ],
     aiFocus: 'Vatandaşlık ve Güncel Bilgiler konularındaki tekrar periyodunu sıkılaştırmalıyız.'
   },
@@ -202,7 +197,7 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
       { title: "Band Score", icon: Target, color: "bg-indigo-600", desc: "Tahmini skor takibi" },
       { title: "Speaking AI", icon: Mic, color: "bg-red-500", desc: "Konuşma pratiği" },
     ],
-    aiFocus: 'Writing Task 2 için argüman geliştirme kapasiteni %20 artırmamız gerekiyor.'
+    aiFocus: 'Writing Task 2 for argüman geliştirme kapasiteni %20 artırmamız gerekiyor.'
   },
   YDS_YOKDIL: {
     id: 'YDS_YOKDIL',
@@ -231,8 +226,6 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
     modules: [
       { title: "Sayfa Takibi", icon: ScrollText, color: "bg-emerald-500", desc: "Tamamlanan cüzler" },
       { title: "Tekrar Sistemi", icon: RefreshCw, color: "bg-orange-500", desc: "Unutma periyotları" },
-      { title: "AI Koç", icon: Brain, color: "bg-indigo-500", desc: "Ezber performansı analizi" },
-      { title: "Dinleme", icon: Headphones, color: "bg-blue-500", desc: "Talim ve telaffuz" },
     ],
     aiFocus: 'Ezberleme hızın geçen haftaya göre %12 arttı, ancak unutma riskini azaltmak için 14. cüz tekrarını artırmalısın.'
   },

@@ -12,7 +12,7 @@ import {
   LogOut, LayoutDashboard, User, 
   Brain, Headset, Library,
   Users, PieChart, Eye, XCircle, Loader2,
-  Home, Compass, Sparkles, ShieldCheck
+  Home, Compass, Sparkles, ShieldCheck, Calendar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
@@ -42,7 +42,7 @@ function DashboardContent() {
   const currentViewData = simulatedUserData || userData;
   const isSimulating = !!simulatedUserId;
 
-  // Global Yükleme Durumu: Auth yükleniyorsa veya kullanıcı varken döküman bekleniyorsa
+  // Global Yükleme Durumu
   const isGlobalLoading = authLoading || (user && docLoading);
 
   const dynamicMenu = useMemo(() => {
@@ -78,6 +78,7 @@ function DashboardContent() {
     const items = [
       { label: 'Akademik Panel', icon: LayoutDashboard, href: '/dashboard' },
       { label: 'AI Analiz', icon: Brain, href: '/dashboard/ai-analysis', accent: true },
+      { label: 'Akıllı Planlama', icon: Calendar, href: '/dashboard/planning' },
       { label: 'Uzman Keşfet', icon: Compass, href: '/dashboard/discover' },
     ];
 
@@ -98,7 +99,6 @@ function DashboardContent() {
     }
   }, [user, authLoading, router]);
 
-  // Sınav seçilmemişse yönlendir (Döngüyü engellemek için sadece öğrenci ise ve verinin gelmiş olduğundan eminsek)
   useEffect(() => {
     if (!authLoading && user && !docLoading && userData) {
       if (userData.role === 'student' && !userData.targetExam) {
@@ -124,7 +124,6 @@ function DashboardContent() {
     );
   }
 
-  // Eğer kullanıcı varsa ama döküman yüklenmiş ve hala profil YOKSA
   if (user && !docLoading && !userData) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6">
@@ -134,7 +133,6 @@ function DashboardContent() {
                  <ShieldCheck className="h-4 w-4 text-accent" /> Sistem Kimlik Doğrulama
               </div>
               <h2 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-none">PROFİLİNİZİ <span className="text-accent">TAMAMLAYIN</span></h2>
-              <p className="text-muted-foreground font-medium italic">Akademik profiliniz henüz oluşturulmamış. Lütfen devam edin.</p>
            </div>
            <div className="bg-white rounded-[4rem] shadow-2xl border border-primary/5 overflow-hidden">
               <AuthForm mode="register" />

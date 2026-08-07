@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { useDoc } from '@/firebase';
 import { 
   CheckCircle2, 
   Clock, 
@@ -19,10 +20,11 @@ import {
   BookOpen, 
   BookOpenCheck,
   Pencil,
+  PencilLine,
   Flame,
   ArrowRight
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { 
   XAxis, YAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, RadarChart, PolarGrid, 
@@ -30,6 +32,7 @@ import {
   Area
 } from 'recharts';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 // --- MOCK DATA ---
 const netGrowthData = [
@@ -65,11 +68,35 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const [activeTimer, setActiveTimer] = useState(false);
   const [timeLeft, setTimerLeft] = useState(25 * 60);
 
+  const { data: studyPlan } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
+
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
     const sec = s % 60;
     return `${m}:${sec < 10 ? '0' : ''}${sec}`;
   };
+
+  const today = new Intl.DateTimeFormat('tr-TR', { weekday: 'long' }).format(new Date());
+  
+  const todayTasks = useMemo(() => {
+    // Veritabanından gelmiyorsa varsayılan göster
+    if (!studyPlan?.schedule) {
+      return [
+        { time: '08:30', title: 'Matematik', sub: 'Problemler & Sayılar', dur: '45 dk', status: 'completed' },
+        { time: '11:00', title: 'Paragraf', sub: '30 Soru Çözümü', dur: '45 dk', status: 'delayed' },
+        { time: '14:00', title: 'Fen Bilimleri', sub: 'Asitler ve Bazlar', dur: '60 dk', status: 'pending' },
+        { time: '16:30', title: 'İngilizce', sub: 'Vocabulary & Reading', dur: '30 dk', status: 'pending' },
+      ];
+    }
+    const dayData = studyPlan.schedule.find((s: any) => s.day === today) || studyPlan.schedule[0];
+    return dayData.tasks.map((t: any) => ({
+       time: t.time,
+       title: t.subject,
+       sub: t.topic,
+       dur: t.duration,
+       status: t.status
+    }));
+  }, [studyPlan, today]);
 
   return (
     <div className="p-6 lg:p-10 space-y-10 max-w-[1600px] mx-auto w-full animate-in fade-in duration-1000 bg-[#FAFBFF]">
@@ -86,7 +113,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                  <h1 className="text-5xl md:text-7xl font-black text-primary tracking-tighter italic uppercase leading-none">
                     GÜNAYDIN <br /><span className="text-accent text-shadow-accent">{userData?.displayName?.split(' ')[0] || 'ÖĞRENCİ'} 👋</span>
                  </h1>
-                 <p className="text-xl text-muted-foreground font-medium italic opacity-70">Bugünkü akademik planın hazır. Senin için 4 kritik görev belirledik.</p>
+                 <p className="text-xl text-muted-foreground font-medium italic opacity-70">Bugünkü akademik planın hazır. Senin için {todayTasks.length} kritik görev belirlendi.</p>
               </div>
               <div className="flex items-center gap-8 bg-[#0F172A] p-8 rounded-[3rem] text-white shadow-2xl shrink-0 group-hover:scale-105 transition-transform duration-500">
                  <div className="space-y-1">
@@ -100,10 +127,10 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
            
            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-12 mt-12 border-t border-primary/5">
               {[
-                { label: 'Görev', val: '4', sub: 'Tamamlanan: 2', icon: CheckCircle2, color: 'text-emerald-500' },
-                { label: 'Konu', val: '3', sub: 'Bugünkü Hedef', icon: BookOpenCheck, color: 'text-blue-500' },
-                { label: 'Soru', val: '120', sub: 'Çözülen: 84', icon: Pencil, color: 'text-orange-500' },
-                { label: 'Çalışma', val: '3s', sub: 'Gerçekleşen: 1.5s', icon: Clock, color: 'text-accent' },
+                { label: 'Görev', val: todayTasks.length.toString(), sub: 'Günlük Hedef', icon: CheckCircle2, color: 'text-emerald-500' },
+                { label: 'Plan', val: today, sub: 'Aktif Program', icon: BookOpenCheck, color: 'text-blue-500' },
+                { label: 'Soru', val: '120', sub: 'Tahmini Hedef', icon: PencilLine, color: 'text-orange-500' },
+                { label: 'Çalışma', val: '4s', sub: 'Planlanan Süre', icon: Clock, color: 'text-accent' },
               ].map((item, i) => (
                 <div key={i} className="space-y-1">
                    <div className="flex items-center gap-2 mb-1">
@@ -150,15 +177,12 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
          <div className="xl:col-span-8 space-y-8">
             <div className="flex justify-between items-end px-4">
                <h3 className="text-3xl font-black italic tracking-tighter uppercase text-primary">BUGÜNKÜ GÖREVLER</h3>
-               <button className="text-accent font-black uppercase text-[10px] tracking-widest hover:underline">Tümünü Gör</button>
+               <Button variant="link" className="text-accent font-black uppercase text-[10px] tracking-widest hover:underline" asChild>
+                  <Link href="/dashboard/planning">Tümünü Gör</Link>
+               </Button>
             </div>
             <div className="grid gap-6">
-               {[
-                 { time: '08:30', title: 'Matematik', sub: 'Problemler & Sayılar', dur: '45 dk', status: 'completed' },
-                 { time: '11:00', title: 'Paragraf', sub: '30 Soru Çözümü', dur: '45 dk', status: 'delayed' },
-                 { time: '14:00', title: 'Fen Bilimleri', sub: 'Asitler ve Bazlar', dur: '60 dk', status: 'pending' },
-                 { time: '16:30', title: 'İngilizce', sub: 'Vocabulary & Reading', dur: '30 dk', status: 'pending' },
-               ].map((task, i) => (
+               {todayTasks.map((task, i) => (
                  <Card key={i} className={cn(
                    "p-8 rounded-[2.5rem] border-none shadow-lg flex items-center justify-between group transition-all hover:scale-[1.02]",
                    task.status === 'completed' ? "bg-emerald-50/50" : 

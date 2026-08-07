@@ -15,7 +15,8 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Loader2, Mail, Lock, User, School, 
-  UserRound, Brain, Key, UserPlus, LogIn, Building
+  UserRound, Brain, Key, UserPlus, LogIn, Building,
+  CheckCircle2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';

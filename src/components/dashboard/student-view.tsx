@@ -211,7 +211,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                     { week: 30, val: 75 }, { week: 40, val: 65 }, { week: 52, val: 95 }
                   ]}>
                      <defs>
-                        <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
+                        <linearGradient id="colorVal" x1="0" x1="0" x2="0" y2="1">
                            <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.8}/>
                            <stop offset="95%" stopColor="#F59E0B" stopOpacity={0}/>
                         </linearGradient>

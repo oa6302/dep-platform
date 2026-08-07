@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card } from '@/components/ui/card';
@@ -108,7 +107,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
               ].map((item, i) => (
                 <div key={i} className="space-y-1">
                    <div className="flex items-center gap-2 mb-1">
-                      <item.icon className={cn("h-3.5 w-3.5", item.color)} />
+                      <item.icon className={cn("h-4 w-4", item.color)} />
                       <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground opacity-60">{item.label}</span>
                    </div>
                    <p className="text-3xl font-black text-primary leading-none">{item.val}</p>

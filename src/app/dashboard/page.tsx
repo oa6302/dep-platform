@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useDoc, useAuth } from '@/firebase';
@@ -40,6 +41,9 @@ function DashboardContent() {
   const currentViewData = simulatedUserData || userData;
   const isSimulating = !!simulatedUserId;
 
+  // Profil verisi beklenirken gösterilecek durum
+  const isGlobalLoading = authLoading || (user && docLoading && !userData) || (simulatedUserId && simLoading && !simulatedUserData);
+
   const dynamicMenu = useMemo(() => {
     if (!currentViewData) return [];
     
@@ -70,7 +74,6 @@ function DashboardContent() {
       ];
     }
 
-    // Öğrenci Menüsü
     const items = [
       { label: 'Akademik Panel', icon: LayoutDashboard, href: '/dashboard' },
       { label: 'AI Analiz', icon: Brain, href: '/dashboard/ai-analysis', accent: true },
@@ -92,12 +95,12 @@ function DashboardContent() {
     }
   }, [user, authLoading, router]);
 
-  if (authLoading || docLoading || (simulatedUserId && simLoading)) {
+  if (isGlobalLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
         <div className="flex flex-col items-center gap-8">
           <div className="h-24 w-24 animate-spin rounded-[3rem] border-[8px] border-accent border-t-transparent shadow-[0_0_80px_rgba(245,158,11,0.25)]" />
-          <p className="text-[12px] text-primary font-black uppercase tracking-[0.6em] animate-pulse italic">Veriler Hazırlanıyor...</p>
+          <p className="text-[12px] text-primary font-black uppercase tracking-[0.6em] animate-pulse italic">Akademik Veriler Hazırlanıyor...</p>
         </div>
       </div>
     );
@@ -126,7 +129,7 @@ function DashboardContent() {
            <div className="space-y-4">
              <h2 className="text-5xl font-black text-primary tracking-tighter uppercase italic text-shadow-deep">Profil Kaydı Eksik</h2>
              <p className="text-muted-foreground max-w-md mx-auto italic font-medium text-lg">
-                Giriş yaptınız ancak akademik bir profil bulunamadı.
+                Giriş yaptınız ancak akademik bir profil bulunamadı. Lütfen yeni bir profil oluşturun.
              </p>
            </div>
            <Button onClick={() => router.push('/login?tab=register')} className="h-20 px-12 rounded-[2rem] bg-primary text-white font-black uppercase text-xs tracking-widest flex items-center gap-4 shadow-2xl transition-all hover:scale-105">
@@ -146,7 +149,7 @@ function DashboardContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] selection:bg-accent selection:text-white">
+    <div className="min-h-screen bg-[#FAFBFF] selection:bg-accent selection:text-white">
       {isSimulating && (
         <div className="bg-destructive text-white px-8 py-5 flex items-center justify-between sticky top-0 z-[100] shadow-2xl animate-in slide-in-from-top duration-700 backdrop-blur-md bg-destructive/90">
           <div className="flex items-center gap-5 text-xs font-black uppercase tracking-widest italic">
@@ -174,7 +177,7 @@ function DashboardContent() {
           
           <nav className="flex-1 px-8 space-y-3 mt-10">
             {dynamicMenu.map((item, i) => (
-              <Button key={i} variant="ghost" className={cn("w-full justify-start rounded-[1.5rem] transition-all h-18 group relative", item.href === '/dashboard' && !isSimulating ? "bg-white/15 text-white font-black" : "hover:bg-white/5 opacity-60 hover:opacity-100")} asChild>
+              <Button key={i} variant="ghost" className={cn("w-full justify-start rounded-[1.5rem] transition-all h-18 group relative", (item.href === '/dashboard' && !isSimulating) ? "bg-white/15 text-white font-black" : "hover:bg-white/5 opacity-60 hover:opacity-100")} asChild>
                 <Link href={item.href}>
                   <item.icon className={cn("mr-6 h-7 w-7 transition-transform group-hover:scale-110", item.accent && "text-accent")} />
                   <span className="text-lg tracking-tight italic uppercase">{item.label}</span>
@@ -192,7 +195,7 @@ function DashboardContent() {
                 {userData?.displayName?.charAt(0) || <User className="h-6 w-6" />}
               </div>
               <div className="flex-1 overflow-hidden">
-                <p className="text-sm font-black truncate">{userData?.displayName || 'Profil'}</p>
+                <p className="text-sm font-black truncate">{userData?.displayName || 'Yükleniyor...'}</p>
                 <p className="text-[10px] opacity-40 uppercase tracking-widest mt-1">HESABIM</p>
               </div>
               <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-destructive rounded-xl transition-all" onClick={(e) => { e.stopPropagation(); handleLogout(); }}>

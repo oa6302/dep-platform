@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card } from '@/components/ui/card';
@@ -29,7 +30,8 @@ import {
   ArrowRight,
   BookOpen, 
   Pencil,
-  BookOpenCheck
+  BookOpenCheck,
+  PencilLine
 } from 'lucide-react';
 import { useState } from 'react';
 import { 
@@ -111,7 +113,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
               {[
                 { label: 'Görev', val: '4', sub: 'Tamamlanan: 2', icon: CheckCircle2, color: 'text-emerald-500' },
                 { label: 'Konu', val: '3', sub: 'Bugünkü Hedef', icon: BookOpenCheck, color: 'text-blue-500' },
-                { label: 'Soru', val: '120', sub: 'Çözülen: 84', icon: Pencil, color: 'text-orange-500' },
+                { label: 'Soru', val: '120', sub: 'Çözülen: 84', icon: PencilLine, color: 'text-orange-500' },
                 { label: 'Çalışma', val: '3s', sub: 'Gerçekleşen: 1.5s', icon: Clock, color: 'text-accent' },
               ].map((item, i) => (
                 <div key={i} className="space-y-1">
@@ -297,7 +299,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={netGrowthData}>
                      <defs>
-                        <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
+                        <linearGradient id="colorNet" x1="0" x2="0" y2="1">
                            <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.3}/>
                            <stop offset="95%" stopColor="#F59E0B" stopOpacity={0}/>
                         </linearGradient>

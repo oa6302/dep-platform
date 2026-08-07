@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,7 +29,6 @@ import { EXAM_CONFIGS } from '@/lib/exam-configs';
 type Step = 'choice' | 'identity' | 'auth' | 'details' | 'goal';
 
 export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) {
-  // If mode is login, go straight to email/password screen
   const [step, setStep] = useState<Step>(initialMode === 'login' ? 'auth' : 'choice');
   const [authMode, setAuthMode] = useState<'login' | 'register'>(initialMode);
   const [role, setRole] = useState<'student' | 'teacher' | 'school_admin'>('student');
@@ -76,63 +75,12 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
     return grouped;
   }, [dbPrograms]);
 
-  const handleNextStep = () => {
-    if (step === 'choice') setStep(authMode === 'login' ? 'auth' : 'identity');
-    else if (step === 'identity') setStep('auth');
-    else if (step === 'auth') {
-      if (authMode === 'login') handleAuthSubmit();
-      else setStep('details');
-    }
-    else if (step === 'details') {
-      if (role === 'student') setStep('goal');
-      else handleFinalize();
-    }
-    else if (step === 'goal') handleFinalize();
-  };
-
-  const handleBackStep = () => {
-    if (step === 'identity') setStep('choice');
-    else if (step === 'auth') {
-        if (initialMode === 'login') router.push('/'); // If they came for login, back goes home
-        else setStep(authMode === 'login' ? 'choice' : 'identity');
-    }
-    else if (step === 'details') setStep('auth');
-    else if (step === 'goal') setStep('details');
-  };
-
-  const handleGoogleSignIn = async () => {
-    if (!auth || !db) return;
-    setLoading(true);
-    try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-      
-      if (!userDoc.exists()) {
-        setDisplayName(user.displayName || '');
-        setEmail(user.email || '');
-        setAuthMode('register');
-        setStep('identity');
-      } else {
-        toast({ title: 'Hoş Geldiniz', description: `Tekrar merhaba, ${userDoc.data().displayName}!` });
-        router.push('/dashboard');
-      }
-    } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Hata', description: 'Google ile bağlantı kurulamadı.' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleAuthSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!auth || !db) return;
 
     if (!email || !password) {
-        toast({ variant: 'destructive', title: 'Hata', description: 'Lütfen tüm alanları doldurun.' });
+        toast({ variant: 'destructive', title: 'Eksik Bilgi', description: 'Lütfen e-posta ve şifrenizi girin.' });
         return;
     }
 
@@ -145,10 +93,31 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
         setStep('details');
       }
     } catch (error: any) {
-      const msg = error.code === 'auth/user-not-found' ? 'Hesap bulunamadı.' : 
-                  error.code === 'auth/wrong-password' ? 'Şifre hatalı.' : 
-                  error.code === 'auth/invalid-credential' ? 'E-posta veya şifre hatalı.' : 'Kimlik doğrulama hatası.';
-      toast({ variant: 'destructive', title: 'Hata', description: msg });
+      let title = "Bağlantı Kurulamadı";
+      let msg = "Beklenmedik bir hata oluştu.";
+
+      switch (error.code) {
+        case 'auth/user-not-found':
+          msg = "Bu e-posta adresiyle kayıtlı bir hesap bulunamadı.";
+          break;
+        case 'auth/wrong-password':
+          msg = "Girdiğiniz şifre hatalı. Lütfen tekrar deneyin.";
+          break;
+        case 'auth/invalid-email':
+          msg = "Geçersiz bir e-posta adresi girdiniz.";
+          break;
+        case 'auth/invalid-credential':
+          msg = "E-posta veya şifre hatalı. Bilgilerinizi kontrol edin.";
+          break;
+        case 'auth/too-many-requests':
+          msg = "Çok fazla başarısız deneme. Lütfen bir süre sonra tekrar deneyin.";
+          break;
+        case 'auth/network-request-failed':
+          msg = "İnternet bağlantınızı kontrol edin.";
+          break;
+      }
+
+      toast({ variant: 'destructive', title, description: msg });
     } finally {
       setLoading(false);
     }
@@ -188,14 +157,64 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
         userData.school = schoolName;
       }
 
-      // Profile creation MUST happen before navigating to dashboard
       await updateProfile(user, { displayName });
       await setDoc(doc(db, 'users', user.uid), userData);
 
       toast({ title: 'Sistem Yapılandırıldı', description: 'Profiliniz başarıyla oluşturuldu.' });
       router.push('/dashboard');
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Hata', description: error.message });
+      toast({ variant: 'destructive', title: 'Kayıt Hatası', description: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNextStep = () => {
+    if (step === 'choice') setStep(authMode === 'login' ? 'auth' : 'identity');
+    else if (step === 'identity') setStep('auth');
+    else if (step === 'auth') {
+      if (authMode === 'login') handleAuthSubmit();
+      else setStep('details');
+    }
+    else if (step === 'details') {
+      if (role === 'student') setStep('goal');
+      else handleFinalize();
+    }
+    else if (step === 'goal') handleFinalize();
+  };
+
+  const handleBackStep = () => {
+    if (step === 'identity') setStep('choice');
+    else if (step === 'auth') {
+        if (initialMode === 'login') router.push('/');
+        else setStep(authMode === 'login' ? 'choice' : 'identity');
+    }
+    else if (step === 'details') setStep('auth');
+    else if (step === 'goal') setStep('details');
+  };
+
+  const handleGoogleSignIn = async () => {
+    if (!auth || !db) return;
+    setLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (!userDoc.exists()) {
+        setDisplayName(user.displayName || '');
+        setEmail(user.email || '');
+        setAuthMode('register');
+        setStep('identity');
+      } else {
+        toast({ title: 'Hoş Geldiniz', description: `Tekrar merhaba, ${userDoc.data().displayName}!` });
+        router.push('/dashboard');
+      }
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Hata', description: 'Google ile bağlantı kurulamadı.' });
     } finally {
       setLoading(false);
     }
@@ -288,9 +307,6 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
               </button>
             ))}
           </div>
-          <p className="text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 italic">
-               Zaten bir hesabınız mı var? <button onClick={() => { setAuthMode('login'); setStep('auth'); }} className="text-primary hover:underline">Giriş Yapın</button>
-          </p>
         </div>
       )}
 

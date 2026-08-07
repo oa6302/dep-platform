@@ -14,11 +14,10 @@ export function useDoc<T = DocumentData>(path: string | null) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    // If no path is provided, we set data to null but keep loading state true 
-    // IF path was expected soon (synchronization phase)
-    if (!db || !path) {
+    if (!db) return;
+
+    if (!path) {
       setData(null);
-      // Only finish loading if path is explicitly intended to be null (not used)
       setLoading(false); 
       return;
     }

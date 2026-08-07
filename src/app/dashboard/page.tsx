@@ -12,7 +12,7 @@ import {
   LogOut, LayoutDashboard, User, 
   Brain, Headset, Library,
   Users, PieChart, Eye, XCircle, Loader2,
-  Home, Compass, Sparkles
+  Home, Compass, Sparkles, ShieldCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ProfileEditDialog } from '@/components/profile-edit-dialog';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
+import { AuthForm } from '@/components/auth-form';
 
 function DashboardContent() {
   const { user, loading: authLoading } = useUser();
@@ -42,6 +43,7 @@ function DashboardContent() {
   const isSimulating = !!simulatedUserId;
 
   // Global Yükleme Durumu
+  // SADECE kullanıcı varsa ve döküman yükleniyorsa bekleriz.
   const isGlobalLoading = authLoading || (user && docLoading);
 
   const dynamicMenu = useMemo(() => {
@@ -97,12 +99,10 @@ function DashboardContent() {
     }
   }, [user, authLoading, router]);
 
-  // Profil verisi gerçekten yoksa veya student olup sınav seçmemişse yönlendir
+  // Sınav seçilmemişse yönlendir (Döngüyü engellemek için sadece öğrenci ise)
   useEffect(() => {
-    if (!authLoading && user && !docLoading) {
-      if (!userData) {
-        router.push('/login?tab=register');
-      } else if (userData.role === 'student' && !userData.targetExam) {
+    if (!authLoading && user && !docLoading && userData) {
+      if (userData.role === 'student' && !userData.targetExam) {
         router.push('/dashboard/select-exam');
       }
     }
@@ -120,6 +120,27 @@ function DashboardContent() {
             <p className="text-[14px] text-primary font-black uppercase tracking-[0.6em] animate-pulse italic">Akademik Motor Hazırlanıyor</p>
             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest italic opacity-40">Verileriniz Senkronize Ediliyor...</p>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Eğer kullanıcı varsa ama profil dökümanı YOKSA, yönlendirme döngüsüne girmemek için 
+  // doğrudan burada kayıt formunu gösteriyoruz.
+  if (user && !docLoading && !userData) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6">
+        <div className="w-full max-w-4xl space-y-12">
+           <div className="text-center space-y-4">
+              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-white font-black text-[10px] uppercase tracking-widest shadow-xl">
+                 <ShieldCheck className="h-4 w-4 text-accent" /> Sistem Kimlik Doğrulama
+              </div>
+              <h2 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-none">PROFİLİNİZİ <span className="text-accent">TAMAMLAYIN</span></h2>
+              <p className="text-muted-foreground font-medium italic">Giriş yaptınız ancak akademik profiliniz henüz oluşturulmamış. Lütfen devam edin.</p>
+           </div>
+           <div className="bg-white rounded-[4rem] shadow-2xl border border-primary/5 overflow-hidden">
+              <AuthForm mode="register" />
+           </div>
         </div>
       </div>
     );

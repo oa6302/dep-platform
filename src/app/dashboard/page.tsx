@@ -34,15 +34,15 @@ function DashboardContent() {
 
   // Firestore verisini dinle
   const { data: userData, loading: docLoading } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
-  const { data: simulatedUserData, loading: simLoading } = useDoc<any>(simulatedUserId ? `users/${simulatedUserId}` : null);
+  const { data: simulatedUserData } = useDoc<any>(simulatedUserId ? `users/${simulatedUserId}` : null);
 
   const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl || "https://picsum.photos/seed/edu-logo-102/400/400";
   
   const currentViewData = simulatedUserData || userData;
   const isSimulating = !!simulatedUserId;
 
-  // Yükleme durumu: Auth yükleniyor olmalı VEYA kullanıcı varken henüz profil verisi gelmemiş olmalı
-  const isGlobalLoading = authLoading || (!!user && docLoading && !userData);
+  // Yükleme durumu: Auth yükleniyor olmalı VEYA kullanıcı varken döküman henüz yüklenmiş olmalı
+  const isGlobalLoading = authLoading || (!!user && docLoading);
 
   const dynamicMenu = useMemo(() => {
     if (!currentViewData) return [];
@@ -98,10 +98,8 @@ function DashboardContent() {
   }, [user, authLoading, router]);
 
   // Eğer veri yüklenmişse ve hala userData yoksa, demek ki profil dökümanı hiç oluşmamış.
-  // Bu durumda kullanıcıyı kayıt akışına geri gönderiyoruz.
   useEffect(() => {
     if (!authLoading && user && !docLoading && !userData) {
-      // Profil yoksa kayıt sayfasına yönlendir (Sistem Başlatma flow'u için)
       router.push('/login');
     }
   }, [authLoading, user, docLoading, userData, router]);

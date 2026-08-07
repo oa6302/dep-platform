@@ -11,7 +11,8 @@ import {
   Stethoscope, Microscope, Music, HeartPulse, Timer,
   Presentation, FileSpreadsheet, LayoutDashboard,
   Compass, Briefcase, Atom, FlaskConical, Calculator,
-  Globe2, History as HistoryIcon, Languages as LangIcon
+  Globe2, History as HistoryIcon, Languages as LangIcon,
+  Zap
 } from 'lucide-react';
 
 export type ExamModule = {

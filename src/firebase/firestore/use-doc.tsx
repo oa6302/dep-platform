@@ -10,19 +10,17 @@ import { FirestorePermissionError } from '../errors';
 export function useDoc<T = DocumentData>(path: string | null) {
   const db = useFirestore();
   const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(!!path);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    // Reset state when path changes
-    setLoading(!!path);
-    
     if (!db || !path) {
       setData(null);
       setLoading(false);
       return;
     }
 
+    setLoading(true);
     const docRef = doc(db, path);
     const unsubscribe = onSnapshot(
       docRef,

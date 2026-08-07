@@ -1,15 +1,16 @@
 
 'use client';
 
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
   Users, Server, Loader2, RefreshCcw, Zap, Building, 
   Key, ArrowRight, ArrowUpRight, BookOpenCheck, Plus, 
-  Activity, ShieldCheck, Globe, Database, UserPlus, Sparkles
+  Activity, ShieldCheck, Globe, Database, UserPlus, Sparkles,
+  ShieldAlert
 } from 'lucide-react';
-import { orderBy, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { orderBy, doc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -23,6 +24,7 @@ interface AdminViewProps {
 
 export function AdminView({ user, userData }: AdminViewProps) {
   const db = useFirestore();
+  const { user: currentUser } = useUser();
   const router = useRouter();
   const { toast } = useToast();
   const [refreshing, setRefreshing] = useState(false);
@@ -43,6 +45,20 @@ export function AdminView({ user, userData }: AdminViewProps) {
     }, 1500);
   };
 
+  const handleClaimAdmin = async () => {
+    if (!db || !currentUser) return;
+    try {
+      await updateDoc(doc(db, 'users', currentUser.uid), {
+        role: 'admin',
+        updatedAt: serverTimestamp()
+      });
+      toast({ title: 'Yetki Tanımlandı', description: 'Şu anki hesabınız Admin olarak güncellendi. Lütfen sayfayı yenileyin.' });
+      setTimeout(() => window.location.reload(), 2000);
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Hata', description: 'Yetki güncellemesi başarısız.' });
+    }
+  };
+
   const handleSeedUsers = async () => {
     if (!db) return;
     setUserSeeding(true);
@@ -54,7 +70,7 @@ export function AdminView({ user, userData }: AdminViewProps) {
       ];
 
       for (const u of demoUsers) {
-        setDoc(doc(db, 'users', u.uid), {
+        await setDoc(doc(db, 'users', u.uid), {
           ...u,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -73,7 +89,7 @@ export function AdminView({ user, userData }: AdminViewProps) {
     setSeeding(true);
     try {
       for (const exam of Object.values(EXAM_CONFIGS)) {
-        setDoc(doc(db, 'programs', exam.id), {
+        await setDoc(doc(db, 'programs', exam.id), {
           id: exam.id,
           title: exam.title,
           category: exam.category,
@@ -85,7 +101,7 @@ export function AdminView({ user, userData }: AdminViewProps) {
 
         for (const lessonName of exam.lessons) {
           const subjectId = `${exam.id}_${lessonName.toLowerCase().replace(/\s+/g, '_')}`;
-          setDoc(doc(db, 'subjects', subjectId), {
+          await setDoc(doc(db, 'subjects', subjectId), {
             id: subjectId,
             programId: exam.id,
             name: lessonName,
@@ -137,6 +153,20 @@ export function AdminView({ user, userData }: AdminViewProps) {
         </div>
       </div>
 
+      <Card className="rounded-[4rem] border-none bg-accent p-12 text-white relative overflow-hidden group shadow-2xl">
+         <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 blur-[100px] rounded-full"></div>
+         <div className="flex flex-col md:flex-row justify-between items-center gap-10 relative z-10">
+            <div className="space-y-4 text-center md:text-left">
+               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 font-black text-[9px] uppercase tracking-widest">Hızlı Erişim</div>
+               <h3 className="text-4xl font-black italic tracking-tighter uppercase text-shadow-deep">Admin Yetkisi Al</h3>
+               <p className="font-medium italic opacity-80 max-w-md">Kendi hesabınızı anında Admin yetkisiyle donatın ve tüm sistemi yönetmeye başlayın.</p>
+            </div>
+            <Button onClick={handleClaimAdmin} className="h-16 px-10 rounded-2xl bg-white text-primary hover:bg-slate-100 transition-all font-black text-xs uppercase tracking-widest gap-3 shadow-2xl">
+               <ShieldAlert className="h-5 w-5 text-accent" /> Hesabımı Admin Yap
+            </Button>
+         </div>
+      </Card>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {[
           { label: 'Aktif Kurum', val: schoolCount, icon: Globe, color: 'primary' },
@@ -185,75 +215,6 @@ export function AdminView({ user, userData }: AdminViewProps) {
             </Card>
           ))}
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
-         <Card className="rounded-[4rem] border-none shadow-xl bg-white p-12 space-y-10 border border-primary/5">
-            <h4 className="text-2xl font-black italic tracking-tighter uppercase">Sunucu Durumu</h4>
-            <div className="space-y-10">
-               <div className="space-y-4">
-                  <div className="flex justify-between text-[11px] font-black uppercase tracking-widest text-muted-foreground">
-                     <span>CPU İşleme Gücü</span>
-                     <span className="text-primary font-black">%24</span>
-                  </div>
-                  <div className="h-4 w-full bg-slate-50 rounded-full overflow-hidden shadow-inner p-1">
-                     <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: '24%' }}></div>
-                  </div>
-               </div>
-               <div className="space-y-4">
-                  <div className="flex justify-between text-[11px] font-black uppercase tracking-widest text-muted-foreground">
-                     <span>RAM Verimliliği</span>
-                     <span className="text-accent font-black">%42</span>
-                  </div>
-                  <div className="h-4 w-full bg-slate-50 rounded-full overflow-hidden shadow-inner p-1">
-                     <div className="h-full bg-accent rounded-full transition-all duration-1000" style={{ width: '42%' }}></div>
-                  </div>
-               </div>
-            </div>
-            <div className="p-8 bg-primary rounded-[3rem] text-white flex items-center gap-6 shadow-2xl relative overflow-hidden group">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
-               <Server className="h-12 w-12 text-accent relative z-10" />
-               <div className="relative z-10">
-                  <p className="font-black text-xl tracking-tight">DEK Cluster-Alpha</p>
-                  <p className="text-[10px] font-bold opacity-50 uppercase tracking-[0.2em]">Stable • AWS Frankfurt</p>
-               </div>
-            </div>
-         </Card>
-
-         <Card className="xl:col-span-2 rounded-[4rem] border-none shadow-xl bg-white overflow-hidden border border-primary/5">
-            <CardHeader className="p-12 border-b border-primary/5 flex flex-row items-center justify-between bg-slate-50/50">
-               <div className="space-y-2">
-                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary text-white font-black text-[9px] uppercase tracking-widest">Global Veri Akışı</div>
-                  <CardTitle className="text-4xl font-black italic tracking-tighter uppercase">Gerçek Zamanlı Akış</CardTitle>
-               </div>
-               <Activity className="h-10 w-10 text-primary opacity-10" />
-            </CardHeader>
-            <CardContent className="p-0">
-               <div className="divide-y divide-primary/5">
-                  {[
-                    { msg: 'Yeni kurum kaydı senkronize edildi: Atatürk Koleji', time: '1dk önce', user: 'Cloud_Sync', icon: Building, color: 'text-primary' },
-                    { msg: 'YKS Sözel müfredatı veritabanına işlendi.', time: '14dk önce', user: 'DB_Master', icon: Database, color: 'text-accent' },
-                    { msg: 'Yapay zeka analiz motoru optimize edildi.', time: '1sa önce', user: 'AI_Core', icon: Zap, color: 'text-primary' },
-                    { msg: 'Global sistem yedeği güvenli bölgeye taşındı.', time: '3sa önce', user: 'Backup_Srv', icon: ShieldCheck, color: 'text-emerald-500' },
-                  ].map((log, i) => (
-                    <div key={i} className="p-10 flex items-center justify-between hover:bg-[#F8FAFC] transition-all group">
-                       <div className="flex items-center gap-8">
-                          <div className={cn("h-16 w-16 rounded-[1.5rem] bg-white border border-primary/5 shadow-xl flex items-center justify-center group-hover:rotate-6 transition-all", log.color)}>
-                             <log.icon className="h-8 w-8" />
-                          </div>
-                          <div>
-                             <p className="font-black text-2xl tracking-tight text-primary leading-none mb-2 italic">{log.msg}</p>
-                             <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-50">
-                                {log.user} • {log.time}
-                             </p>
-                          </div>
-                       </div>
-                       <ArrowUpRight className="h-6 w-6 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  ))}
-               </div>
-            </CardContent>
-         </Card>
       </div>
     </div>
   );

@@ -43,6 +43,7 @@ function DashboardContent() {
   const isSimulating = !!simulatedUserId;
 
   // Global Yükleme Durumu: Auth yüklenirken VEYA kullanıcı varken veri yüklenirken bekle
+  // docLoading true olduğu sürece bekle, böylece userData null olsa bile yükleme ekranı gösterilir
   const isGlobalLoading = authLoading || (user && docLoading);
 
   const dynamicMenu = useMemo(() => {
@@ -94,20 +95,10 @@ function DashboardContent() {
   }, [currentViewData]);
 
   useEffect(() => {
-    // Sadece auth yüklemesi bittiğinde ve kullanıcı yoksa login'e at
     if (!authLoading && !user) {
       router.push('/login');
     }
   }, [user, authLoading, router]);
-
-  useEffect(() => {
-    // Profil yüklendiğinde öğrenciyse ve hedef sınav seçilmemişse seçime yönlendir
-    if (!isGlobalLoading && user && userData) {
-      if (userData.role === 'student' && !userData.targetExam) {
-        router.push('/dashboard/select-exam');
-      }
-    }
-  }, [isGlobalLoading, user, userData, router]);
 
   if (isGlobalLoading) {
     return (
@@ -136,7 +127,7 @@ function DashboardContent() {
               <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-white font-black text-[10px] uppercase tracking-widest shadow-xl">
                  <ShieldCheck className="h-4 w-4 text-accent" /> Sistem Kurulumu
               </div>
-              <h2 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-none">PROFİLİNİZİ <span className="text-accent text-shadow-accent">TAMAMLAYIN</span></h2>
+              <h2 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-none text-shadow-premium">PROFİLİNİZİ <span className="text-accent text-shadow-accent">TAMAMLAYIN</span></h2>
               <p className="text-muted-foreground font-medium italic">Sistemi size özel yapılandırmak için son birkaç bilgiye ihtiyacımız var.</p>
            </div>
            <div className="bg-white rounded-[4rem] shadow-2xl border border-primary/5 overflow-hidden">

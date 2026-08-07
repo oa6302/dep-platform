@@ -54,7 +54,7 @@ const MASTER_CURRICULUM: Record<string, Record<string, string[]>> = {
     'Edebiyat': ['Şiir Bilgisi', 'İslamiyet Öncesi', 'Halk Edebiyatı', 'Divan Edebiyatı', 'Tanzimat', 'Servetifünun', 'Fecri Ati', 'Milli Edebiyat', 'Cumhuriyet Dönemi', 'Edebi Akımlar'],
     'Tarih': ['İlk Çağ', 'İslam Tarihi', 'Osmanlı Kuruluş', 'Osmanlı Yükselme', 'Osmanlı Duraklama', 'Islahatlar', 'Kurtuluş Savaşı', 'Atatürk İlkeleri', 'Çağdaş Türk Tarihi'],
     'Coğrafya': ['Harita Bilgisi', 'Dünya\'nın Şekli', 'İklim', 'Nüfus', 'Göçler', 'Yerleşme', 'Tarım', 'Sanayi', 'Türkiye Coğrafyası'],
-    'Felsefe': ['Bilgi Felsefesi', 'Varlık Felsefesi', 'Ahlak Felsefesi', 'Siyaset Felsefesi', 'Din Felsefesi', 'Bilim Felsefesi'],
+    'Felsefe': ['Bilgi FelseFesi', 'Varlık Felsefesi', 'Ahlak Felsefesi', 'Siyaset Felsefesi', 'Din Felsefesi', 'Bilim Felsefesi'],
     'Din Kültürü': ['Inanç', 'İbadet', 'Ahlak', 'Kur\'an', 'Hz. Muhammed', 'İslam Düşüncesi'],
     'Fizik': ['Fizik Bilimine Giriş', 'Hareket', 'Kuvvet', 'Enerji', 'Elektrik', 'Manyetizma', 'Basınç', 'Isı Sıcaklık', 'Dalgalar', 'Optik'],
     'Kimya': ['Kimya Bilimi', 'Atom', 'Periyodik Sistem', 'Kimyasal Türler', 'Mol', 'Gazlar', 'Çözeltiler', 'Kimyasal Tepkimeler', 'Organik Kimya'],

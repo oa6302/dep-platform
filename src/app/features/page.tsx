@@ -22,7 +22,7 @@ import {
   ArrowRight,
   Sparkles,
   ChevronLeft,
-  Home
+  Home,Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';

@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "UserProfile": {
@@ -21,11 +20,13 @@
     },
     "StudyPlan": {
       "title": "Çalışma Planı",
-      "description": "Kullanıcının haftalık ders çalışma programını saklar.",
+      "description": "Kullanıcının hiyerarşik (yıllık, aylık, haftalık) ders çalışma programını saklar.",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
         "examId": { "type": "string" },
+        "weeklyFocus": { "type": "string" },
+        "recommendations": { "type": "array", "items": { "type": "string" } },
         "schedule": {
           "type": "array",
           "items": {
@@ -40,10 +41,16 @@
                     "time": { "type": "string" },
                     "subject": { "type": "string" },
                     "topic": { "type": "string" },
+                    "subtopic": { "type": "string" },
                     "duration": { "type": "string" },
-                    "bookUrl": { "type": "string", "description": "Ders kitabı veya PDF linki" },
-                    "youtubeUrl": { "type": "string", "description": "YouTube video linki" },
-                    "status": { "type": "string", "enum": ["pending", "completed", "delayed"] }
+                    "difficulty": { "type": "string" },
+                    "priority": { "type": "string" },
+                    "studyType": { "type": "string" },
+                    "xp": { "type": "number" },
+                    "bookUrl": { "type": "string" },
+                    "youtubeUrl": { "type": "string" },
+                    "status": { "type": "string", "enum": ["pending", "completed", "delayed"] },
+                    "isSpacedRepetition": { "type": "boolean" }
                   }
                 }
               }
@@ -83,7 +90,7 @@
         "color": { "type": "string" },
         "order": { "type": "number" },
         "isActive": { "type": "boolean" },
-        "creatorId": { "type": "string", "description": "Dersi oluşturan öğretmen/koç ID'si." }
+        "creatorId": { "type": "string" }
       },
       "required": ["programId", "name"]
     },
@@ -142,7 +149,7 @@
     },
     "/studyPlans/{userId}": {
       "schema": "StudyPlan",
-      "description": "Kullanıcıların haftalık çalışma programları."
+      "description": "Kullanıcıların hiyerarşik çalışma programları."
     },
     "/programs/{programId}": {
       "schema": "Program",

@@ -1,13 +1,14 @@
 
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { AuthForm } from '@/components/auth-form';
 import Image from 'next/image';
 import Link from 'next/link';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ChevronLeft, Sparkles, Loader2 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useUser } from '@/firebase';
 
 function AuthContent() {
   const searchParams = useSearchParams();
@@ -17,7 +18,15 @@ function AuthContent() {
 }
 
 export default function LoginPage() {
+  const { user, loading } = useUser();
+  const router = useRouter();
   const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl || "https://picsum.photos/seed/edu-logo-102/400/400";
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] selection:bg-accent selection:text-white relative overflow-hidden">
@@ -25,7 +34,7 @@ export default function LoginPage() {
       <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-accent/5 blur-[150px] rounded-full"></div>
       <div className="absolute bottom-[-20%] left-[-10%] w-[60%] h-[60%] bg-primary/5 blur-[150px] rounded-full"></div>
 
-      <div className="w-full max-w-xl px-6 py-12 relative z-10">
+      <div className="w-full max-w-2xl px-6 py-12 relative z-10">
         <div className="flex flex-col items-center mb-12 animate-in fade-in slide-in-from-top-4 duration-1000">
           <div className="relative mb-8">
             <div className="h-28 w-28 rounded-[2.5rem] overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] border-4 border-white bg-white p-2">

@@ -12,7 +12,7 @@ import {
   LogOut, LayoutDashboard, User, 
   Brain, Headset, Library,
   Users, PieChart, Eye, XCircle, Loader2,
-  Home, AlertCircle, Compass, Sparkles
+  Home, Compass, Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
@@ -97,10 +97,14 @@ function DashboardContent() {
     }
   }, [user, authLoading, router]);
 
-  // Profil verisi gerçekten yoksa login'e yönlendir
+  // Profil verisi gerçekten yoksa veya student olup sınav seçmemişse yönlendir
   useEffect(() => {
-    if (!authLoading && user && !docLoading && !userData) {
-      router.push('/login?tab=register');
+    if (!authLoading && user && !docLoading) {
+      if (!userData) {
+        router.push('/login?tab=register');
+      } else if (userData.role === 'student' && !userData.targetExam) {
+        router.push('/dashboard/select-exam');
+      }
     }
   }, [authLoading, user, docLoading, userData, router]);
 

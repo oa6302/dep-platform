@@ -3,6 +3,7 @@
 /**
  * @fileOverview Kullanıcının hedef sınavına ve akademik haftasına göre 
  * 52 haftalık roadmap uyumlu, playlist destekli kişiselleştirilmiş plan üretir.
+ * YKS Sayısal, Sözel ve Eşit Ağırlık müfredatını tam kapsar.
  */
 
 import { ai } from '@/ai/genkit';
@@ -10,8 +11,8 @@ import { z } from 'genkit';
 
 const TaskSchema = z.object({
   time: z.string().describe('Seansın başlangıç saati (Örn: 09:00)'),
-  subject: z.string().describe('Ders adı'),
-  topic: z.string().describe('Çalışılacak güncel müfredat konusu'),
+  subject: z.string().describe('Ders adı (DERS LİSTESİNDEN SEÇİLMELİ)'),
+  topic: z.string().describe('Çalışılacak spesifik konu (KONU HAVUZUNDAN SEÇİLMELİ)'),
   duration: z.string().describe('Seans süresi (Örn: 45 dk)'),
   bookUrl: z.string().optional().describe('Kaynak PDF veya kitap linki'),
   youtubeUrl: z.string().optional().describe('YouTube Oynatma Listesi (Playlist) linki'),
@@ -24,7 +25,7 @@ const DayPlanSchema = z.object({
 });
 
 const GenerateStudyPlanInputSchema = z.object({
-  targetExam: z.string().describe('Hedef Sınav (Örn: YKS_SOZ, LGS)'),
+  targetExam: z.string().describe('Hedef Sınav (Örn: YKS_SAY, YKS_SOZ, YKS_EA, LGS)'),
   userName: z.string(),
   lessons: z.array(z.string()),
   currentWeek: z.number().optional().default(1).describe('Akademik yılın kaçıncı haftası (1-52)'),
@@ -50,31 +51,40 @@ const prompt = ai.definePrompt({
       { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
     ]
   },
-  prompt: `Sen "Dijital Eğitim Koçu" (DEK) platformunun baş akademik planlama motorusun.
+  prompt: `Sen profesyonel bir YKS akademik koçusun. 
+  Görevin öğrenci için 7 günlük kişiselleştirilmiş bir çalışma planı oluşturmaktır.
+
   Kullanıcı: {{{userName}}}
-  Hedef Sınav: {{{targetExam}}}
+  Hedef Sınav Modu: {{{targetExam}}}
   Sorumlu Dersler: {{{lessons}}}
-  Mevcut Hafta: {{{currentWeek}}} / 52
+  Mevcut Akademik Hafta: {{{currentWeek}}} / 52 (2025-2026 Eğitim Yılı)
 
-  Görevin: Kullanıcı için 7 günlük, 52 HAFTALIK AKADEMİK YOL HARİTASINA tam uyumlu bir program oluşturmak.
-  
-  **Haftalık Strateji (YKS Sözel Örneği):**
-  - Hafta 1-15 (Foundation): Temel dil bilgisi, Tarih başlangıç, Paragraf hızı.
-  - Hafta 16-30 (Deep Dive): Divan Edebiyatı, Osmanlı Detay, Türkiye Ekonomisi.
-  - Hafta 31-45 (Advanced): Cumhuriyet Edebiyatı, Çağdaş Dünya, Sözel Mantık.
-  - Hafta 46-52 (Elite): Seri deneme sınavları, Genel tekrar kampları.
+  KURALLAR:
+  - Süre varsayılan olarak 45 dakikadır.
+  - Ders ve konuları MUTLAKA aşağıdaki listelerden seç.
+  - Seansları günün verimli saatlerine (09:00 - 22:00) dağıt.
+  - Her sabah "Paragraf / Sözel Mantık" veya "Problem" seansı ekle.
+  - Haftalık 4-6 seans planla.
 
-  Şu an {{{currentWeek}}}. haftadayız. Lütfen bu haftanın ağırlığına ve zorluk seviyesine uygun konuları 2025 müfredatına göre seç.
+  DERS VE KONU HAVUZU:
+  - TYT Matematik: Temel Kavramlar, Sayı Basamakları, Bölme Bölünebilme, OBEB OKEK, Rasyonel Sayılar, Basit Eşitsizlikler, Mutlak Değer, Üslü Sayılar, Köklü Sayılar, Çarpanlara Ayırma, Oran Orantı, Denklem Çözme, Problemler, Yaş Problemleri, Hareket Problemleri, İşçi Havuz Problemleri, Karışım Problemleri, Kümeler, Fonksiyonlar, Permütasyon, Kombinasyon, Olasılık, Veri, Grafik, İstatistik
+  - AYT Matematik: Fonksiyonlar, Polinomlar, İkinci Dereceden Denklemler, Parabol, Trigonometri, Logaritma, Diziler, Limit, Süreklilik, Türev, İntegral, Karmaşık Sayılar, Binom, Analitik Geometri
+  - Geometri: Doğruda Açılar, Üçgenler, Dörtgenler, Çokgenler, Çember, Daire, Katı Cisimler, Analitik Geometri
+  - Türkçe: Sözcükte Anlam, Cümlede Anlam, Paragraf, Ses Bilgisi, Yazım Kuralları, Noktalama, Fiiller, Zamir, Sıfat, Zarf, Edat, Bağlaç, Cümle Türleri, Anlatım Bozukluğu
+  - Edebiyat: Şiir Bilgisi, İslamiyet Öncesi, Halk Edebiyatı, Divan Edebiyatı, Tanzimat, Servetifünun, Fecri Ati, Milli Edebiyat, Cumhuriyet Dönemi, Edebi Akımlar
+  - Tarih: İlk Çağ, İslam Tarihi, Osmanlı Kuruluş, Osmanlı Yükselme, Osmanlı Duraklama, Islahatlar, Kurtuluş Savaşı, Atatürk İlkeleri, Çağdaş Türk Tarihi
+  - Coğrafya: Harita Bilgisi, Dünya'nın Şekli, İklim, Nüfus, Göçler, Yerleşme, Tarım, Sanayi, Türkiye Coğrafyası
+  - Felsefe: Bilgi Felsefesi, Varlık Felsefesi, Ahlak Felsefesi, Siyaset Felsefesi, Din Felsefesi, Bilim Felsefesi
+  - Din Kültürü: İnanç, İbadet, Ahlak, Kur'an, Hz. Muhammed, İslam Düşüncesi
+  - Fizik: Fizik Bilimine Giriş, Hareket, Kuvvet, Enerji, Elektrik, Manyetizma, Basınç, Isı Sıcaklık, Dalgalar, Optik
+  - Kimya: Kimya Bilimi, Atom, Periyodik Sistem, Kimyasal Türler, Mol, Gazlar, Çözeltiler, Kimyasal Tepkimeler, Organik Kimya
+  - Biyoloji: Hücre, Canlıların Ortak Özellikleri, Kalıtım, Ekoloji, Sistemler, DNA RNA, Fotosentez, Solunum, Bitki Biyolojisi
 
-  **YouTube Link Kuralı:**
-  Her görev için youtubeUrl alanına, o konuyu en iyi anlatan eğitim kanalının (Benim Hocam, Rüştü Hoca, Kampüs vb.) OYNATMA LİSTESİ (Playlist) linkini ekle. Eğer spesifik playlist bilinmiyorsa şu formatta arama linki üret:
+  YOUTUBE PLAYLIST KURALI:
+  Her görev için youtubeUrl alanına, o konuyu anlatan popüler bir kanalın (Benim Hocam, Kampüs, Rüştü Hoca vb.) OYNATMA LİSTESİ arama linkini şu formatta ekle:
   https://www.youtube.com/results?search_query=[DERS+ADI]+[KONU+ADI]+oynatma+listesi&sp=EgIQAw%253D%253D
 
-  **Format Kuralları:**
-  - Günlük 4-6 verimli seans planla.
-  - Her sabah "Paragraf / Sözel Mantık" seansı ekle.
-  - Pazar gününe "Haftalık Analiz & Dinlenme" veya "Deneme" yerleştir.
-  - weeklyFocus alanında bu haftanın en kritik konusunu ve stratejisini belirt.`,
+  JSON formatında çıktı ver.`,
 });
 
 export const generateStudyPlanFlow = ai.defineFlow(

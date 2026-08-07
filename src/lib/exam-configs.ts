@@ -1,4 +1,3 @@
-
 import { 
   Target, GraduationCap, BookOpen, Globe, Languages, 
   Brain, Scale, Library, Building, UserCheck, 
@@ -47,7 +46,7 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
     icon: HistoryIcon,
     description: 'TYT + AYT Sözel Puan Türü Tam Paket',
     targetGroup: '12. Sınıf ve Mezunlar',
-    lessons: ['Edebiyat', 'Tarih', 'Coğrafya', 'Felsefe Grubu', 'Din Kültürü', 'Türkçe'],
+    lessons: ['Türkçe', 'Edebiyat', 'Tarih', 'Coğrafya', 'Felsefe', 'Din Kültürü'],
     modules: [
       { title: "Sözel Analiz", icon: ScrollText, color: "bg-amber-600", desc: "Konu derinliği" },
       { title: "Deneme Takibi", icon: ClipboardCheck, color: "bg-emerald-500", desc: "Sözel denemeler" },
@@ -55,55 +54,52 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
     ],
     aiFocus: 'Bu hafta Cumhuriyet Dönemi Şiir ve İnkılap Tarihi konularındaki %15 net artışı hedefine odaklanacağız.',
     roadmap: [
-      {
-        phase: "Temel İnşa Fazı",
-        weeks: "1-12",
-        topics: ["Sözcük ve Cümlede Anlam", "İslamiyet Öncesi Edebiyat", "Tarih Bilimine Giriş", "Coğrafi Konum", "Felsefeye Giriş"]
-      },
-      {
-        phase: "Gelişim & Detay Fazı",
-        weeks: "13-24",
-        topics: ["Halk ve Divan Edebiyatı", "Selçuklu ve Osmanlı Tarihi", "İklim ve Yerleşme", "Psikoloji ve Sosyoloji Temelleri"]
-      },
-      {
-        phase: "İleri Kazanım Fazı",
-        weeks: "25-36",
-        topics: ["Tanzimat'tan Cumhuriyet'e Edebiyat", "20. Yüzyıl Dünya Tarihi", "Türkiye Ekonomisi", "Mantık ve Sembolik Mantık"]
-      },
-      {
-        phase: "Final Revizyon & Deneme Kampı",
-        weeks: "37-52",
-        topics: ["Tüm Müfredat Tekrarı", "Haftalık 3 Genel Deneme", "Sözel Mantık Full Kamp", "Güncel Bilgiler Analizi"]
-      }
+      { phase: "Temel İnşa", weeks: "1-12", topics: ["Sözcük ve Cümlede Anlam", "İslamiyet Öncesi", "İlk Çağ", "Harita Bilgisi"] },
+      { phase: "Gelişim", weeks: "13-24", topics: ["Divan Edebiyatı", "Osmanlı Tarihi", "İklim", "Psikoloji/Sosyoloji"] },
+      { phase: "İleri Kazanım", weeks: "25-36", topics: ["Cumhuriyet Dönemi", "20. YY Dünya Tarihi", "Türkiye Coğrafyası"] },
+      { phase: "Final Revizyon", weeks: "37-52", topics: ["Genel Tekrar", "Deneme Kampı", "Sözel Mantık"] }
     ]
-  },
-  LGS: {
-    id: 'LGS',
-    category: 'ORTAOKUL',
-    title: 'LGS',
-    icon: Target,
-    description: 'Liselere Geçiş Sistemi Hazırlığı',
-    targetGroup: '8. Sınıf Öğrencileri',
-    lessons: ['Türkçe', 'Matematik', 'Fen Bilimleri', 'İnkılap Tarihi', 'Din Kültürü', 'İngilizce'],
-    modules: [
-      { title: "Dersler", icon: BookOpen, color: "bg-blue-600", desc: "LGS müfredatı takibi" },
-      { title: "Denemeler", icon: ClipboardCheck, color: "bg-orange-500", desc: "LGS deneme sonuçları" },
-      { title: "Konu Analizi", icon: LineChart, color: "bg-purple-600", desc: "Kazanım başarı haritası" },
-    ],
-    aiFocus: 'Matematik ve Fen Bilimleri kazanımlarındaki eksiklerini tamamlaman bu hafta en büyük önceliğimiz olmalı.'
   },
   YKS_SAY: {
     id: 'YKS_SAY',
     category: 'ÜNİVERSİTE',
-    title: 'YKS Sayısal',
+    title: 'YKS Sayısal 2026',
     icon: FlaskConical,
     description: 'TYT + AYT Sayısal Puan Türü Odaklı',
     targetGroup: '12. Sınıf ve Mezunlar',
-    lessons: ['TYT Matematik', 'AYT Matematik', 'TYT Fen', 'AYT Fizik', 'AYT Kimya', 'AYT Biyoloji'],
+    lessons: ['TYT Matematik', 'AYT Matematik', 'Geometri', 'Fizik', 'Kimya', 'Biyoloji', 'Türkçe'],
     modules: [
       { title: "Net Analizi", icon: TrendingUp, color: "bg-orange-500", desc: "Sayısal net artışı" },
       { title: "AI Koç", icon: Brain, color: "bg-indigo-500", desc: "Sıralama tahmini" },
     ],
     aiFocus: 'AYT Matematik netlerin hedefindeki mühendislik fakültesi için %88 uyumlu görünüyor.'
+  },
+  YKS_EA: {
+    id: 'YKS_EA',
+    category: 'ÜNİVERSİTE',
+    title: 'YKS Eşit Ağırlık 2026',
+    icon: Scale,
+    description: 'Matematik ve Sözel Denge Paketi',
+    targetGroup: '12. Sınıf ve Mezunlar',
+    lessons: ['TYT Matematik', 'AYT Matematik', 'Edebiyat', 'Tarih', 'Coğrafya', 'Türkçe', 'Geometri'],
+    modules: [
+      { title: "EA Denge", icon: Target, color: "bg-blue-600", desc: "Mat-Sözel dengesi" },
+      { title: "Yol Haritası", icon: Map, color: "bg-emerald-600", desc: "Haftalık gelişim" },
+    ],
+    aiFocus: 'Edebiyat ve AYT Matematik netlerin arasındaki dengeyi koruman sıralamanı %12 yukarı çekecektir.'
+  },
+  LGS: {
+    id: 'LGS',
+    category: 'ORTAOKUL',
+    title: 'LGS 2026',
+    icon: Target,
+    description: 'Liselere Geçiş Sistemi Hazırlığı',
+    targetGroup: '8. Sınıf Öğrencileri',
+    lessons: ['Türkçe', 'Matematik', 'Fen Bilimleri', 'İnkılap Tarihi', 'Din Kültürü', 'İngilizce'],
+    modules: [
+      { title: "Dersler", icon: BookOpen, color: "bg-blue-600", desc: "LGS müfredatı" },
+      { title: "Denemeler", icon: ClipboardCheck, color: "bg-orange-500", desc: "Sonuç analizi" },
+    ],
+    aiFocus: 'Matematik ve Fen Bilimleri kazanımlarındaki eksiklerini tamamlaman bu hafta en büyük önceliğimiz olmalı.'
   }
 };

@@ -1,10 +1,11 @@
+
 'use client';
 
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { useDoc } from '@/firebase';
+import { useDoc, useFirestore } from '@/firebase';
 import { 
   CheckCircle, 
   Clock, 
@@ -24,7 +25,8 @@ import {
   Sparkles,
   PlaySquare,
   ChevronRight,
-  Map
+  Map,
+  Plus
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { 
@@ -35,6 +37,9 @@ import {
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
+import { AcademicSessionDialog } from '@/components/academic-session-dialog';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 interface StudentViewProps {
   user: any;
@@ -52,13 +57,15 @@ const radarData = [
 ];
 
 export function StudentView({ user, userData, isReadOnly = false }: StudentViewProps) {
+  const db = useFirestore();
+  const { toast } = useToast();
   const [activeTimer, setActiveTimer] = useState(false);
   const [timeLeft, setTimerLeft] = useState(25 * 60);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const { data: studyPlan } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   const examConfig = EXAM_CONFIGS[userData?.targetExam || 'YKS_SOZ'] || EXAM_CONFIGS['YKS_SOZ'];
 
-  // Tamamlanan görev sayısına göre gerçek seviye hesaplama
   const totalTasks = useMemo(() => {
     if (!studyPlan?.schedule) return 0;
     let count = 0;
@@ -70,11 +77,9 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     return count;
   }, [studyPlan]);
 
-  // Seviye 1'den başlar, her 10 tamamlanan görevde bir seviye artar
   const level = Math.floor(totalTasks / 10) + 1; 
   const progressToNextLevel = (totalTasks % 10) * 10;
   
-  // Rozet ismini seviyeye göre dinamik belirle
   const badgeName = useMemo(() => {
     if (level < 5) return "AKADEMİK ÇAYLAK";
     if (level < 10) return "BİLGİ AVCISI";
@@ -92,8 +97,9 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   
   const todayTasks = useMemo(() => {
     if (!studyPlan?.schedule) return [];
-    const dayData = studyPlan.schedule.find((s: any) => s.day === today) || studyPlan.schedule[0];
+    const dayData = studyPlan.schedule.find((s: any) => s.day === today);
     return (dayData?.tasks || []).map((t: any) => ({
+       id: t.id || Math.random().toString(36),
        time: t.time,
        title: t.subject,
        sub: t.topic,
@@ -104,10 +110,33 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     }));
   }, [studyPlan, today]);
 
+  const handleQuickAddSession = async (taskData: any) => {
+    if (!db || !user || !studyPlan) return;
+
+    const newSchedule = studyPlan.schedule ? [...studyPlan.schedule] : [];
+    let dayIndex = newSchedule.findIndex(s => s.day === today);
+    
+    if (dayIndex === -1) {
+      newSchedule.push({ day: today, tasks: [taskData] });
+    } else {
+      newSchedule[dayIndex].tasks = [...newSchedule[dayIndex].tasks, taskData];
+    }
+
+    try {
+      await setDoc(doc(db, 'studyPlans', user.uid), {
+        ...studyPlan,
+        schedule: newSchedule,
+        updatedAt: serverTimestamp()
+      });
+      toast({ title: 'Görev Eklendi', description: 'Bugünkü planınıza yeni seans eklendi.' });
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Hata', description: 'Görev eklenemedi.' });
+    }
+  };
+
   return (
     <div className="p-6 lg:p-12 space-y-12 max-w-[1700px] mx-auto w-full animate-in fade-in duration-1000 bg-[#FAFBFF]">
       
-      {/* Top Section: Welcome & Level */}
       <section className="grid grid-cols-1 xl:grid-cols-12 gap-8">
         <Card className="xl:col-span-8 rounded-[4rem] border-none shadow-[0_50px_100px_-20px_rgba(15,23,42,0.12)] bg-white p-14 relative overflow-hidden group">
            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2"></div>
@@ -175,7 +204,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
         </Card>
       </section>
 
-      {/* Middle Section: Stats & Radar */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
          <Card className="rounded-[3.5rem] border-none shadow-xl bg-white p-12 space-y-10 border border-primary/5 col-span-1">
             <h3 className="text-2xl font-black italic tracking-tighter uppercase text-primary flex items-center gap-3">
@@ -236,7 +264,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
          </Card>
       </section>
 
-      {/* Tasks & Agenda */}
       <section className="grid grid-cols-1 xl:grid-cols-12 gap-10">
          <div className="xl:col-span-8 space-y-10">
             <div className="flex justify-between items-end px-4">
@@ -244,9 +271,14 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                   <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground opacity-30 italic">DAILY OPERATIONS</p>
                   <h3 className="text-5xl font-black italic tracking-tighter uppercase text-primary">BUGÜNKÜ GÖREVLER</h3>
                </div>
-               <Button variant="outline" className="h-12 px-8 rounded-2xl border-2 border-primary/5 font-black text-[10px] uppercase tracking-widest hover:bg-primary hover:text-white transition-all shadow-sm" asChild>
-                  <Link href="/dashboard/planning">Haftalık Planı Aç <ChevronRight className="ml-2 h-4 w-4" /></Link>
-               </Button>
+               <div className="flex gap-4">
+                 <Button onClick={() => setIsAddDialogOpen(true)} className="h-12 px-8 rounded-2xl bg-accent hover:bg-primary transition-all font-black text-[10px] uppercase tracking-widest gap-2 shadow-xl shadow-accent/20">
+                    <Plus className="h-4 w-4" /> GÖREV EKLE
+                 </Button>
+                 <Button variant="outline" className="h-12 px-8 rounded-2xl border-2 border-primary/5 font-black text-[10px] uppercase tracking-widest hover:bg-primary hover:text-white transition-all shadow-sm" asChild>
+                    <Link href="/dashboard/planning">Haftalık Planı Aç <ChevronRight className="ml-2 h-4 w-4" /></Link>
+                 </Button>
+               </div>
             </div>
             <div className="grid gap-6">
                {todayTasks.length > 0 ? todayTasks.map((task: any, i: number) => (
@@ -303,8 +335,8 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                   <Card className="p-20 text-center bg-white rounded-[4rem] border border-dashed border-primary/10 shadow-inner">
                      <Calendar className="h-20 w-20 mx-auto text-primary/10 mb-6" />
                      <p className="font-black text-primary/20 uppercase tracking-[0.4em] text-sm italic">BUGÜN İÇİN PLANLANMIŞ BİR GÖREV BULUNMUYOR.</p>
-                     <Button variant="link" className="mt-4 text-accent font-black uppercase text-[10px] tracking-widest" asChild>
-                        <Link href="/dashboard/planning">Hemen Bir Plan Oluştur</Link>
+                     <Button variant="link" className="mt-4 text-accent font-black uppercase text-[10px] tracking-widest" onClick={() => setIsAddDialogOpen(true)}>
+                        Hemen Bir Görev Ekle
                      </Button>
                   </Card>
                )}
@@ -356,9 +388,16 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
          </aside>
       </section>
 
+      <AcademicSessionDialog 
+        isOpen={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        onSave={handleQuickAddSession}
+        selectedDay={today}
+      />
+
       {/* Floating Action Button */}
       <div className="fixed bottom-12 right-12 z-[100]">
-         <Button className="h-28 w-28 rounded-[3.5rem] bg-[#0F172A] hover:bg-accent text-white shadow-[0_40px_80px_-20px_rgba(15,23,42,0.6)] group transition-all duration-700 hover:scale-110 flex flex-col items-center justify-center gap-2 border-[8px] border-white">
+         <Button onClick={() => setIsAddDialogOpen(true)} className="h-28 w-28 rounded-[3.5rem] bg-[#0F172A] hover:bg-accent text-white shadow-[0_40px_80px_-20px_rgba(15,23,42,0.6)] group transition-all duration-700 hover:scale-110 flex flex-col items-center justify-center gap-2 border-[8px] border-white">
             <Brain className="h-12 w-12 text-accent group-hover:text-white transition-colors" />
             <span className="text-[9px] font-black tracking-[0.3em] uppercase">AI COACH</span>
          </Button>

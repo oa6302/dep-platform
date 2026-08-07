@@ -1,11 +1,10 @@
+
 'use client';
 
 import { useUser, useDoc, useFirestore } from '@/firebase';
 import { useState, useMemo, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { 
   Calendar, 
   Brain, 
@@ -29,20 +28,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 import { handleGenerateAiStudyPlan } from '@/app/actions';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { AcademicSessionDialog } from '@/components/academic-session-dialog';
 
 export default function PlanningPage() {
   const { user } = useUser();
@@ -57,16 +43,9 @@ export default function PlanningPage() {
   const [weeklyFocus, setWeeklyFocus] = useState('');
   
   const [localSchedule, setLocalSchedule] = useState<any[]>([]);
-  const [editingTask, setEditingTask] = useState<{ day: string, index: number, data: any } | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<{ index: number, data: any } | null>(null);
 
   const days = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
-
-  const allYksLessons = [
-    'TYT Matematik', 'AYT Matematik', 'Geometri', 'Türkçe', 'Edebiyat', 
-    'Tarih', 'Coğrafya', 'Felsefe', 'Din Kültürü', 'Fizik', 'Kimya', 'Biyoloji',
-    'Deneme Sınavı', 'Sözel Mantık', 'Problem Çözümü'
-  ];
 
   useEffect(() => {
     if (studyPlan?.schedule) {
@@ -141,33 +120,18 @@ export default function PlanningPage() {
     }
   };
 
-  const handleSaveTask = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!editingTask) return;
-
-    const formData = new FormData(e.currentTarget);
-    const updatedTask = {
-      ...editingTask.data,
-      time: formData.get('time'),
-      subject: formData.get('subject'),
-      topic: formData.get('topic'),
-      duration: formData.get('duration'),
-      bookUrl: formData.get('bookUrl'),
-      youtubeUrl: formData.get('youtubeUrl'),
-    };
-
+  const handleSaveTask = (taskData: any) => {
     const newSchedule = [...localSchedule];
     const dayIndex = newSchedule.findIndex(s => s.day === selectedDay);
     
     if (dayIndex > -1) {
-      if (editingTask.index === -1) {
-        newSchedule[dayIndex].tasks = [...newSchedule[dayIndex].tasks, updatedTask];
-      } else {
-        newSchedule[dayIndex].tasks[editingTask.index] = updatedTask;
+      if (editingTask?.index === -1) {
+        newSchedule[dayIndex].tasks = [...newSchedule[dayIndex].tasks, taskData];
+      } else if (editingTask) {
+        newSchedule[dayIndex].tasks[editingTask.index] = taskData;
       }
       setLocalSchedule(newSchedule);
     }
-
     setEditingTask(null);
   };
 
@@ -192,7 +156,7 @@ export default function PlanningPage() {
             AI İLE HEMEN OLUŞTUR
           </Button>
           <Button 
-            onClick={() => setEditingTask({ day: selectedDay, index: -1, data: { time: '09:00', duration: '45 dk' } })}
+            onClick={() => setEditingTask({ index: -1, data: null })}
             className="h-20 px-12 rounded-[2rem] bg-primary hover:bg-accent transition-all font-black text-sm uppercase tracking-[0.2em] gap-6 shadow-[0_30px_60px_-15px_rgba(15,23,42,0.4)] text-white"
           >
             <Plus className="h-7 w-7 text-accent" /> MANUEL EKLE
@@ -280,7 +244,7 @@ export default function PlanningPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="icon" onClick={() => setEditingTask({ day: selectedDay, index: i, data: task })} className="h-14 w-14 rounded-2xl text-muted-foreground opacity-20 hover:opacity-100 hover:text-primary transition-all">
+                        <Button variant="ghost" size="icon" onClick={() => setEditingTask({ index: i, data: task })} className="h-14 w-14 rounded-2xl text-muted-foreground opacity-20 hover:opacity-100 hover:text-primary transition-all">
                           <Edit3 className="h-7 w-7" />
                         </Button>
                         <Button variant="ghost" size="icon" onClick={() => {
@@ -333,63 +297,13 @@ export default function PlanningPage() {
         </main>
       </div>
 
-      <Dialog open={!!editingTask} onOpenChange={(o) => !o && setEditingTask(null)}>
-        <DialogContent className="rounded-[4rem] border-none shadow-[0_80px_160px_-40px_rgba(15,23,42,0.4)] p-14 bg-white max-w-2xl">
-          <DialogHeader className="space-y-4 text-center">
-            <DialogTitle className="text-5xl font-black italic tracking-tighter text-primary uppercase">
-              {editingTask?.index === -1 ? 'YENİ SEANS' : 'SEANS DÜZENLE'}
-            </DialogTitle>
-            <DialogDescription className="font-medium italic text-lg opacity-60">
-              {selectedDay} Günü Akademik Veri Girişi
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSaveTask} className="space-y-10 pt-10">
-            <div className="grid grid-cols-2 gap-8">
-              <div className="space-y-3">
-                <Label className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 ml-3 italic">BAŞLANGIÇ SAATİ</Label>
-                <Input name="time" type="time" required defaultValue={editingTask?.data?.time} className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-black text-2xl text-center" />
-              </div>
-              <div className="space-y-3">
-                <Label className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 ml-3 italic">SÜRE</Label>
-                <Input name="duration" required placeholder="45 dk" defaultValue={editingTask?.data?.duration} className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold text-lg text-center" />
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <Label className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 ml-3 italic">DERS SEÇİMİ</Label>
-              <Select name="subject" required defaultValue={editingTask?.data?.subject}>
-                <SelectTrigger className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-black text-lg">
-                  <SelectValue placeholder="Ders Seçiniz" />
-                </SelectTrigger>
-                <SelectContent className="rounded-2xl border-none shadow-2xl">
-                  {allYksLessons.map(l => <SelectItem key={l} value={l} className="font-bold py-3">{l}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-3">
-              <Label className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 ml-3 italic">KONU BAŞLIĞI</Label>
-              <Input name="topic" required placeholder="Çalışılacak spesifik konu..." defaultValue={editingTask?.data?.topic} className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold text-lg" />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-accent ml-3 italic">KAYNAK / PDF LİNKİ</Label>
-                <Input name="bookUrl" placeholder="https://..." defaultValue={editingTask?.data?.bookUrl} className="h-14 rounded-xl bg-slate-50 border-none shadow-inner font-medium text-sm" />
-              </div>
-              <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-500 ml-3 italic">OYNATMA LİSTESİ LİNKİ</Label>
-                <Input name="youtubeUrl" placeholder="https://..." defaultValue={editingTask?.data?.youtubeUrl} className="h-14 rounded-xl bg-slate-50 border-none shadow-inner font-medium text-sm" />
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full h-24 rounded-[3rem] bg-primary hover:bg-accent transition-all font-black text-lg uppercase tracking-[0.3em] gap-6 shadow-[0_30px_60px_-15px_rgba(15,23,42,0.3)]">
-              <CheckCircle className="h-8 w-8 text-accent" />
-              GÖREVİ ONAYLA
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <AcademicSessionDialog 
+        isOpen={!!editingTask} 
+        onOpenChange={(open) => !open && setEditingTask(null)} 
+        onSave={handleSaveTask}
+        selectedDay={selectedDay}
+        initialData={editingTask?.data}
+      />
     </div>
   );
 }

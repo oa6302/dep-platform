@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card } from '@/components/ui/card';
@@ -22,7 +21,8 @@ import {
   Book,
   Youtube,
   Award,
-  Sparkles
+  Sparkles,
+  PlaySquare
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { 
@@ -34,16 +34,6 @@ import {
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
-
-// --- MOCK DATA ---
-const netGrowthData = [
-  { name: 'Eyl', net: 62 },
-  { name: 'Eki', net: 68 },
-  { name: 'Kas', net: 65 },
-  { name: 'Ara', net: 74 },
-  { name: 'Oca', net: 82 },
-  { name: 'Şub', net: 88 },
-];
 
 interface StudentViewProps {
   user: any;
@@ -66,27 +56,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
 
   const level = Math.floor(totalTasks / 5) + 18; 
   const progressToNextLevel = (totalTasks % 5) * 20 || 84;
-
-  const dnaData = useMemo(() => {
-    if (userData?.targetExam?.includes('SOZ')) {
-      return [
-        { subject: 'Ezber Gücü', A: 90, fullMark: 100 },
-        { subject: 'Analitik Yorum', A: 85, fullMark: 100 },
-        { subject: 'Okuma Hızı', A: 75, fullMark: 100 },
-        { subject: 'Disiplin', A: 80, fullMark: 100 },
-        { subject: 'Sözel Mantık', A: 65, fullMark: 100 },
-        { subject: 'Analiz', A: 70, fullMark: 100 },
-      ];
-    }
-    return [
-      { subject: 'Problem Çözme', A: 85, fullMark: 100 },
-      { subject: 'Hız', A: 70, fullMark: 100 },
-      { subject: 'Odak', A: 90, fullMark: 100 },
-      { subject: 'Disiplin', A: 80, fullMark: 100 },
-      { subject: 'Tekrar', A: 65, fullMark: 100 },
-      { subject: 'Analiz', A: 75, fullMark: 100 },
-    ];
-  }, [userData]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -229,8 +198,8 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                                  </a>
                                )}
                                {task.youtubeUrl && (
-                                 <a href={task.youtubeUrl} target="_blank" rel="noopener noreferrer" title="YouTube Video" className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center border border-primary/5 hover:bg-rose-500 hover:text-white transition-all">
-                                   <Youtube className="h-3.5 w-3.5 text-rose-500" />
+                                 <a href={task.youtubeUrl} target="_blank" rel="noopener noreferrer" title="YouTube Oynatma Listesi" className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center border border-primary/5 hover:bg-rose-500 hover:text-white transition-all">
+                                   <PlaySquare className="h-3.5 w-3.5 text-rose-500" />
                                  </a>
                                )}
                             </div>
@@ -246,6 +215,11 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                     </Button>
                  </Card>
                ))}
+               {todayTasks.length === 0 && (
+                  <div className="py-20 text-center bg-white rounded-[3rem] border border-dashed border-primary/10">
+                     <p className="font-black text-primary/30 uppercase tracking-widest text-xs italic">Bugün için planlanmış bir görev bulunmuyor.</p>
+                  </div>
+               )}
             </div>
          </div>
 

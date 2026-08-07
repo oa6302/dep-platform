@@ -3,6 +3,7 @@
 /**
  * @fileOverview Kullanıcının hedef sınavına ve yılın hangi haftasında olduğuna göre 
  * kişiselleştirilmiş 7 günlük çalışma planı üreten AI akışı.
+ * YouTube linklerini artık ilgili konunun oynatma listesi (playlist) olarak üretir.
  */
 
 import { ai } from '@/ai/genkit';
@@ -14,7 +15,7 @@ const TaskSchema = z.object({
   topic: z.string().describe('Çalışılacak güncel konu başlığı'),
   duration: z.string().describe('Seans süresi (Örn: 45 dk)'),
   bookUrl: z.string().optional().describe('İlgili ders için önerilen kaynak linki (boş bırakılabilir)'),
-  youtubeUrl: z.string().optional().describe('İlgili konu için önerilen video linki (boş bırakılabilir)'),
+  youtubeUrl: z.string().optional().describe('İlgili konu için en uygun YouTube OYNATMA LİSTESİ (Playlist) linki veya arama linki'),
   status: z.enum(['pending', 'completed', 'delayed']).default('pending'),
 });
 
@@ -57,6 +58,10 @@ const prompt = ai.definePrompt({
 
   Görevin: Kullanıcı için 7 günlük (Pazartesi'den Pazar'a), 52 HAFTALIK YOL HARİTASINA uygun, akademik olarak en verimli ve GÜNCEL MÜFREDAT odaklı bir ders çalışma programı oluşturmaktır.
   
+  **ÖNEMLİ: YouTube Linkleri Hakkında:**
+  Her görev için youtubeUrl alanına, o konuyu anlatan popüler eğitim kanallarının (Örn: Benim Hocam, Rüştü Hoca, Hocalara Geldik) ilgili konu OYNATMA LİSTESİ (Playlist) linkini ekle. Eğer spesifik playlist linkini bilmiyorsan, şu formatta bir YouTube arama linki oluştur: 
+  https://www.youtube.com/results?search_query=[DERS+ADI]+[KONU+ADI]+oynatma+listesi&sp=EgIQAw%253D%253D (sp parametresi oynatma listesi filtresidir).
+
   **YKS Sözel 1 Yıllık Planlama Stratejisi:**
   - **Hafta 1-12 (Temel):** Temel kavramlar, Paragraf hızı ve Tarih başlangıç konuları.
   - **Hafta 13-24 (Detay):** Divan Edebiyatı, Osmanlı Tarihi, İklim ve Yerleşme detayları.

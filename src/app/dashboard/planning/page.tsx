@@ -22,7 +22,8 @@ import {
   CalendarCheck,
   Book,
   Youtube,
-  Link as LinkIcon
+  Link as LinkIcon,
+  PlaySquare
 } from 'lucide-react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -90,17 +91,17 @@ export default function PlanningPage() {
         setLocalSchedule(result.data);
         toast({
           title: 'Akademik Plan Hazır',
-          description: 'AI, 2025 müfredatına özel 7 günlük güncel programınızı oluşturdu.',
+          description: 'AI, 2025 müfredatına özel 7 günlük playlist destekli programınızı oluşturdu.',
           className: "bg-accent text-primary rounded-[2rem]"
         });
       } else {
         throw new Error(result.error);
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Hata',
-        description: 'AI planı oluşturulurken bir sorun oluştu.'
+        description: error.message || 'AI planı oluşturulurken bir sorun oluştu.'
       });
     } finally {
       setIsGenerating(false);
@@ -277,7 +278,7 @@ export default function PlanningPage() {
                            )}
                            {task.youtubeUrl && (
                              <a href={task.youtubeUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-primary/5 text-primary font-black text-[10px] uppercase hover:bg-rose-500 hover:text-white transition-all shadow-sm">
-                               <Youtube className="h-4 w-4 text-rose-500" /> Video İzle
+                               <PlaySquare className="h-4 w-4 text-rose-500" /> Oynatma Listesi
                              </a>
                            )}
                         </div>
@@ -381,9 +382,9 @@ export default function PlanningPage() {
               </div>
               <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-rose-500 ml-2 italic flex items-center gap-2">
-                  <Youtube className="h-3 w-3" /> YOUTUBE VİDEO LİNKİ
+                  <PlaySquare className="h-3 w-3" /> OYNATMA LİSTESİ LİNKİ
                 </Label>
-                <Input name="youtubeUrl" placeholder="https://youtube.com/..." defaultValue={editingTask?.data?.youtubeUrl} className="h-14 rounded-xl bg-slate-50 border-none shadow-inner font-medium text-sm" />
+                <Input name="youtubeUrl" placeholder="https://youtube.com/playlist?list=..." defaultValue={editingTask?.data?.youtubeUrl} className="h-14 rounded-xl bg-slate-50 border-none shadow-inner font-medium text-sm" />
               </div>
             </div>
 

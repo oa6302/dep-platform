@@ -70,10 +70,18 @@ const prompt = ai.definePrompt({
   • Spaced Repetition (Aralıklı Tekrar) mantığını kullan.
   • Eksik kazanımları önce tamamlat.
   • Zor konulardan sonra (Hard) mutlaka daha hafif (Easy/Medium) görevler planla.
-  • Youtube linkleri için MUTLAKA playlist formatı kullan: https://www.youtube.com/results?search_query=[DERS]+[KONU]+oynatma+listesi&sp=EgIQAw%253D%253D
+  • Youtube linkleri için MUTLAKA oynatma listesi (playlist) formatı kullan: https://www.youtube.com/results?search_query=[DERS]+[KONU]+oynatma+listesi&sp=EgIQAw%253D%253D
+
+  KONU HAVUZU (YKS ÖRNEK):
+  - Matematik: Temel Kavramlar, Logaritma, Türev, İntegral...
+  - Edebiyat: Cumhuriyet Dönemi, Divan Edebiyatı, Tanzimat...
+  - Tarih: Kurtuluş Savaşı, Osmanlı Yükselme, İlk Çağ...
+  - Fizik: Kuvvet, Enerji, Elektrik, Optik...
+  - Kimya: Mol, Periyodik Sistem, Organik Kimya...
+  - Biyoloji: Hücre, Kalıtım, Sistemler...
 
   KURALLAR:
-  • Gereksiz motivasyon cümleleri kurma.
+  • Gereksiz motivasyon cümleleri kurma; verilere odaklan.
   • Sadece {{{lessons}}} listesindeki dersleri kullan.
   • XP Sistemi: Easy=25, Medium=50, Hard=75.
   • Çıktı sadece JSON formatında olmalıdır.

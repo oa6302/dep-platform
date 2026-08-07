@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Card } from '@/components/ui/card';
 import { 
   CheckCircle, Clock, Book, PlaySquare, Zap, Target, 
   Layers, Brain, Sparkles, AlertTriangle, ShieldCheck, 
@@ -45,6 +46,10 @@ const MASTER_CURRICULUM: Record<string, Record<string, string[]>> = {
     'Geometri': ['Doğruda Açılar', 'Üçgenler', 'Dörtgenler', 'Çokgenler', 'Çember', 'Daire', 'Katı Cisimler', 'Analitik Geometri'],
     'Türkçe': ['Sözcükte Anlam', 'Cümlede Anlam', 'Paragraf', 'Ses Bilgisi', 'Yazım Kuralları', 'Noktalama', 'Fiiller', 'Zamir', 'Sıfat', 'Zarf', 'Edat', 'Bağlaç', 'Cümle Türleri', 'Anlatım Bozukluğu'],
     'Edebiyat': ['Şiir Bilgisi', 'İslamiyet Öncesi', 'Halk Edebiyatı', 'Divan Edebiyatı', 'Tanzimat', 'Servetifünun', 'Fecri Ati', 'Milli Edebiyat', 'Cumhuriyet Dönemi', 'Edebi Akımlar'],
+    'Tarih': ['İlk Çağ', 'İslam Tarihi', 'Osmanlı Kuruluş', 'Osmanlı Yükselme', 'Osmanlı Duraklama', 'Islahatlar', 'Kurtuluş Savaşı', 'Atatürk İlkeleri', 'Çağdaş Türk Tarihi'],
+    'Coğrafya': ['Harita Bilgisi', 'Dünya\'nın Şekli', 'İklim', 'Nüfus', 'Göçler', 'Yerleşme', 'Tarım', 'Sanayi', 'Türkiye Coğrafyası'],
+    'Felsefe': ['Bilgi Felsefesi', 'Varlık Felsefesi', 'Ahlak Felsefesi', 'Siyaset Felsefesi', 'Din Felsefesi', 'Bilim Felsefesi'],
+    'Din Kültürü': ['İnanç', 'İbadet', 'Ahlak', 'Kur\'an', 'Hz. Muhammed', 'İslam Düşüncesi'],
     'Fizik': ['Fizik Bilimine Giriş', 'Hareket', 'Kuvvet', 'Enerji', 'Elektrik', 'Manyetizma', 'Basınç', 'Isı Sıcaklık', 'Dalgalar', 'Optik'],
     'Kimya': ['Kimya Bilimi', 'Atom', 'Periyodik Sistem', 'Kimyasal Türler', 'Mol', 'Gazlar', 'Çözeltiler', 'Kimyasal Tepkimeler', 'Organik Kimya'],
     'Biyoloji': ['Hücre', 'Canlıların Ortak Özellikleri', 'Kalıtım', 'Ekoloji', 'Sistemler', 'DNA RNA', 'Fotosentez', 'Solunum', 'Bitki Biyolojisi'],
@@ -119,7 +124,6 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
       <DialogContent className="rounded-[4rem] border-none shadow-[0_80px_160px_-40px_rgba(15,23,42,0.4)] p-0 bg-white max-w-5xl overflow-hidden animate-in zoom-in-95 duration-500">
         <div className="grid lg:grid-cols-[1fr_340px]">
           
-          {/* MAIN FORM AREA */}
           <div className="p-12 space-y-10">
             <DialogHeader className="space-y-4">
               <div className="flex items-center justify-between">
@@ -140,7 +144,6 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
             </DialogHeader>
 
             <form onSubmit={handleSubmit} id="session-form" className="space-y-12">
-               {/* 1. PLANLAMA BİLGİLERİ */}
                <div className="space-y-6">
                   <div className="flex items-center gap-4 text-primary opacity-20">
                      <Settings2 className="h-5 w-5" />
@@ -183,7 +186,6 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
                   </div>
                </div>
 
-               {/* 2. AKADEMİK BİLGİLER */}
                <div className="space-y-6">
                   <div className="flex items-center gap-4 text-primary opacity-20">
                      <Layers className="h-5 w-5" />
@@ -231,7 +233,6 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
                   </div>
                </div>
 
-               {/* 3. KAYNAKLAR & HEDEFLER */}
                <div className="grid md:grid-cols-2 gap-10">
                   <div className="space-y-6">
                      <div className="flex items-center gap-4 text-primary opacity-20">
@@ -281,10 +282,8 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
             </form>
           </div>
 
-          {/* SIDEBAR ANALYTICS AREA */}
           <div className="bg-slate-50 p-10 border-l border-primary/5 space-y-10 flex flex-col justify-between">
              <div className="space-y-10">
-                {/* AI RECOMMENDATION CARD */}
                 <Card className="rounded-[2.5rem] border-none bg-primary text-white p-8 space-y-6 relative overflow-hidden group shadow-2xl">
                    <div className="absolute top-0 right-0 w-32 h-32 bg-accent/20 blur-[60px] rounded-full translate-x-1/2 -translate-y-1/2"></div>
                    <div className="flex items-center gap-3 relative z-10">
@@ -297,7 +296,6 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
                    <Button size="sm" className="w-full h-11 rounded-xl bg-white/10 hover:bg-white/20 text-white font-black text-[9px] uppercase tracking-widest border border-white/10">AI İLE OLUŞTUR</Button>
                 </Card>
 
-                {/* SPACED REPETITION SWITCH */}
                 <div className="bg-white p-8 rounded-[2.5rem] border border-primary/5 space-y-6 shadow-sm">
                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -315,7 +313,6 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
                    )}
                 </div>
 
-                {/* TAHMİNİ KAZANIM PANEL */}
                 <div className="space-y-6">
                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground/40 ml-4 italic">TAHMİNİ KAZANIM</span>
                    <div className="grid grid-cols-2 gap-4">

@@ -59,7 +59,7 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
     category: 'ORTAOKUL',
     title: 'Bursluluk (İOKBS)',
     icon: Award,
-    description: 'İlköğretim ve Ortaöğretim Kurumları Bursluluk Sınavı',
+    description: ' İlköğretim ve Ortaöğretim Kurumları Bursluluk Sınavı',
     targetGroup: '5, 6, 7 ve 8. Sınıflar',
     lessons: ['Türkçe', 'Matematik', 'Fen Bilimleri', 'Sosyal Bilgiler'],
     modules: [

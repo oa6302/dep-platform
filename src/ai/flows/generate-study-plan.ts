@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -33,20 +32,30 @@ const GenerateStudyPlanInputSchema = z.object({
 
 export type GenerateStudyPlanInput = z.infer<typeof GenerateStudyPlanInputSchema>;
 
-const GenerateStudyPlanOutputSchema = z.array(DayPlanSchema);
+const GenerateStudyPlanOutputSchema = z.object({
+  schedule: z.array(DayPlanSchema)
+});
 export type GenerateStudyPlanOutput = z.infer<typeof GenerateStudyPlanOutputSchema>;
 
 const prompt = ai.definePrompt({
   name: 'generateStudyPlanPrompt',
   input: { schema: GenerateStudyPlanInputSchema },
   output: { schema: GenerateStudyPlanOutputSchema },
+  config: {
+    safetySettings: [
+      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+    ]
+  },
   prompt: `Sen "Dijital Eğitim Koçu" platformunun uzman yapay zeka asistanısın. 
   Kullanıcı adı: {{{userName}}}
   Hedef Sınav: {{{targetExam}}}
   Sorumlu Olduğu Dersler: {{{lessons}}}
   Mevcut Hafta: {{{currentWeek}}} / 52
 
-  Görevin: Kullanıcı için 7 günlük, 52 HAFTALIK YOL HARİTASINA uygun, akademik olarak en verimli ve GÜNCEL MÜFREDAT odaklı bir ders çalışma programı oluşturmaktır.
+  Görevin: Kullanıcı için 7 günlük (Pazartesi'den Pazar'a), 52 HAFTALIK YOL HARİTASINA uygun, akademik olarak en verimli ve GÜNCEL MÜFREDAT odaklı bir ders çalışma programı oluşturmaktır.
   
   **YKS Sözel 1 Yıllık Planlama Stratejisi:**
   - **Hafta 1-12 (Temel):** Temel kavramlar, Paragraf hızı ve Tarih başlangıç konuları.
@@ -60,9 +69,10 @@ const prompt = ai.definePrompt({
   - Her sabah mutlaka "Paragraf Hız ve Anlam" seansı ekle.
   - Hafta sonuna (Pazar) mutlaka "Genel Deneme" seansı yerleştir.
   
-  **Format:** 
+  **Format Kuralları:** 
   - Günlük en az 4, en fazla 6 seans planla.
-  - Konular spesifik ve güncel olmalıdır.`,
+  - Konular spesifik, güncel ve YKS 2025 müfredatına uygun olmalıdır.
+  - Sadece geçerli bir JSON objesi döndür.`,
 });
 
 export const generateStudyPlanFlow = ai.defineFlow(
@@ -73,6 +83,7 @@ export const generateStudyPlanFlow = ai.defineFlow(
   },
   async input => {
     const { output } = await prompt(input);
-    return output!;
+    if (!output) throw new Error('AI plan üretemedi.');
+    return output;
   }
 );

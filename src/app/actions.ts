@@ -27,10 +27,11 @@ import HTMLtoDOCX from 'html-to-docx';
 export async function handleGenerateAiStudyPlan(input: GenerateStudyPlanInput) {
   try {
     const result = await generateStudyPlanFlow(input);
-    return { success: true, data: result };
-  } catch (error) {
+    // Genkit 1.x flow result is the output schema
+    return { success: true, data: result.schedule };
+  } catch (error: any) {
     console.error('Error in handleGenerateAiStudyPlan:', error);
-    return { success: false, error: 'Yapay zeka planı oluşturulurken bir hata oluştu.' };
+    return { success: false, error: error.message || 'Yapay zeka planı oluşturulurken bir hata oluştu.' };
   }
 }
 

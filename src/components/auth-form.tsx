@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -16,8 +15,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Loader2, Mail, Lock, User, School, 
-  UserRound, Building, CheckCircle2, 
-  Brain, Key, UserPlus, LogIn
+  UserRound, Brain, Key, UserPlus, LogIn, Building
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -25,7 +23,7 @@ import { EXAM_CONFIGS } from '@/lib/exam-configs';
 
 interface AuthFormProps {
   mode: 'login' | 'register';
-  isProfileCompletion?: boolean; // Yeni mod: Sadece profil eksikse Firestore'a yazar
+  isProfileCompletion?: boolean; 
 }
 
 export function AuthForm({ mode: initialMode, isProfileCompletion = false }: AuthFormProps) {
@@ -90,7 +88,7 @@ export function AuthForm({ mode: initialMode, isProfileCompletion = false }: Aut
     } catch (error: any) {
       let msg = "Giriş başarısız.";
       if (error.code === 'auth/wrong-password') msg = "Şifre hatalı.";
-      if (error.code === 'auth/user-not-found') msg = "Bu e-posta adresiyle kayıtlı bir hesap bulunamadı.";
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') msg = "E-posta veya şifre hatalı.";
       toast({ variant: 'destructive', title: 'Hata', description: msg });
     } finally {
       setLoading(false);
@@ -110,7 +108,6 @@ export function AuthForm({ mode: initialMode, isProfileCompletion = false }: Aut
     try {
       let finalUser = currentUser;
 
-      // Eğer profil tamamlama modunda DEĞİLSEK ve yeni kayıt oluyorsak
       if (!isProfileCompletion && authMode === 'register') {
         if (!auth || !email || !password) {
            toast({ variant: 'destructive', title: 'Eksik Bilgi', description: 'E-posta ve şifre gereklidir.' });
@@ -125,7 +122,7 @@ export function AuthForm({ mode: initialMode, isProfileCompletion = false }: Aut
 
       const userData: any = {
         uid: finalUser.uid,
-        email: finalUser.email,
+        email: finalUser.email || email,
         displayName,
         role,
         createdAt: serverTimestamp(),
@@ -146,25 +143,23 @@ export function AuthForm({ mode: initialMode, isProfileCompletion = false }: Aut
         userData.school = schoolName;
       }
 
-      // Profile güncelle (E-posta ile kayıt olduysa)
-      if (finalUser.email) {
+      if (finalUser) {
         await updateProfile(finalUser, { displayName });
       }
 
-      // Firestore'a kaydet (Bu kısım kalıcılığı sağlar)
-      await setDoc(doc(db, 'users', finalUser.uid), userData);
+      await setDoc(doc(db, 'users', finalUser.uid), userData, { merge: true });
 
       toast({ title: 'Sistem Yapılandırıldı', description: 'Profiliniz başarıyla oluşturuldu.' });
       
-      // Eğer dashboard'un içindeysek sayfa yenilensin, değilsek yönlendirilsin
       if (isProfileCompletion) {
-        window.location.reload();
+        window.location.href = '/dashboard';
       } else {
         router.push('/dashboard');
       }
     } catch (error: any) {
+      console.error("Auth error:", error);
       let msg = error.message;
-      if (error.code === 'auth/email-already-in-use') msg = "Bu e-posta adresi zaten kullanımda. Giriş yapmayı deneyin.";
+      if (error.code === 'auth/email-already-in-use') msg = "Bu e-posta adresi zaten kullanımda.";
       toast({ variant: 'destructive', title: 'Hata', description: msg });
     } finally {
       setLoading(false);
@@ -298,7 +293,7 @@ export function AuthForm({ mode: initialMode, isProfileCompletion = false }: Aut
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2">ŞİFRE *</Label>
                     <div className="relative group">
-                      <Lock className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent" />
+                      <Lock className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
                       <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-14 rounded-2xl bg-[#F8FAFC] border-none shadow-inner pl-12 font-bold" placeholder="••••••••" />
                     </div>
                   </div>

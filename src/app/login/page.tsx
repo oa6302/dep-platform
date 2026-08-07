@@ -1,82 +1,59 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 import { AuthForm } from '@/components/auth-form';
 import Image from 'next/image';
 import Link from 'next/link';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { ChevronLeft, Loader2, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function LoginPage() {
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const tab = searchParams.get('tab') || 'login';
-  const [activeTab, setActiveTab] = useState(tab);
-
   const logoUrl = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl || "https://picsum.photos/seed/edu-logo-99/400/400";
 
-  useEffect(() => {
-    setActiveTab(tab);
-  }, [tab]);
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4 py-12 relative overflow-hidden">
-      {/* Background Decorations */}
-      <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-accent/5 blur-[100px] rounded-full"></div>
-      <div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-primary/5 blur-[100px] rounded-full"></div>
+    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] selection:bg-accent selection:text-white relative overflow-hidden">
+      {/* Background Mesh Gradients */}
+      <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent/5 blur-[120px] rounded-full animate-pulse"></div>
+      <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/5 blur-[120px] rounded-full animate-pulse" style={{ animationDelay: '2s' }}></div>
 
-      <div className="w-full max-w-md space-y-8 relative z-10">
-        <div className="flex flex-col items-center gap-6 mb-8">
-          <Link href="/" className="flex flex-col items-center gap-4 group">
-            <div className="relative h-24 w-24 overflow-hidden rounded-[2rem] shadow-2xl transition-all group-hover:scale-105 bg-white p-1 border-[6px] border-primary/5">
+      <div className="w-full max-w-2xl px-6 py-12 relative z-10">
+        <div className="flex flex-col items-center mb-12 animate-in fade-in slide-in-from-top-4 duration-1000">
+          <Link href="/" className="group flex flex-col items-center gap-6">
+            <div className="relative h-24 w-24 overflow-hidden rounded-[2.5rem] shadow-2xl transition-all group-hover:scale-105 bg-white p-2 border-[6px] border-primary/5">
               <Image 
                 src={logoUrl} 
-                alt="Dijital Eğitim Koçu Logo" 
+                alt="DEK Logo" 
                 fill 
                 className="object-contain"
-                data-ai-hint="education logo blue gold"
+                priority
               />
             </div>
-            <div className="text-center">
-              <span className="font-black text-4xl text-primary tracking-tighter block leading-none italic">Dijital Eğitim Koçu</span>
-              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.3em] mt-2 opacity-60">Geleceğin Eğitim Platformu</p>
+            <div className="text-center space-y-2">
+              <h1 className="font-black text-4xl md:text-5xl text-primary tracking-tighter italic uppercase text-shadow-premium">
+                Akademik <span className="text-accent">Açılış</span>
+              </h1>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground opacity-40">Dijital Eğitim Koçu v4.0</p>
             </div>
           </Link>
         </div>
 
-        <Card className="border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.15)] rounded-[3rem] overflow-hidden bg-white/80 backdrop-blur-xl">
-          <CardHeader className="bg-primary p-10 text-white text-center space-y-3">
-            <CardTitle className="text-3xl font-black tracking-tight italic">
-              {activeTab === 'login' ? 'Tekrar Hoş Geldin!' : 'Yeni Bir Başlangıç'}
-            </CardTitle>
-            <CardDescription className="text-white/60 font-bold text-sm uppercase tracking-widest">
-              {activeTab === 'login' 
-                ? 'Hesabınıza erişmek için bilgilerinizi girin.' 
-                : 'Yeni bir hesap oluşturun ve koçluk almaya başlayın.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-10">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-10 bg-[#F1F5F9] p-1.5 rounded-2xl">
-                <TabsTrigger value="login" className="rounded-xl font-black py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-lg text-xs uppercase tracking-widest">Giriş Yap</TabsTrigger>
-                <TabsTrigger value="register" className="rounded-xl font-black py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-lg text-xs uppercase tracking-widest">Kayıt Ol</TabsTrigger>
-              </TabsList>
-              <TabsContent value="login">
-                <AuthForm mode="login" />
-              </TabsContent>
-              <TabsContent value="register">
-                <AuthForm mode="register" />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+        <div className="bg-white/40 backdrop-blur-3xl rounded-[4rem] border border-white/50 shadow-[0_80px_160px_-40px_rgba(15,23,42,0.15)] overflow-hidden">
+          <Suspense fallback={<div className="p-20 text-center"><Loader2 className="h-10 w-10 animate-spin mx-auto text-accent" /></div>}>
+            <AuthForm mode="register" />
+          </Suspense>
+        </div>
 
-        <p className="text-center text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-60">
-          Giriş yaparak <Link href="#" className="underline hover:text-accent transition-colors">Kullanım Koşullarını</Link> kabul etmiş sayılırsınız.
-        </p>
+        <div className="mt-12 flex justify-between items-center px-8 animate-in fade-in duration-1000 delay-500">
+          <Link href="/" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 group">
+            <ChevronLeft className="h-3 w-3 group-hover:-translate-x-1 transition-transform" /> Geri Dön
+          </Link>
+          <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 italic">
+            <Sparkles className="h-3 w-3 text-accent" /> Güvenli Bağlantı Aktif
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -47,23 +48,39 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
 
   const categorizedExams = useMemo(() => {
     const grouped: Record<string, any[]> = {};
-    const categories = ['ORTAOKUL', 'ÜNİVERSİTE', 'MEB SINAVLARI', 'KAMU SINAVLARI', 'AKADEMİK', 'YABANCI DİL', 'ÜNİVERSİTE GEÇİŞ', 'DİNÎ EĞİTİM', 'AKADEMİK DESTEK', 'ÖZEL PROGRAMLAR'];
+    const categories = [
+      'ORTAOKUL', 
+      'ÜNİVERSİTE', 
+      'MEB SINAVLARI', 
+      'KAMU SINAVLARI', 
+      'AKADEMİK', 
+      'YABANCI DİL', 
+      'ÜNİVERSİTE GEÇİŞ', 
+      'DİNÎ EĞİTİM', 
+      'AKADEMİK DESTEK', 
+      'ÖZEL PROGRAMLAR'
+    ];
     
     categories.forEach(cat => grouped[cat] = []);
+    
+    // Config'den gelenleri ekle
+    Object.values(EXAM_CONFIGS).forEach(exam => {
+      const cat = exam.category;
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push({ ...exam, source: 'config' });
+    });
+
+    // DB'den gelenleri ekle (eğer çakışma yoksa)
     if (dbPrograms) {
       dbPrograms.forEach(exam => {
         const cat = exam.category || 'ÖZEL PROGRAMLAR';
         if (!grouped[cat]) grouped[cat] = [];
-        grouped[cat].push({ ...exam, source: 'db' });
+        if (!grouped[cat].find(e => e.id === exam.id)) {
+          grouped[cat].push({ ...exam, source: 'db' });
+        }
       });
     }
-    Object.values(EXAM_CONFIGS).forEach(exam => {
-      const cat = exam.category;
-      if (!grouped[cat]) grouped[cat] = [];
-      if (!grouped[cat].find(e => e.id === exam.id)) {
-        grouped[cat].push({ ...exam, source: 'config' });
-      }
-    });
+    
     return grouped;
   }, [dbPrograms]);
 
@@ -115,11 +132,9 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
 
     setLoading(true);
     try {
-      // Önce bu email kayıtlı mı kontrol et
       const methods = await fetchSignInMethodsForEmail(auth, email);
       
       if (methods.length > 0) {
-        // Kullanıcı var, giriş yap
         await signInWithEmailAndPassword(auth, email, password);
         const user = auth.currentUser;
         if (user) {
@@ -132,14 +147,12 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
         }
         setStep('details');
       } else {
-        // Kullanıcı yok, detaylara geç
         setStep('details');
       }
     } catch (error: any) {
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-password') {
         toast({ variant: 'destructive', title: 'Giriş Hatası', description: 'Email veya şifre hatalı.' });
       } else {
-        // Yeni kayıt için detaylara devam et
         setStep('details');
       }
     } finally {
@@ -351,37 +364,42 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
            </div>
 
            <div className="bg-slate-50/50 rounded-[3rem] p-4 border border-primary/5 shadow-inner">
-              <ScrollArea className="h-[400px] pr-4">
-                 <div className="space-y-10 py-4">
+              <ScrollArea className="h-[450px] pr-4">
+                 <div className="space-y-12 py-6">
                     {Object.keys(categorizedExams).map((category) => (
                        categorizedExams[category]?.length > 0 && (
-                          <div key={category} className="space-y-4 px-2">
-                             <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-primary/30 ml-2">{category}</h3>
-                             <div className="grid gap-3">
+                          <div key={category} className="space-y-6 px-2">
+                             <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/30 ml-4 border-b border-primary/5 pb-2">{category}</h3>
+                             <div className="grid gap-4">
                                 {categorizedExams[category].map((exam) => (
                                    <button
                                       key={exam.id}
                                       onClick={() => setTargetExam(exam.id)}
                                       className={cn(
-                                         "flex items-center justify-between p-6 rounded-[2rem] border-2 transition-all group text-left",
+                                         "flex items-center justify-between p-6 rounded-[2.25rem] border-2 transition-all group text-left relative overflow-hidden",
                                          targetExam === exam.id 
                                             ? "border-accent bg-white shadow-xl scale-[1.02]" 
                                             : "border-white bg-white/40 hover:border-primary/10 hover:bg-white"
                                       )}
                                    >
-                                      <div className="flex items-center gap-5">
+                                      <div className="flex items-center gap-6 relative z-10">
                                          <div className={cn(
-                                            "h-12 w-12 rounded-xl flex items-center justify-center transition-all",
+                                            "h-14 w-14 rounded-2xl flex items-center justify-center transition-all shadow-sm",
                                             targetExam === exam.id ? "bg-accent text-white shadow-accent/20" : "bg-primary/5 text-primary"
                                          )}>
-                                            {exam.icon ? <exam.icon className="h-6 w-6" /> : <Grid3X3 className="h-6 w-6" />}
+                                            {exam.icon ? <exam.icon className="h-7 w-7" /> : <Grid3X3 className="h-7 w-7" />}
                                          </div>
-                                         <div>
-                                            <p className={cn("font-black text-sm uppercase tracking-tight", targetExam === exam.id ? "text-primary" : "text-primary/70")}>{exam.title}</p>
-                                            <p className="text-[8px] font-bold opacity-30 uppercase tracking-widest">{exam.targetGroup || 'Genel Sınav'}</p>
+                                         <div className="space-y-0.5">
+                                            <p className={cn("font-black text-base uppercase tracking-tight", targetExam === exam.id ? "text-primary" : "text-primary/70")}>{exam.title}</p>
+                                            <p className="text-[9px] font-bold opacity-40 uppercase tracking-widest leading-none">{exam.targetGroup || 'Genel Hazırlık'}</p>
                                          </div>
                                       </div>
-                                      {targetExam === exam.id && <CheckCircle2 className="h-5 w-5 text-accent animate-in zoom-in" />}
+                                      {targetExam === exam.id && <CheckCircle2 className="h-6 w-6 text-accent animate-in zoom-in" />}
+                                      
+                                      {/* Background Decoration */}
+                                      {targetExam === exam.id && (
+                                         <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 blur-2xl rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                                      )}
                                    </button>
                                 ))}
                              </div>
@@ -392,10 +410,12 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
               </ScrollArea>
            </div>
 
-           <Button onClick={handleFinalize} disabled={!targetExam || loading} className="w-full h-20 rounded-[2rem] bg-primary hover:bg-accent transition-all font-black text-sm uppercase tracking-widest gap-4 shadow-[0_30px_60px_-10px_rgba(15,23,42,0.3)]">
-              {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'SİSTEMİ BAŞLAT'}
-              <Sparkles className="h-6 w-6 text-accent" />
-           </Button>
+           <div className="pt-4">
+              <Button onClick={handleFinalize} disabled={!targetExam || loading} className="w-full h-22 rounded-[2.5rem] bg-primary hover:bg-accent transition-all font-black text-sm uppercase tracking-widest gap-4 shadow-[0_40px_80px_-20px_rgba(15,23,42,0.3)]">
+                 {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : 'SİSTEMİ BAŞLAT'}
+                 <Sparkles className="h-6 w-6 text-accent" />
+              </Button>
+           </div>
         </div>
       )}
     </div>

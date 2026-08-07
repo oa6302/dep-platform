@@ -12,7 +12,7 @@ import {
   Presentation, FileSpreadsheet, LayoutDashboard,
   Compass, Briefcase, Atom, FlaskConical, Calculator,
   Globe2, History as HistoryIcon, Languages as LangIcon,
-  Zap
+  Zap, Flame
 } from 'lucide-react';
 
 export type ExamModule = {

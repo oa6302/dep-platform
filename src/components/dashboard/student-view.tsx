@@ -45,11 +45,6 @@ const netGrowthData = [
   { name: 'Şub', net: 88 },
 ];
 
-const heatMapData = Array.from({ length: 364 }).map((_, i) => ({
-  value: Math.floor(Math.random() * 5),
-  date: i
-}));
-
 interface StudentViewProps {
   user: any;
   userData: any;
@@ -69,8 +64,8 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     return studyPlan.schedule.reduce((acc: number, day: any) => acc + (day.tasks?.length || 0), 0);
   }, [studyPlan]);
 
-  const level = Math.floor(totalTasks / 5) + 18; // Başlangıç seviyesi simülasyonu
-  const progressToNextLevel = (totalTasks % 5) * 20 || 84; // Görselle uyumlu olsun diye default 84
+  const level = Math.floor(totalTasks / 5) + 18; 
+  const progressToNextLevel = (totalTasks % 5) * 20 || 84;
 
   const dnaData = useMemo(() => {
     if (userData?.targetExam?.includes('SOZ')) {
@@ -104,14 +99,12 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const todayTasks = useMemo(() => {
     if (!studyPlan?.schedule) {
       return [
-        { time: '09:00', title: 'Edebiyat', sub: 'Cumhuriyet Dönemi', dur: '60 dk', status: 'pending', bookUrl: '', youtubeUrl: '' },
-        { time: '11:30', title: 'Tarih', sub: 'Kurtuluş Savaşı', dur: '45 dk', status: 'pending', bookUrl: '', youtubeUrl: '' },
-        { time: '14:00', title: 'Paragraf', sub: 'Hız Çalışması', dur: '30 dk', status: 'completed', bookUrl: '', youtubeUrl: '' },
-        { time: '16:00', title: 'Coğrafya', sub: 'Nüfus Politikaları', dur: '45 dk', status: 'pending', bookUrl: '', youtubeUrl: '' },
+        { time: '09:00', title: 'Edebiyat', sub: 'Cumhuriyet Dönemi', dur: '60 dk', status: 'pending' },
+        { time: '11:30', title: 'Tarih', sub: 'Kurtuluş Savaşı', dur: '45 dk', status: 'pending' },
       ];
     }
     const dayData = studyPlan.schedule.find((s: any) => s.day === today) || studyPlan.schedule[0];
-    return dayData.tasks.map((t: any) => ({
+    return (dayData?.tasks || []).map((t: any) => ({
        time: t.time,
        title: t.subject,
        sub: t.topic,
@@ -167,7 +160,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
            </div>
         </Card>
 
-        {/* --- LEVEL CARD (AS IN IMAGE) --- */}
         <Card className="lg:col-span-4 rounded-[3.5rem] border-none shadow-[0_60px_120px_-30px_rgba(15,23,42,0.15)] bg-white p-12 flex flex-col items-center justify-center space-y-10 relative overflow-hidden group">
            <div className="absolute top-0 right-0 w-48 h-48 bg-accent/5 blur-[100px] rounded-full"></div>
            
@@ -204,7 +196,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                </Button>
             </div>
             <div className="grid gap-6">
-               {todayTasks.map((task, i) => (
+               {todayTasks.map((task: any, i: number) => (
                  <Card key={i} className={cn(
                    "p-8 rounded-[2.5rem] border-none shadow-lg flex items-center justify-between group transition-all hover:scale-[1.02]",
                    task.status === 'completed' ? "bg-emerald-50/50" : 
@@ -294,75 +286,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                <Button onClick={() => setActiveTimer(!activeTimer)} className="w-full h-12 rounded-xl bg-primary text-white font-black text-[10px] uppercase tracking-widest shadow-xl">
                   {activeTimer ? 'DURDUR' : 'SEANSI BAŞLAT'}
                </Button>
-            </div>
-         </Card>
-      </section>
-
-      <section className="grid grid-cols-1 xl:grid-cols-3 gap-10">
-         <Card className="rounded-[3.5rem] border-none shadow-xl bg-white p-10 space-y-10 border border-primary/5 relative overflow-hidden group">
-            <Target className="absolute top-8 right-8 h-12 w-12 text-accent opacity-10 group-hover:scale-110 transition-transform" />
-            <h4 className="text-2xl font-black italic tracking-tighter uppercase leading-none">HEDEF TAKİBİ</h4>
-            <div className="space-y-8">
-               <div className="bg-slate-50 p-6 rounded-[2.5rem] space-y-6">
-                  <div className="flex justify-between items-center">
-                     <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">HEDEF PUAN</span>
-                     <span className="text-2xl font-black text-primary italic">480</span>
-                  </div>
-                  <div className="h-2 w-full bg-white rounded-full overflow-hidden shadow-inner">
-                     <div className="h-full bg-accent transition-all duration-1000" style={{ width: '85%' }}></div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-6">
-                     <div>
-                        <p className="text-[8px] font-black uppercase opacity-40 mb-1">MEVCUT TAHMİN</p>
-                        <p className="text-2xl font-black text-primary">452</p>
-                     </div>
-                     <div className="text-right">
-                        <p className="text-[8px] font-black uppercase opacity-40 mb-1">EKSİK</p>
-                        <p className="text-2xl font-black text-rose-500">28 Puan</p>
-                     </div>
-                  </div>
-               </div>
-               <div className="space-y-4">
-                  <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-widest">
-                     <span className="text-muted-foreground italic">AI BAŞARI TAHMİNİ</span>
-                     <span className="text-emerald-500">%91</span>
-                  </div>
-                  <div className="p-5 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-4">
-                     <Brain className="h-5 w-5 text-emerald-600" />
-                     <p className="text-[10px] font-bold text-emerald-800 leading-tight italic">"Mevcut trendinle hedefine ulaşma olasılığın çok yüksek. Fen netlerini korumalısın."</p>
-                  </div>
-               </div>
-            </div>
-         </Card>
-
-         <Card className="xl:col-span-2 rounded-[3.5rem] border-none shadow-xl bg-white p-10 space-y-8 border border-primary/5">
-            <div className="flex justify-between items-center">
-               <h4 className="text-2xl font-black italic tracking-tighter uppercase leading-none">NET GELİŞİM TRENDİ</h4>
-               <div className="flex gap-2">
-                  {['Hafta', 'Ay', 'Yıl'].map((f, i) => (
-                    <button key={i} className={cn("text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full transition-all", i === 1 ? "bg-primary text-white" : "bg-slate-50 text-muted-foreground hover:bg-primary/5")}>{f}</button>
-                  ))}
-               </div>
-            </div>
-            <div className="h-[300px] w-full">
-               <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={netGrowthData}>
-                     <defs>
-                        <linearGradient id="colorNet" x1="0" x2="0" y2="1">
-                           <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.3}/>
-                           <stop offset="95%" stopColor="#F59E0B" stopOpacity={0}/>
-                        </linearGradient>
-                     </defs>
-                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
-                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900, fill: '#94A3B8' }} dy={15} />
-                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900, fill: '#94A3B8' }} />
-                     <Tooltip 
-                        contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 50px rgba(0,0,0,0.1)', padding: '15px' }}
-                        itemStyle={{ fontWeight: 900, fontSize: '12px', textTransform: 'uppercase' }}
-                     />
-                     <Area type="monotone" dataKey="net" stroke="#F59E0B" strokeWidth={5} fillOpacity={1} fill="url(#colorNet)" />
-                  </AreaChart>
-               </ResponsiveContainer>
             </div>
          </Card>
       </section>

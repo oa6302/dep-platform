@@ -54,7 +54,7 @@ export function AdminView({ user, userData }: AdminViewProps) {
       ];
 
       for (const u of demoUsers) {
-        await setDoc(doc(db, 'users', u.uid), {
+        setDoc(doc(db, 'users', u.uid), {
           ...u,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -73,7 +73,7 @@ export function AdminView({ user, userData }: AdminViewProps) {
     setSeeding(true);
     try {
       for (const exam of Object.values(EXAM_CONFIGS)) {
-        await setDoc(doc(db, 'programs', exam.id), {
+        setDoc(doc(db, 'programs', exam.id), {
           id: exam.id,
           title: exam.title,
           category: exam.category,
@@ -85,7 +85,7 @@ export function AdminView({ user, userData }: AdminViewProps) {
 
         for (const lessonName of exam.lessons) {
           const subjectId = `${exam.id}_${lessonName.toLowerCase().replace(/\s+/g, '_')}`;
-          await setDoc(doc(db, 'subjects', subjectId), {
+          setDoc(doc(db, 'subjects', subjectId), {
             id: subjectId,
             programId: exam.id,
             name: lessonName,

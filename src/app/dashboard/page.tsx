@@ -42,7 +42,7 @@ function DashboardContent() {
   const currentViewData = simulatedUserData || userData;
   const isSimulating = !!simulatedUserId;
 
-  // Global Yükleme Durumu - Daha kararlı bir yükleme süreci için
+  // Global Yükleme Durumu: Auth yüklenirken VEYA kullanıcı varken veri yüklenirken bekle
   const isGlobalLoading = authLoading || (user && docLoading);
 
   const dynamicMenu = useMemo(() => {
@@ -83,7 +83,7 @@ function DashboardContent() {
     ];
 
     const config = EXAM_CONFIGS[currentViewData.targetExam || 'LGS'] || EXAM_CONFIGS['LGS'];
-    if (config.modules) {
+    if (config?.modules) {
       config.modules.slice(0, 3).forEach(mod => {
         items.push({ label: mod.title, icon: mod.icon, href: '#' });
       });
@@ -94,14 +94,14 @@ function DashboardContent() {
   }, [currentViewData]);
 
   useEffect(() => {
-    // Oturum kapalıysa girişe yönlendir
+    // Sadece auth yüklemesi bittiğinde ve kullanıcı yoksa login'e at
     if (!authLoading && !user) {
       router.push('/login');
     }
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    // Profil yüklendiğinde hedef sınav seçilmemişse seçime yönlendir
+    // Profil yüklendiğinde öğrenciyse ve hedef sınav seçilmemişse seçime yönlendir
     if (!isGlobalLoading && user && userData) {
       if (userData.role === 'student' && !userData.targetExam) {
         router.push('/dashboard/select-exam');
@@ -140,7 +140,6 @@ function DashboardContent() {
               <p className="text-muted-foreground font-medium italic">Sistemi size özel yapılandırmak için son birkaç bilgiye ihtiyacımız var.</p>
            </div>
            <div className="bg-white rounded-[4rem] shadow-2xl border border-primary/5 overflow-hidden">
-              {/* mode="complete-profile" diyerek sadece Firestore kaydı yapmasını sağlıyoruz */}
               <AuthForm mode="register" isProfileCompletion={true} />
            </div>
            <div className="text-center">

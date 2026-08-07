@@ -42,8 +42,7 @@ function DashboardContent() {
   const currentViewData = simulatedUserData || userData;
   const isSimulating = !!simulatedUserId;
 
-  // Global Yükleme Durumu: Auth yüklenirken VEYA kullanıcı varken veri yüklenirken bekle
-  // docLoading true olduğu sürece bekle, böylece userData null olsa bile yükleme ekranı gösterilir
+  // Global Yükleme Durumu: Auth yüklenirken VEYA kullanıcı varken veri henüz gelmemişse bekle
   const isGlobalLoading = authLoading || (user && docLoading);
 
   const dynamicMenu = useMemo(() => {
@@ -118,6 +117,7 @@ function DashboardContent() {
   }
 
   // Eğer kullanıcı Auth ile giriş yapmış ama Firestore'da profili yoksa (Profil Tamamlama Modu)
+  // docLoading bittiğinde (false) hala userData yoksa burası çalışır.
   if (user && !docLoading && !userData) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 relative overflow-hidden">

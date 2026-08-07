@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -152,11 +153,11 @@ export function AuthForm({ mode: initialMode, isProfileCompletion = false }: Aut
 
       toast({ title: 'Sistem Yapılandırıldı', description: 'Profiliniz başarıyla oluşturuldu.' });
       
-      if (isProfileCompletion) {
+      // Kayıt başarılı olduktan sonra verilerin Firestore'da yansıması için kısa bir bekleme ve yönlendirme
+      setTimeout(() => {
         window.location.href = '/dashboard';
-      } else {
-        router.push('/dashboard');
-      }
+      }, 500);
+      
     } catch (error: any) {
       console.error("Auth error:", error);
       let msg = error.message;

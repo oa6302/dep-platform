@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card } from '@/components/ui/card';
@@ -18,7 +19,9 @@ import {
   BookOpen, 
   Pencil,
   Flame,
-  ArrowRight
+  ArrowRight,
+  BookOpenCheck,
+  PencilLine
 } from 'lucide-react';
 import { useState } from 'react';
 import { 
@@ -99,8 +102,8 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-12 mt-12 border-t border-primary/5">
               {[
                 { label: 'Görev', val: '4', sub: 'Tamamlanan: 2', icon: CheckCircle2, color: 'text-emerald-500' },
-                { label: 'Konu', val: '3', sub: 'Bugünkü Hedef', icon: BookOpen, color: 'text-blue-500' },
-                { label: 'Soru', val: '120', sub: 'Çözülen: 84', icon: Pencil, color: 'text-orange-500' },
+                { label: 'Konu', val: '3', sub: 'Bugünkü Hedef', icon: BookOpenCheck, color: 'text-blue-500' },
+                { label: 'Soru', val: '120', sub: 'Çözülen: 84', icon: PencilLine, color: 'text-orange-500' },
                 { label: 'Çalışma', val: '3s', sub: 'Gerçekleşen: 1.5s', icon: Clock, color: 'text-accent' },
               ].map((item, i) => (
                 <div key={i} className="space-y-1">

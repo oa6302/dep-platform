@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useDoc, useAuth } from '@/firebase';
@@ -11,7 +12,7 @@ import {
   LogOut, LayoutDashboard, User, 
   Brain, Headset, Library,
   Users, PieChart, Eye, XCircle, Loader2,
-  Home, AlertCircle
+  Home, AlertCircle, Compass
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
@@ -31,6 +32,7 @@ function DashboardContent() {
   
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
 
+  // Firestore verisini dinle
   const { data: userData, loading: docLoading } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
   const { data: simulatedUserData, loading: simLoading } = useDoc<any>(simulatedUserId ? `users/${simulatedUserId}` : null);
 
@@ -39,8 +41,8 @@ function DashboardContent() {
   const currentViewData = simulatedUserData || userData;
   const isSimulating = !!simulatedUserId;
 
-  // Profil verisi gerçekten "yüklenmiş ama bulunamamış" mı kontrolü
-  const isGlobalLoading = authLoading || (user && docLoading);
+  // Yükleme durumu: Auth yükleniyor olmalı VEYA kullanıcı varken henüz profil verisi gelmemiş olmalı
+  const isGlobalLoading = authLoading || (!!user && docLoading && !userData);
 
   const dynamicMenu = useMemo(() => {
     if (!currentViewData) return [];
@@ -79,9 +81,11 @@ function DashboardContent() {
     ];
 
     const config = EXAM_CONFIGS[currentViewData.targetExam || 'LGS'] || EXAM_CONFIGS['LGS'];
-    config.modules?.slice(0, 3).forEach(mod => {
-      items.push({ label: mod.title, icon: mod.icon, href: '#' });
-    });
+    if (config.modules) {
+      config.modules.slice(0, 3).forEach(mod => {
+        items.push({ label: mod.title, icon: mod.icon, href: '#' });
+      });
+    }
 
     items.push({ label: 'Destek Hattı', icon: Headset, href: '/dashboard/contact' });
     return items;
@@ -93,16 +97,27 @@ function DashboardContent() {
     }
   }, [user, authLoading, router]);
 
+  // Eğer veri yüklenmişse ve hala userData yoksa, demek ki profil dökümanı hiç oluşmamış.
+  // Bu durumda kullanıcıyı kayıt akışına geri gönderiyoruz.
+  useEffect(() => {
+    if (!authLoading && user && !docLoading && !userData) {
+      // Profil yoksa kayıt sayfasına yönlendir (Sistem Başlatma flow'u için)
+      router.push('/login');
+    }
+  }, [authLoading, user, docLoading, userData, router]);
+
   if (isGlobalLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
         <div className="flex flex-col items-center gap-8">
           <div className="h-24 w-24 animate-spin rounded-[3rem] border-[8px] border-accent border-t-transparent shadow-[0_0_80px_rgba(245,158,11,0.25)]" />
-          <p className="text-[12px] text-primary font-black uppercase tracking-[0.6em] animate-pulse italic">Akademik Veriler Hazırlanıyor...</p>
+          <p className="text-[12px] text-primary font-black uppercase tracking-[0.6em] animate-pulse italic">Akademik Motor Hazırlanıyor...</p>
         </div>
       </div>
     );
   }
+
+  if (!user || !currentViewData) return null;
 
   const handleLogout = async () => {
     if (auth) {
@@ -118,25 +133,6 @@ function DashboardContent() {
   };
 
   const renderView = () => {
-    if (!currentViewData && !docLoading) {
-      return (
-        <div className="p-20 flex flex-col items-center justify-center text-center space-y-12 animate-in fade-in zoom-in-95 duration-1000">
-           <div className="h-24 w-24 rounded-[2.5rem] bg-destructive/10 flex items-center justify-center shadow-inner">
-              <AlertCircle className="h-12 w-12 text-destructive" />
-           </div>
-           <div className="space-y-4">
-             <h2 className="text-5xl font-black text-primary tracking-tighter uppercase italic text-shadow-deep">Profil Kaydı Eksik</h2>
-             <p className="text-muted-foreground max-w-md mx-auto italic font-medium text-lg">
-                Giriş yaptınız ancak akademik bir profil bulunamadı. Lütfen yeni bir profil oluşturun.
-             </p>
-           </div>
-           <Button onClick={() => router.push('/login')} className="h-20 px-12 rounded-[2rem] bg-primary text-white font-black uppercase text-xs tracking-widest flex items-center gap-4 shadow-2xl transition-all hover:scale-105">
-              <User className="h-6 w-6 text-accent" /> Profili Şimdi Oluştur
-           </Button>
-        </div>
-      );
-    }
-
     switch (currentViewData?.role) {
       case 'student': return <StudentView user={{ uid: currentViewData.uid }} userData={currentViewData} isReadOnly={isSimulating} />;
       case 'teacher': return <TeacherView user={user} userData={currentViewData} />;
@@ -210,7 +206,7 @@ function DashboardContent() {
                 <Home className="h-6 w-6" />
               </Button>
               <h1 className="text-3xl font-black text-primary uppercase tracking-tighter italic">
-                {isSimulating ? 'SİMÜLASYON MODU' : (userData?.role === 'student' ? 'AKADEMİK PANEL' : 'YÖNETİM PANELİ')}
+                {isSimulating ? 'SİMÜLASYON MODU' : (userData?.role === 'student' ? 'AKADEMİK KOMUTA MERKEZİ' : 'AKADEMİK HAREKÂT MERKEZİ')}
               </h1>
             </div>
 
@@ -237,8 +233,6 @@ function DashboardContent() {
     </div>
   );
 }
-
-const Compass = ({ className }: { className?: string }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>;
 
 export default function DashboardPage() {
   return (

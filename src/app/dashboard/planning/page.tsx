@@ -20,7 +20,10 @@ import {
   Trash2,
   Zap,
   Edit3,
-  CalendarCheck
+  CalendarCheck,
+  Book,
+  Youtube,
+  Link as LinkIcon
 } from 'lucide-react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -81,10 +84,10 @@ export default function PlanningPage() {
 
       const newSchedule = days.map(day => {
         const tasks = [
-          { time: '09:00', subject: lessons[0], topic: 'Eser-Yazar Analizi', duration: '60 dk', status: 'pending' },
-          { time: '11:30', subject: lessons[1] || lessons[0], topic: 'Tarih Özet Tekrar', duration: '45 dk', status: 'pending' },
-          { time: '14:00', subject: 'Paragraf', topic: '40 Soru Hız Testi', duration: '30 dk', status: 'pending' },
-          { time: '16:00', subject: lessons[2] || lessons[0], topic: 'Coğrafya Harita Çalışması', duration: '45 dk', status: 'pending' },
+          { time: '09:00', subject: lessons[0], topic: 'Eser-Yazar Analizi', duration: '60 dk', status: 'pending', bookUrl: '', youtubeUrl: '' },
+          { time: '11:30', subject: lessons[1] || lessons[0], topic: 'Tarih Özet Tekrar', duration: '45 dk', status: 'pending', bookUrl: '', youtubeUrl: '' },
+          { time: '14:00', subject: 'Paragraf', topic: '40 Soru Hız Testi', duration: '30 dk', status: 'pending', bookUrl: '', youtubeUrl: '' },
+          { time: '16:00', subject: lessons[2] || lessons[0], topic: 'Coğrafya Harita Çalışması', duration: '45 dk', status: 'pending', bookUrl: '', youtubeUrl: '' },
         ];
         return { day, tasks };
       });
@@ -139,7 +142,7 @@ export default function PlanningPage() {
     setEditingTask({ 
       day: selectedDay, 
       index: -1, 
-      data: { time: '09:00', subject: '', topic: '', duration: '45 dk', status: 'pending' } 
+      data: { time: '09:00', subject: '', topic: '', duration: '45 dk', status: 'pending', bookUrl: '', youtubeUrl: '' } 
     });
     setIsDialogOpen(true);
   };
@@ -155,6 +158,8 @@ export default function PlanningPage() {
       subject: formData.get('subject'),
       topic: formData.get('topic'),
       duration: formData.get('duration'),
+      bookUrl: formData.get('bookUrl'),
+      youtubeUrl: formData.get('youtubeUrl'),
     };
 
     const newSchedule = [...localSchedule];
@@ -208,7 +213,6 @@ export default function PlanningPage() {
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
-        {/* Sol Menü: Haftalık Akış */}
         <aside className="xl:col-span-3 space-y-8">
           <div className="bg-white rounded-[3rem] p-10 space-y-8 shadow-xl shadow-black/5">
             <h3 className="text-2xl font-black italic tracking-tighter text-primary uppercase">HAFTALIK AKIŞ</h3>
@@ -232,7 +236,6 @@ export default function PlanningPage() {
           </div>
         </aside>
 
-        {/* Sağ Panel: Günlük Plan Detayı */}
         <main className="xl:col-span-9">
           <Card className="rounded-[4rem] border-none shadow-2xl bg-white p-14 space-y-12 border border-primary/5 relative overflow-hidden min-h-[700px] flex flex-col">
             <div className="flex justify-between items-start relative z-10">
@@ -256,9 +259,23 @@ export default function PlanningPage() {
                         <p className="text-[10px] font-bold text-muted-foreground opacity-30 uppercase mt-2 italic">BAŞLAT</p>
                       </div>
                       <div className="h-16 w-px bg-primary/10"></div>
-                      <div className="flex-1 space-y-1">
-                        <h4 className="text-3xl font-black italic tracking-tight text-primary uppercase leading-none">{task.subject}</h4>
-                        <p className="text-lg font-medium text-muted-foreground italic opacity-70">{task.topic} • {task.duration}</p>
+                      <div className="flex-1 space-y-3">
+                        <div>
+                          <h4 className="text-3xl font-black italic tracking-tight text-primary uppercase leading-none">{task.subject}</h4>
+                          <p className="text-lg font-medium text-muted-foreground italic opacity-70">{task.topic} • {task.duration}</p>
+                        </div>
+                        <div className="flex gap-4">
+                           {task.bookUrl && (
+                             <a href={task.bookUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-primary/5 text-primary font-black text-[10px] uppercase hover:bg-primary hover:text-white transition-all shadow-sm">
+                               <Book className="h-4 w-4 text-[#F59E0B]" /> Kitap/PDF
+                             </a>
+                           )}
+                           {task.youtubeUrl && (
+                             <a href={task.youtubeUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-primary/5 text-primary font-black text-[10px] uppercase hover:bg-rose-500 hover:text-white transition-all shadow-sm">
+                               <Youtube className="h-4 w-4 text-rose-500" /> Video İzle
+                             </a>
+                           )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-4">
                         <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(task, i)} className="h-14 w-14 rounded-2xl text-muted-foreground opacity-20 hover:opacity-100 hover:text-primary transition-all">
@@ -304,9 +321,8 @@ export default function PlanningPage() {
         </main>
       </div>
 
-      {/* Seans Ekle/Düzenle Diyaloğu */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="rounded-[3rem] border-none shadow-[0_60px_120px_-30px_rgba(15,23,42,0.4)] p-12 bg-white max-w-lg">
+        <DialogContent className="rounded-[3rem] border-none shadow-[0_60px_120px_-30px_rgba(15,23,42,0.4)] p-12 bg-white max-w-xl">
           <DialogHeader className="space-y-4">
             <DialogTitle className="text-4xl font-black italic tracking-tighter text-primary uppercase">
               {editingTask?.index === -1 ? 'YENİ SEANS' : 'SEANSI DÜZENLE'}
@@ -347,6 +363,21 @@ export default function PlanningPage() {
               <Input name="topic" required placeholder="Örn: Cumhuriyet Dönemi Şairleri..." defaultValue={editingTask?.data?.topic} className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold" />
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-[#F59E0B] ml-2 italic flex items-center gap-2">
+                  <Book className="h-3 w-3" /> DERS KİTABI / PDF LİNKİ
+                </Label>
+                <Input name="bookUrl" placeholder="https://..." defaultValue={editingTask?.data?.bookUrl} className="h-14 rounded-xl bg-slate-50 border-none shadow-inner font-medium text-sm" />
+              </div>
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-rose-500 ml-2 italic flex items-center gap-2">
+                  <Youtube className="h-3 w-3" /> YOUTUBE VİDEO LİNKİ
+                </Label>
+                <Input name="youtubeUrl" placeholder="https://youtube.com/..." defaultValue={editingTask?.data?.youtubeUrl} className="h-14 rounded-xl bg-slate-50 border-none shadow-inner font-medium text-sm" />
+              </div>
+            </div>
+
             <Button type="submit" className="w-full h-20 rounded-[2rem] bg-[#0F172A] hover:bg-black transition-all font-black text-sm uppercase tracking-widest gap-4 shadow-2xl text-white">
               <CheckCircle2 className="h-6 w-6 text-[#F59E0B]" />
               PROGRAMA EKLE
@@ -357,4 +388,3 @@ export default function PlanningPage() {
     </div>
   );
 }
-

@@ -18,7 +18,9 @@ import {
   Play, 
   BookOpenCheck,
   PencilLine,
-  Flame
+  Flame,
+  Book,
+  Youtube
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { 
@@ -92,17 +94,17 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     if (!studyPlan?.schedule) {
       if (userData?.targetExam?.includes('SOZ')) {
         return [
-          { time: '09:00', title: 'Edebiyat', sub: 'Cumhuriyet Dönemi', dur: '60 dk', status: 'pending' },
-          { time: '11:30', title: 'Tarih', sub: 'Kurtuluş Savaşı', dur: '45 dk', status: 'pending' },
-          { time: '14:00', title: 'Paragraf', sub: 'Hız Çalışması', dur: '30 dk', status: 'completed' },
-          { time: '16:00', title: 'Coğrafya', sub: 'Nüfus Politikaları', dur: '45 dk', status: 'pending' },
+          { time: '09:00', title: 'Edebiyat', sub: 'Cumhuriyet Dönemi', dur: '60 dk', status: 'pending', bookUrl: '', youtubeUrl: '' },
+          { time: '11:30', title: 'Tarih', sub: 'Kurtuluş Savaşı', dur: '45 dk', status: 'pending', bookUrl: '', youtubeUrl: '' },
+          { time: '14:00', title: 'Paragraf', sub: 'Hız Çalışması', dur: '30 dk', status: 'completed', bookUrl: '', youtubeUrl: '' },
+          { time: '16:00', title: 'Coğrafya', sub: 'Nüfus Politikaları', dur: '45 dk', status: 'pending', bookUrl: '', youtubeUrl: '' },
         ];
       }
       return [
-        { time: '08:30', title: 'Matematik', sub: 'Problemler & Sayılar', dur: '45 dk', status: 'completed' },
-        { time: '11:00', title: 'Paragraf', sub: '30 Soru Çözümü', dur: '45 dk', status: 'delayed' },
-        { time: '14:00', title: 'Fen Bilimleri', sub: 'Asitler ve Bazlar', dur: '60 dk', status: 'pending' },
-        { time: '16:30', title: 'İngilizce', sub: 'Vocabulary & Reading', dur: '30 dk', status: 'pending' },
+        { time: '08:30', title: 'Matematik', sub: 'Problemler & Sayılar', dur: '45 dk', status: 'completed', bookUrl: '', youtubeUrl: '' },
+        { time: '11:00', title: 'Paragraf', sub: '30 Soru Çözümü', dur: '45 dk', status: 'delayed', bookUrl: '', youtubeUrl: '' },
+        { time: '14:00', title: 'Fen Bilimleri', sub: 'Asitler ve Bazlar', dur: '60 dk', status: 'pending', bookUrl: '', youtubeUrl: '' },
+        { time: '16:30', title: 'İngilizce', sub: 'Vocabulary & Reading', dur: '30 dk', status: 'pending', bookUrl: '', youtubeUrl: '' },
       ];
     }
     const dayData = studyPlan.schedule.find((s: any) => s.day === today) || studyPlan.schedule[0];
@@ -111,14 +113,15 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
        title: t.subject,
        sub: t.topic,
        dur: t.duration,
-       status: t.status
+       status: t.status,
+       bookUrl: t.bookUrl,
+       youtubeUrl: t.youtubeUrl
     }));
   }, [studyPlan, today, userData]);
 
   return (
     <div className="p-6 lg:p-10 space-y-10 max-w-[1600px] mx-auto w-full animate-in fade-in duration-1000 bg-[#FAFBFF]">
       
-      {/* 1. GÜNÜN AKADEMİK ÖZETİ */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <Card className="lg:col-span-8 rounded-[3.5rem] border-none shadow-[0_40px_100px_-20px_rgba(15,23,42,0.1)] bg-white p-12 relative overflow-hidden group">
            <div className="absolute top-0 right-0 w-96 h-96 bg-accent/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2"></div>
@@ -161,7 +164,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
            </div>
         </Card>
 
-        {/* GÜNLÜK İLERLEME */}
         <Card className="lg:col-span-4 rounded-[3.5rem] border-none shadow-[0_40px_100px_-20px_rgba(15,23,42,0.1)] bg-[#0F172A] p-12 text-white flex flex-col items-center justify-center space-y-10 relative overflow-hidden group">
            <div className="absolute inset-0 bg-accent/5 blur-[100px] rounded-full scale-150 group-hover:scale-100 transition-all duration-1000"></div>
            <div className="relative h-56 w-56 flex items-center justify-center">
@@ -189,7 +191,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
         </Card>
       </section>
 
-      {/* 2. GÖREVLER & TAKVİM */}
       <section className="grid grid-cols-1 xl:grid-cols-12 gap-10">
          <div className="xl:col-span-8 space-y-8">
             <div className="flex justify-between items-end px-4">
@@ -222,7 +223,22 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                                 {task.status === 'completed' ? 'TAMAMLANDI' : task.status === 'delayed' ? 'GECİKTİ' : 'SIRADA'}
                              </Badge>
                           </div>
-                          <p className="text-sm font-medium text-muted-foreground italic">{task.sub} • {task.dur}</p>
+                          <div className="flex flex-wrap gap-4 items-center">
+                            <p className="text-sm font-medium text-muted-foreground italic">{task.sub} • {task.dur}</p>
+                            {(task.bookUrl || task.youtubeUrl) && <div className="w-px h-4 bg-primary/10"></div>}
+                            <div className="flex gap-2">
+                               {task.bookUrl && (
+                                 <a href={task.bookUrl} target="_blank" rel="noopener noreferrer" title="Ders Kitabı" className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center border border-primary/5 hover:bg-primary hover:text-white transition-all">
+                                   <Book className="h-3.5 w-3.5 text-[#F59E0B]" />
+                                 </a>
+                               )}
+                               {task.youtubeUrl && (
+                                 <a href={task.youtubeUrl} target="_blank" rel="noopener noreferrer" title="YouTube Video" className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center border border-primary/5 hover:bg-rose-500 hover:text-white transition-all">
+                                   <Youtube className="h-3.5 w-3.5 text-rose-500" />
+                                 </a>
+                               )}
+                            </div>
+                          </div>
                        </div>
                     </div>
                     <Button size="icon" className={cn(
@@ -278,7 +294,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
          </Card>
       </section>
 
-      {/* 3. ANALİZLER & HEDEF TAKİBİ */}
       <section className="grid grid-cols-1 xl:grid-cols-3 gap-10">
          <Card className="rounded-[3.5rem] border-none shadow-xl bg-white p-10 space-y-10 border border-primary/5 relative overflow-hidden group">
             <Target className="absolute top-8 right-8 h-12 w-12 text-accent opacity-10 group-hover:scale-110 transition-transform" />
@@ -348,7 +363,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
          </Card>
       </section>
 
-      {/* 4. AOS ZEKA MERKEZİ */}
       <section className="grid grid-cols-1 xl:grid-cols-12 gap-10">
          <Card className="xl:col-span-4 rounded-[4rem] border-none shadow-2xl bg-[#0F172A] p-12 text-white space-y-10 relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-80 h-80 bg-accent/10 blur-[100px] rounded-full"></div>
@@ -413,7 +427,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
          </Card>
       </section>
 
-      {/* 5. GAMIFICATION & ISTS */}
       <section className="grid grid-cols-1 xl:grid-cols-4 gap-8">
          <Card className="xl:col-span-1 rounded-[3rem] border-none shadow-xl bg-white p-10 space-y-8 border border-primary/5 text-center relative overflow-hidden group">
             <div className="h-24 w-24 rounded-[2.5rem] bg-accent flex items-center justify-center mx-auto text-white shadow-2xl relative z-10 group-hover:rotate-12 transition-transform">
@@ -447,7 +460,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
          </Card>
       </section>
 
-      {/* AI KOÇ BUTTON */}
       <div className="fixed bottom-10 right-10 z-[100]">
          <Button className="h-24 w-24 rounded-[2.5rem] bg-[#0F172A] hover:bg-accent text-white shadow-[0_30px_60px_-10px_rgba(15,23,42,0.5)] group transition-all duration-500 hover:scale-110 flex flex-col items-center justify-center gap-1 border-[6px] border-white">
             <Brain className="h-10 w-10 text-accent group-hover:text-white transition-colors" />

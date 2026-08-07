@@ -41,6 +41,8 @@
                     "subject": { "type": "string" },
                     "topic": { "type": "string" },
                     "duration": { "type": "string" },
+                    "bookUrl": { "type": "string", "description": "Ders kitabı veya PDF linki" },
+                    "youtubeUrl": { "type": "string", "description": "YouTube video linki" },
                     "status": { "type": "string", "enum": ["pending", "completed", "delayed"] }
                   }
                 }

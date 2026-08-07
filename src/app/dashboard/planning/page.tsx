@@ -4,6 +4,7 @@ import { useUser, useDoc, useFirestore } from '@/firebase';
 import { useState, useMemo, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   Calendar, 
   Brain, 
@@ -159,7 +160,7 @@ export default function PlanningPage() {
         </div>
         <div className="flex flex-wrap gap-6">
           <Button 
-            onClick={handleGeneratePlan}
+            onClick={handleGeneratePlan} 
             disabled={isGenerating}
             className="h-24 px-14 rounded-[2.5rem] bg-white border-none text-primary hover:bg-slate-50 transition-all font-black text-sm uppercase tracking-[0.3em] gap-8 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.15)] group"
           >

@@ -54,6 +54,10 @@
   }
 
   .premium-card {
-    @apply bg-white border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.08)] rounded-[2.5rem] transition-all duration-500 hover:shadow-[0_60px_100px_-20px_rgba(15,23,42,0.12)] hover:-translate-y-2;
+    @apply bg-white border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.08)] rounded-[3rem] transition-all duration-500 hover:shadow-[0_60px_100px_-20px_rgba(15,23,42,0.12)] hover:-translate-y-2;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }

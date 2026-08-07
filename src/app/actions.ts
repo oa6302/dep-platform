@@ -23,19 +23,16 @@ import {
 
 import HTMLtoDOCX from 'html-to-docx';
 
-// Study Plan Actions
 export async function handleGenerateAiStudyPlan(input: GenerateStudyPlanInput) {
   try {
     const result = await generateStudyPlanFlow(input);
-    // Genkit 1.x flow result is the output schema
-    return { success: true, data: result.schedule };
+    return { success: true, data: result };
   } catch (error: any) {
     console.error('Error in handleGenerateAiStudyPlan:', error);
     return { success: false, error: error.message || 'Yapay zeka planı oluşturulurken bir hata oluştu.' };
   }
 }
 
-// Curriculum Actions
 export async function handleSaveProgram(data: any) {
   console.log('Program Kaydedildi:', data);
   return { success: true };

@@ -1,9 +1,8 @@
 'use server';
 
 /**
- * @fileOverview Kullanıcının hedef sınavına ve yılın hangi haftasında olduğuna göre 
- * kişiselleştirilmiş 7 günlük çalışma planı üreten AI akışı.
- * YouTube linklerini artık ilgili konunun oynatma listesi (playlist) olarak üretir.
+ * @fileOverview Kullanıcının hedef sınavına ve akademik haftasına göre 
+ * 52 haftalık roadmap uyumlu, playlist destekli kişiselleştirilmiş plan üretir.
  */
 
 import { ai } from '@/ai/genkit';
@@ -12,10 +11,10 @@ import { z } from 'genkit';
 const TaskSchema = z.object({
   time: z.string().describe('Seansın başlangıç saati (Örn: 09:00)'),
   subject: z.string().describe('Ders adı'),
-  topic: z.string().describe('Çalışılacak güncel konu başlığı'),
+  topic: z.string().describe('Çalışılacak güncel müfredat konusu'),
   duration: z.string().describe('Seans süresi (Örn: 45 dk)'),
-  bookUrl: z.string().optional().describe('İlgili ders için önerilen kaynak linki (boş bırakılabilir)'),
-  youtubeUrl: z.string().optional().describe('İlgili konu için en uygun YouTube OYNATMA LİSTESİ (Playlist) linki veya arama linki'),
+  bookUrl: z.string().optional().describe('Kaynak PDF veya kitap linki'),
+  youtubeUrl: z.string().optional().describe('YouTube Oynatma Listesi (Playlist) linki'),
   status: z.enum(['pending', 'completed', 'delayed']).default('pending'),
 });
 
@@ -25,16 +24,17 @@ const DayPlanSchema = z.object({
 });
 
 const GenerateStudyPlanInputSchema = z.object({
-  targetExam: z.string().describe('Hedef Sınav (Örn: YKS_SOZ, LGS, YKS_SAY)'),
+  targetExam: z.string().describe('Hedef Sınav (Örn: YKS_SOZ, LGS)'),
   userName: z.string(),
-  lessons: z.array(z.string()).describe('Kullanıcının sorumlu olduğu dersler'),
-  currentWeek: z.number().optional().default(1).describe('Akademik takvimin kaçıncı haftasında olduğu (1-52)'),
+  lessons: z.array(z.string()),
+  currentWeek: z.number().optional().default(1).describe('Akademik yılın kaçıncı haftası (1-52)'),
 });
 
 export type GenerateStudyPlanInput = z.infer<typeof GenerateStudyPlanInputSchema>;
 
 const GenerateStudyPlanOutputSchema = z.object({
-  schedule: z.array(DayPlanSchema)
+  schedule: z.array(DayPlanSchema),
+  weeklyFocus: z.string().describe('Bu haftanın akademik odak noktası ve tavsiyesi'),
 });
 export type GenerateStudyPlanOutput = z.infer<typeof GenerateStudyPlanOutputSchema>;
 
@@ -50,34 +50,31 @@ const prompt = ai.definePrompt({
       { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
     ]
   },
-  prompt: `Sen "Dijital Eğitim Koçu" platformunun uzman yapay zeka asistanısın. 
-  Kullanıcı adı: {{{userName}}}
+  prompt: `Sen "Dijital Eğitim Koçu" (DEK) platformunun baş akademik planlama motorusun.
+  Kullanıcı: {{{userName}}}
   Hedef Sınav: {{{targetExam}}}
-  Sorumlu Olduğu Dersler: {{{lessons}}}
+  Sorumlu Dersler: {{{lessons}}}
   Mevcut Hafta: {{{currentWeek}}} / 52
 
-  Görevin: Kullanıcı için 7 günlük (Pazartesi'den Pazar'a), 52 HAFTALIK YOL HARİTASINA uygun, akademik olarak en verimli ve GÜNCEL MÜFREDAT odaklı bir ders çalışma programı oluşturmaktır.
+  Görevin: Kullanıcı için 7 günlük, 52 HAFTALIK AKADEMİK YOL HARİTASINA tam uyumlu bir program oluşturmak.
   
-  **ÖNEMLİ: YouTube Linkleri Hakkında:**
-  Her görev için youtubeUrl alanına, o konuyu anlatan popüler eğitim kanallarının (Örn: Benim Hocam, Rüştü Hoca, Hocalara Geldik) ilgili konu OYNATMA LİSTESİ (Playlist) linkini ekle. Eğer spesifik playlist linkini bilmiyorsan, şu formatta bir YouTube arama linki oluştur: 
-  https://www.youtube.com/results?search_query=[DERS+ADI]+[KONU+ADI]+oynatma+listesi&sp=EgIQAw%253D%253D (sp parametresi oynatma listesi filtresidir).
+  **Haftalık Strateji (YKS Sözel Örneği):**
+  - Hafta 1-15 (Foundation): Temel dil bilgisi, Tarih başlangıç, Paragraf hızı.
+  - Hafta 16-30 (Deep Dive): Divan Edebiyatı, Osmanlı Detay, Türkiye Ekonomisi.
+  - Hafta 31-45 (Advanced): Cumhuriyet Edebiyatı, Çağdaş Dünya, Sözel Mantık.
+  - Hafta 46-52 (Elite): Seri deneme sınavları, Genel tekrar kampları.
 
-  **YKS Sözel 1 Yıllık Planlama Stratejisi:**
-  - **Hafta 1-12 (Temel):** Temel kavramlar, Paragraf hızı ve Tarih başlangıç konuları.
-  - **Hafta 13-24 (Detay):** Divan Edebiyatı, Osmanlı Tarihi, İklim ve Yerleşme detayları.
-  - **Hafta 25-36 (İleri):** Cumhuriyet Edebiyatı, Çağdaş Dünya Tarihi, Mantık konuları.
-  - **Hafta 37-52 (Final):** Sürekli deneme, karma testler ve yoğun tekrar.
+  Şu an {{{currentWeek}}}. haftadayız. Lütfen bu haftanın ağırlığına ve zorluk seviyesine uygun konuları 2025 müfredatına göre seç.
 
-  Şu an {{{currentWeek}}}. haftadayız. Lütfen bu haftanın ağırlığına uygun konular seç.
-  
-  **Özel Seanslar:**
-  - Her sabah mutlaka "Paragraf Hız ve Anlam" seansı ekle.
-  - Hafta sonuna (Pazar) mutlaka "Genel Deneme" seansı yerleştir.
-  
-  **Format Kuralları:** 
-  - Günlük en az 4, en fazla 6 seans planla.
-  - Konular spesifik, güncel ve YKS 2025 müfredatına uygun olmalıdır.
-  - Sadece geçerli bir JSON objesi döndür.`,
+  **YouTube Link Kuralı:**
+  Her görev için youtubeUrl alanına, o konuyu en iyi anlatan eğitim kanalının (Benim Hocam, Rüştü Hoca, Kampüs vb.) OYNATMA LİSTESİ (Playlist) linkini ekle. Eğer spesifik playlist bilinmiyorsa şu formatta arama linki üret:
+  https://www.youtube.com/results?search_query=[DERS+ADI]+[KONU+ADI]+oynatma+listesi&sp=EgIQAw%253D%253D
+
+  **Format Kuralları:**
+  - Günlük 4-6 verimli seans planla.
+  - Her sabah "Paragraf / Sözel Mantık" seansı ekle.
+  - Pazar gününe "Haftalık Analiz & Dinlenme" veya "Deneme" yerleştir.
+  - weeklyFocus alanında bu haftanın en kritik konusunu ve stratejisini belirt.`,
 });
 
 export const generateStudyPlanFlow = ai.defineFlow(

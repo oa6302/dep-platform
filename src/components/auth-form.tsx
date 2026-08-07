@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -17,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   Loader2, Mail, Lock, User, School, 
   UserRound, Brain, Key, UserPlus, LogIn, Building,
-  CheckCircle2
+  CheckCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -30,7 +29,7 @@ interface AuthFormProps {
 
 export function AuthForm({ mode: initialMode, isProfileCompletion = false }: AuthFormProps) {
   const [authMode, setAuthMode] = useState<'login' | 'register'>(initialMode);
-  const [role, setRole] = useState<'student' | 'teacher' | 'school_admin'>('student');
+  const [role, setRole] = useState<'student' | 'teacher' | 'school_admin'>(isProfileCompletion ? 'student' : 'student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -153,7 +152,6 @@ export function AuthForm({ mode: initialMode, isProfileCompletion = false }: Aut
 
       toast({ title: 'Sistem Yapılandırıldı', description: 'Profiliniz başarıyla oluşturuldu.' });
       
-      // Kayıt başarılı olduktan sonra verilerin Firestore'da yansıması için kısa bir bekleme ve yönlendirme
       setTimeout(() => {
         window.location.href = '/dashboard';
       }, 500);
@@ -169,16 +167,16 @@ export function AuthForm({ mode: initialMode, isProfileCompletion = false }: Aut
   };
 
   return (
-    <div className="p-8 md:p-12 space-y-12">
+    <div className="p-10 md:p-16 space-y-14">
       {!isProfileCompletion && (
         <div className="flex justify-center">
-          <div className="bg-slate-50 p-1.5 rounded-[2rem] flex gap-2">
+          <div className="bg-slate-100/50 p-2 rounded-[2.5rem] flex gap-2 backdrop-blur-xl border border-primary/5">
              <button 
               type="button"
               onClick={() => setAuthMode('login')}
               className={cn(
-                "px-8 py-3 rounded-[1.75rem] font-black text-[10px] uppercase tracking-widest transition-all",
-                authMode === 'login' ? "bg-primary text-white shadow-xl" : "text-muted-foreground hover:bg-slate-100"
+                "px-12 py-4 rounded-[2rem] font-black text-[11px] uppercase tracking-[0.2em] transition-all",
+                authMode === 'login' ? "bg-primary text-white shadow-2xl scale-105" : "text-muted-foreground hover:bg-slate-200/50"
               )}
              >
                 Giriş Yap
@@ -187,8 +185,8 @@ export function AuthForm({ mode: initialMode, isProfileCompletion = false }: Aut
               type="button"
               onClick={() => setAuthMode('register')}
               className={cn(
-                "px-8 py-3 rounded-[1.75rem] font-black text-[10px] uppercase tracking-widest transition-all",
-                authMode === 'register' ? "bg-primary text-white shadow-xl" : "text-muted-foreground hover:bg-slate-100"
+                "px-12 py-4 rounded-[2rem] font-black text-[11px] uppercase tracking-[0.2em] transition-all",
+                authMode === 'register' ? "bg-primary text-white shadow-2xl scale-105" : "text-muted-foreground hover:bg-slate-200/50"
               )}
              >
                 Yeni Kayıt
@@ -198,60 +196,60 @@ export function AuthForm({ mode: initialMode, isProfileCompletion = false }: Aut
       )}
 
       {(!isProfileCompletion && authMode === 'login') ? (
-        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="text-center space-y-2">
-            <h2 className="text-4xl font-black italic tracking-tighter text-primary uppercase leading-none">AKADEMİK ERİŞİM</h2>
-            <p className="text-xs font-medium text-muted-foreground italic">Kimlik bilgilerinizi doğrulayın.</p>
+        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+          <div className="text-center space-y-3">
+            <h2 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-none text-shadow-premium">AKADEMİK ERİŞİM</h2>
+            <p className="text-sm font-medium text-muted-foreground italic opacity-60 uppercase tracking-widest">Digital Education Coach v4.0</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-8">
-            <div className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-10">
+            <div className="space-y-8">
               <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2 italic">E-POSTA ADRESİ</Label>
+                <Label className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 ml-3 italic">E-POSTA ADRESİ</Label>
                 <div className="relative group">
-                  <Mail className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-accent transition-colors" />
+                  <Mail className="absolute left-7 top-1/2 -translate-y-1/2 h-6 w-6 text-muted-foreground group-focus-within:text-accent transition-all" />
                   <Input 
                     type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                    className="h-20 rounded-3xl bg-[#F8FAFC] border-2 border-transparent shadow-inner pl-16 font-bold text-lg focus-visible:bg-white focus-visible:border-accent transition-all placeholder:text-muted-foreground/30"
+                    className="h-24 rounded-[2.5rem] bg-[#F8FAFC] border-2 border-transparent shadow-inner pl-20 font-bold text-xl focus-visible:bg-white focus-visible:border-accent transition-all placeholder:text-muted-foreground/20"
                     placeholder="ornek@email.com"
                   />
                 </div>
               </div>
               <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2 italic">ŞİFRE</Label>
+                <Label className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 ml-3 italic">GÜVENLİ ŞİFRE</Label>
                 <div className="relative group">
-                  <Lock className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-accent transition-colors" />
+                  <Lock className="absolute left-7 top-1/2 -translate-y-1/2 h-6 w-6 text-muted-foreground group-focus-within:text-accent transition-all" />
                   <Input 
                     type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-                    className="h-20 rounded-3xl bg-[#F8FAFC] border-2 border-transparent shadow-inner pl-16 font-bold text-lg focus-visible:bg-white focus-visible:border-accent transition-all"
+                    className="h-24 rounded-[2.5rem] bg-[#F8FAFC] border-2 border-transparent shadow-inner pl-20 font-bold text-xl focus-visible:bg-white focus-visible:border-accent transition-all"
                     placeholder="••••••••"
                   />
                 </div>
               </div>
             </div>
 
-            <Button type="submit" disabled={loading} className="w-full h-20 rounded-[2rem] bg-primary hover:bg-accent transition-all font-black text-sm uppercase tracking-widest gap-4 shadow-2xl shadow-primary/20">
-              {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <LogIn className="h-6 w-6" />}
-              SİSTEME GİRİŞ YAP
+            <Button type="submit" disabled={loading} className="w-full h-24 rounded-[3rem] bg-primary hover:bg-accent transition-all font-black text-lg uppercase tracking-[0.3em] gap-6 shadow-[0_30px_60px_-15px_rgba(15,23,42,0.3)]">
+              {loading ? <Loader2 className="h-8 w-8 animate-spin" /> : <LogIn className="h-8 w-8 text-accent" />}
+              AKADEMİK GİRİŞ
             </Button>
           </form>
         </div>
       ) : (
-        <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-700">
+        <div className="space-y-12 animate-in fade-in slide-in-from-right-6 duration-1000">
           {!isProfileCompletion && (
-            <div className="text-center space-y-2">
-              <h2 className="text-4xl font-black italic tracking-tighter text-primary uppercase leading-none">PROFİL OLUŞTUR</h2>
-              <p className="text-xs font-medium text-muted-foreground italic">Akademik kaydınızı tek adımda tamamlayın.</p>
+            <div className="text-center space-y-3">
+              <h2 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-none text-shadow-premium">SİSTEM KURULUMU</h2>
+              <p className="text-sm font-medium text-muted-foreground italic opacity-60 uppercase tracking-widest">Profilinizi Bir Kez Yapılandırın</p>
             </div>
           )}
 
-          <form onSubmit={handleAction} className="space-y-10">
-            <div className="space-y-4">
-              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2">KİMLİK TÜRÜ</Label>
-              <div className="grid grid-cols-3 gap-4">
+          <form onSubmit={handleAction} className="space-y-12">
+            <div className="space-y-6">
+              <Label className="text-[11px] font-black uppercase tracking-[0.4em] text-muted-foreground/60 ml-3 italic text-center block">ROLÜNÜZÜ BELİRLEYİN</Label>
+              <div className="grid grid-cols-3 gap-6">
                 {[
                   { id: 'student', label: 'ÖĞRENCİ', icon: UserRound },
-                  { id: 'teacher', label: 'ÖĞRETMEN', icon: Brain },
+                  { id: 'teacher', label: 'EĞİTMEN', icon: Brain },
                   { id: 'school_admin', label: 'KURUM', icon: Building },
                 ].map((r) => (
                   <button
@@ -259,104 +257,97 @@ export function AuthForm({ mode: initialMode, isProfileCompletion = false }: Aut
                     type="button"
                     onClick={() => setRole(r.id as any)}
                     className={cn(
-                      "p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-3",
-                      role === r.id ? "border-accent bg-accent/5 text-primary shadow-lg" : "border-primary/5 bg-slate-50 opacity-60 hover:opacity-100"
+                      "p-8 rounded-[2.5rem] border-2 transition-all flex flex-col items-center gap-5 group",
+                      role === r.id ? "border-accent bg-accent/5 text-primary shadow-2xl scale-105" : "border-primary/5 bg-slate-50 opacity-40 hover:opacity-100"
                     )}
                   >
-                    <r.icon className={cn("h-6 w-6", role === r.id ? "text-accent" : "text-primary")} />
-                    <span className="font-black text-[9px] tracking-widest">{r.label}</span>
+                    <r.icon className={cn("h-10 w-10 transition-transform group-hover:scale-110", role === r.id ? "text-accent" : "text-primary")} />
+                    <span className="font-black text-[10px] tracking-[0.2em]">{r.label}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-8">
+              <div className="grid md:grid-cols-2 gap-8">
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2">AD SOYAD *</Label>
+                  <Label className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 ml-3 italic">AD SOYAD *</Label>
                   <div className="relative group">
-                    <User className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent" />
-                    <Input required value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="h-14 rounded-2xl bg-[#F8FAFC] border-none shadow-inner pl-12 font-bold" placeholder="Adınız Soyadınız" />
+                    <User className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-accent" />
+                    <Input required value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="h-18 rounded-2xl bg-[#F8FAFC] border-none shadow-inner pl-16 font-bold text-lg" placeholder="Tam Adınız" />
                   </div>
                 </div>
                 {!isProfileCompletion && (
                   <div className="space-y-3">
-                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2">E-POSTA *</Label>
+                    <Label className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 ml-3 italic">E-POSTA *</Label>
                     <div className="relative group">
-                      <Mail className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent" />
-                      <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-14 rounded-2xl bg-[#F8FAFC] border-none shadow-inner pl-12 font-bold" placeholder="ornek@email.com" />
+                      <Mail className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-accent" />
+                      <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-18 rounded-2xl bg-[#F8FAFC] border-none shadow-inner pl-16 font-bold text-lg" placeholder="email@adresi.com" />
                     </div>
                   </div>
                 )}
               </div>
 
               {!isProfileCompletion && (
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid md:grid-cols-2 gap-8">
                   <div className="space-y-3">
-                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2">ŞİFRE *</Label>
+                    <Label className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 ml-3 italic">ŞİFRE BELİRLE *</Label>
                     <div className="relative group">
-                      <Lock className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
-                      <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-14 rounded-2xl bg-[#F8FAFC] border-none shadow-inner pl-12 font-bold" placeholder="••••••••" />
+                      <Lock className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-accent" />
+                      <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-18 rounded-2xl bg-[#F8FAFC] border-none shadow-inner pl-16 font-bold text-lg" placeholder="Min. 8 Karakter" />
                     </div>
                   </div>
                   {(role === 'teacher' || role === 'school_admin') ? (
                     <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2">KURUM / OKUL</Label>
+                      <Label className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 ml-3 italic">OKUL / KURUM</Label>
                       <div className="relative group">
-                        <School className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent" />
-                        <Input required value={schoolName} onChange={(e) => setSchoolName(e.target.value)} className="h-14 rounded-2xl bg-[#F8FAFC] border-none shadow-inner pl-12 font-bold" placeholder="Görev Yaptığınız Yer" />
+                        <School className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-accent" />
+                        <Input required value={schoolName} onChange={(e) => setSchoolName(e.target.value)} className="h-18 rounded-2xl bg-[#F8FAFC] border-none shadow-inner pl-16 font-bold text-lg" placeholder="Çalıştığınız Kurum" />
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-accent ml-2">ÖĞRETMEN KODU (OPSİYONEL)</Label>
+                      <Label className="text-[11px] font-black uppercase tracking-[0.3em] text-accent ml-3 italic">EĞİTMEN KODU (OPSİYONEL)</Label>
                       <div className="relative group">
-                        <Key className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent" />
-                        <Input value={teacherCode} onChange={(e) => setTeacherCode(e.target.value.toUpperCase())} className="h-14 rounded-2xl bg-white border-2 border-accent/10 shadow-sm pl-12 font-black tracking-widest" placeholder="DK-XXXX-XXXX" />
+                        <Key className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-accent" />
+                        <Input value={teacherCode} onChange={(e) => setTeacherCode(e.target.value.toUpperCase())} className="h-18 rounded-2xl bg-white border-2 border-accent/10 shadow-2xl pl-16 font-black tracking-widest text-center" placeholder="DK-XXXX-XXXX" />
                       </div>
                     </div>
                   )}
                 </div>
               )}
 
-              {isProfileCompletion && (role === 'teacher' || role === 'school_admin') && (
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2">KURUM / OKUL</Label>
-                  <div className="relative group">
-                    <School className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent" />
-                    <Input required value={schoolName} onChange={(e) => setSchoolName(e.target.value)} className="h-14 rounded-2xl bg-[#F8FAFC] border-none shadow-inner pl-12 font-bold" placeholder="Görev Yaptığınız Yer" />
-                  </div>
-                </div>
-              )}
-
               {role === 'student' && (
-                <div className="space-y-4">
-                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2">AKADEMİK HEDEFİNİZ *</Label>
-                  <div className="bg-[#F8FAFC] rounded-3xl p-4 border border-primary/5 shadow-inner">
-                    <ScrollArea className="h-[300px] pr-4">
-                      <div className="space-y-6">
+                <div className="space-y-6">
+                  <Label className="text-[11px] font-black uppercase tracking-[0.4em] text-muted-foreground/60 ml-3 italic text-center block">AKADEMİK HEDEFİNİZİ SEÇİN</Label>
+                  <div className="bg-[#F8FAFC] rounded-[3rem] p-8 border border-primary/5 shadow-inner">
+                    <ScrollArea className="h-[400px] pr-6">
+                      <div className="space-y-10">
                         {Object.keys(categorizedExams).map((category) => (
                           categorizedExams[category]?.length > 0 && (
-                            <div key={category} className="space-y-3">
-                              <h4 className="text-[8px] font-black uppercase tracking-[0.3em] text-primary/30 ml-2">{category}</h4>
-                              <div className="grid grid-cols-1 gap-2">
+                            <div key={category} className="space-y-4">
+                              <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/30 ml-4 italic">{category}</h4>
+                              <div className="grid grid-cols-1 gap-3">
                                 {categorizedExams[category].map((exam) => (
                                   <button
                                     key={exam.id}
                                     type="button"
                                     onClick={() => setTargetExam(exam.id)}
                                     className={cn(
-                                      "flex items-center justify-between p-4 rounded-xl border transition-all text-left",
-                                      targetExam === exam.id ? "bg-white border-accent shadow-md scale-[1.02]" : "bg-white/50 border-transparent hover:bg-white"
+                                      "flex items-center justify-between p-6 rounded-[2rem] border-2 transition-all text-left group/exam",
+                                      targetExam === exam.id ? "bg-white border-accent shadow-2xl scale-[1.03]" : "bg-white/40 border-transparent hover:bg-white"
                                     )}
                                   >
-                                    <div className="flex items-center gap-4">
-                                      <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", targetExam === exam.id ? "bg-accent text-white" : "bg-slate-100 text-primary")}>
-                                        <exam.icon className="h-5 w-5" />
+                                    <div className="flex items-center gap-6">
+                                      <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center transition-transform group-hover/exam:rotate-6", targetExam === exam.id ? "bg-accent text-white" : "bg-slate-100 text-primary")}>
+                                        <exam.icon className="h-7 w-7" />
                                       </div>
-                                      <span className={cn("font-black text-xs uppercase tracking-tight", targetExam === exam.id ? "text-primary" : "text-primary/60")}>{exam.title}</span>
+                                      <div className="space-y-0.5">
+                                         <span className={cn("font-black text-sm uppercase tracking-tight block", targetExam === exam.id ? "text-primary" : "text-primary/60")}>{exam.title}</span>
+                                         <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest">{exam.targetGroup}</span>
+                                      </div>
                                     </div>
-                                    {targetExam === exam.id && <CheckCircle2 className="h-5 w-5 text-accent" />}
+                                    {targetExam === exam.id && <CheckCircle className="h-7 w-7 text-accent" />}
                                   </button>
                                 ))}
                               </div>
@@ -370,9 +361,9 @@ export function AuthForm({ mode: initialMode, isProfileCompletion = false }: Aut
               )}
             </div>
 
-            <Button type="submit" disabled={loading} className="w-full h-20 rounded-[2rem] bg-primary hover:bg-accent transition-all font-black text-sm uppercase tracking-widest gap-4 shadow-2xl">
-              {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <UserPlus className="h-6 w-6" />}
-              {isProfileCompletion ? "KURULUMU TAMAMLA VE BAŞLAT" : "HESABI OLUŞTUR VE BAŞLAT"}
+            <Button type="submit" disabled={loading} className="w-full h-24 rounded-[3rem] bg-primary hover:bg-accent transition-all font-black text-lg uppercase tracking-[0.3em] gap-6 shadow-[0_40px_80px_-20px_rgba(15,23,42,0.4)]">
+              {loading ? <Loader2 className="h-8 w-8 animate-spin" /> : <UserPlus className="h-8 w-8 text-accent" />}
+              {isProfileCompletion ? "KURULUMU TAMAMLA" : "SİSTEMİ BAŞLAT"}
             </Button>
           </form>
         </div>

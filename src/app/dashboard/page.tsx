@@ -42,7 +42,7 @@ function DashboardContent() {
   const currentViewData = simulatedUserData || userData;
   const isSimulating = !!simulatedUserId;
 
-  // Global Yükleme Durumu
+  // Global Yükleme Durumu - Daha kararlı bir yükleme süreci için
   const isGlobalLoading = authLoading || (user && docLoading);
 
   const dynamicMenu = useMemo(() => {
@@ -94,18 +94,20 @@ function DashboardContent() {
   }, [currentViewData]);
 
   useEffect(() => {
+    // Oturum kapalıysa girişe yönlendir
     if (!authLoading && !user) {
       router.push('/login');
     }
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (!authLoading && user && !docLoading && userData) {
+    // Profil yüklendiğinde hedef sınav seçilmemişse seçime yönlendir
+    if (!isGlobalLoading && user && userData) {
       if (userData.role === 'student' && !userData.targetExam) {
         router.push('/dashboard/select-exam');
       }
     }
-  }, [authLoading, user, docLoading, userData, router]);
+  }, [isGlobalLoading, user, userData, router]);
 
   if (isGlobalLoading) {
     return (
@@ -124,18 +126,27 @@ function DashboardContent() {
     );
   }
 
+  // Eğer kullanıcı Auth ile giriş yapmış ama Firestore'da profili yoksa (Profil Tamamlama Modu)
   if (user && !docLoading && !userData) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6">
-        <div className="w-full max-w-4xl space-y-12">
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-accent/5 blur-[150px] rounded-full"></div>
+        <div className="w-full max-w-4xl space-y-12 relative z-10">
            <div className="text-center space-y-4">
               <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-white font-black text-[10px] uppercase tracking-widest shadow-xl">
-                 <ShieldCheck className="h-4 w-4 text-accent" /> Sistem Kimlik Doğrulama
+                 <ShieldCheck className="h-4 w-4 text-accent" /> Sistem Kurulumu
               </div>
-              <h2 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-none">PROFİLİNİZİ <span className="text-accent">TAMAMLAYIN</span></h2>
+              <h2 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-none">PROFİLİNİZİ <span className="text-accent text-shadow-accent">TAMAMLAYIN</span></h2>
+              <p className="text-muted-foreground font-medium italic">Sistemi size özel yapılandırmak için son birkaç bilgiye ihtiyacımız var.</p>
            </div>
            <div className="bg-white rounded-[4rem] shadow-2xl border border-primary/5 overflow-hidden">
-              <AuthForm mode="register" />
+              {/* mode="complete-profile" diyerek sadece Firestore kaydı yapmasını sağlıyoruz */}
+              <AuthForm mode="register" isProfileCompletion={true} />
+           </div>
+           <div className="text-center">
+              <Button variant="ghost" onClick={() => signOut(auth!)} className="text-muted-foreground font-black text-[10px] uppercase tracking-widest gap-2">
+                 <LogOut className="h-3 w-3" /> Başka Bir Hesapla Giriş Yap
+              </Button>
            </div>
         </div>
       </div>

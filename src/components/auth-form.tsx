@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth, useFirestore, useCollection } from '@/firebase';
+import { useAuth, useFirestore, useCollection, useUser } from '@/firebase';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -23,7 +23,12 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 
-export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) {
+interface AuthFormProps {
+  mode: 'login' | 'register';
+  isProfileCompletion?: boolean; // Yeni mod: Sadece profil eksikse Firestore'a yazar
+}
+
+export function AuthForm({ mode: initialMode, isProfileCompletion = false }: AuthFormProps) {
   const [authMode, setAuthMode] = useState<'login' | 'register'>(initialMode);
   const [role, setRole] = useState<'student' | 'teacher' | 'school_admin'>('student');
   const [email, setEmail] = useState('');
@@ -36,6 +41,7 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
   
   const auth = useAuth();
   const db = useFirestore();
+  const { user: currentUser } = useUser();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -82,29 +88,44 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
       toast({ title: 'Bağlantı Kuruldu', description: 'Akademik Komuta Merkezi açılıyor...' });
       router.push('/dashboard');
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Giriş Başarısız', description: 'E-posta veya şifre hatalı.' });
+      let msg = "Giriş başarısız.";
+      if (error.code === 'auth/wrong-password') msg = "Şifre hatalı.";
+      if (error.code === 'auth/user-not-found') msg = "Bu e-posta adresiyle kayıtlı bir hesap bulunamadı.";
+      toast({ variant: 'destructive', title: 'Hata', description: msg });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleAction = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !db) return;
-    
-    if (!email || !password || !displayName || (role === 'student' && !targetExam)) {
-      toast({ variant: 'destructive', title: 'Eksik Bilgi', description: 'Lütfen tüm yıldızlı alanları doldurun.' });
+    if (!db) return;
+
+    if (!displayName || (role === 'student' && !targetExam)) {
+      toast({ variant: 'destructive', title: 'Eksik Bilgi', description: 'Lütfen zorunlu alanları doldurun.' });
       return;
     }
 
     setLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      let finalUser = currentUser;
+
+      // Eğer profil tamamlama modunda DEĞİLSEK ve yeni kayıt oluyorsak
+      if (!isProfileCompletion && authMode === 'register') {
+        if (!auth || !email || !password) {
+           toast({ variant: 'destructive', title: 'Eksik Bilgi', description: 'E-posta ve şifre gereklidir.' });
+           setLoading(false);
+           return;
+        }
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        finalUser = userCredential.user;
+      }
+
+      if (!finalUser) throw new Error("Kullanıcı oturumu bulunamadı.");
 
       const userData: any = {
-        uid: user.uid,
-        email: user.email,
+        uid: finalUser.uid,
+        email: finalUser.email,
         displayName,
         role,
         createdAt: serverTimestamp(),
@@ -125,13 +146,26 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
         userData.school = schoolName;
       }
 
-      await updateProfile(user, { displayName });
-      await setDoc(doc(db, 'users', user.uid), userData);
+      // Profile güncelle (E-posta ile kayıt olduysa)
+      if (finalUser.email) {
+        await updateProfile(finalUser, { displayName });
+      }
+
+      // Firestore'a kaydet (Bu kısım kalıcılığı sağlar)
+      await setDoc(doc(db, 'users', finalUser.uid), userData);
 
       toast({ title: 'Sistem Yapılandırıldı', description: 'Profiliniz başarıyla oluşturuldu.' });
-      router.push('/dashboard');
+      
+      // Eğer dashboard'un içindeysek sayfa yenilensin, değilsek yönlendirilsin
+      if (isProfileCompletion) {
+        window.location.reload();
+      } else {
+        router.push('/dashboard');
+      }
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Kayıt Hatası', description: error.message });
+      let msg = error.message;
+      if (error.code === 'auth/email-already-in-use') msg = "Bu e-posta adresi zaten kullanımda. Giriş yapmayı deneyin.";
+      toast({ variant: 'destructive', title: 'Hata', description: msg });
     } finally {
       setLoading(false);
     }
@@ -139,32 +173,34 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
 
   return (
     <div className="p-8 md:p-12 space-y-12">
-      <div className="flex justify-center">
-        <div className="bg-slate-50 p-1.5 rounded-[2rem] flex gap-2">
-           <button 
-            type="button"
-            onClick={() => setAuthMode('login')}
-            className={cn(
-              "px-8 py-3 rounded-[1.75rem] font-black text-[10px] uppercase tracking-widest transition-all",
-              authMode === 'login' ? "bg-primary text-white shadow-xl" : "text-muted-foreground hover:bg-slate-100"
-            )}
-           >
-              Giriş Yap
-           </button>
-           <button 
-            type="button"
-            onClick={() => setAuthMode('register')}
-            className={cn(
-              "px-8 py-3 rounded-[1.75rem] font-black text-[10px] uppercase tracking-widest transition-all",
-              authMode === 'register' ? "bg-primary text-white shadow-xl" : "text-muted-foreground hover:bg-slate-100"
-            )}
-           >
-              Yeni Kayıt
-           </button>
+      {!isProfileCompletion && (
+        <div className="flex justify-center">
+          <div className="bg-slate-50 p-1.5 rounded-[2rem] flex gap-2">
+             <button 
+              type="button"
+              onClick={() => setAuthMode('login')}
+              className={cn(
+                "px-8 py-3 rounded-[1.75rem] font-black text-[10px] uppercase tracking-widest transition-all",
+                authMode === 'login' ? "bg-primary text-white shadow-xl" : "text-muted-foreground hover:bg-slate-100"
+              )}
+             >
+                Giriş Yap
+             </button>
+             <button 
+              type="button"
+              onClick={() => setAuthMode('register')}
+              className={cn(
+                "px-8 py-3 rounded-[1.75rem] font-black text-[10px] uppercase tracking-widest transition-all",
+                authMode === 'register' ? "bg-primary text-white shadow-xl" : "text-muted-foreground hover:bg-slate-100"
+              )}
+             >
+                Yeni Kayıt
+             </button>
+          </div>
         </div>
-      </div>
+      )}
 
-      {authMode === 'login' ? (
+      {(!isProfileCompletion && authMode === 'login') ? (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div className="text-center space-y-2">
             <h2 className="text-4xl font-black italic tracking-tighter text-primary uppercase leading-none">AKADEMİK ERİŞİM</h2>
@@ -205,12 +241,14 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
         </div>
       ) : (
         <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-700">
-          <div className="text-center space-y-2">
-            <h2 className="text-4xl font-black italic tracking-tighter text-primary uppercase leading-none">PROFİL OLUŞTUR</h2>
-            <p className="text-xs font-medium text-muted-foreground italic">Akademik kaydınızı tek adımda tamamlayın.</p>
-          </div>
+          {!isProfileCompletion && (
+            <div className="text-center space-y-2">
+              <h2 className="text-4xl font-black italic tracking-tighter text-primary uppercase leading-none">PROFİL OLUŞTUR</h2>
+              <p className="text-xs font-medium text-muted-foreground italic">Akademik kaydınızı tek adımda tamamlayın.</p>
+            </div>
+          )}
 
-          <form onSubmit={handleRegister} className="space-y-10">
+          <form onSubmit={handleAction} className="space-y-10">
             <div className="space-y-4">
               <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2">KİMLİK TÜRÜ</Label>
               <div className="grid grid-cols-3 gap-4">
@@ -244,41 +282,55 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
                     <Input required value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="h-14 rounded-2xl bg-[#F8FAFC] border-none shadow-inner pl-12 font-bold" placeholder="Adınız Soyadınız" />
                   </div>
                 </div>
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2">E-POSTA *</Label>
-                  <div className="relative group">
-                    <Mail className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent" />
-                    <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-14 rounded-2xl bg-[#F8FAFC] border-none shadow-inner pl-12 font-bold" placeholder="ornek@email.com" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2">ŞİFRE *</Label>
-                  <div className="relative group">
-                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent" />
-                    <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-14 rounded-2xl bg-[#F8FAFC] border-none shadow-inner pl-12 font-bold" placeholder="••••••••" />
-                  </div>
-                </div>
-                {(role === 'teacher' || role === 'school_admin') ? (
+                {!isProfileCompletion && (
                   <div className="space-y-3">
-                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2">KURUM / OKUL</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2">E-POSTA *</Label>
                     <div className="relative group">
-                      <School className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent" />
-                      <Input required value={schoolName} onChange={(e) => setSchoolName(e.target.value)} className="h-14 rounded-2xl bg-[#F8FAFC] border-none shadow-inner pl-12 font-bold" placeholder="Görev Yaptığınız Yer" />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-accent ml-2">ÖĞRETMEN KODU (OPSİYONEL)</Label>
-                    <div className="relative group">
-                      <Key className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent" />
-                      <Input value={teacherCode} onChange={(e) => setTeacherCode(e.target.value.toUpperCase())} className="h-14 rounded-2xl bg-white border-2 border-accent/10 shadow-sm pl-12 font-black tracking-widest" placeholder="DK-XXXX-XXXX" />
+                      <Mail className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent" />
+                      <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-14 rounded-2xl bg-[#F8FAFC] border-none shadow-inner pl-12 font-bold" placeholder="ornek@email.com" />
                     </div>
                   </div>
                 )}
               </div>
+
+              {!isProfileCompletion && (
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2">ŞİFRE *</Label>
+                    <div className="relative group">
+                      <Lock className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent" />
+                      <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-14 rounded-2xl bg-[#F8FAFC] border-none shadow-inner pl-12 font-bold" placeholder="••••••••" />
+                    </div>
+                  </div>
+                  {(role === 'teacher' || role === 'school_admin') ? (
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2">KURUM / OKUL</Label>
+                      <div className="relative group">
+                        <School className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent" />
+                        <Input required value={schoolName} onChange={(e) => setSchoolName(e.target.value)} className="h-14 rounded-2xl bg-[#F8FAFC] border-none shadow-inner pl-12 font-bold" placeholder="Görev Yaptığınız Yer" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-accent ml-2">ÖĞRETMEN KODU (OPSİYONEL)</Label>
+                      <div className="relative group">
+                        <Key className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent" />
+                        <Input value={teacherCode} onChange={(e) => setTeacherCode(e.target.value.toUpperCase())} className="h-14 rounded-2xl bg-white border-2 border-accent/10 shadow-sm pl-12 font-black tracking-widest" placeholder="DK-XXXX-XXXX" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {isProfileCompletion && (role === 'teacher' || role === 'school_admin') && (
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 ml-2">KURUM / OKUL</Label>
+                  <div className="relative group">
+                    <School className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-accent" />
+                    <Input required value={schoolName} onChange={(e) => setSchoolName(e.target.value)} className="h-14 rounded-2xl bg-[#F8FAFC] border-none shadow-inner pl-12 font-bold" placeholder="Görev Yaptığınız Yer" />
+                  </div>
+                </div>
+              )}
 
               {role === 'student' && (
                 <div className="space-y-4">
@@ -323,7 +375,7 @@ export function AuthForm({ mode: initialMode }: { mode: 'login' | 'register' }) 
 
             <Button type="submit" disabled={loading} className="w-full h-20 rounded-[2rem] bg-primary hover:bg-accent transition-all font-black text-sm uppercase tracking-widest gap-4 shadow-2xl">
               {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <UserPlus className="h-6 w-6" />}
-              HESABI OLUŞTUR VE BAŞLAT
+              {isProfileCompletion ? "KURULUMU TAMAMLA VE BAŞLAT" : "HESABI OLUŞTUR VE BAŞLAT"}
             </Button>
           </form>
         </div>

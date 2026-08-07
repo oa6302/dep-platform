@@ -25,7 +25,9 @@ import {
   Target,
   BarChart3,
   TrendingUp,
-  Activity
+  Activity,
+  ArrowLeft,
+  Home
 } from 'lucide-react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -33,10 +35,12 @@ import { cn } from '@/lib/utils';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 import { handleGenerateAiStudyPlan } from '@/app/actions';
 import { AcademicSessionDialog } from '@/components/academic-session-dialog';
+import { useRouter } from 'next/navigation';
 
 export default function PlanningPage() {
   const { user } = useUser();
   const db = useFirestore();
+  const router = useRouter();
   const { toast } = useToast();
   const { data: userData } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
   const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
@@ -70,7 +74,6 @@ export default function PlanningPage() {
     if (!userData) return;
     setIsGenerating(true);
     
-    // Akademik hafta hesaplama (Eylül başı 1. hafta kabul edilir)
     const startDate = new Date(2025, 8, 1);
     const diff = Date.now() - startDate.getTime();
     const currentWeek = Math.max(1, Math.min(Math.floor(diff / (7 * 24 * 60 * 60 * 1000)) + 1, 52));
@@ -150,13 +153,35 @@ export default function PlanningPage() {
   return (
     <div className="p-8 lg:p-14 space-y-12 max-w-[1600px] mx-auto w-full animate-in fade-in duration-1000 bg-[#FAFBFF]">
       <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-12">
-        <div className="space-y-5">
-          <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-primary text-white font-black text-[11px] uppercase tracking-[0.4em] shadow-2xl shadow-primary/20 italic border border-white/10">
-             <Activity className="h-4 w-4 text-accent animate-pulse" /> DEK MASTER PLANNER V4.8
+        <div className="space-y-8">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => router.back()} 
+              className="h-12 w-12 rounded-xl bg-white shadow-sm border border-primary/5 hover:bg-primary hover:text-white transition-all group/nav"
+              title="Geri Dön"
+            >
+              <ArrowLeft className="h-6 w-6 group-hover/nav:-translate-x-1 transition-transform" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => router.push('/dashboard')} 
+              className="h-12 w-12 rounded-xl bg-white shadow-sm border border-primary/5 hover:bg-primary hover:text-white transition-all group/nav"
+              title="Panelim"
+            >
+              <Home className="h-6 w-6 group-hover/nav:scale-110 transition-transform" />
+            </Button>
           </div>
-          <h2 className="text-7xl md:text-9xl font-black tracking-tighter italic text-primary uppercase leading-[0.8] text-shadow-premium">
-             AKADEMİK <br /><span className="text-accent text-shadow-accent">STRATEJİ</span>
-          </h2>
+          <div className="space-y-5">
+            <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-primary text-white font-black text-[11px] uppercase tracking-[0.4em] shadow-2xl shadow-primary/20 italic border border-white/10">
+               <Activity className="h-4 w-4 text-accent animate-pulse" /> DEK MASTER PLANNER V4.8
+            </div>
+            <h2 className="text-7xl md:text-9xl font-black tracking-tighter italic text-primary uppercase leading-[0.8] text-shadow-premium">
+               AKADEMİK <br /><span className="text-accent text-shadow-accent">STRATEJİ</span>
+            </h2>
+          </div>
         </div>
         <div className="flex flex-wrap gap-6">
           <Button 

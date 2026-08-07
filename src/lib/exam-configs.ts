@@ -102,7 +102,7 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
     icon: HistoryIcon,
     description: 'TYT + AYT Sözel Puan Türü Odaklı',
     targetGroup: '12. Sınıf ve Mezunlar',
-    lessons: ['TYT Türkçe', 'AYT Edebiyat', 'AYT Tarih-1', 'AYT Coğrafya-1', 'AYT Tarih-2', 'AYT Coğrafya-2', 'Felsefe Grubu'],
+    lessons: ['Edebiyat', 'Tarih', 'Coğrafya', 'Felsefe', 'Din Kültürü', 'Türkçe'],
     modules: [
       { title: "Sözel Analiz", icon: ScrollText, color: "bg-amber-600", desc: "Konu derinliği" },
       { title: "Deneme Takibi", icon: ClipboardCheck, color: "bg-emerald-500", desc: "Sözel denemeler" },

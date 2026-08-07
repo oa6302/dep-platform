@@ -10,15 +10,14 @@ import {
   Sparkles, 
   Brain, 
   Clock, 
-  Zap, 
   CheckCircle2, 
   Plus, 
   ChevronRight, 
-  ChevronLeft,
   Loader2,
   Save,
   Trash2,
-  Timer
+  Timer,
+  Zap
 } from 'lucide-react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -50,15 +49,23 @@ export default function PlanningPage() {
       const examConfig = EXAM_CONFIGS[userData.targetExam || 'LGS'] || EXAM_CONFIGS['LGS'];
       const lessons = examConfig.lessons;
 
-      const newSchedule = days.map(day => ({
-        day,
-        tasks: [
+      const newSchedule = days.map(day => {
+        // Sözel öğrencisi için özel dağılım
+        const isSozel = userData.targetExam?.includes('SOZ');
+        const tasks = isSozel ? [
+          { time: '09:00', subject: lessons[0], topic: 'Eser-Yazar Analizi', duration: '60 dk', status: 'pending' },
+          { time: '11:30', subject: lessons[1] || lessons[0], topic: 'Tarih Özet Tekrar', duration: '45 dk', status: 'pending' },
+          { time: '14:00', subject: 'Paragraf', topic: '40 Soru Hız Testi', duration: '30 dk', status: 'pending' },
+          { time: '16:00', subject: lessons[2] || lessons[0], topic: 'Coğrafya Harita Çalışması', duration: '45 dk', status: 'pending' },
+        ] : [
           { time: '09:00', subject: lessons[0], topic: 'Temel Kavramlar', duration: '45 dk', status: 'pending' },
           { time: '11:30', subject: lessons[1] || lessons[0], topic: 'Konu Analizi', duration: '60 dk', status: 'pending' },
           { time: '14:00', subject: 'Paragraf', topic: 'Hız Çalışması', duration: '30 dk', status: 'pending' },
           { time: '16:00', subject: lessons[2] || lessons[0], topic: 'Soru Çözümü', duration: '45 dk', status: 'pending' },
-        ]
-      }));
+        ];
+
+        return { day, tasks };
+      });
 
       try {
         await setDoc(doc(db, 'studyPlans', user.uid), {
@@ -69,7 +76,7 @@ export default function PlanningPage() {
         });
         toast({
           title: 'Plan Oluşturuldu',
-          description: 'Haftalık programınız AI tarafından optimize edildi.',
+          description: `Haftalık programınız ${userData.targetExam} müfredatına göre AI tarafından optimize edildi.`,
           className: "bg-primary text-white rounded-[2rem]"
         });
       } catch (e) {
@@ -97,7 +104,7 @@ export default function PlanningPage() {
           className="h-20 px-10 rounded-[2rem] bg-primary hover:bg-accent transition-all duration-500 font-black text-sm uppercase tracking-widest gap-4 shadow-2xl shadow-primary/20"
         >
           {isGenerating ? <Loader2 className="h-7 w-7 animate-spin" /> : <Brain className="h-7 w-7 text-accent" />}
-          AI İle Planı Optimize Et
+          AI İle {userData?.targetExam} Planı Üret
         </Button>
       </header>
 

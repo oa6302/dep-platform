@@ -15,14 +15,10 @@ import {
   TrendingUp, 
   Zap, 
   Timer, 
-  ChevronRight, 
   Play, 
-  BookOpen, 
   BookOpenCheck,
-  Pencil,
   PencilLine,
-  Flame,
-  ArrowRight
+  Flame
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { 
@@ -33,6 +29,7 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { EXAM_CONFIGS } from '@/lib/exam-configs';
 
 // --- MOCK DATA ---
 const netGrowthData = [
@@ -42,15 +39,6 @@ const netGrowthData = [
   { name: 'Ara', net: 74 },
   { name: 'Oca', net: 82 },
   { name: 'Şub', net: 88 },
-];
-
-const dnaData = [
-  { subject: 'Problem Çözme', A: 85, fullMark: 100 },
-  { subject: 'Hız', A: 70, fullMark: 100 },
-  { subject: 'Odak', A: 90, fullMark: 100 },
-  { subject: 'Disiplin', A: 80, fullMark: 100 },
-  { subject: 'Tekrar', A: 65, fullMark: 100 },
-  { subject: 'Analiz', A: 75, fullMark: 100 },
 ];
 
 const heatMapData = Array.from({ length: 364 }).map((_, i) => ({
@@ -69,6 +57,28 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const [timeLeft, setTimerLeft] = useState(25 * 60);
 
   const { data: studyPlan } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
+  const examConfig = EXAM_CONFIGS[userData?.targetExam || 'LGS'] || EXAM_CONFIGS['LGS'];
+
+  const dnaData = useMemo(() => {
+    if (userData?.targetExam?.includes('SOZ')) {
+      return [
+        { subject: 'Ezber Gücü', A: 90, fullMark: 100 },
+        { subject: 'Analitik Yorum', A: 85, fullMark: 100 },
+        { subject: 'Okuma Hızı', A: 75, fullMark: 100 },
+        { subject: 'Disiplin', A: 80, fullMark: 100 },
+        { subject: 'Sözel Mantık', A: 65, fullMark: 100 },
+        { subject: 'Analiz', A: 70, fullMark: 100 },
+      ];
+    }
+    return [
+      { subject: 'Problem Çözme', A: 85, fullMark: 100 },
+      { subject: 'Hız', A: 70, fullMark: 100 },
+      { subject: 'Odak', A: 90, fullMark: 100 },
+      { subject: 'Disiplin', A: 80, fullMark: 100 },
+      { subject: 'Tekrar', A: 65, fullMark: 100 },
+      { subject: 'Analiz', A: 75, fullMark: 100 },
+    ];
+  }, [userData]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -79,8 +89,15 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const today = new Intl.DateTimeFormat('tr-TR', { weekday: 'long' }).format(new Date());
   
   const todayTasks = useMemo(() => {
-    // Veritabanından gelmiyorsa varsayılan göster
     if (!studyPlan?.schedule) {
+      if (userData?.targetExam?.includes('SOZ')) {
+        return [
+          { time: '09:00', title: 'Edebiyat', sub: 'Cumhuriyet Dönemi', dur: '60 dk', status: 'pending' },
+          { time: '11:30', title: 'Tarih', sub: 'Kurtuluş Savaşı', dur: '45 dk', status: 'pending' },
+          { time: '14:00', title: 'Paragraf', sub: 'Hız Çalışması', dur: '30 dk', status: 'completed' },
+          { time: '16:00', title: 'Coğrafya', sub: 'Nüfus Politikaları', dur: '45 dk', status: 'pending' },
+        ];
+      }
       return [
         { time: '08:30', title: 'Matematik', sub: 'Problemler & Sayılar', dur: '45 dk', status: 'completed' },
         { time: '11:00', title: 'Paragraf', sub: '30 Soru Çözümü', dur: '45 dk', status: 'delayed' },
@@ -96,7 +113,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
        dur: t.duration,
        status: t.status
     }));
-  }, [studyPlan, today]);
+  }, [studyPlan, today, userData]);
 
   return (
     <div className="p-6 lg:p-10 space-y-10 max-w-[1600px] mx-auto w-full animate-in fade-in duration-1000 bg-[#FAFBFF]">
@@ -108,12 +125,12 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10 relative z-10">
               <div className="space-y-6">
                  <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-slate-50 border border-primary/5 text-primary font-black text-[10px] uppercase tracking-widest italic shadow-sm">
-                    ✨ AKADEMİK KOMUTA MERKEZİ
+                    ✨ AKADEMİK KOMUTA MERKEZİ • {userData?.targetExam}
                  </div>
                  <h1 className="text-5xl md:text-7xl font-black text-primary tracking-tighter italic uppercase leading-none">
                     GÜNAYDIN <br /><span className="text-accent text-shadow-accent">{userData?.displayName?.split(' ')[0] || 'ÖĞRENCİ'} 👋</span>
                  </h1>
-                 <p className="text-xl text-muted-foreground font-medium italic opacity-70">Bugünkü akademik planın hazır. Senin için {todayTasks.length} kritik görev belirlendi.</p>
+                 <p className="text-xl text-muted-foreground font-medium italic opacity-70">Bugünkü {userData?.targetExam} planın hazır. Senin için {todayTasks.length} kritik görev belirlendi.</p>
               </div>
               <div className="flex items-center gap-8 bg-[#0F172A] p-8 rounded-[3rem] text-white shadow-2xl shrink-0 group-hover:scale-105 transition-transform duration-500">
                  <div className="space-y-1">
@@ -380,20 +397,14 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
             <div className="space-y-10">
                <h4 className="text-2xl font-black italic tracking-tighter uppercase leading-none">KONU İLERLEMESİ</h4>
                <div className="space-y-8">
-                  {[
-                    { label: 'Türkçe', val: 92, color: 'bg-blue-600' },
-                    { label: 'Matematik', val: 73, color: 'bg-orange-500' },
-                    { label: 'Fen Bilimleri', val: 68, color: 'bg-purple-600' },
-                    { label: 'İngilizce', val: 84, color: 'bg-emerald-500' },
-                    { label: 'Sosyal Bilgiler', val: 71, color: 'bg-red-500' },
-                  ].map((sub, i) => (
+                  {examConfig.lessons.slice(0, 5).map((sub, i) => (
                     <div key={i} className="space-y-3">
                        <div className="flex justify-between items-end">
-                          <span className="font-black text-sm uppercase tracking-tight text-primary">{sub.label}</span>
-                          <span className="text-xl font-black text-primary italic leading-none">{sub.val}%</span>
+                          <span className="font-black text-sm uppercase tracking-tight text-primary">{sub}</span>
+                          <span className="text-xl font-black text-primary italic leading-none">{80 - (i * 10)}%</span>
                        </div>
                        <div className="h-3.5 w-full bg-slate-50 rounded-full overflow-hidden shadow-inner border border-primary/5 p-0.5">
-                          <div className={cn("h-full rounded-full transition-all duration-1000", sub.color)} style={{ width: `${sub.val}%` }}></div>
+                          <div className={cn("h-full rounded-full transition-all duration-1000", i % 2 === 0 ? "bg-accent" : "bg-primary")} style={{ width: `${80 - (i * 10)}%` }}></div>
                        </div>
                     </div>
                   ))}
@@ -411,7 +422,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
             <div className="space-y-2 relative z-10">
                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground opacity-40">AKADEMİK SEVİYE</p>
                <h5 className="text-5xl font-black text-primary tracking-tighter italic uppercase leading-none">LEVEL 18</h5>
-               <p className="text-xs font-bold text-accent italic">Matematik Ustası Rozeti • 3 Gün Kaldı</p>
+               <p className="text-xs font-bold text-accent italic">{userData?.targetExam?.includes('SOZ') ? 'Edebiyat Ustası' : 'Matematik Ustası'} Rozeti • 3 Gün Kaldı</p>
             </div>
             <div className="pt-6 border-t border-primary/5 space-y-4">
                <Progress value={84} className="h-2 rounded-full" />

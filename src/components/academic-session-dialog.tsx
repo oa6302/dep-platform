@@ -338,6 +338,7 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
 
           <div className="bg-slate-50 p-10 border-l border-primary/5 space-y-10 flex flex-col justify-between">
              <div className="space-y-10">
+                {/* AI RECOMMENDATION CARD - Fixed Card component */}
                 <Card className="rounded-[2.5rem] border-none bg-primary text-white p-8 space-y-6 relative overflow-hidden group shadow-2xl">
                    <div className="absolute top-0 right-0 w-32 h-32 bg-accent/20 blur-[60px] rounded-full translate-x-1/2 -translate-y-1/2"></div>
                    <div className="flex items-center gap-3 relative z-10">

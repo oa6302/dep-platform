@@ -122,7 +122,7 @@ export default function PlanningPage() {
         weeklyFocus,
         recommendations,
         updatedAt: serverTimestamp()
-      });
+      }, { merge: true });
       toast({
         title: 'Terminal Senkronize Edildi',
         description: 'Akademik planınız bulut veritabanına işlendi.',

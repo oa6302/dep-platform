@@ -54,18 +54,31 @@ import {
   PlaySquare,
   Book,
   MoreVertical,
+  GraduationCap,
+  BarChart3,
+  UserCheck,
+  Settings,
+  Search,
+  Lock,
+  UserRoundCheck,
 } from 'lucide-react';
 
 import {
   ResponsiveContainer,
   AreaChart,
   Area,
+  XAxis,
+  Tooltip,
 } from 'recharts';
 
 import {
   doc,
   setDoc,
   serverTimestamp,
+  collection,
+  getDocs,
+  query,
+  where,
 } from 'firebase/firestore';
 
 import { signOut } from 'firebase/auth';
@@ -86,27 +99,76 @@ import { ProfileEditDialog } from '@/components/profile-edit-dialog';
 import { AcademicSessionDialog } from '@/components/academic-session-dialog';
 import { AuthForm } from '@/components/auth-form';
 
-import { TeacherView } from '@/components/dashboard/teacher-view';
-import { AdminView } from '@/components/dashboard/admin-view';
-import { SchoolAdminView } from '@/components/dashboard/school-admin-view';
-
 import { useToast } from '@/hooks/use-toast';
 
+/* ============================================================
+   TYPES
+============================================================ */
 
-// ============================================================
-// TYPES
-// ============================================================
+interface DashboardUser {
+  uid?: string;
+  displayName?: string;
+  email?: string;
+  role?: string;
+  targetExam?: string;
+  schoolId?: string;
+  teacherId?: string;
+  classId?: string;
+  photoURL?: string;
+  [key: string]: any;
+}
 
 interface StudentViewProps {
   user: any;
-  userData: any;
+  userData: DashboardUser;
   isReadOnly?: boolean;
 }
 
+interface StudentListItem {
+  uid: string;
+  displayName: string;
+  email?: string;
+  targetExam?: string;
+  role?: string;
+  schoolId?: string;
+}
 
-// ============================================================
-// STUDENT VIEW
-// ============================================================
+/* ============================================================
+   HELPERS
+============================================================ */
+
+const DEFAULT_LOGO =
+  'https://picsum.photos/seed/edu-logo-102/400/400';
+
+function normalizeText(value: any) {
+  return String(value || '')
+    .trim()
+    .toLocaleLowerCase('tr-TR');
+}
+
+function getTodayName() {
+  return new Intl.DateTimeFormat('tr-TR', {
+    weekday: 'long',
+  }).format(new Date());
+}
+
+function getFirstName(name?: string) {
+  return name?.trim()?.split(/\s+/)[0] || 'ÖĞRENCİ';
+}
+
+function getDifficultyLabel(value?: string) {
+  const map: Record<string, string> = {
+    easy: 'Kolay',
+    medium: 'Orta',
+    hard: 'Zor',
+  };
+
+  return map[value || ''] || value || 'Orta';
+}
+
+/* ============================================================
+   STUDENT DASHBOARD
+============================================================ */
 
 function StudentView({
   user,
@@ -121,18 +183,20 @@ function StudentView({
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isRecLoading, setIsRecLoading] = useState(false);
 
+  const uid = user?.uid || userData?.uid;
+
   const {
     data: studyPlan,
     loading: studyPlanLoading,
-  } = useDoc<any>(
-    user?.uid
-      ? `studyPlans/${user.uid}`
+  } = useDoc(
+    uid
+      ? `studyPlans/${uid}`
       : null
   );
 
-  // ----------------------------------------------------------
-  // POMODORO TIMER
-  // ----------------------------------------------------------
+  /* ==========================================================
+     POMODORO
+  ========================================================== */
 
   useEffect(() => {
     if (!activeTimer) return;
@@ -142,49 +206,105 @@ function StudentView({
 
       toast({
         title: 'Odak Seansı Tamamlandı 🎯',
-        description: '25 dakikalık çalışma seansını tamamladın.',
-        className: 'bg-primary text-white rounded-[2rem]',
+        description:
+          '25 dakikalık çalışma seansını tamamladın.',
+        className:
+          'bg-primary text-white rounded-[2rem]',
       });
 
       return;
     }
 
     const timer = setInterval(() => {
-      setTimeLeft((prev) => Math.max(prev - 1, 0));
+      setTimeLeft((prev) =>
+        Math.max(prev - 1, 0)
+      );
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [activeTimer, timeLeft, toast]);
+    return () =>
+      clearInterval(timer);
+  }, [
+    activeTimer,
+    timeLeft,
+    toast,
+  ]);
 
-  // ----------------------------------------------------------
-  // TOTAL COMPLETED TASKS
-  // ----------------------------------------------------------
+  /* ==========================================================
+     TODAY
+  ========================================================== */
+
+  const today = getTodayName();
+
+  /* ==========================================================
+     TOTAL COMPLETED TASKS
+  ========================================================== */
 
   const totalTasksCompleted = useMemo(() => {
     if (!studyPlan?.schedule) return 0;
 
     let count = 0;
 
-    studyPlan.schedule.forEach((day: any) => {
-      day.tasks?.forEach((task: any) => {
-        if (task.status === 'completed') {
-          count++;
-        }
-      });
-    });
+    studyPlan.schedule.forEach(
+      (day: any) => {
+        day?.tasks?.forEach(
+          (task: any) => {
+            if (
+              task?.status ===
+              'completed'
+            ) {
+              count++;
+            }
+          }
+        );
+      }
+    );
 
     return count;
   }, [studyPlan]);
 
-  // ----------------------------------------------------------
-  // GAMIFICATION
-  // ----------------------------------------------------------
+  /* ==========================================================
+     TOTAL TASKS
+  ========================================================== */
 
-  const level =
-    Math.floor(totalTasksCompleted / 10) + 1;
+  const totalTasks = useMemo(() => {
+    if (!studyPlan?.schedule) return 0;
+
+    return studyPlan.schedule.reduce(
+      (total: number, day: any) =>
+        total +
+        (day?.tasks?.length || 0),
+      0
+    );
+  }, [studyPlan]);
+
+  /* ==========================================================
+     TODAY TASKS
+  ========================================================== */
+
+  const todayTasks = useMemo(() => {
+    if (!studyPlan?.schedule) return [];
+
+    const dayData =
+      studyPlan.schedule.find(
+        (s: any) =>
+          normalizeText(s?.day) ===
+          normalizeText(today)
+      );
+
+    return dayData?.tasks || [];
+  }, [studyPlan, today]);
+
+  /* ==========================================================
+     GAMIFICATION
+  ========================================================== */
 
   const xp =
     totalTasksCompleted * 120;
+
+  const level =
+    Math.floor(
+      totalTasksCompleted / 10
+    ) + 1;
 
   const xpToNextLevel = 1000;
 
@@ -193,67 +313,56 @@ function StudentView({
 
   const progressToNextLevel =
     Math.min(
-      (currentXpInLevel / xpToNextLevel) * 100,
+      (currentXpInLevel /
+        xpToNextLevel) *
+        100,
       100
     );
 
-  // ----------------------------------------------------------
-  // TODAY
-  // ----------------------------------------------------------
+  /* ==========================================================
+     STATS
+  ========================================================== */
 
-  const today = new Intl.DateTimeFormat(
-    'tr-TR',
-    {
-      weekday: 'long',
-    }
-  ).format(new Date());
-
-  const todayTasks = useMemo(() => {
-    if (!studyPlan?.schedule) return [];
-
-    const dayData =
-      studyPlan.schedule.find(
-        (s: any) =>
-          s.day?.toLocaleLowerCase?.() ===
-          today.toLocaleLowerCase()
-      );
-
-    return dayData?.tasks || [];
-  }, [studyPlan, today]);
-
-  // ----------------------------------------------------------
-  // STATS
-  // ----------------------------------------------------------
+  const studyHours =
+    Math.floor(
+      totalTasksCompleted * 0.75
+    );
 
   const stats = [
     {
       label: 'TOPLAM XP',
-      val: xp.toLocaleString('tr-TR'),
+      val: xp.toLocaleString(
+        'tr-TR'
+      ),
       icon: Zap,
       color: 'text-amber-500',
       bg: 'bg-amber-50',
     },
     {
       label: 'ÇALIŞMA',
-      val: `${Math.floor(
-        totalTasksCompleted * 0.75
-      )} SAAT`,
+      val: `${studyHours} SAAT`,
       icon: Clock,
       color: 'text-blue-500',
       bg: 'bg-blue-50',
     },
     {
       label: 'NET ORT.',
-      val: '84.5',
+      val:
+        userData?.netAverage
+          ? String(
+              userData.netAverage
+            )
+          : '84.5',
       icon: Target,
-      color: 'text-emerald-500',
+      color:
+        'text-emerald-500',
       bg: 'bg-emerald-50',
     },
   ];
 
-  // ----------------------------------------------------------
-  // ACADEMIC BALANCE
-  // ----------------------------------------------------------
+  /* ==========================================================
+     ACADEMIC BALANCE
+  ========================================================== */
 
   const academicBalance = [
     {
@@ -283,22 +392,50 @@ function StudentView({
     },
   ];
 
-  // ----------------------------------------------------------
-  // ADD SESSION
-  // ----------------------------------------------------------
+  /* ==========================================================
+     ADD SESSION
+  ========================================================== */
 
   const handleQuickAddSession =
     async (taskData: any) => {
-      if (!db || !user) return;
+      if (
+        isReadOnly ||
+        !db ||
+        !uid
+      ) {
+        if (isReadOnly) {
+          toast({
+            title:
+              'Salt-okunur mod',
+            description:
+              'Simülasyon sırasında öğrenci planı değiştirilemez.',
+          });
+        }
+
+        return;
+      }
 
       const newSchedule =
         studyPlan?.schedule
-          ? [...studyPlan.schedule]
+          ? studyPlan.schedule.map(
+              (day: any) => ({
+                ...day,
+                tasks: [
+                  ...(day.tasks || []),
+                ],
+              })
+            )
           : [];
 
       let dayIndex =
         newSchedule.findIndex(
-          (s: any) => s.day === today
+          (s: any) =>
+            normalizeText(
+              s?.day
+            ) ===
+            normalizeText(
+              today
+            )
         );
 
       const newTask = {
@@ -314,10 +451,18 @@ function StudentView({
           tasks: [newTask],
         });
       } else {
-        newSchedule[dayIndex] = {
-          ...newSchedule[dayIndex],
+        newSchedule[
+          dayIndex
+        ] = {
+          ...newSchedule[
+            dayIndex
+          ],
           tasks: [
-            ...(newSchedule[dayIndex].tasks || []),
+            ...(
+              newSchedule[
+                dayIndex
+              ].tasks || []
+            ),
             newTask,
           ],
         };
@@ -328,14 +473,15 @@ function StudentView({
           doc(
             db,
             'studyPlans',
-            user.uid
+            uid
           ),
           {
-            userId: user.uid,
+            userId: uid,
             examId:
               userData?.targetExam ||
               'YKS_SAY',
-            schedule: newSchedule,
+            schedule:
+              newSchedule,
             updatedAt:
               serverTimestamp(),
           },
@@ -345,12 +491,17 @@ function StudentView({
         );
 
         toast({
-          title: 'Görev Senkronize Edildi',
+          title:
+            'Görev Senkronize Edildi',
           description:
-            `${taskData.subject} seansı bugünlük planınıza eklendi.`,
+            `${taskData.subject || 'Çalışma'} seansı bugünlük planınıza eklendi.`,
           className:
             'bg-primary text-white rounded-[2rem]',
         });
+
+        setIsAddDialogOpen(
+          false
+        );
       } catch (error) {
         console.error(
           'Görev ekleme hatası:',
@@ -358,7 +509,8 @@ function StudentView({
         );
 
         toast({
-          variant: 'destructive',
+          variant:
+            'destructive',
           title: 'Hata',
           description:
             'Görev eklenirken bir sorun oluştu.',
@@ -366,47 +518,68 @@ function StudentView({
       }
     };
 
-  // ----------------------------------------------------------
-  // AI RECOMMENDATION
-  // ----------------------------------------------------------
+  /* ==========================================================
+     AI RECOMMENDATION
+  ========================================================== */
 
   const handleCreateRecommendedTask =
     async () => {
+      if (isReadOnly) {
+        toast({
+          title:
+            'Salt-okunur mod',
+          description:
+            'Simülasyon sırasında yeni görev oluşturulamaz.',
+        });
+
+        return;
+      }
+
       setIsRecLoading(true);
 
-      const exam =
-        userData?.targetExam ||
-        'YKS_SAY';
+      try {
+        const exam =
+          userData?.targetExam ||
+          'YKS_SAY';
 
-      const isSoz =
-        exam.includes('SOZ');
+        const isSoz =
+          exam.includes('SOZ');
 
-      const recommendedTask = {
-        subject: isSoz
-          ? 'Edebiyat'
-          : 'TYT Matematik',
+        const recommendedTask =
+          {
+            subject: isSoz
+              ? 'Edebiyat'
+              : 'TYT Matematik',
 
-        topic: isSoz
-          ? 'Cumhuriyet Dönemi'
-          : 'Problemler',
+            topic: isSoz
+              ? 'Cumhuriyet Dönemi'
+              : 'Problemler',
 
-        time: '14:00',
-        duration: '45 dk',
-        difficulty: 'hard',
-        xp: 75,
-        studyType: 'questions',
-      };
+            time: '14:00',
+            duration: '45 dk',
+            difficulty:
+              'hard',
 
-      await handleQuickAddSession(
-        recommendedTask
-      );
+            xp: 75,
 
-      setIsRecLoading(false);
+            studyType:
+              'questions',
+
+            source:
+              'AI Recommendation',
+          };
+
+        await handleQuickAddSession(
+          recommendedTask
+        );
+      } finally {
+        setIsRecLoading(false);
+      }
     };
 
-  // ----------------------------------------------------------
-  // COMPLETE TASK
-  // ----------------------------------------------------------
+  /* ==========================================================
+     COMPLETE TASK
+  ========================================================== */
 
   const toggleTask = async (
     taskIndex: number
@@ -414,9 +587,18 @@ function StudentView({
     if (
       isReadOnly ||
       !db ||
-      !user ||
+      !uid ||
       !studyPlan?.schedule
     ) {
+      if (isReadOnly) {
+        toast({
+          title:
+            'Salt-okunur mod',
+          description:
+            'Bu öğrenci ekranı öğretmen simülasyonunda görüntüleniyor.',
+        });
+      }
+
       return;
     }
 
@@ -424,32 +606,47 @@ function StudentView({
       studyPlan.schedule.map(
         (day: any) => ({
           ...day,
-          tasks: [...(day.tasks || [])],
+          tasks: [
+            ...(day.tasks || []),
+          ],
         })
       );
 
     const dayIndex =
       newSchedule.findIndex(
-        (s: any) => s.day === today
+        (s: any) =>
+          normalizeText(
+            s?.day
+          ) ===
+          normalizeText(
+            today
+          )
       );
 
-    if (dayIndex === -1) return;
+    if (dayIndex === -1)
+      return;
 
     const task =
-      newSchedule[dayIndex].tasks[
-        taskIndex
-      ];
+      newSchedule[
+        dayIndex
+      ].tasks[taskIndex];
 
     if (!task) return;
 
-    newSchedule[dayIndex].tasks[
-      taskIndex
-    ] = {
+    newSchedule[
+      dayIndex
+    ].tasks[taskIndex] = {
       ...task,
       status:
-        task.status === 'completed'
+        task.status ===
+        'completed'
           ? 'pending'
           : 'completed',
+      completedAt:
+        task.status ===
+        'completed'
+          ? null
+          : new Date().toISOString(),
     };
 
     try {
@@ -457,10 +654,11 @@ function StudentView({
         doc(
           db,
           'studyPlans',
-          user.uid
+          uid
         ),
         {
-          schedule: newSchedule,
+          schedule:
+            newSchedule,
           updatedAt:
             serverTimestamp(),
         },
@@ -475,7 +673,8 @@ function StudentView({
       );
 
       toast({
-        variant: 'destructive',
+        variant:
+          'destructive',
         title: 'Hata',
         description:
           'Görev durumu güncellenemedi.',
@@ -483,15 +682,17 @@ function StudentView({
     }
   };
 
-  // ----------------------------------------------------------
-  // FORMAT TIMER
-  // ----------------------------------------------------------
+  /* ==========================================================
+     TIMER
+  ========================================================== */
 
   const formatTime = (
     seconds: number
   ) => {
     const minutes =
-      Math.floor(seconds / 60);
+      Math.floor(
+        seconds / 60
+      );
 
     const sec =
       seconds % 60;
@@ -501,22 +702,18 @@ function StudentView({
     }${sec}`;
   };
 
-  // ----------------------------------------------------------
-  // RESET TIMER
-  // ----------------------------------------------------------
-
   const resetTimer = () => {
     setActiveTimer(false);
     setTimeLeft(25 * 60);
   };
 
-  // ----------------------------------------------------------
-  // LOADING
-  // ----------------------------------------------------------
+  /* ==========================================================
+     LOADING
+  ========================================================== */
 
   if (studyPlanLoading) {
     return (
-      <div className="p-12 flex items-center justify-center min-h-[500px]">
+      <div className="min-h-[600px] flex items-center justify-center">
         <div className="flex flex-col items-center gap-5">
           <Loader2 className="h-10 w-10 animate-spin text-accent" />
 
@@ -528,74 +725,100 @@ function StudentView({
     );
   }
 
-  // ==========================================================
-  // STUDENT DASHBOARD
-  // ==========================================================
+  /* ==========================================================
+     STUDENT DASHBOARD
+  ========================================================== */
 
   return (
-    <div className="p-8 lg:p-12 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000">
+    <div className="p-8 xl:p-12 space-y-12">
+
+      {/* ======================================================
+          READ ONLY NOTICE
+      ====================================================== */}
+
+      {isReadOnly && (
+        <Card className="rounded-[2rem] bg-amber-50 border border-amber-200 p-5">
+          <div className="flex items-center gap-4">
+            <Lock className="h-5 w-5 text-amber-600" />
+
+            <div>
+              <p className="font-black text-amber-900">
+                SALT-OKUNUR SİMÜLASYON
+              </p>
+
+              <p className="text-xs font-medium text-amber-700">
+                Bu öğrenci ekranı öğretmen tarafından görüntüleniyor.
+                Öğrenci verileri değiştirilemez.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* ======================================================
           TOP STATS
       ====================================================== */}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
 
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
+        {stats.map(
+          (stat, index) => {
+            const Icon =
+              stat.icon;
 
-          return (
-            <Card
-              key={index}
-              className="
-                p-8
-                rounded-[2.5rem]
-                border-none
-                shadow-[0_20px_40px_-10px_rgba(0,0,0,0.05)]
-                bg-white
-                flex
-                items-center
-                gap-6
-                group
-                hover:shadow-xl
-                transition-all
-                hover:-translate-y-1
-                border
-                border-primary/5
-              "
-            >
-              <div
-                className={cn(
-                  'h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:rotate-6 shadow-sm',
-                  stat.bg
-                )}
+            return (
+              <Card
+                key={index}
+                className="
+                  p-7
+                  rounded-[2.5rem]
+                  border-none
+                  shadow-[0_20px_40px_-10px_rgba(0,0,0,0.05)]
+                  bg-white
+                  flex
+                  items-center
+                  gap-5
+                  group
+                  hover:shadow-xl
+                  transition-all
+                  hover:-translate-y-1
+                  border
+                  border-primary/5
+                "
               >
-                <Icon
+                <div
                   className={cn(
-                    'h-7 w-7',
-                    stat.color
+                    'h-14 w-14 rounded-2xl flex items-center justify-center shrink-0',
+                    stat.bg
                   )}
-                />
-              </div>
+                >
+                  <Icon
+                    className={cn(
+                      'h-7 w-7',
+                      stat.color
+                    )}
+                  />
+                </div>
 
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 mb-1">
-                  {stat.label}
-                </p>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 mb-1">
+                    {stat.label}
+                  </p>
 
-                <p className="text-3xl font-black text-primary tracking-tighter italic">
-                  {stat.val}
-                </p>
-              </div>
-            </Card>
-          );
-        })}
+                  <p className="text-2xl font-black text-primary tracking-tighter italic">
+                    {stat.val}
+                  </p>
+                </div>
+              </Card>
+            );
+          }
+        )}
 
         {/* STREAK */}
 
         <Card
           className="
-            p-8
+            p-7
             rounded-[2.5rem]
             border-none
             shadow-[0_20px_40px_-10px_rgba(0,0,0,0.05)]
@@ -609,132 +832,120 @@ function StudentView({
             hover:-translate-y-1
             border
             border-primary/5
-            cursor-pointer
           "
         >
-          <div className="flex items-center gap-6">
-
-            <div className="h-16 w-16 rounded-[1.5rem] bg-[#FFF1F2] flex items-center justify-center shrink-0 transition-transform group-hover:scale-110">
-              <Flame className="h-8 w-8 text-[#FF4D4D] fill-current" />
+          <div className="flex items-center gap-5">
+            <div className="h-14 w-14 rounded-2xl bg-rose-50 flex items-center justify-center">
+              <Flame className="h-7 w-7 text-rose-500 fill-current" />
             </div>
 
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#94A3B8] mb-0.5">
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
                 GÜNLÜK SERİ
               </p>
 
-              <p className="text-4xl font-black text-[#0F172A] tracking-tighter italic">
-                16 GÜN
+              <p className="text-3xl font-black text-primary italic tracking-tighter">
+                {userData?.streak ||
+                  0}{' '}
+                GÜN
               </p>
             </div>
-
           </div>
 
-          <ChevronRight className="h-6 w-6 text-[#E2E8F0] group-hover:text-primary transition-colors" />
+          <ChevronRight className="h-5 w-5 text-slate-300" />
         </Card>
       </div>
-
 
       {/* ======================================================
           MAIN GRID
       ====================================================== */}
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-12">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
 
         {/* ====================================================
             LEFT
         ==================================================== */}
 
-        <div className="xl:col-span-8 space-y-12">
+        <div className="xl:col-span-8 space-y-10">
 
-          {/* ==================================================
-              WELCOME CARD
-          ================================================== */}
+          {/* WELCOME */}
 
           <Card
             className="
-              rounded-[4rem]
+              rounded-[3.5rem]
               border-none
               shadow-[0_60px_100px_-20px_rgba(15,23,42,0.12)]
               bg-white
-              p-14
+              p-10 xl:p-14
               relative
               overflow-hidden
-              group
               border
               border-primary/5
             "
           >
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-accent/5 blur-[120px] rounded-full" />
 
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-accent/10 transition-all duration-1000" />
+            <div className="relative z-10 flex flex-col lg:flex-row justify-between items-center gap-10">
 
-            <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-12">
+              <div className="space-y-7 flex-1">
 
-              <div className="space-y-8 flex-1">
-
-                <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-slate-50 border border-primary/5 text-primary/40 font-black text-[10px] uppercase tracking-widest italic shadow-sm">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-50 border border-primary/5 text-primary/50 font-black text-[9px] uppercase tracking-widest">
                   <Activity className="h-3.5 w-3.5 text-accent animate-pulse" />
                   ACADEMIC NODE ACTIVE
                 </div>
 
-                <div className="space-y-3">
-
-                  <h1 className="text-6xl font-black text-primary tracking-tighter italic uppercase leading-none text-shadow-deep">
+                <div>
+                  <h1 className="text-5xl xl:text-6xl font-black text-primary tracking-tighter italic uppercase leading-none">
                     GÜNAYDIN,
                     <br />
 
-                    <span className="text-accent text-shadow-accent">
-                      {
+                    <span className="text-accent">
+                      {getFirstName(
                         userData?.displayName
-                          ?.split(' ')[0] ||
-                        'ÖĞRENCİ'
-                      }
+                      )}
                     </span>{' '}
                     👋
                   </h1>
 
-                  <p className="text-xl font-medium text-muted-foreground italic leading-relaxed max-w-lg">
+                  <p className="mt-5 text-lg font-medium text-muted-foreground italic leading-relaxed max-w-xl">
                     Bugün seni bekleyen{' '}
                     <span className="text-primary font-bold">
-                      {todayTasks.length} kritik görev
+                      {todayTasks.length}{' '}
+                      görev
                     </span>{' '}
-                    ve yaklaşık{' '}
-                    <span className="text-primary font-bold">
-                      3 saatlik
-                    </span>{' '}
-                    bir akademik maraton var.
+                    bulunuyor.
                   </p>
-
                 </div>
 
-                <div className="flex gap-6 flex-wrap">
+                <div className="flex gap-4 flex-wrap">
 
-                  <div className="px-6 py-4 rounded-[1.75rem] bg-primary text-white flex items-center gap-4 shadow-2xl shadow-primary/30">
-
+                  <div className="px-5 py-4 rounded-2xl bg-primary text-white flex items-center gap-3 shadow-xl">
                     <Zap className="h-5 w-5 text-accent" />
 
-                    <div className="text-left">
-
-                      <p className="text-[9px] font-black uppercase tracking-widest opacity-40">
+                    <div>
+                      <p className="text-[8px] font-black uppercase tracking-widest opacity-40">
                         GÜNLÜK HEDEF
                       </p>
 
-                      <p className="text-lg font-black italic tracking-tighter">
+                      <p className="font-black italic">
                         +350 XP
                       </p>
-
                     </div>
-
                   </div>
 
                   <Button
+                    disabled={
+                      isReadOnly
+                    }
                     onClick={() =>
-                      setIsAddDialogOpen(true)
+                      setIsAddDialogOpen(
+                        true
+                      )
                     }
                     className="
-                      h-16
-                      px-10
-                      rounded-[1.75rem]
+                      h-14
+                      px-7
+                      rounded-2xl
                       bg-white
                       border-2
                       border-primary/5
@@ -744,168 +955,157 @@ function StudentView({
                       text-xs
                       uppercase
                       tracking-widest
-                      shadow-sm
-                      gap-4
                     "
                   >
                     PROGRAMI YÖNET
-                    <ArrowUpRight className="h-5 w-5 text-accent" />
+
+                    <ArrowUpRight className="ml-3 h-5 w-5 text-accent" />
                   </Button>
-
                 </div>
-
               </div>
-
 
               {/* PROGRESS */}
 
               <div className="relative shrink-0">
-
                 <div className="absolute inset-0 bg-accent/20 blur-[60px] rounded-full" />
 
                 <div className="
-                  h-52
-                  w-52
-                  rounded-[4rem]
+                  h-48
+                  w-48
+                  rounded-[3.5rem]
                   bg-[#0F172A]
                   flex
                   items-center
                   justify-center
-                  shadow-[0_40px_80px_-15px_rgba(0,0,0,0.4)]
-                  transform
+                  shadow-2xl
                   rotate-3
-                  hover:rotate-0
-                  transition-all
-                  duration-700
-                  border-[12px]
+                  border-[10px]
                   border-white
                   relative
-                  z-10
                 ">
-
                   <div className="text-center">
-
-                    <p className="text-7xl font-black text-accent italic tracking-tighter text-shadow-accent">
-                      %{progressToNextLevel.toFixed(0)}
+                    <p className="text-6xl font-black text-accent italic tracking-tighter">
+                      %
+                      {progressToNextLevel.toFixed(
+                        0
+                      )}
                     </p>
 
-                    <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mt-2">
-                      PROGRESS
+                    <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.3em] mt-2">
+                      LEVEL PROGRESS
                     </p>
-
                   </div>
-
                 </div>
-
               </div>
-
             </div>
           </Card>
 
+          {/* TODAY PLAN */}
 
-          {/* ==================================================
-              TODAY PLAN
-          ================================================== */}
+          <div className="space-y-7">
 
-          <div className="space-y-8">
+            <div className="flex justify-between items-end px-3">
 
-            <div className="flex justify-between items-end px-6">
-
-              <div className="space-y-2">
-
-                <p className="text-[11px] font-black uppercase tracking-[0.5em] text-muted-foreground/30 italic">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground/30 italic">
                   OPERATIONAL SCHEDULE
                 </p>
 
-                <h3 className="text-5xl font-black italic tracking-tighter uppercase text-primary flex items-center gap-5">
-                  <Calendar className="h-10 w-10 text-accent" />
+                <h3 className="text-4xl font-black italic tracking-tighter uppercase text-primary flex items-center gap-4">
+                  <Calendar className="h-8 w-8 text-accent" />
                   BUGÜNKÜ PLAN
                 </h3>
-
               </div>
 
               <Button
+                disabled={
+                  isReadOnly
+                }
                 onClick={() =>
-                  setIsAddDialogOpen(true)
+                  setIsAddDialogOpen(
+                    true
+                  )
                 }
                 variant="ghost"
-                className="h-12 px-6 rounded-xl text-accent font-black text-xs uppercase tracking-widest hover:bg-accent/5 gap-3"
+                className="text-accent font-black text-xs uppercase tracking-widest"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4 mr-2" />
                 SEANS EKLE
               </Button>
-
             </div>
 
+            <div className="grid gap-5">
 
-            <div className="grid gap-6">
-
-              {todayTasks.length > 0 ? (
-
+              {todayTasks.length >
+              0 ? (
                 todayTasks.map(
                   (
                     task: any,
                     index: number
                   ) => (
-
                     <Card
                       key={index}
                       className="
                         group
-                        p-10
-                        rounded-[3rem]
+                        p-7
+                        rounded-[2.5rem]
                         border-none
-                        shadow-[0_20px_50px_-10px_rgba(0,0,0,0.04)]
-                        hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)]
+                        shadow-lg
+                        hover:shadow-xl
                         transition-all
-                        hover:scale-[1.01]
                         bg-white
                         flex
                         items-center
                         justify-between
                         border
                         border-primary/5
-                        border-l-[12px]
+                        border-l-[8px]
                         border-l-primary
                       "
                     >
+                      <div className="flex items-center gap-7 min-w-0">
 
-                      <div className="flex items-center gap-10">
-
-                        <div className="text-center w-24 shrink-0">
-
-                          <p className="text-2xl font-black text-primary tracking-tighter leading-none">
-                            {task.time || '--:--'}
+                        <div className="text-center w-20 shrink-0">
+                          <p className="text-xl font-black text-primary tracking-tighter">
+                            {task.time ||
+                              '--:--'}
                           </p>
 
-                          <p className="text-[10px] font-black text-muted-foreground/40 uppercase mt-2 tracking-widest">
+                          <p className="text-[8px] font-black text-slate-400 uppercase mt-1">
                             START
                           </p>
-
                         </div>
 
-                        <div className="h-16 w-px bg-primary/10" />
+                        <div className="h-14 w-px bg-primary/10" />
 
-                        <div className="space-y-2">
-
+                        <div className="min-w-0">
                           <div className="flex items-center gap-3 flex-wrap">
-
-                            <h4 className="text-3xl font-black italic tracking-tight text-primary uppercase leading-none group-hover:text-accent transition-colors">
-                              {task.subject}
+                            <h4
+                              className={cn(
+                                'text-2xl font-black italic tracking-tight uppercase leading-none',
+                                task.status ===
+                                  'completed'
+                                  ? 'text-emerald-500 line-through'
+                                  : 'text-primary'
+                              )}
+                            >
+                              {task.subject ||
+                                'Ders'}
                             </h4>
 
                             <Badge
                               variant="outline"
-                              className="text-[8px] font-black uppercase px-2 py-0 h-4 border-primary/10 opacity-40"
+                              className="text-[8px] font-black uppercase"
                             >
-                              {task.difficulty ||
-                                'Medium'}
+                              {getDifficultyLabel(
+                                task.difficulty
+                              )}
                             </Badge>
-
                           </div>
 
-                          <p className="text-lg font-medium text-muted-foreground italic opacity-60">
-                            {task.topic}
+                          <p className="mt-2 text-sm font-medium text-muted-foreground italic truncate max-w-[500px]">
+                            {task.topic ||
+                              'Konu belirtilmedi'}
 
                             {task.subtopic
                               ? ` • ${task.subtopic}`
@@ -915,177 +1115,129 @@ function StudentView({
                               ? ` • ${task.duration}`
                               : ''}
                           </p>
-
                         </div>
-
                       </div>
 
+                      <div className="flex items-center gap-3 ml-4">
 
-                      <div className="flex items-center gap-6">
-
-                        <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-
-                          {task.bookUrl && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              asChild
-                              className="h-12 w-12 rounded-[1.25rem] bg-slate-50 hover:bg-primary hover:text-white transition-all"
+                        {task.bookUrl && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            asChild
+                            className="h-11 w-11 rounded-xl bg-slate-50"
+                          >
+                            <a
+                              href={
+                                task.bookUrl
+                              }
+                              target="_blank"
+                              rel="noopener noreferrer"
                             >
-                              <a
-                                href={task.bookUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                <Book className="h-5 w-5" />
-                              </a>
-                            </Button>
-                          )}
+                              <Book className="h-5 w-5" />
+                            </a>
+                          </Button>
+                        )}
 
-                          {task.youtubeUrl && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              asChild
-                              className="h-12 w-12 rounded-[1.25rem] bg-rose-50 hover:bg-rose-500 hover:text-white transition-all text-rose-500"
+                        {task.youtubeUrl && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            asChild
+                            className="h-11 w-11 rounded-xl bg-rose-50 text-rose-500"
+                          >
+                            <a
+                              href={
+                                task.youtubeUrl
+                              }
+                              target="_blank"
+                              rel="noopener noreferrer"
                             >
-                              <a
-                                href={task.youtubeUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                <PlaySquare className="h-5 w-5" />
-                              </a>
-                            </Button>
-                          )}
-
-                        </div>
-
+                              <PlaySquare className="h-5 w-5" />
+                            </a>
+                          </Button>
+                        )}
 
                         <Button
                           size="icon"
-                          disabled={isReadOnly}
+                          disabled={
+                            isReadOnly
+                          }
                           onClick={() =>
-                            toggleTask(index)
+                            toggleTask(
+                              index
+                            )
                           }
                           className={cn(
-                            `
-                              h-16
-                              w-16
-                              rounded-[1.75rem]
-                              shadow-2xl
-                              transition-all
-                              group-hover:rotate-6
-                              group-active:scale-90
-                            `,
+                            'h-14 w-14 rounded-2xl shadow-xl',
                             task.status ===
                               'completed'
-                              ? 'bg-emerald-500 text-white shadow-emerald-500/20'
-                              : 'bg-[#0F172A] text-white hover:bg-accent shadow-primary/20'
+                              ? 'bg-emerald-500 text-white'
+                              : 'bg-primary text-white hover:bg-accent'
                           )}
                         >
                           {task.status ===
                           'completed' ? (
-                            <CheckCircle className="h-8 w-8" />
+                            <CheckCircle className="h-7 w-7" />
                           ) : (
-                            <Play className="h-8 w-8 fill-current" />
+                            <Play className="h-6 w-6 fill-current" />
                           )}
                         </Button>
-
                       </div>
-
                     </Card>
-
                   )
                 )
-
               ) : (
+                <Card className="p-20 text-center bg-white/60 rounded-[3rem] border border-dashed border-primary/10">
+                  <Calendar className="h-10 w-10 text-primary/10 mx-auto mb-5" />
 
-                <Card className="
-                  p-24
-                  text-center
-                  bg-white/50
-                  rounded-[4rem]
-                  border
-                  border-dashed
-                  border-primary/10
-                  flex
-                  flex-col
-                  items-center
-                  gap-6
-                ">
-
-                  <Calendar className="h-12 w-12 text-primary/10" />
-
-                  <p className="font-black text-primary/20 uppercase tracking-[0.5em] text-xs italic">
-                    BUGÜN İÇİN PLANLANMIŞ GÖREV BULUNMUYOR.
+                  <p className="font-black text-primary/30 uppercase tracking-widest text-xs">
+                    BUGÜN İÇİN PLAN YOK
                   </p>
 
                   <Button
-                    onClick={() =>
-                      setIsAddDialogOpen(true)
+                    disabled={
+                      isReadOnly
                     }
-                    className="rounded-2xl bg-primary text-white font-black"
+                    onClick={() =>
+                      setIsAddDialogOpen(
+                        true
+                      )
+                    }
+                    className="mt-5 rounded-xl bg-primary text-white font-black"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     İLK SEANSI EKLE
                   </Button>
-
                 </Card>
-
               )}
-
             </div>
-
           </div>
 
+          {/* ANALYTICS */}
 
-          {/* ==================================================
-              ANALYTICS
-          ================================================== */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-7">
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-
-            {/* TREND */}
-
-            <Card className="
-              p-12
-              rounded-[3.5rem]
-              border-none
-              shadow-[0_40px_80px_-20px_rgba(0,0,0,0.06)]
-              bg-white
-              space-y-10
-              border
-              border-primary/5
-            ">
-
-              <div className="flex justify-between items-center">
-
-                <div className="space-y-1">
-
-                  <h4 className="text-2xl font-black italic tracking-tighter uppercase text-primary">
+            <Card className="p-9 rounded-[3rem] border-none shadow-xl bg-white">
+              <div className="flex justify-between items-center mb-7">
+                <div>
+                  <h4 className="text-xl font-black italic tracking-tighter uppercase text-primary">
                     Akademik Trend
                   </h4>
 
-                  <p className="text-[10px] font-bold text-muted-foreground italic uppercase tracking-widest">
-                    Haftalık XP Dağılımı
+                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Haftalık XP
                   </p>
-
                 </div>
 
-                <div className="h-12 w-12 rounded-2xl bg-emerald-50 flex items-center justify-center">
-                  <TrendingUp className="h-6 w-6 text-emerald-500" />
-                </div>
-
+                <TrendingUp className="h-6 w-6 text-emerald-500" />
               </div>
 
-              <div className="h-[220px] w-full">
-
+              <div className="h-[200px]">
                 <ResponsiveContainer
                   width="100%"
                   height="100%"
                 >
-
                   <AreaChart
                     data={[
                       {
@@ -1118,281 +1270,171 @@ function StudentView({
                       },
                     ]}
                   >
+                    <XAxis
+                      dataKey="day"
+                      hide
+                    />
 
-                    <defs>
-
-                      <linearGradient
-                        id="colorVal"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-
-                        <stop
-                          offset="5%"
-                          stopColor="#F59E0B"
-                          stopOpacity={0.4}
-                        />
-
-                        <stop
-                          offset="95%"
-                          stopColor="#F59E0B"
-                          stopOpacity={0}
-                        />
-
-                      </linearGradient>
-
-                    </defs>
+                    <Tooltip />
 
                     <Area
                       type="monotone"
                       dataKey="val"
                       stroke="#F59E0B"
                       strokeWidth={4}
-                      fillOpacity={1}
-                      fill="url(#colorVal)"
+                      fill="#F59E0B"
+                      fillOpacity={0.15}
                     />
-
                   </AreaChart>
-
                 </ResponsiveContainer>
-
               </div>
-
             </Card>
 
-
-            {/* BALANCE */}
-
-            <Card className="
-              p-12
-              rounded-[3.5rem]
-              border-none
-              shadow-[0_40px_80px_-20px_rgba(0,0,0,0.06)]
-              bg-white
-              space-y-10
-              border
-              border-primary/5
-            ">
-
-              <div className="flex justify-between items-center">
-
-                <div className="space-y-1">
-
-                  <h4 className="text-2xl font-black italic tracking-tighter uppercase text-primary">
+            <Card className="p-9 rounded-[3rem] border-none shadow-xl bg-white">
+              <div className="flex justify-between items-center mb-7">
+                <div>
+                  <h4 className="text-xl font-black italic tracking-tighter uppercase text-primary">
                     Akademik Denge
                   </h4>
 
-                  <p className="text-[10px] font-bold text-muted-foreground italic uppercase tracking-widest">
-                    Ders Yetkinlik Skorları
+                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Yetkinlik
                   </p>
-
                 </div>
 
-                <div className="h-12 w-12 rounded-2xl bg-primary/5 flex items-center justify-center">
-                  <Target className="h-6 w-6 text-primary" />
-                </div>
-
+                <Target className="h-6 w-6 text-primary" />
               </div>
 
-              <div className="space-y-6">
-
+              <div className="space-y-4">
                 {academicBalance.map(
-                  (item, index) => (
-
+                  (
+                    item,
+                    index
+                  ) => (
                     <div
                       key={index}
-                      className="space-y-3 group cursor-default"
+                      className="space-y-2"
                     >
-
-                      <div className="flex justify-between items-center">
-
-                        <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors">
+                      <div className="flex justify-between">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
                           {item.subject}
                         </span>
 
-                        <span className="text-sm font-black text-primary italic tracking-tighter">
+                        <span className="text-xs font-black text-primary">
                           %{item.val}
                         </span>
-
                       </div>
 
-                      <div className="h-2.5 w-full bg-slate-50 rounded-full overflow-hidden shadow-inner p-0.5">
-
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full rounded-full transition-all duration-1000 group-hover:brightness-110 shadow-sm"
+                          className="h-full rounded-full"
                           style={{
                             width: `${item.val}%`,
                             backgroundColor:
                               item.color,
                           }}
                         />
-
                       </div>
-
                     </div>
-
                   )
                 )}
-
               </div>
-
             </Card>
-
           </div>
-
         </div>
 
-
         {/* ====================================================
-            RIGHT PANEL
+            RIGHT
         ==================================================== */}
 
-        <div className="xl:col-span-4 space-y-10">
+        <div className="xl:col-span-4 space-y-7">
 
-          {/* ==================================================
-              METRICS
-          ================================================== */}
+          {/* METRICS */}
 
-          <Card className="
-            rounded-[4rem]
-            border-none
-            shadow-[0_60px_120px_-30px_rgba(15,23,42,0.15)]
-            bg-white
-            overflow-hidden
-            border
-            border-primary/5
-          ">
+          <Card className="rounded-[3.5rem] border-none shadow-2xl bg-white overflow-hidden">
 
-            <div className="bg-primary p-10 text-white flex justify-between items-center relative overflow-hidden">
-
-              <div className="absolute top-0 right-0 w-48 h-48 bg-accent/10 blur-[80px] rounded-full" />
-
-              <div className="space-y-2 relative z-10">
-
-                <p className="text-[11px] font-black text-white/30 uppercase tracking-[0.4em] italic">
+            <div className="bg-primary p-9 text-white flex justify-between items-center">
+              <div>
+                <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.4em]">
                   OPERATIONAL NODE
                 </p>
 
-                <h4 className="text-3xl font-black italic tracking-tighter uppercase leading-none">
+                <h4 className="text-2xl font-black italic tracking-tighter uppercase">
                   KİŞİSEL
                   <br />
                   METRİKLER
                 </h4>
-
               </div>
 
-              <Trophy
-                className="h-10 w-10 text-accent relative z-10 animate-bounce"
-                style={{
-                  animationDuration:
-                    '3s',
-                }}
-              />
-
+              <Trophy className="h-9 w-9 text-accent" />
             </div>
 
-
-            <div className="p-12 space-y-12">
+            <div className="p-9 space-y-9">
 
               {/* LEVEL */}
 
-              <div className="space-y-6">
-
-                <div className="flex items-center gap-6">
-
-                  <div className="h-16 w-16 rounded-[1.5rem] bg-amber-50 flex items-center justify-center shadow-sm">
-                    <Award className="h-8 w-8 text-amber-500" />
+              <div className="space-y-5">
+                <div className="flex items-center gap-5">
+                  <div className="h-14 w-14 rounded-2xl bg-amber-50 flex items-center justify-center">
+                    <Award className="h-7 w-7 text-amber-500" />
                   </div>
 
                   <div>
-
-                    <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest mb-0.5">
+                    <p className="text-[9px] font-black text-muted-foreground/50 uppercase tracking-widest">
                       AKADEMİK RÜTBE
                     </p>
 
-                    <p className="text-2xl font-black text-primary italic tracking-tighter">
+                    <p className="text-xl font-black text-primary italic">
                       LEVEL {level}
                     </p>
-
                   </div>
-
                 </div>
 
-
-                <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden p-1 shadow-inner">
-
+                <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-accent rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(245,158,11,0.5)]"
+                    className="h-full bg-accent rounded-full"
                     style={{
                       width: `${progressToNextLevel}%`,
                     }}
                   />
-
                 </div>
-
               </div>
-
 
               {/* XP */}
 
               <div className="flex items-center justify-between">
-
-                <div className="space-y-1">
-
-                  <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest">
+                <div>
+                  <p className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest">
                     TOPLAM XP
                   </p>
 
-                  <p className="text-6xl font-black text-primary tracking-tighter text-shadow-deep">
+                  <p className="text-5xl font-black text-primary tracking-tighter">
                     {xp}
                   </p>
-
                 </div>
 
-                <div className="h-16 w-16 rounded-[2rem] bg-emerald-50 flex items-center justify-center shadow-inner">
-
-                  <TrendingUp className="h-8 w-8 text-emerald-500" />
-
-                </div>
-
+                <TrendingUp className="h-8 w-8 text-emerald-500" />
               </div>
-
 
               {/* POMODORO */}
 
-              <div className="
-                p-10
-                bg-[#F8FAFC]
-                rounded-[3.5rem]
-                border
-                border-primary/5
-                space-y-8
-                shadow-inner
-                relative
-                overflow-hidden
-              ">
+              <div className="p-7 bg-slate-50 rounded-[2.5rem] border border-primary/5 space-y-6">
 
-                <div className="absolute top-0 right-0 w-40 h-48 bg-accent/5 blur-[60px] rounded-full" />
-
-                <div className="flex items-center justify-between relative z-10">
-
-                  <span className="text-[11px] font-black uppercase tracking-[0.4em] text-primary/30 italic">
+                <div className="flex justify-between">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-primary/30">
                     FOCUS TERMINAL
                   </span>
 
-                  <Timer className="h-6 w-6 text-accent animate-pulse" />
-
+                  <Timer className="h-5 w-5 text-accent" />
                 </div>
 
-
-                <p className="text-7xl font-black text-primary tracking-tighter leading-none text-shadow-deep relative z-10 text-center tabular-nums">
-                  {formatTime(timeLeft)}
+                <p className="text-6xl font-black text-primary tracking-tighter text-center tabular-nums">
+                  {formatTime(
+                    timeLeft
+                  )}
                 </p>
 
-
-                <div className="grid grid-cols-[1fr_auto] gap-3 relative z-10">
+                <div className="grid grid-cols-[1fr_auto] gap-2">
 
                   <Button
                     onClick={() =>
@@ -1400,195 +1442,92 @@ function StudentView({
                         !activeTimer
                       )
                     }
-                    className="
-                      h-16
-                      rounded-2xl
-                      bg-primary
-                      text-white
-                      hover:bg-accent
-                      transition-all
-                      font-black
-                      text-xs
-                      uppercase
-                      tracking-[0.3em]
-                      shadow-2xl
-                    "
+                    className="h-14 rounded-xl bg-primary text-white font-black text-[10px] uppercase tracking-widest"
                   >
-
                     {activeTimer
                       ? 'SEANSI DURDUR'
                       : 'ODAKLANMAYI BAŞLAT'}
 
-                    <Play className="ml-3 h-5 w-5" />
-
+                    <Play className="ml-2 h-4 w-4" />
                   </Button>
 
                   <Button
-                    onClick={resetTimer}
+                    onClick={
+                      resetTimer
+                    }
                     variant="outline"
-                    className="h-16 w-16 rounded-2xl border-primary/10"
+                    className="h-14 w-14 rounded-xl"
                   >
                     <XCircle className="h-5 w-5" />
                   </Button>
-
                 </div>
-
               </div>
-
             </div>
-
           </Card>
 
+          {/* AI */}
 
-          {/* ==================================================
-              AI
-          ================================================== */}
+          <Card className="p-9 rounded-[3.5rem] border-none shadow-2xl bg-accent text-primary space-y-7">
 
-          <Card className="
-            p-12
-            rounded-[4rem]
-            border-none
-            shadow-[0_60px_100px_-20px_rgba(245,158,11,0.2)]
-            bg-accent
-            text-primary
-            space-y-8
-            relative
-            overflow-hidden
-            group
-            border
-            border-white/20
-          ">
+            <Sparkles className="h-10 w-10 opacity-20 ml-auto" />
 
-            <Sparkles className="
-              absolute
-              top-8
-              right-8
-              h-12
-              w-12
-              opacity-20
-              group-hover:scale-125
-              group-hover:rotate-12
-              transition-transform
-              duration-700
-            " />
+            <div>
+              <Badge className="bg-white/20 text-primary border-none">
+                AKADEMİK ANALİZ MOTORU
+              </Badge>
 
-            <div className="space-y-2 relative z-10">
-
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-[9px] font-black uppercase tracking-widest">
-                Akademik Analiz Motoru
-              </div>
-
-              <h4 className="text-3xl font-black italic tracking-tighter uppercase leading-none">
+              <h4 className="mt-4 text-3xl font-black italic tracking-tighter uppercase leading-none">
                 AI BUGÜN
                 <br />
                 NE DİYOR?
               </h4>
-
             </div>
 
+            <p className="text-lg leading-relaxed font-bold italic">
+              Bugün{' '}
+              <span className="underline decoration-white/50 underline-offset-4">
+                {userData?.targetExam?.includes(
+                  'SOZ'
+                )
+                  ? 'Edebiyat - Cumhuriyet Dönemi'
+                  : 'TYT Matematik - Problemler'}
+              </span>{' '}
+              çalışmak akademik hedefin için iyi bir tercih olabilir.
+            </p>
 
-            <div className="space-y-6 relative z-10">
+            <Button
+              onClick={
+                handleCreateRecommendedTask
+              }
+              disabled={
+                isRecLoading ||
+                isReadOnly
+              }
+              className="w-full h-14 rounded-xl bg-white/30 hover:bg-white/50 text-primary font-black text-[10px] uppercase tracking-widest"
+            >
+              {isRecLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Zap className="h-4 w-4" />
+              )}
 
-              <p className="text-xl leading-relaxed font-bold italic text-shadow-deep">
-
-                "Bugün{' '}
-
-                <span className="underline decoration-4 decoration-white/40 underline-offset-8">
-
-                  {userData?.targetExam?.includes(
-                    'SOZ'
-                  )
-                    ? 'Edebiyat'
-                    : 'TYT Matematik'}
-
-                  {' - '}
-
-                  {userData?.targetExam?.includes(
-                    'SOZ'
-                  )
-                    ? 'Cumhuriyet Dönemi'
-                    : 'Problemler'}
-
-                </span>{' '}
-
-                çalışırsan hedef netine{' '}
-
-                <span className="text-white">
-                  +0.2 katkı
-                </span>{' '}
-
-                sağlayabilirsin."
-
-              </p>
-
-
-              <Button
-                onClick={
-                  handleCreateRecommendedTask
-                }
-                disabled={isRecLoading}
-                className="
-                  w-full
-                  h-14
-                  rounded-2xl
-                  bg-white/20
-                  hover:bg-white/40
-                  text-primary
-                  font-black
-                  text-[11px]
-                  uppercase
-                  tracking-widest
-                  border
-                  border-white/20
-                  shadow-sm
-                  transition-all
-                  active:scale-95
-                  gap-3
-                "
-              >
-
-                {isRecLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Zap className="h-4 w-4" />
-                )}
-
-                Görevi Hemen Oluştur
-
-              </Button>
-
-            </div>
-
+              Görevi Hemen Oluştur
+            </Button>
           </Card>
 
+          {/* ACHIEVEMENTS */}
 
-          {/* ==================================================
-              ACHIEVEMENTS
-          ================================================== */}
+          <Card className="p-9 rounded-[3rem] border-none shadow-xl bg-white">
 
-          <Card className="
-            p-12
-            rounded-[4rem]
-            border-none
-            shadow-[0_40px_80px_-20px_rgba(0,0,0,0.06)]
-            bg-white
-            space-y-10
-            border
-            border-primary/5
-          ">
-
-            <div className="flex justify-between items-center">
-
-              <h4 className="text-2xl font-black italic tracking-tighter uppercase text-primary">
+            <div className="flex justify-between items-center mb-8">
+              <h4 className="text-xl font-black italic tracking-tighter uppercase text-primary">
                 Son Başarılar
               </h4>
 
-              <Award className="h-7 w-7 text-accent" />
-
+              <Award className="h-6 w-6 text-accent" />
             </div>
 
-
-            <div className="space-y-8">
+            <div className="space-y-6">
 
               {[
                 {
@@ -1617,146 +1556,630 @@ function StudentView({
                   achievement,
                   index
                 ) => {
-
                   const Icon =
                     achievement.icon;
 
                   return (
                     <div
                       key={index}
-                      className="flex gap-6 items-center group cursor-pointer"
+                      className="flex items-center gap-4"
                     >
-
                       <div
                         className={cn(
-                          'h-14 w-14 rounded-[1.25rem] flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-inner',
+                          'h-12 w-12 rounded-xl flex items-center justify-center',
                           achievement.bg
                         )}
                       >
                         <Icon
                           className={cn(
-                            'h-7 w-7',
+                            'h-6 w-6',
                             achievement.color
                           )}
                         />
                       </div>
 
-                      <div className="space-y-1">
-
-                        <p className="text-base font-black text-primary uppercase italic leading-none">
-                          {achievement.label}
+                      <div>
+                        <p className="text-sm font-black text-primary uppercase italic">
+                          {
+                            achievement.label
+                          }
                         </p>
 
-                        <p className="text-[10px] font-bold text-muted-foreground opacity-60 uppercase tracking-widest">
-                          {achievement.desc}
+                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+                          {
+                            achievement.desc
+                          }
                         </p>
-
                       </div>
-
-                      <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                        <MoreVertical className="h-5 w-5 text-muted-foreground/30" />
-                      </div>
-
                     </div>
                   );
                 }
               )}
-
             </div>
-
           </Card>
-
         </div>
-
       </div>
 
-
-      {/* ======================================================
-          SESSION DIALOG
-      ====================================================== */}
+      {/* SESSION DIALOG */}
 
       <AcademicSessionDialog
-        isOpen={isAddDialogOpen}
+        isOpen={
+          isAddDialogOpen
+        }
         onOpenChange={
           setIsAddDialogOpen
         }
         onSave={
           handleQuickAddSession
         }
-        selectedDay={today}
+        selectedDay={
+          today
+        }
       />
 
+      {/* FLOATING BUTTON */}
 
-      {/* ======================================================
-          FLOATING ACTION BUTTON
-      ====================================================== */}
-
-      <div className="fixed bottom-12 right-12 z-[100] group">
-
-        <div className="
-          absolute
-          -inset-6
-          bg-accent/20
-          blur-[40px]
-          rounded-full
-          opacity-0
-          group-hover:opacity-100
-          transition-opacity
-          duration-700
-        " />
-
-        <Button
-          onClick={() =>
-            setIsAddDialogOpen(true)
-          }
-          className="
-            h-28
-            w-28
-            rounded-[3.5rem]
-            bg-[#0F172A]
-            hover:bg-accent
-            text-white
-            shadow-[0_40px_80px_-20px_rgba(15,23,42,0.6)]
-            transition-all
-            duration-700
-            hover:scale-110
-            flex
-            flex-col
-            items-center
-            justify-center
-            gap-2
-            border-[10px]
-            border-white
-            relative
-            z-10
-          "
-        >
-
-          <Plus className="
-            h-12
-            w-12
-            text-accent
-            group-hover:rotate-90
-            transition-transform
-            duration-500
-          " />
-
-          <span className="text-[9px] font-black tracking-[0.3em] uppercase opacity-40">
-            NEW SESSION
-          </span>
-
-        </Button>
-
-      </div>
-
+      {!isReadOnly && (
+        <div className="fixed bottom-8 right-8 z-[100]">
+          <Button
+            onClick={() =>
+              setIsAddDialogOpen(
+                true
+              )
+            }
+            className="
+              h-20
+              w-20
+              rounded-[1.8rem]
+              bg-primary
+              hover:bg-accent
+              text-white
+              shadow-2xl
+              transition-all
+              hover:scale-110
+            "
+          >
+            <Plus className="h-8 w-8 text-accent" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
 
+/* ============================================================
+   TEACHER VIEW
+============================================================ */
 
-// ============================================================
-// DASHBOARD CONTENT
-// ============================================================
+function TeacherDashboard({
+  user,
+  userData,
+}: {
+  user: any;
+  userData: DashboardUser;
+}) {
+  const db = useFirestore();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const [students, setStudents] =
+    useState<StudentListItem[]>(
+      []
+    );
+
+  const [loadingStudents, setLoadingStudents] =
+    useState(true);
+
+  const [search, setSearch] =
+    useState('');
+
+  const loadStudents =
+    async () => {
+      if (!db) return;
+
+      setLoadingStudents(
+        true
+      );
+
+      try {
+        const usersRef =
+          collection(
+            db,
+            'users'
+          );
+
+        /*
+         * Mevcut Firebase yapısında
+         * öğretmen bağlantısı teacherId
+         * üzerinden tutuluyorsa öğrenciler
+         * buradan alınır.
+         */
+
+        let snapshot;
+
+        try {
+          snapshot =
+            await getDocs(
+              query(
+                usersRef,
+                where(
+                  'teacherId',
+                  '==',
+                  user?.uid
+                )
+              )
+            );
+        } catch {
+          snapshot =
+            await getDocs(
+              query(
+                usersRef,
+                where(
+                  'role',
+                  '==',
+                  'student'
+                )
+              )
+            );
+        }
+
+        const result: StudentListItem[] =
+          [];
+
+        snapshot.forEach(
+          (item) => {
+            const data =
+              item.data();
+
+            if (
+              data.role ===
+                'student' ||
+              !data.role
+            ) {
+              result.push({
+                uid: item.id,
+                displayName:
+                  data.displayName ||
+                  'İsimsiz Öğrenci',
+                email:
+                  data.email,
+                targetExam:
+                  data.targetExam,
+                role:
+                  data.role ||
+                  'student',
+                schoolId:
+                  data.schoolId,
+              });
+            }
+          }
+        );
+
+        setStudents(result);
+      } catch (error) {
+        console.error(
+          'Öğrenci listesi:',
+          error
+        );
+
+        toast({
+          variant:
+            'destructive',
+          title:
+            'Öğrenciler alınamadı',
+          description:
+            'Firebase yetkilerinizi veya teacherId alanını kontrol edin.',
+        });
+      } finally {
+        setLoadingStudents(
+          false
+        );
+      }
+    };
+
+  useEffect(() => {
+    loadStudents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [db, user?.uid]);
+
+  const filteredStudents =
+    students.filter(
+      (student) =>
+        normalizeText(
+          student.displayName
+        ).includes(
+          normalizeText(search)
+        ) ||
+        normalizeText(
+          student.email
+        ).includes(
+          normalizeText(search)
+        )
+    );
+
+  const simulateStudent = (
+    uid: string
+  ) => {
+    router.push(
+      `/dashboard?simulate=${encodeURIComponent(
+        uid
+      )}`
+    );
+  };
+
+  return (
+    <div className="p-8 xl:p-12 space-y-10">
+
+      <div>
+        <Badge className="bg-primary text-white">
+          <UserCheck className="h-3 w-3 mr-2" />
+          ÖĞRETMEN PANELİ
+        </Badge>
+
+        <h2 className="mt-4 text-5xl font-black italic tracking-tighter uppercase text-primary">
+          ÖĞRENCİLERİM
+        </h2>
+
+        <p className="mt-2 text-muted-foreground">
+          Yetkiniz dahilindeki öğrencilerin akademik ekranlarını inceleyebilir ve simülasyon modunda görüntüleyebilirsiniz.
+        </p>
+      </div>
+
+      <Card className="p-5 rounded-[2rem] bg-white border border-primary/5">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+
+          <input
+            value={search}
+            onChange={(e) =>
+              setSearch(
+                e.target.value
+              )
+            }
+            placeholder="Öğrenci ara..."
+            className="w-full h-14 rounded-2xl bg-slate-50 border-none outline-none pl-12 pr-5 font-medium"
+          />
+        </div>
+      </Card>
+
+      {loadingStudents ? (
+        <Card className="p-20 rounded-[3rem] text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-accent mx-auto" />
+
+          <p className="mt-4 text-xs font-black uppercase tracking-widest text-slate-400">
+            Öğrenciler yükleniyor
+          </p>
+        </Card>
+      ) : filteredStudents.length ===
+        0 ? (
+        <Card className="p-20 rounded-[3rem] text-center">
+          <Users className="h-12 w-12 text-slate-200 mx-auto" />
+
+          <p className="mt-5 font-black text-slate-400 uppercase tracking-widest">
+            Öğrenci bulunamadı
+          </p>
+        </Card>
+      ) : (
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+          {filteredStudents.map(
+            (student) => (
+              <Card
+                key={student.uid}
+                className="p-7 rounded-[2.5rem] border-none shadow-xl bg-white hover:-translate-y-1 transition-all"
+              >
+                <div className="flex items-center gap-5">
+
+                  <div className="h-16 w-16 rounded-2xl bg-accent flex items-center justify-center text-white font-black text-2xl">
+                    {student.displayName
+                      ?.charAt(0)
+                      ?.toUpperCase() ||
+                      'Ö'}
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="font-black text-primary truncate">
+                      {
+                        student.displayName
+                      }
+                    </p>
+
+                    <p className="text-xs text-muted-foreground truncate">
+                      {student.email ||
+                        'E-posta yok'}
+                    </p>
+
+                    {student.targetExam && (
+                      <Badge
+                        variant="outline"
+                        className="mt-2 text-[8px]"
+                      >
+                        {
+                          student.targetExam
+                        }
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() =>
+                    simulateStudent(
+                      student.uid
+                    )
+                  }
+                  className="w-full mt-6 h-13 rounded-xl bg-primary text-white font-black uppercase text-[10px] tracking-widest"
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Öğrenciyi Görüntüle
+                </Button>
+              </Card>
+            )
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   SCHOOL ADMIN VIEW
+============================================================ */
+
+function SchoolAdminDashboard({
+  userData,
+}: {
+  userData: DashboardUser;
+}) {
+  return (
+    <div className="p-8 xl:p-12 space-y-10">
+
+      <div>
+        <Badge className="bg-primary text-white">
+          <ShieldCheck className="h-3 w-3 mr-2" />
+          OKUL YÖNETİMİ
+        </Badge>
+
+        <h2 className="mt-4 text-5xl font-black italic tracking-tighter uppercase text-primary">
+          OKUL PANELİ
+        </h2>
+
+        <p className="mt-2 text-muted-foreground">
+          Okulunuzun akademik yönetim merkezi.
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
+
+        {[
+          {
+            title: 'ÖĞRENCİLER',
+            value: '—',
+            icon: Users,
+          },
+          {
+            title: 'ÖĞRETMENLER',
+            value: '—',
+            icon: GraduationCap,
+          },
+          {
+            title: 'ŞUBELER',
+            value: '—',
+            icon: PieChart,
+          },
+          {
+            title: 'AKTİVİTE',
+            value: 'CANLI',
+            icon: Activity,
+          },
+        ].map(
+          (
+            item,
+            index
+          ) => {
+            const Icon =
+              item.icon;
+
+            return (
+              <Card
+                key={index}
+                className="p-7 rounded-[2.5rem] border-none shadow-xl bg-white"
+              >
+                <Icon className="h-7 w-7 text-accent" />
+
+                <p className="mt-6 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                  {item.title}
+                </p>
+
+                <p className="mt-2 text-3xl font-black text-primary">
+                  {item.value}
+                </p>
+              </Card>
+            );
+          }
+        )}
+      </div>
+
+      <Card className="p-10 rounded-[3rem] bg-white border-none shadow-xl">
+        <h3 className="text-2xl font-black text-primary italic uppercase">
+          Yönetim Modülleri
+        </h3>
+
+        <div className="grid md:grid-cols-3 gap-5 mt-7">
+
+          {[
+            {
+              title:
+                'Öğretmen Yönetimi',
+              icon: UserCheck,
+            },
+            {
+              title:
+                'Şube Yönetimi',
+              icon: Library,
+            },
+            {
+              title:
+                'Akademik Raporlar',
+              icon: BarChart3,
+            },
+          ].map(
+            (
+              item,
+              index
+            ) => {
+              const Icon =
+                item.icon;
+
+              return (
+                <Button
+                  key={index}
+                  variant="outline"
+                  className="h-24 rounded-2xl justify-start gap-4 text-primary font-black"
+                >
+                  <Icon className="h-6 w-6 text-accent" />
+                  {item.title}
+                </Button>
+              );
+            }
+          )}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+/* ============================================================
+   ADMIN VIEW
+============================================================ */
+
+function AdminDashboard() {
+  return (
+    <div className="p-8 xl:p-12 space-y-10">
+
+      <div>
+        <Badge className="bg-primary text-white">
+          <ShieldCheck className="h-3 w-3 mr-2" />
+          SYSTEM ADMIN
+        </Badge>
+
+        <h2 className="mt-4 text-5xl font-black italic tracking-tighter uppercase text-primary">
+          SİSTEM PANELİ
+        </h2>
+
+        <p className="mt-2 text-muted-foreground">
+          Akademik platformun sistem yönetim merkezi.
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
+
+        {[
+          {
+            title:
+              'SİSTEM DURUMU',
+            value: 'ONLINE',
+            icon: Activity,
+          },
+          {
+            title:
+              'MÜFREDAT',
+            value: 'AKTİF',
+            icon: Library,
+          },
+          {
+            title:
+              'KULLANICILAR',
+            value: '—',
+            icon: Users,
+          },
+          {
+            title:
+              'AKTİVİTE',
+            value: 'CANLI',
+            icon: TrendingUp,
+          },
+        ].map(
+          (
+            item,
+            index
+          ) => {
+            const Icon =
+              item.icon;
+
+            return (
+              <Card
+                key={index}
+                className="p-7 rounded-[2.5rem] border-none shadow-xl bg-white"
+              >
+                <Icon className="h-7 w-7 text-accent" />
+
+                <p className="mt-6 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                  {item.title}
+                </p>
+
+                <p className="mt-2 text-3xl font-black text-primary">
+                  {item.value}
+                </p>
+              </Card>
+            );
+          }
+        )}
+      </div>
+
+      <Card className="p-10 rounded-[3rem] bg-primary text-white border-none shadow-2xl">
+
+        <h3 className="text-3xl font-black italic uppercase tracking-tighter">
+          Sistem Yönetimi
+        </h3>
+
+        <p className="mt-3 text-white/50">
+          Platform modüllerine ve akademik altyapıya buradan erişebilirsiniz.
+        </p>
+
+        <div className="grid md:grid-cols-3 gap-4 mt-8">
+
+          <Link
+            href="/dashboard/admin/curriculum"
+            className="h-24 rounded-2xl bg-white/10 hover:bg-white/20 flex items-center px-6 gap-4 transition-all"
+          >
+            <Library className="h-6 w-6 text-accent" />
+
+            <span className="font-black">
+              Müfredat Motoru
+            </span>
+          </Link>
+
+          <Link
+            href="/dashboard/discover"
+            className="h-24 rounded-2xl bg-white/10 hover:bg-white/20 flex items-center px-6 gap-4 transition-all"
+          >
+            <Users className="h-6 w-6 text-accent" />
+
+            <span className="font-black">
+              Uzmanlar
+            </span>
+          </Link>
+
+          <Link
+            href="/dashboard/contact"
+            className="h-24 rounded-2xl bg-white/10 hover:bg-white/20 flex items-center px-6 gap-4 transition-all"
+          >
+            <Headset className="h-6 w-6 text-accent" />
+
+            <span className="font-black">
+              Destek
+            </span>
+          </Link>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+/* ============================================================
+   DASHBOARD CONTENT
+============================================================ */
 
 function DashboardContent() {
   const {
@@ -1765,93 +2188,121 @@ function DashboardContent() {
   } = useUser();
 
   const auth = useAuth();
+  const db = useFirestore();
 
   const router = useRouter();
-
   const searchParams =
     useSearchParams();
 
   const simulatedUserId =
-    searchParams.get('simulate');
+    searchParams.get(
+      'simulate'
+    );
 
   const [
     isProfileDialogOpen,
     setIsProfileDialogOpen,
   ] = useState(false);
 
-
-  // ----------------------------------------------------------
-  // USER DATA
-  // ----------------------------------------------------------
+  /* ==========================================================
+     CURRENT USER
+  ========================================================== */
 
   const {
     data: userData,
     loading: docLoading,
-  } = useDoc<any>(
+  } = useDoc(
     user?.uid
       ? `users/${user.uid}`
       : null
   );
 
-
-  // ----------------------------------------------------------
-  // SIMULATED USER
-  // ----------------------------------------------------------
+  /* ==========================================================
+     SIMULATED USER
+  ========================================================== */
 
   const {
     data: simulatedUserData,
-  } = useDoc<any>(
+    loading:
+      simulatedUserLoading,
+  } = useDoc(
     simulatedUserId
       ? `users/${simulatedUserId}`
       : null
   );
 
-
-  // ----------------------------------------------------------
-  // CURRENT VIEW DATA
-  // ----------------------------------------------------------
-
-  const currentViewData =
-    simulatedUserData ||
-    userData;
+  /* ==========================================================
+     VIEW DATA
+  ========================================================== */
 
   const isSimulating =
-    !!simulatedUserId;
+    Boolean(
+      simulatedUserId
+    );
 
+  const currentViewData =
+    isSimulating
+      ? simulatedUserData
+      : userData;
 
-  // ----------------------------------------------------------
-  // LOGO
-  // ----------------------------------------------------------
+  /*
+   * Simülasyonda görüntülenecek öğrencinin
+   * UID'si URL'den alınır.
+   */
+
+  const currentViewUid =
+    isSimulating
+      ? simulatedUserId
+      : user?.uid;
+
+  /* ==========================================================
+     LOGO
+  ========================================================== */
 
   const logoUrl =
     PlaceHolderImages.find(
       (img) =>
         img.id === 'app-logo'
     )?.imageUrl ||
-    'https://picsum.photos/seed/edu-logo-102/400/400';
+    DEFAULT_LOGO;
 
-
-  // ----------------------------------------------------------
-  // GLOBAL LOADING
-  // ----------------------------------------------------------
+  /* ==========================================================
+     LOADING
+  ========================================================== */
 
   const isGlobalLoading =
     authLoading ||
-    (!!user && docLoading);
+    (!!user && docLoading) ||
+    (!!simulatedUserId &&
+      simulatedUserLoading);
 
+  /* ==========================================================
+     REDIRECT
+  ========================================================== */
 
-  // ----------------------------------------------------------
-  // MENU
-  // ----------------------------------------------------------
+  useEffect(() => {
+    if (
+      !authLoading &&
+      !user
+    ) {
+      router.push(
+        '/login'
+      );
+    }
+  }, [
+    user,
+    authLoading,
+    router,
+  ]);
+
+  /* ==========================================================
+     MENU
+  ========================================================== */
 
   const dynamicMenu =
     useMemo(() => {
-
-      if (!currentViewData) {
+      if (!currentViewData)
         return [];
-      }
-
-      // ADMIN
 
       if (
         currentViewData.role ===
@@ -1859,29 +2310,36 @@ function DashboardContent() {
       ) {
         return [
           {
-            label: 'Sistem Paneli',
-            icon: LayoutDashboard,
-            href: '/dashboard',
+            label:
+              'Sistem Paneli',
+            icon:
+              LayoutDashboard,
+            href:
+              '/dashboard',
           },
           {
-            label: 'Müfredat Motoru',
+            label:
+              'Müfredat Motoru',
             icon: Library,
-            href: '/dashboard/admin/curriculum',
+            href:
+              '/dashboard/admin/curriculum',
           },
           {
-            label: 'Uzmanlar',
+            label:
+              'Uzmanlar',
             icon: Users,
-            href: '/dashboard/discover',
+            href:
+              '/dashboard/discover',
           },
           {
-            label: 'Destek',
+            label:
+              'Destek',
             icon: Headset,
-            href: '/dashboard/contact',
+            href:
+              '/dashboard/contact',
           },
         ];
       }
-
-      // SCHOOL ADMIN
 
       if (
         currentViewData.role ===
@@ -1889,29 +2347,34 @@ function DashboardContent() {
       ) {
         return [
           {
-            label: 'Okul Paneli',
-            icon: LayoutDashboard,
-            href: '/dashboard',
+            label:
+              'Okul Paneli',
+            icon:
+              LayoutDashboard,
+            href:
+              '/dashboard',
           },
           {
-            label: 'Öğretmenler',
+            label:
+              'Öğretmenler',
             icon: User,
             href: '#',
           },
           {
-            label: 'Şubeler',
+            label:
+              'Şubeler',
             icon: PieChart,
             href: '#',
           },
           {
-            label: 'Destek',
+            label:
+              'Destek',
             icon: Headset,
-            href: '/dashboard/contact',
+            href:
+              '/dashboard/contact',
           },
         ];
       }
-
-      // TEACHER
 
       if (
         currentViewData.role ===
@@ -1919,53 +2382,71 @@ function DashboardContent() {
       ) {
         return [
           {
-            label: 'Öğretmen Paneli',
-            icon: LayoutDashboard,
-            href: '/dashboard',
+            label:
+              'Öğretmen Paneli',
+            icon:
+              LayoutDashboard,
+            href:
+              '/dashboard',
           },
           {
-            label: 'Öğrencilerim',
+            label:
+              'Öğrencilerim',
             icon: Users,
-            href: '#',
+            href:
+              '/dashboard',
           },
           {
-            label: 'Uzman Keşfet',
-            icon: Compass,
-            href: '/dashboard/discover',
+            label:
+              'Uzman Keşfet',
+            icon:
+              Compass,
+            href:
+              '/dashboard/discover',
           },
           {
-            label: 'Destek',
+            label:
+              'Destek',
             icon: Headset,
-            href: '/dashboard/contact',
+            href:
+              '/dashboard/contact',
           },
         ];
       }
 
-      // STUDENT
-
-      const items: any[] = [
-        {
-          label: 'Akademik Panel',
-          icon: LayoutDashboard,
-          href: '/dashboard',
-        },
-        {
-          label: 'AI Analiz',
-          icon: Brain,
-          href: '/dashboard/ai-analysis',
-          accent: true,
-        },
-        {
-          label: 'Akıllı Planlama',
-          icon: Calendar,
-          href: '/dashboard/planning',
-        },
-        {
-          label: 'Uzman Keşfet',
-          icon: Compass,
-          href: '/dashboard/discover',
-        },
-      ];
+      const items: any[] =
+        [
+          {
+            label:
+              'Akademik Panel',
+            icon:
+              LayoutDashboard,
+            href:
+              '/dashboard',
+          },
+          {
+            label:
+              'AI Analiz',
+            icon: Brain,
+            href:
+              '/dashboard/ai-analysis',
+            accent: true,
+          },
+          {
+            label:
+              'Akıllı Planlama',
+            icon: Calendar,
+            href:
+              '/dashboard/planning',
+          },
+          {
+            label:
+              'Uzman Keşfet',
+            icon: Compass,
+            href:
+              '/dashboard/discover',
+          },
+        ];
 
       const config =
         EXAM_CONFIGS[
@@ -1974,270 +2455,146 @@ function DashboardContent() {
         ] ||
         EXAM_CONFIGS['LGS'];
 
-      if (config?.modules) {
-
+      if (
+        config?.modules
+      ) {
         config.modules
           .slice(0, 3)
-          .forEach((mod: any) => {
-
-            items.push({
-              label: mod.title,
-              icon: mod.icon,
-              href: '#',
-            });
-
-          });
-
+          .forEach(
+            (mod: any) => {
+              items.push({
+                label:
+                  mod.title,
+                icon:
+                  mod.icon,
+                href: '#',
+              });
+            }
+          );
       }
 
       items.push({
-        label: 'Destek Hattı',
+        label:
+          'Destek Hattı',
         icon: Headset,
-        href: '/dashboard/contact',
+        href:
+          '/dashboard/contact',
       });
 
       return items;
+    }, [
+      currentViewData,
+    ]);
 
-    }, [currentViewData]);
+  /* ==========================================================
+     LOGOUT
+  ========================================================== */
 
+  const handleLogout =
+    async () => {
+      if (!auth) return;
 
-  // ----------------------------------------------------------
-  // REDIRECT
-  // ----------------------------------------------------------
+      await signOut(auth);
 
-  useEffect(() => {
+      router.push('/');
+    };
 
-    if (
-      !authLoading &&
-      !user
-    ) {
-      router.push('/login');
-    }
+  /* ==========================================================
+     STOP SIMULATION
+  ========================================================== */
 
-  }, [
-    user,
-    authLoading,
-    router,
-  ]);
+  const stopSimulation =
+    () => {
+      const params =
+        new URLSearchParams(
+          searchParams.toString()
+        );
 
+      params.delete(
+        'simulate'
+      );
 
-  // ----------------------------------------------------------
-  // LOADING SCREEN
-  // ----------------------------------------------------------
+      const queryString =
+        params.toString();
+
+      router.push(
+        queryString
+          ? `/dashboard?${queryString}`
+          : '/dashboard'
+      );
+    };
+
+  /* ==========================================================
+     PROFILE COMPLETION
+  ========================================================== */
 
   if (isGlobalLoading) {
-
     return (
-      <div className="
-        min-h-screen
-        flex
-        items-center
-        justify-center
-        bg-[#F8FAFC]
-      ">
+      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+        <div className="flex flex-col items-center gap-6">
+          <Loader2 className="h-12 w-12 animate-spin text-accent" />
 
-        <div className="flex flex-col items-center gap-10">
-
-          <div className="relative">
-
-            <div className="
-              h-32
-              w-32
-              animate-spin
-              rounded-[3.5rem]
-              border-[10px]
-              border-accent
-              border-t-transparent
-              shadow-[0_0_80px_rgba(245,158,11,0.3)]
-            " />
-
-            <Sparkles className="
-              absolute
-              inset-0
-              m-auto
-              h-10
-              w-10
-              text-accent
-              animate-pulse
-            " />
-
-          </div>
-
-          <div className="text-center space-y-2">
-
-            <p className="
-              text-[14px]
-              text-primary
-              font-black
-              uppercase
-              tracking-[0.6em]
-              animate-pulse
-              italic
-            ">
-              Akademik Motor Hazırlanıyor
-            </p>
-
-            <p className="
-              text-[10px]
-              text-muted-foreground
-              font-bold
-              uppercase
-              tracking-widest
-              italic
-              opacity-40
-            ">
-              Verileriniz Senkronize Ediliyor...
-            </p>
-
-          </div>
-
+          <p className="text-xs font-black uppercase tracking-[0.4em] text-primary/40">
+            Akademik Motor Hazırlanıyor
+          </p>
         </div>
-
       </div>
     );
   }
-
-
-  // ----------------------------------------------------------
-  // PROFILE COMPLETION
-  // ----------------------------------------------------------
 
   if (
     user &&
     !docLoading &&
     !userData
   ) {
-
     return (
-      <div className="
-        min-h-screen
-        bg-[#F8FAFC]
-        flex
-        items-center
-        justify-center
-        p-6
-        relative
-        overflow-hidden
-      ">
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6">
+        <div className="w-full max-w-4xl">
 
-        <div className="
-          absolute
-          top-0
-          right-0
-          w-[50%]
-          h-[50%]
-          bg-accent/5
-          blur-[150px]
-          rounded-full
-        " />
-
-        <div className="
-          w-full
-          max-w-4xl
-          space-y-12
-          relative
-          z-10
-        ">
-
-          <div className="text-center space-y-4">
-
-            <div className="
-              inline-flex
-              items-center
-              gap-2
-              px-5
-              py-2
-              rounded-full
-              bg-primary
-              text-white
-              font-black
-              text-[10px]
-              uppercase
-              tracking-widest
-              shadow-xl
-            ">
-
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-white font-black text-[10px] uppercase tracking-widest">
               <ShieldCheck className="h-4 w-4 text-accent" />
-
               Sistem Kurulumu
-
             </div>
 
-            <h2 className="
-              text-5xl
-              font-black
-              italic
-              tracking-tighter
-              text-primary
-              uppercase
-              leading-none
-              text-shadow-premium
-            ">
-
+            <h2 className="mt-5 text-5xl font-black italic tracking-tighter text-primary uppercase">
               PROFİLİNİZİ{' '}
-
-              <span className="text-accent text-shadow-accent">
+              <span className="text-accent">
                 TAMAMLAYIN
               </span>
-
             </h2>
 
-            <p className="text-muted-foreground font-medium italic">
+            <p className="mt-4 text-muted-foreground">
               Sistemi size özel yapılandırmak için son birkaç bilgiye ihtiyacımız var.
             </p>
-
           </div>
 
-
-          <div className="
-            bg-white
-            rounded-[4rem]
-            shadow-2xl
-            border
-            border-primary/5
-            overflow-hidden
-          ">
-
+          <div className="bg-white rounded-[3rem] shadow-2xl border border-primary/5 overflow-hidden">
             <AuthForm
               mode="register"
-              isProfileCompletion={true}
+              isProfileCompletion={
+                true
+              }
             />
-
           </div>
 
-
-          <div className="text-center">
-
+          <div className="text-center mt-6">
             <Button
               variant="ghost"
               onClick={() =>
                 auth &&
                 signOut(auth)
               }
-              className="
-                text-muted-foreground
-                font-black
-                text-[10px]
-                uppercase
-                tracking-widest
-                gap-2
-              "
+              className="text-muted-foreground font-black text-[10px] uppercase tracking-widest"
             >
-
-              <LogOut className="h-3 w-3" />
-
+              <LogOut className="h-3 w-3 mr-2" />
               Başka Bir Hesapla Giriş Yap
-
             </Button>
-
           </div>
-
         </div>
-
       </div>
     );
   }
-
 
   if (
     !user ||
@@ -2246,160 +2603,77 @@ function DashboardContent() {
     return null;
   }
 
-
-  // ----------------------------------------------------------
-  // LOGOUT
-  // ----------------------------------------------------------
-
-  const handleLogout =
-    async () => {
-
-      if (auth) {
-
-        await signOut(auth);
-
-        router.push('/');
-
-      }
-
-    };
-
-
-  // ----------------------------------------------------------
-  // STOP SIMULATION
-  // ----------------------------------------------------------
-
-  const stopSimulation =
-    () => {
-
-      const params =
-        new URLSearchParams(
-          searchParams
-        );
-
-      params.delete(
-        'simulate'
-      );
-
-      const query =
-        params.toString();
-
-      router.push(
-        query
-          ? `/dashboard?${query}`
-          : '/dashboard'
-      );
-
-    };
-
-
-  // ----------------------------------------------------------
-  // RENDER VIEW
-  // ----------------------------------------------------------
+  /* ==========================================================
+     RENDER VIEW
+  ========================================================== */
 
   const renderView =
     () => {
-
       switch (
-        currentViewData?.role
+        currentViewData.role
       ) {
+        case 'teacher':
+          return (
+            <TeacherDashboard
+              user={user}
+              userData={
+                currentViewData
+              }
+            />
+          );
+
+        case 'school_admin':
+          return (
+            <SchoolAdminDashboard
+              userData={
+                currentViewData
+              }
+            />
+          );
+
+        case 'admin':
+          return (
+            <AdminDashboard />
+          );
 
         case 'student':
-
+        default:
           return (
             <StudentView
               user={{
                 uid:
-                  currentViewData.uid,
+                  currentViewUid,
               }}
-              userData={
-                currentViewData
-              }
+              userData={{
+                ...currentViewData,
+                uid:
+                  currentViewUid,
+              }}
               isReadOnly={
                 isSimulating
               }
             />
           );
-
-
-        case 'teacher':
-
-          return (
-            <TeacherView
-              user={user}
-              userData={
-                currentViewData
-              }
-            />
-          );
-
-
-        case 'school_admin':
-
-          return (
-            <SchoolAdminView
-              user={user}
-              userData={
-                currentViewData
-              }
-            />
-          );
-
-
-        case 'admin':
-
-          return (
-            <AdminView
-              user={user}
-              userData={
-                currentViewData
-              }
-            />
-          );
-
-
-        default:
-
-          return (
-            <StudentView
-              user={{
-                uid:
-                  currentViewData?.uid,
-              }}
-              userData={
-                currentViewData
-              }
-            />
-          );
-
       }
-
     };
 
-
-  // ==========================================================
-  // MAIN DASHBOARD
-  // ==========================================================
+  /* ==========================================================
+     MAIN
+  ========================================================== */
 
   return (
-    <div className="
-      min-h-screen
-      bg-[#FAFBFF]
-      selection:bg-accent
-      selection:text-white
-    ">
+    <div className="min-h-screen">
 
       {/* ======================================================
           SIMULATION BAR
       ====================================================== */}
 
       {isSimulating && (
-
         <div className="
-          bg-destructive
+          bg-destructive/95
           text-white
-          px-8
-          py-5
+          px-6
+          py-4
           flex
           items-center
           justify-between
@@ -2407,77 +2681,44 @@ function DashboardContent() {
           top-0
           z-[100]
           shadow-2xl
-          animate-in
-          slide-in-from-top
-          duration-700
           backdrop-blur-md
-          bg-destructive/90
         ">
 
-          <div className="
-            flex
-            items-center
-            gap-5
-            text-xs
-            font-black
-            uppercase
-            tracking-widest
-            italic
-          ">
-
+          <div className="flex items-center gap-4 text-xs font-black uppercase tracking-widest">
             <Eye className="h-5 w-5" />
 
-            SİMÜLASYON:
-
-            <span className="underline underline-offset-8">
-              {
-                simulatedUserData?.displayName ||
-                'Kullanıcı'
-              }
+            <span>
+              SİMÜLASYON:
             </span>
 
-          </div>
+            <span className="underline underline-offset-4">
+              {simulatedUserData?.displayName ||
+                'Kullanıcı'}
+            </span>
 
+            <Badge className="bg-white/20 text-white border-none">
+              SALT OKUNUR
+            </Badge>
+          </div>
 
           <Button
             variant="ghost"
             onClick={
               stopSimulation
             }
-            className="
-              text-white
-              hover:bg-white/10
-              font-black
-              h-12
-              gap-3
-              rounded-2xl
-              border-2
-              border-white/20
-              px-10
-            "
+            className="text-white hover:bg-white/10 font-black gap-2 rounded-xl border border-white/20"
           >
-
             <XCircle className="h-5 w-5" />
-
             Kapat
-
           </Button>
-
         </div>
-
       )}
-
 
       {/* ======================================================
           LAYOUT
       ====================================================== */}
 
-      <div className="
-        grid
-        lg:grid-cols-[340px_1fr]
-        min-h-screen
-      ">
-
+      <div className="grid lg:grid-cols-[320px_1fr] min-h-screen">
 
         {/* ====================================================
             SIDEBAR
@@ -2492,90 +2733,49 @@ function DashboardContent() {
           border-r
           border-white/5
           shadow-2xl
-          z-50
           sticky
           top-0
           h-screen
+          z-50
         ">
 
           {/* LOGO */}
 
-          <div className="p-12">
-
+          <div className="p-10">
             <Link
               href="/dashboard"
-              className="
-                flex
-                items-center
-                gap-6
-                group
-              "
+              className="flex items-center gap-5"
             >
-
-              <div className="
-                relative
-                h-16
-                w-16
-                overflow-hidden
-                rounded-[1.5rem]
-                bg-white
-                p-2
-              ">
-
+              <div className="relative h-14 w-14 overflow-hidden rounded-2xl bg-white p-2">
                 <Image
                   src={logoUrl}
                   alt="DEK Logo"
                   fill
                   className="object-contain"
                 />
-
               </div>
 
-
               <div>
-
-                <span className="
-                  font-black
-                  text-3xl
-                  block
-                  tracking-tighter
-                  italic
-                  uppercase
-                  text-shadow-premium
-                ">
+                <span className="font-black text-3xl block tracking-tighter italic uppercase">
                   DEK
                 </span>
 
-                <span className="
-                  text-[9px]
-                  opacity-40
-                  block
-                  font-black
-                  uppercase
-                  tracking-widest
-                ">
+                <span className="text-[8px] opacity-40 block font-black uppercase tracking-widest">
                   Akademik Panel
                 </span>
-
               </div>
-
             </Link>
-
           </div>
-
 
           {/* NAVIGATION */}
 
-          <nav className="
-            flex-1
-            px-8
-            space-y-3
-            mt-10
-          ">
+          <nav className="flex-1 px-6 space-y-2">
 
             {dynamicMenu.map(
-              (item: any, index) => {
-
+              (
+                item: any,
+                index
+              ) => {
                 const Icon =
                   item.icon;
 
@@ -2585,68 +2785,45 @@ function DashboardContent() {
                   !isSimulating;
 
                 return (
-
                   <Button
                     key={index}
                     variant="ghost"
                     className={cn(
-                      `
-                        w-full
-                        justify-start
-                        rounded-[1.5rem]
-                        transition-all
-                        h-18
-                        group
-                        relative
-                      `,
+                      'w-full justify-start rounded-2xl h-14 group',
                       active
                         ? 'bg-white/15 text-white font-black'
                         : 'hover:bg-white/5 opacity-60 hover:opacity-100'
                     )}
                     asChild
                   >
-
                     <Link
-                      href={item.href}
+                      href={
+                        item.href
+                      }
                     >
-
                       <Icon
                         className={cn(
-                          `
-                            mr-6
-                            h-7
-                            w-7
-                            transition-transform
-                            group-hover:scale-110
-                          `,
+                          'mr-5 h-5 w-5',
                           item.accent &&
                             'text-accent'
                         )}
                       />
 
-                      <span className="
-                        text-lg
-                        tracking-tight
-                        italic
-                        uppercase
-                      ">
-                        {item.label}
+                      <span className="text-sm tracking-tight italic uppercase">
+                        {
+                          item.label
+                        }
                       </span>
-
                     </Link>
-
                   </Button>
-
                 );
               }
             )}
-
           </nav>
 
+          {/* USER */}
 
-          {/* USER CARD */}
-
-          <div className="p-10">
+          <div className="p-7">
 
             <div
               onClick={() =>
@@ -2654,113 +2831,56 @@ function DashboardContent() {
                   true
                 )
               }
-              className="
-                p-8
-                bg-white/5
-                rounded-[3rem]
-                border
-                border-white/10
-                flex
-                items-center
-                gap-6
-                cursor-pointer
-                hover:bg-white/10
-                transition-all
-              "
+              className="p-5 bg-white/5 rounded-3xl border border-white/10 flex items-center gap-4 cursor-pointer hover:bg-white/10 transition-all"
             >
-
-              <div className="
-                h-14
-                w-14
-                rounded-[1.25rem]
-                bg-accent
-                flex
-                items-center
-                justify-center
-                text-white
-                font-black
-                text-2xl
-                italic
-              ">
-
+              <div className="h-12 w-12 rounded-xl bg-accent flex items-center justify-center text-white font-black text-xl">
                 {userData?.displayName?.charAt(
                   0
                 ) || (
-                  <User className="h-6 w-6" />
+                  <User className="h-5 w-5" />
                 )}
-
               </div>
 
-
-              <div className="
-                flex-1
-                overflow-hidden
-              ">
-
+              <div className="flex-1 min-w-0">
                 <p className="text-sm font-black truncate">
                   {userData?.displayName ||
-                    'Yükleniyor...'}
+                    'Kullanıcı'}
                 </p>
 
-                <p className="
-                  text-[10px]
-                  opacity-40
-                  uppercase
-                  tracking-widest
-                  mt-1
-                ">
-                  HESABIM
+                <p className="text-[9px] opacity-40 uppercase tracking-widest">
+                  {userData?.role ||
+                    'HESABIM'}
                 </p>
-
               </div>
-
 
               <Button
                 variant="ghost"
                 size="icon"
-                className="
-                  h-10
-                  w-10
-                  hover:bg-destructive
-                  rounded-xl
-                  transition-all
-                "
-                onClick={(event) => {
-
+                className="h-9 w-9 hover:bg-destructive rounded-xl"
+                onClick={(
+                  event
+                ) => {
                   event.stopPropagation();
 
                   handleLogout();
-
                 }}
               >
-
-                <LogOut className="h-5 w-5" />
-
+                <LogOut className="h-4 w-4" />
               </Button>
-
             </div>
-
           </div>
-
         </aside>
-
 
         {/* ====================================================
             MAIN
         ==================================================== */}
 
-        <main className="
-          flex
-          flex-col
-          relative
-          overflow-hidden
-          bg-[#FAFBFF]
-        ">
+        <main className="flex flex-col relative overflow-hidden bg-[#FAFBFF]">
 
           {/* HEADER */}
 
           <header className="
-            h-28
+            h-24
             bg-white/80
             backdrop-blur-3xl
             border-b
@@ -2768,17 +2888,13 @@ function DashboardContent() {
             flex
             items-center
             justify-between
-            px-12
+            px-8 xl:px-12
             sticky
             top-0
             z-40
           ">
 
-            <div className="
-              flex
-              items-center
-              gap-8
-            ">
+            <div className="flex items-center gap-5">
 
               <Button
                 variant="ghost"
@@ -2788,74 +2904,27 @@ function DashboardContent() {
                     '/dashboard'
                   )
                 }
-                className="
-                  h-14
-                  w-14
-                  rounded-2xl
-                  bg-slate-100
-                  hover:bg-primary
-                  hover:text-white
-                  transition-all
-                  shadow-sm
-                "
+                className="h-12 w-12 rounded-xl bg-slate-100 hover:bg-primary hover:text-white"
               >
-
-                <Home className="h-6 w-6" />
-
+                <Home className="h-5 w-5" />
               </Button>
 
-
-              <h1 className="
-                text-3xl
-                font-black
-                text-primary
-                uppercase
-                tracking-tighter
-                italic
-              ">
-
+              <h1 className="text-xl xl:text-2xl font-black text-primary uppercase tracking-tighter italic">
                 {isSimulating
                   ? 'SİMÜLASYON MODU'
-                  : userData?.role ===
+                  : currentViewData.role ===
                     'student'
                   ? 'AKADEMİK KOMUTA MERKEZİ'
                   : 'AKADEMİK HAREKÂT MERKEZİ'}
-
               </h1>
-
             </div>
 
+            <div className="flex items-center gap-5">
 
-            <div className="
-              flex
-              items-center
-              gap-8
-            ">
-
-              <div className="
-                flex
-                items-center
-                gap-2
-                text-[10px]
-                font-black
-                uppercase
-                tracking-widest
-                text-emerald-500
-                italic
-              ">
-
-                <span className="
-                  h-2
-                  w-2
-                  rounded-full
-                  bg-emerald-500
-                  animate-pulse
-                " />
-
+              <div className="hidden md:flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-emerald-500 italic">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                 CANLI
-
               </div>
-
 
               <div
                 onClick={() =>
@@ -2863,59 +2932,28 @@ function DashboardContent() {
                     true
                   )
                 }
-                className="
-                  h-14
-                  w-14
-                  rounded-2xl
-                  bg-accent
-                  overflow-hidden
-                  cursor-pointer
-                  shadow-2xl
-                  transition-all
-                  hover:scale-105
-                  flex
-                  items-center
-                  justify-center
-                  font-black
-                  text-white
-                  text-xl
-                  italic
-                  border-4
-                  border-white/20
-                "
+                className="h-12 w-12 rounded-xl bg-accent overflow-hidden cursor-pointer shadow-xl flex items-center justify-center font-black text-white text-lg italic"
               >
-
                 {userData?.displayName?.charAt(
                   0
                 ) || (
-                  <User className="h-6 w-6" />
+                  <User className="h-5 w-5" />
                 )}
-
               </div>
-
             </div>
-
           </header>
-
 
           {/* CONTENT */}
 
-          <div className="
-            flex-1
-            overflow-y-auto
-            scrollbar-hide
-          ">
-
+          <div className="flex-1 overflow-y-auto scrollbar-hide">
             {renderView()}
-
           </div>
-
         </main>
-
       </div>
 
-
-      {/* PROFILE */}
+      {/* ======================================================
+          PROFILE
+      ====================================================== */}
 
       <ProfileEditDialog
         isOpen={
@@ -2924,46 +2962,28 @@ function DashboardContent() {
         onOpenChange={
           setIsProfileDialogOpen
         }
-        userData={userData}
+        userData={
+          userData
+        }
       />
-
     </div>
   );
 }
 
-
-// ============================================================
-// PAGE
-// ============================================================
+/* ============================================================
+   PAGE
+============================================================ */
 
 export default function DashboardPage() {
-
   return (
-
     <Suspense
       fallback={
-        <div className="
-          min-h-screen
-          flex
-          items-center
-          justify-center
-          bg-[#F8FAFC]
-        ">
-
-          <Loader2 className="
-            h-10
-            w-10
-            animate-spin
-            text-accent
-          " />
-
+        <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+          <Loader2 className="h-10 w-10 animate-spin text-accent" />
         </div>
       }
     >
-
       <DashboardContent />
-
     </Suspense>
-
   );
 }

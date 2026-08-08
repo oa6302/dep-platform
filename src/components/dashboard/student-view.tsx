@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card } from '@/components/ui/card';
@@ -41,7 +42,7 @@ import {
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { AcademicSessionDialog } from '@/components/academic-session-dialog';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, collection, addDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 interface StudentViewProps {
@@ -103,7 +104,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     return totalMins;
   }, [todayTasks]);
 
-  // --- AI DECISION ENGINE LOGIC ---
   const aiRecommendation = useMemo(() => {
     const exam = userData?.targetExam || 'YKS_SOZ';
     const isKpss = exam.includes('KPSS');
@@ -132,7 +132,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   }, [completedTasks, userData]);
 
   const totalTasksCompleted = completedTasks.length;
-  const level = Math.floor(totalTasksCompleted / 10) + 1;
   const xp = totalTasksCompleted * 120 + (totalQuestions * 2);
   const progressToNextLevel = Math.min(((xp % 1000) / 1000) * 100, 100);
 
@@ -252,6 +251,48 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     }
   };
 
+  const toggleTaskStatus = async (index: number, currentStatus: string) => {
+    if (!db || !user || isReadOnly) return;
+    
+    const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
+    const newSchedule = [...studyPlan.schedule];
+    const dayIndex = newSchedule.findIndex((s: any) => s.day === today);
+    
+    if (dayIndex > -1) {
+      const task = newSchedule[dayIndex].tasks[index];
+      task.status = newStatus;
+      
+      try {
+        // 1. Programı güncelle
+        await setDoc(doc(db, 'studyPlans', user.uid), { 
+          schedule: newSchedule, 
+          updatedAt: serverTimestamp() 
+        }, { merge: true });
+
+        // 2. Eğer tamamlandıysa 'studies' koleksiyonuna bağımsız kayıt at (Otomatik Arşiv)
+        if (newStatus === 'completed') {
+          await addDoc(collection(db, 'studies'), {
+            userId: user.uid,
+            subject: task.subject,
+            topic: task.topic,
+            xp: task.xp || 50,
+            questionCount: task.questionCount || 0,
+            studyType: task.studyType || 'new',
+            completedAt: serverTimestamp()
+          });
+          
+          toast({
+            title: 'Çalışma Arşivlendi',
+            description: 'Bu seans Firebase konsoluna ve akademik arşivinize işlendi.',
+            className: "bg-emerald-500 text-white rounded-[2rem]"
+          });
+        }
+      } catch (e) {
+        console.error('Toggle status error:', e);
+      }
+    }
+  };
+
   const handleDeleteTask = async (index: number) => {
     if (!db || !user || isReadOnly || !confirm('Bu görevi silmek istediğinize emin misiniz?')) return;
     const newSchedule = [...studyPlan.schedule];
@@ -312,6 +353,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
               { label: 'TOPLAM XP', val: xp.toLocaleString(), icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50' },
               { label: 'ÇALIŞMA', val: `${Math.floor(totalTasksCompleted * 0.75)} SAAT`, icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50' },
               { label: 'KALAN SÜRE', val: `${remainingStudyTime} DK`, icon: Timer, color: 'text-rose-500', bg: 'bg-rose-50' },
+              { label: 'NET ORT.', val: '84.5', icon: Target, color: 'text-emerald-500', bg: 'bg-emerald-50' },
             ].map((stat, i) => (
               <Card key={i} className="p-8 rounded-[2.5rem] border-none shadow-sm bg-white flex items-center gap-6 group hover:shadow-xl transition-all hover:-translate-y-1 border border-primary/5">
                 <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:rotate-6 shadow-sm", stat.bg)}>
@@ -323,19 +365,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                 </div>
               </Card>
             ))}
-
-            <Card className="p-8 rounded-[2.5rem] border-none shadow-sm bg-white flex items-center justify-between group hover:shadow-xl transition-all hover:-translate-y-1 border border-primary/5 cursor-pointer">
-              <div className="flex items-center gap-6">
-                <div className="h-16 w-16 rounded-[1.5rem] bg-[#FFF1F2] flex items-center justify-center shrink-0 transition-transform group-hover:scale-110">
-                  <Flame className="h-8 w-8 text-[#FF4D4D] fill-current" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#94A3B8] mb-0.5">GÜNLÜK SERİ</p>
-                  <p className="text-4xl font-black text-[#0F172A] tracking-tighter italic">16 GÜN</p>
-                </div>
-              </div>
-              <ChevronRight className="h-6 w-6 text-[#E2E8F0] group-hover:text-primary transition-colors" />
-            </Card>
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-12">
@@ -445,7 +474,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                               variant="ghost" 
                               size="icon" 
                               disabled={isReadOnly}
-                              onClick={() => handleDeleteTask(index)}
+                              onClick={() => handleDeleteTask(i)}
                               className="h-12 w-12 rounded-xl text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-rose-50 hover:text-rose-500 transition-all"
                             >
                               <Trash2 className="h-5 w-5" />
@@ -453,12 +482,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                             <Button 
                               size="icon" 
                               disabled={isReadOnly}
-                              onClick={() => {
-                                const ns = [...studyPlan.schedule];
-                                const di = ns.findIndex((s: any) => s.day === today);
-                                ns[di].tasks[i].status = task.status === 'completed' ? 'pending' : 'completed';
-                                setDoc(doc(db!, 'studyPlans', user.uid), { schedule: ns, updatedAt: serverTimestamp() }, { merge: true });
-                              }}
+                              onClick={() => toggleTaskStatus(i, task.status)}
                               className={cn(
                                 "h-16 w-16 rounded-[1.75rem] shadow-2xl transition-all group-hover:rotate-6",
                                 task.status === 'completed' ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-[#0F172A] text-white hover:bg-accent shadow-primary/20"

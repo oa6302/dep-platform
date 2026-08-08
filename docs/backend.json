@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -50,7 +51,9 @@
                     "bookUrl": { "type": "string" },
                     "youtubeUrl": { "type": "string" },
                     "status": { "type": "string", "enum": ["pending", "completed", "delayed"] },
-                    "isSpacedRepetition": { "type": "boolean" }
+                    "isSpacedRepetition": { "type": "boolean" },
+                    "questionCount": { "type": "number" },
+                    "createdAt": { "type": "string" }
                   }
                 }
               }
@@ -60,6 +63,21 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "schedule"]
+    },
+    "StudyEntry": {
+      "title": "Tamamlanan Çalışma Kaydı",
+      "description": "Öğrencinin tamamladığı her bir seansın bağımsız kaydı.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "subject": { "type": "string" },
+        "topic": { "type": "string" },
+        "xp": { "type": "number" },
+        "questionCount": { "type": "number" },
+        "studyType": { "type": "string" },
+        "completedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "subject", "completedAt"]
     },
     "Program": {
       "title": "Sınav Programı",
@@ -150,6 +168,10 @@
     "/studyPlans/{userId}": {
       "schema": "StudyPlan",
       "description": "Kullanıcıların hiyerarşik çalışma programları."
+    },
+    "/studies/{studyId}": {
+      "schema": "StudyEntry",
+      "description": "Tamamlanan çalışma kayıtlarının bağımsız logları."
     },
     "/programs/{programId}": {
       "schema": "Program",

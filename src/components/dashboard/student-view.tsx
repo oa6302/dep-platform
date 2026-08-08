@@ -24,7 +24,8 @@ import {
   Book,
   MoreVertical,
   Loader2,
-  Settings2
+  Settings2,
+  Target
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { 

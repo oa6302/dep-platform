@@ -413,39 +413,89 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
               </Card>
 
               {/* FOCUS TERMINAL */}
-              <Card className="rounded-[4rem] border-none shadow-xl bg-white overflow-hidden border border-primary/5">
-                <div className="bg-primary p-10 text-white flex justify-between items-center relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-48 h-48 bg-accent/10 blur-[80px] rounded-full"></div>
+              <Card className="rounded-[4rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.15)] bg-white overflow-hidden border border-primary/5">
+                <div className="bg-[#1E293B] p-10 text-white flex justify-between items-center relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 blur-[60px] rounded-full"></div>
                   <h4 className="text-3xl font-black italic tracking-tighter uppercase relative z-10">ODAKLANMA</h4>
                   <Timer className="h-8 w-8 text-accent relative z-10" />
                 </div>
-                <div className="p-12 space-y-10">
-                   <div className="text-center space-y-2">
-                      <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/30">{timerMode === 'focus' ? 'FOCUS TERMINAL' : 'BREAK'}</p>
-                      <p className="text-7xl font-black text-primary italic tracking-tighter tabular-nums">{formatTime(timeLeft)}</p>
+                <div className="p-12 space-y-12">
+                   <div className="text-center space-y-4">
+                      <p className="text-[11px] font-black uppercase tracking-[0.4em] text-muted-foreground/30 italic">FOCUS TERMINAL</p>
+                      <p className="text-[10rem] font-black text-[#0F172A] italic tracking-tighter leading-none tabular-nums select-none">
+                        {formatTime(timeLeft)}
+                      </p>
                    </div>
-                   <div className="flex justify-center gap-2 bg-slate-50 p-2 rounded-2xl">
-                      <button onClick={() => switchMode('focus')} className={cn("flex-1 py-3 rounded-xl text-[10px] font-black transition-all", timerMode === 'focus' ? "bg-primary text-white shadow-lg" : "text-primary/40")}>FOCUS</button>
-                      <button onClick={() => switchMode('break')} className={cn("flex-1 py-3 rounded-xl text-[10px] font-black transition-all", timerMode === 'break' ? "bg-accent text-white shadow-lg" : "text-primary/40")}>BREAK</button>
+                   
+                   <div className="flex justify-center">
+                      <div className="bg-[#F8FAFC] p-2 rounded-[2.5rem] flex gap-2 shadow-inner border border-slate-100">
+                         <button 
+                           onClick={() => switchMode('focus')} 
+                           className={cn(
+                             "px-10 py-4 rounded-[2rem] text-[11px] font-black uppercase tracking-widest transition-all", 
+                             timerMode === 'focus' ? "bg-[#0F172A] text-white shadow-xl scale-105" : "text-slate-400 hover:text-slate-600"
+                           )}
+                         >
+                           FOCUS
+                         </button>
+                         <button 
+                           onClick={() => switchMode('break')} 
+                           className={cn(
+                             "px-10 py-4 rounded-[2rem] text-[11px] font-black uppercase tracking-widest transition-all", 
+                             timerMode === 'break' ? "bg-accent text-primary shadow-xl scale-105" : "text-slate-400 hover:text-slate-600"
+                           )}
+                         >
+                           BREAK
+                         </button>
+                      </div>
                    </div>
-                   <div className="flex justify-center gap-4 py-4">
-                      {[25, 45, 60].map(m => (
-                        <button key={m} onClick={() => { setPomodoroMinutes(m); setTimerLeft(m * 60); }} className={cn("h-12 w-12 rounded-xl border-2 font-black text-xs transition-all", pomodoroMinutes === m ? "border-accent text-accent shadow-sm" : "border-slate-100 text-slate-300 hover:border-slate-200")}>{m}</button>
-                      ))}
+
+                   <div className="flex flex-col items-center gap-8">
+                      <div className="flex justify-center gap-4">
+                        {[25, 45, 60].map(m => (
+                          <button 
+                            key={m} 
+                            onClick={() => { setPomodoroMinutes(m); setTimerLeft(m * 60); }} 
+                            className={cn(
+                              "h-16 w-16 rounded-[1.5rem] border-2 font-black text-sm transition-all flex items-center justify-center", 
+                              pomodoroMinutes === m ? "border-accent text-accent bg-accent/5 shadow-sm" : "border-slate-100 text-slate-300 hover:border-slate-200"
+                            )}
+                          >
+                            {m}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="flex justify-center gap-6 pb-4">
+                        {[
+                          { id: 'lofi', icon: Music, label: 'Lofi' },
+                          { id: 'rain', icon: CloudRain, label: 'Yağmur' },
+                          { id: 'forest', icon: Trees, label: 'Orman' }
+                        ].map(s => (
+                          <button 
+                            key={s.id} 
+                            onClick={() => setAmbientAmbient(ambientSound === s.id ? 'none' : s.id as any)} 
+                            className={cn(
+                              "h-14 w-14 rounded-2xl flex items-center justify-center transition-all shadow-sm border", 
+                              ambientSound === s.id ? "bg-accent border-accent text-white" : "bg-white border-slate-100 text-slate-300 hover:bg-slate-50"
+                            )}
+                            title={s.label}
+                          >
+                            <s.icon className="h-6 w-6" />
+                          </button>
+                        ))}
+                      </div>
                    </div>
-                   <div className="flex justify-center gap-6 pb-6">
-                      {[
-                        { id: 'lofi', icon: Music },
-                        { id: 'rain', icon: CloudRain },
-                        { id: 'forest', icon: Trees }
-                      ].map(s => (
-                        <button key={s.id} onClick={() => setAmbientAmbient(ambientSound === s.id ? 'none' : s.id as any)} className={cn("h-12 w-12 rounded-2xl flex items-center justify-center transition-all shadow-inner", ambientSound === s.id ? "bg-accent text-white" : "bg-slate-50 text-slate-300 hover:bg-slate-100")}>
-                           <s.icon className="h-5 w-5" />
-                        </button>
-                      ))}
-                   </div>
-                   <Button onClick={() => setActiveTimer(!activeTimer)} className="w-full h-16 rounded-[2rem] bg-primary text-white hover:bg-accent transition-all font-black text-xs uppercase tracking-[0.3em] shadow-2xl">
-                     {activeTimer ? 'DURAKLAT' : 'BAŞLAT'}
+
+                   <Button 
+                     onClick={() => setActiveTimer(!activeTimer)} 
+                     className="w-full h-28 rounded-[3rem] bg-[#0F172A] hover:bg-black text-white transition-all duration-500 font-black text-xl uppercase tracking-[0.4em] shadow-[0_40px_80px_-20px_rgba(15,23,42,0.4)] group/start"
+                   >
+                     {activeTimer ? (
+                       <>DURAKLAT <Pause className="ml-6 h-8 w-8 fill-current" /></>
+                     ) : (
+                       <>BAŞLAT <Play className="ml-6 h-8 w-8 fill-current group-hover/start:scale-110 transition-transform" /></>
+                     )}
                    </Button>
                 </div>
               </Card>

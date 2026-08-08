@@ -23,9 +23,15 @@ import {
   PlaySquare,
   Book,
   Loader2,
-  Target
+  Target,
+  Coffee,
+  Music,
+  CloudRain,
+  Trees,
+  Volume2,
+  Pause
 } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   ResponsiveContainer, AreaChart, 
   Area
@@ -45,10 +51,14 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const db = useFirestore();
   const { toast } = useToast();
   const [activeTimer, setActiveTimer] = useState(false);
+  const [timerMode, setTimerMode] = useState<'focus' | 'break'>('focus');
   const [pomodoroMinutes, setPomodoroMinutes] = useState(25);
   const [timeLeft, setTimerLeft] = useState(25 * 60);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isRecLoading, setIsRecLoading] = useState(false);
+  const [ambientSound, setAmbientAmbient] = useState<'none' | 'lofi' | 'rain' | 'forest'>('none');
+  
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const { data: studyPlan } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   
@@ -75,7 +85,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     return (dayData?.tasks || []);
   }, [studyPlan, today]);
 
-  // Dinamik Akademik Denge Hesaplaması
   const academicBalance = useMemo(() => {
     const baseSubjects = [
       { name: 'Matematik', color: '#F59E0B' },
@@ -89,13 +98,11 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
       let completedCount = 0;
       studyPlan?.schedule?.forEach((day: any) => {
         day.tasks?.forEach((task: any) => {
-          // Konu ismi ders ismini içeriyorsa veya birebir aynıysa
           if ((task.subject?.includes(s.name) || task.subject === s.name) && task.status === 'completed') {
             completedCount++;
           }
         });
       });
-      // Her tamamlanan görev %20 katkı sağlar (5 görev = %100)
       const calculatedVal = Math.min(completedCount * 20, 100);
       return { subject: s.name, val: calculatedVal, color: s.color };
     });
@@ -109,14 +116,49 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
       }, 1000);
     } else if (timeLeft === 0) {
       setActiveTimer(false);
-      toast({ title: 'Focus Tamamlandı!', description: 'Harika bir seanstı. Biraz dinlenmeye ne dersin?' });
+      toast({ 
+        title: timerMode === 'focus' ? 'Focus Tamamlandı!' : 'Mola Bitti!', 
+        description: timerMode === 'focus' ? 'Harika bir seanstı. Biraz dinlenmeye ne dersin?' : 'Mola sona erdi, yeni bir odaklanma seansına hazır mısın?',
+        className: "bg-primary text-white"
+      });
     }
     return () => clearInterval(interval);
-  }, [activeTimer, timeLeft, toast]);
+  }, [activeTimer, timeLeft, toast, timerMode]);
+
+  useEffect(() => {
+    if (ambientSound !== 'none' && activeTimer) {
+      // Audio element creation or update
+      if (!audioRef.current) {
+        audioRef.current = new Audio();
+        audioRef.current.loop = true;
+      }
+      
+      const soundUrls = {
+        lofi: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+        rain: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+        forest: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3'
+      };
+      
+      if (ambientSound !== 'none') {
+        audioRef.current.src = soundUrls[ambientSound as keyof typeof soundUrls];
+        audioRef.current.play().catch(e => console.log("Audio play blocked", e));
+      }
+    } else {
+      audioRef.current?.pause();
+    }
+  }, [ambientSound, activeTimer]);
 
   const changePomodoroTime = (mins: number) => {
     setPomodoroMinutes(mins);
     setTimerLeft(mins * 60);
+    setActiveTimer(false);
+  };
+
+  const switchMode = (mode: 'focus' | 'break') => {
+    setTimerMode(mode);
+    const defaultMins = mode === 'focus' ? 25 : 5;
+    setPomodoroMinutes(defaultMins);
+    setTimerLeft(defaultMins * 60);
     setActiveTimer(false);
   };
 
@@ -416,33 +458,66 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
 
                <div className="p-10 bg-[#F8FAFC] rounded-[3.5rem] border border-primary/5 space-y-8 shadow-inner relative overflow-hidden group">
                   <div className="absolute top-0 right-0 w-40 h-48 bg-accent/5 blur-[60px] rounded-full"></div>
-                  <div className="flex items-center justify-between relative z-10">
-                     <span className="text-[11px] font-black uppercase tracking-[0.4em] text-primary/30 italic">FOCUS TERMINAL</span>
-                     <Timer className="h-6 w-6 text-accent animate-pulse" />
-                  </div>
-                  
-                  <div className="flex flex-col items-center gap-6 relative z-10">
-                    <p className="text-7xl font-black text-primary tracking-tighter leading-none text-shadow-deep tabular-nums">{formatTime(timeLeft)}</p>
-                    
-                    <div className="flex gap-2 bg-white/50 p-1.5 rounded-2xl backdrop-blur-sm border border-primary/5">
-                      {[25, 45, 60].map((mins) => (
-                        <button 
-                          key={mins}
-                          onClick={() => changePomodoroTime(mins)}
-                          className={cn(
-                            "px-4 py-1.5 rounded-xl text-[10px] font-black transition-all",
-                            pomodoroMinutes === mins ? "bg-primary text-white shadow-lg" : "text-primary/40 hover:bg-white"
-                          )}
-                        >
-                          {mins} DK
-                        </button>
-                      ))}
-                    </div>
+                  <div className="flex flex-col gap-6 relative z-10">
+                     <div className="flex items-center justify-between">
+                        <div className="flex bg-white/50 p-1 rounded-xl backdrop-blur-sm border border-primary/5">
+                           <button onClick={() => switchMode('focus')} className={cn("px-4 py-1.5 rounded-lg text-[9px] font-black transition-all", timerMode === 'focus' ? "bg-primary text-white shadow-lg" : "text-primary/40")}>FOCUS</button>
+                           <button onClick={() => switchMode('break')} className={cn("px-4 py-1.5 rounded-lg text-[9px] font-black transition-all", timerMode === 'break' ? "bg-accent text-white shadow-lg" : "text-primary/40")}>BREAK</button>
+                        </div>
+                        <Timer className="h-5 w-5 text-accent animate-pulse" />
+                     </div>
+                     
+                     <div className="flex flex-col items-center gap-4">
+                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/30 italic">{timerMode === 'focus' ? 'FOCUS TERMINAL' : 'COFFEE BREAK'}</p>
+                        <p className="text-7xl font-black text-primary tracking-tighter leading-none text-shadow-deep tabular-nums">{formatTime(timeLeft)}</p>
+                     </div>
+
+                     <div className="space-y-4">
+                        <div className="flex justify-center gap-2 bg-white/50 p-1.5 rounded-2xl backdrop-blur-sm border border-primary/5">
+                           {(timerMode === 'focus' ? [25, 45, 60] : [5, 10, 15]).map((mins) => (
+                              <button 
+                                 key={mins}
+                                 onClick={() => changePomodoroTime(mins)}
+                                 className={cn(
+                                    "px-4 py-1.5 rounded-xl text-[10px] font-black transition-all",
+                                    pomodoroMinutes === mins ? "bg-[#0F172A] text-white shadow-lg" : "text-primary/40 hover:bg-white"
+                                 )}
+                              >
+                                 {mins} DK
+                              </button>
+                           ))}
+                        </div>
+
+                        <div className="flex justify-between items-center px-2">
+                           <div className="flex gap-3">
+                              {[
+                                 { id: 'lofi', icon: Music, color: 'text-blue-500' },
+                                 { id: 'rain', icon: CloudRain, color: 'text-indigo-500' },
+                                 { id: 'forest', icon: Trees, color: 'text-emerald-500' }
+                              ].map((s) => (
+                                 <button 
+                                    key={s.id}
+                                    onClick={() => setAmbientAmbient(ambientSound === s.id ? 'none' : s.id as any)}
+                                    className={cn(
+                                       "h-10 w-10 rounded-xl flex items-center justify-center transition-all",
+                                       ambientSound === s.id ? "bg-white shadow-lg scale-110 border border-primary/5" : "bg-white/30 hover:bg-white/50 opacity-40"
+                                    )}
+                                 >
+                                    <s.icon className={cn("h-4 w-4", ambientSound === s.id ? s.color : "text-primary")} />
+                                 </button>
+                              ))}
+                           </div>
+                           {ambientSound !== 'none' && <Volume2 className="h-4 w-4 text-accent animate-bounce" />}
+                        </div>
+                     </div>
                   </div>
 
-                  <Button onClick={() => setActiveTimer(!activeTimer)} className="w-full h-16 rounded-2xl bg-primary text-white hover:bg-accent transition-all font-black text-xs uppercase tracking-[0.3em] shadow-2xl relative z-10 group/btn">
-                     {activeTimer ? 'SESSION AKTİF' : 'ODAKLANMAYI BAŞLAT'}
-                     <Play className="ml-3 h-5 w-5 group-hover/btn:scale-110 transition-transform" />
+                  <Button onClick={() => setActiveTimer(!activeTimer)} className="w-full h-18 rounded-[2rem] bg-primary text-white hover:bg-accent transition-all font-black text-xs uppercase tracking-[0.3em] shadow-2xl relative z-10 group/btn mt-4">
+                     {activeTimer ? (
+                        <>SESİON AKTİF <Pause className="ml-3 h-5 w-5" /></>
+                     ) : (
+                        <>{timerMode === 'focus' ? 'ODAKLANMAYI BAŞLAT' : 'MOLAYI BAŞLAT'} <Play className="ml-3 h-5 w-5 group-hover/btn:scale-110 transition-transform" /></>
+                     )}
                   </Button>
                </div>
             </div>

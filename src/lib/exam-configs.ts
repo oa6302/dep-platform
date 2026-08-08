@@ -82,7 +82,7 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
   KPSS_ORTA: {
     id: 'KPSS_ORTA',
     category: 'KAMU SINAVLARI',
-    title: 'KPSS Ortaöğretim 2025',
+    title: 'KPSS Ortaöğretim 2026',
     icon: Landmark,
     description: 'Lise Mezunları İçin Memurluk Hazırlığı',
     targetGroup: 'Lise Mezunları',
@@ -115,7 +115,7 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
     title: 'ALES 2026',
     icon: Brain,
     description: 'Akademik Personel ve Lisansüstü Eğitimi',
-    targetGroup: 'Lisans Mezunları ve Son Sınıflar',
+    targetGroup: 'Lisans Mezunları ve Son Sınılar',
     lessons: ['Sayısal Mantık', 'Sözel Mantık', 'Matematik', 'Türkçe'],
     modules: [
       { title: "Hız Analizi", icon: Timer, color: "bg-red-600", desc: "Süre yönetimi" },

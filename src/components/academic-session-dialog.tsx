@@ -50,7 +50,7 @@ const MASTER_CURRICULUM: Record<string, Record<string, string[]>> = {
     'Felsefe Grubu': ['Felsefeye Giriş', 'Bilgi Felsefesi', 'Psikolojiye Giriş', 'Birey ve Toplum (Sosyoloji)', 'Mantığa Giriş', 'Klasik Mantık', 'Sembolik Mantık'],
     'Din Kültürü': ['Bilgi ve İnanç', 'İslam ve İbadet', 'Ahlak ve Değerler', 'İslam ve Bilim', 'İslam Düşüncesinde Yorumlar']
   },
-  'KPSS ORTAÖĞRETİM 2025': {
+  'KPSS ORTAÖĞRETİM 2026': {
     'Türkçe': ['Sözcükte Anlam', 'Cümlede Anlam', 'Paragraf', 'Dil Bilgisi', 'Yazım ve Noktalama', 'Sözel Mantık'],
     'Matematik': ['Temel Kavramlar', 'Sayılar', 'Üslü ve Köklü Sayılar', 'Çarpanlara Ayırma', 'Oran-Orantı', 'Problemler', 'Veri Analizi', 'Geometri Temelleri', 'Sayısal Mantık'],
     'Tarih': ['İslamiyet Öncesi Türk Tarihi', 'Türk-İslam Tarihi', 'Osmanlı Siyasi Tarihi', 'Osmanlı Kültür ve Medeniyet', 'Kurtuluş Savaşı', 'Atatürk İlkeleri', 'Atatürk İnkılapları', 'Çağdaş Türk ve Dünya Tarihi'],

@@ -41,7 +41,7 @@ import {
 } from 'lucide-react';
 
 import { signOut } from 'firebase/auth';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -91,24 +91,46 @@ function DashboardContent() {
   } = useDoc(simulatedUserId ? `users/${simulatedUserId}` : null);
 
   const isSimulating = Boolean(simulatedUserId);
-  const currentViewData = isSimulating ? simulatedUserData : userData;
+  
+  // ADMIN FALLBACK: Admin e-postası ise ve veri henüz yoksa varsayılan admin objesi üret
+  const currentViewData = useMemo(() => {
+    if (isSimulating) return simulatedUserData;
+    if (userData) return userData;
+    if (user?.email === 'admin@gmail.com') {
+      return { role: 'admin', displayName: 'Sistem Yöneticisi', email: user.email };
+    }
+    return null;
+  }, [isSimulating, simulatedUserData, userData, user]);
+
   const currentViewUid = isSimulating ? simulatedUserId : user?.uid;
 
   const logoUrl = PlaceHolderImages.find((img) => img.id === 'app-logo')?.imageUrl || 'https://picsum.photos/seed/edu-logo-102/400/400';
 
-  const isGlobalLoading = authLoading || (!!user && docLoading) || (!!simulatedUserId && simulatedUserLoading);
+  const isGlobalLoading = authLoading || (!!user && docLoading && user.email !== 'admin@gmail.com') || (!!simulatedUserId && simulatedUserLoading);
 
-  // ADMIN OTOMATIK TANIMLAMA (admin@gmail.com için)
+  // ADMIN OTOMATIK TANIMLAMA & FIRESTORE KAYDI
   useEffect(() => {
-    if (user?.email === 'admin@gmail.com' && userData && userData.role !== 'admin' && db) {
+    if (user?.email === 'admin@gmail.com' && db && !docLoading) {
       const userRef = doc(db, 'users', user.uid);
-      updateDoc(userRef, { 
-        role: 'admin',
-        displayName: 'Sistem Yöneticisi',
-        updatedAt: serverTimestamp() 
-      });
+      if (!userData) {
+        // Admin dökümanı yoksa oluştur
+        setDoc(userRef, {
+          uid: user.uid,
+          email: user.email,
+          role: 'admin',
+          displayName: 'Sistem Yöneticisi',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      } else if (userData.role !== 'admin') {
+        // Rolü admin değilse güncelle
+        updateDoc(userRef, { 
+          role: 'admin',
+          updatedAt: serverTimestamp() 
+        });
+      }
     }
-  }, [user, userData, db]);
+  }, [user, userData, db, docLoading]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -283,7 +305,7 @@ function DashboardContent() {
 
           <nav className="flex-1 px-6 space-y-2">
             {dynamicMenu.map((item: any, index) => (
-              <Button key={index} variant="ghost" className={cn('w-full justify-start rounded-2xl h-14 group', (item.href === '/dashboard' || item.href === router.asPath) && !isSimulating ? 'bg-white/15 text-white font-black' : 'hover:bg-white/5 opacity-60 hover:opacity-100')} asChild>
+              <Button key={index} variant="ghost" className={cn('w-full justify-start rounded-2xl h-14 group', (item.href === '/dashboard') && !isSimulating ? 'bg-white/15 text-white font-black' : 'hover:bg-white/5 opacity-60 hover:opacity-100')} asChild>
                 <Link href={item.href}>
                   <item.icon className={cn('mr-5 h-5 w-5', item.accent && 'text-accent')} />
                   <span className="text-sm tracking-tight italic uppercase">{item.label}</span>
@@ -328,7 +350,7 @@ function DashboardContent() {
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> CANLI
               </div>
               <div onClick={() => setIsProfileDialogOpen(true)} className="h-12 w-12 rounded-xl bg-accent overflow-hidden cursor-pointer shadow-xl flex items-center justify-center font-black text-white text-lg italic">
-                {userData?.displayName?.charAt(0) || <User className="h-5 w-5" />}
+                {currentViewData?.displayName?.charAt(0) || <User className="h-5 w-5" />}
               </div>
             </div>
           </header>

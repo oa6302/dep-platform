@@ -65,10 +65,10 @@ export default function PlanningPage() {
       setLocalSchedule(studyPlan.schedule);
       setWeeklyFocus(studyPlan.weeklyFocus || '');
       setRecommendations(studyPlan.recommendations || []);
-    } else {
+    } else if (!planLoading) {
       setLocalSchedule(days.map(day => ({ day, tasks: [] })));
     }
-  }, [studyPlan]);
+  }, [studyPlan, planLoading]);
 
   const currentDayTasks = useMemo(() => {
     return localSchedule.find((s: any) => s.day === selectedDay)?.tasks || [];
@@ -78,7 +78,7 @@ export default function PlanningPage() {
     if (!userData) return;
     setIsGenerating(true);
     
-    const startDate = new Date(2025, 7, 10); 
+    const startDate = new Date(2026, 7, 10); 
     const diff = Date.now() - startDate.getTime();
     const currentWeek = Math.max(1, Math.min(Math.floor(diff / (7 * 24 * 60 * 60 * 1000)) + 1, 52));
     
@@ -93,9 +93,16 @@ export default function PlanningPage() {
       });
 
       if (result.success && result.data) {
-        setLocalSchedule(result.data.schedule);
-        setWeeklyFocus(result.data.weeklyFocus);
-        setRecommendations(result.data.recommendations || []);
+        // AI planını Firestore'a hemen kaydet
+        await setDoc(doc(db!, 'studyPlans', user!.uid), {
+          userId: user!.uid,
+          examId: userData.targetExam || 'YKS_SOZ',
+          schedule: result.data.schedule,
+          weeklyFocus: result.data.weeklyFocus,
+          recommendations: result.data.recommendations || [],
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
         toast({
           title: 'Akademik Strateji Hazır',
           description: `AI, 10 Ağustos başlangıçlı plana göre ${currentWeek}. haftayı optimize etti.`,
@@ -115,43 +122,56 @@ export default function PlanningPage() {
     }
   };
 
-  const handleSaveToFirestore = async () => {
-    if (!db || !user || !userData) return;
+  const syncToFirestore = async (schedule: any[], focus: string, recs: string[]) => {
+    if (!db || !user) return;
     setIsSaving(true);
     try {
       await setDoc(doc(db, 'studyPlans', user.uid), {
         userId: user.uid,
-        examId: userData.targetExam || 'YKS_SOZ',
-        schedule: localSchedule,
-        weeklyFocus,
-        recommendations,
+        schedule,
+        weeklyFocus: focus,
+        recommendations: recs,
         updatedAt: serverTimestamp()
       }, { merge: true });
-      toast({
-        title: 'Terminal Senkronize Edildi',
-        description: 'Akademik planınız bulut veritabanına işlendi.',
-        className: "bg-primary text-white rounded-[2rem]"
-      });
     } catch (e) {
-      toast({ variant: 'destructive', title: 'Hata', description: 'Kaydedilemedi.' });
+      console.error('Save error:', e);
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleSaveTask = (taskData: any) => {
+  const handleSaveTask = async (taskData: any) => {
     const newSchedule = [...localSchedule];
     const dayIndex = newSchedule.findIndex(s => s.day === selectedDay);
     
     if (dayIndex > -1) {
+      const updatedTasks = [...newSchedule[dayIndex].tasks];
       if (editingTask?.index === -1) {
-        newSchedule[dayIndex].tasks = [...newSchedule[dayIndex].tasks, taskData];
+        updatedTasks.push(taskData);
       } else if (editingTask) {
-        newSchedule[dayIndex].tasks[editingTask.index] = taskData;
+        updatedTasks[editingTask.index] = taskData;
       }
+      newSchedule[dayIndex].tasks = updatedTasks;
       setLocalSchedule(newSchedule);
+      await syncToFirestore(newSchedule, weeklyFocus, recommendations);
+      toast({ title: 'Görev Kaydedildi', description: 'Değişiklikler anlık olarak buluta işlendi.' });
     }
     setEditingTask(null);
+  };
+
+  const handleDeleteTask = async (index: number) => {
+    if (!confirm('Bu seansı silmek istediğinize emin misiniz?')) return;
+    const newSchedule = [...localSchedule];
+    const dayIndex = newSchedule.findIndex(s => s.day === selectedDay);
+    
+    if (dayIndex > -1) {
+      const updatedTasks = [...newSchedule[dayIndex].tasks];
+      updatedTasks.splice(index, 1);
+      newSchedule[dayIndex].tasks = updatedTasks;
+      setLocalSchedule(newSchedule);
+      await syncToFirestore(newSchedule, weeklyFocus, recommendations);
+      toast({ title: 'Görev Silindi', description: 'Programınız güncellendi.' });
+    }
   };
 
   return (
@@ -309,7 +329,9 @@ export default function PlanningPage() {
                 </div>
 
                 <div className="flex-1 flex flex-col">
-                  {currentDayTasks.length > 0 ? (
+                  {planLoading ? (
+                    <div className="py-40 text-center opacity-30 animate-pulse font-black uppercase text-xs tracking-widest">Veriler Senkronize Ediliyor...</div>
+                  ) : currentDayTasks.length > 0 ? (
                     <div className="grid gap-8 w-full">
                       {currentDayTasks.map((task: any, i: number) => (
                         <div key={i} className="flex items-center gap-12 p-12 bg-[#F8FAFC] rounded-[4rem] border border-primary/5 hover:bg-white hover:shadow-[0_60px_100px_-20px_rgba(0,0,0,0.08)] transition-all group relative overflow-hidden border-l-[16px] border-l-primary">
@@ -349,12 +371,7 @@ export default function PlanningPage() {
                             <Button variant="ghost" size="icon" onClick={() => setEditingTask({ index: i, data: task })} className="h-16 w-16 rounded-[1.5rem] text-muted-foreground opacity-20 hover:opacity-100 hover:bg-slate-100 transition-all">
                               <Edit3 className="h-8 w-8" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => {
-                              const ns = [...localSchedule];
-                              const di = ns.findIndex(s => s.day === selectedDay);
-                              ns[di].tasks = ns[di].tasks.filter((_: any, idx: number) => idx !== i);
-                              setLocalSchedule(ns);
-                            }} className="h-16 w-16 rounded-[1.5rem] text-muted-foreground opacity-20 hover:opacity-100 hover:bg-rose-50 transition-all hover:text-rose-500">
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteTask(i)} className="h-16 w-16 rounded-[1.5rem] text-muted-foreground opacity-20 hover:opacity-100 hover:bg-rose-50 transition-all hover:text-rose-500">
                               <Trash2 className="h-8 w-8" />
                             </Button>
                             <div className="h-20 w-20 rounded-[2rem] bg-white border border-primary/5 flex items-center justify-center text-primary shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)] group-hover:bg-accent group-hover:text-white transition-all cursor-pointer">
@@ -386,16 +403,11 @@ export default function PlanningPage() {
                     <div className="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center">
                         <Info className="h-6 w-6 text-primary" />
                     </div>
-                    <p className="text-sm font-bold uppercase tracking-widest max-w-sm leading-relaxed">Verileriniz DEK Bulut Altyapısı üzerinden tüm AOS Terminalleri ile senkronize edilir.</p>
+                    <p className="text-sm font-bold uppercase tracking-widest max-w-sm leading-relaxed">Verileriniz DEK Bulut Altyapısı üzerinden tüm AOS Terminalleri ile anlık senkronize edilir.</p>
                   </div>
-                  <Button 
-                    onClick={handleSaveToFirestore}
-                    disabled={isSaving}
-                    className="h-24 px-20 rounded-[3rem] bg-primary hover:bg-black transition-all font-black text-lg uppercase tracking-[0.4em] gap-8 shadow-[0_40px_80px_-20px_rgba(15,23,42,0.45)] text-white group"
-                  >
-                    {isSaving ? <Loader2 className="h-8 w-8 animate-spin" /> : <Save className="h-8 w-8 text-accent group-hover:scale-110 transition-transform" />}
-                    SİSTEMİ SENKRONİZE ET
-                  </Button>
+                  <div className="h-16 flex items-center gap-4 px-8 rounded-2xl bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase tracking-widest border border-emerald-100">
+                    <CheckCircle className="h-4 w-4" /> Tüm Değişiklikler Buluta İşlendi
+                  </div>
                 </footer>
               </Card>
             </main>

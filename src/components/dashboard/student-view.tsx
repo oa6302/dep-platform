@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card } from '@/components/ui/card';
@@ -64,7 +65,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const { data: studyPlan } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
+  const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   
   const completedTasks = useMemo(() => {
     if (!studyPlan?.schedule) return [];
@@ -211,34 +212,44 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
 
   const handleSaveSession = async (taskData: any) => {
     if (!db || !user || isReadOnly) return;
-    const newSchedule = studyPlan?.schedule ? [...studyPlan.schedule] : [];
-    let dayIndex = newSchedule.findIndex((s: any) => s.day === today);
     
-    if (dayIndex === -1) {
-      newSchedule.push({ day: today, tasks: [taskData] });
-    } else {
-      if (editingTask !== null) {
-        newSchedule[dayIndex].tasks[editingTask.index] = taskData;
-      } else {
-        newSchedule[dayIndex].tasks.push(taskData);
+    // Sağlamlaştırma: Her zaman 7 günü kontrol et
+    const daysArr = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+    const currentSchedule = studyPlan?.schedule ? [...studyPlan.schedule] : daysArr.map(d => ({ day: d, tasks: [] }));
+    
+    // Eğer Firestore'da gün eksikse tamamla
+    daysArr.forEach(d => {
+      if (!currentSchedule.find((s: any) => s.day === d)) {
+        currentSchedule.push({ day: d, tasks: [] });
       }
-    }
+    });
+
+    let dayIndex = currentSchedule.findIndex((s: any) => s.day === today);
     
-    try {
-      await setDoc(doc(db, 'studyPlans', user.uid), {
-        schedule: newSchedule,
-        updatedAt: serverTimestamp()
-      }, { merge: true });
+    if (dayIndex > -1) {
+      if (editingTask !== null) {
+        currentSchedule[dayIndex].tasks[editingTask.index] = taskData;
+      } else {
+        currentSchedule[dayIndex].tasks.push(taskData);
+      }
       
-      toast({ 
-        title: editingTask ? 'Görev Güncellendi' : 'Görev Eklendi', 
-        description: `${taskData.subject} seansı programınıza işlendi.`, 
-        className: "bg-primary text-white rounded-[2rem]" 
-      });
-      setEditingTask(null);
-      setIsAddDialogOpen(false);
-    } catch (e) {
-      console.error(e);
+      try {
+        await setDoc(doc(db, 'studyPlans', user.uid), {
+          schedule: currentSchedule,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+        
+        toast({ 
+          title: editingTask ? 'Görev Güncellendi' : 'Görev Eklendi', 
+          description: `${taskData.subject} seansı programınıza işlendi.`, 
+          className: "bg-primary text-white rounded-[2rem]" 
+        });
+        setEditingTask(null);
+        setIsAddDialogOpen(false);
+      } catch (e) {
+        console.error('Session save error:', e);
+        toast({ variant: 'destructive', title: 'Hata', description: 'Görev kaydedilemedi.' });
+      }
     }
   };
 
@@ -376,7 +387,9 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                     </div>
                 </div>
                 <div className="grid gap-6">
-                    {todayTasks.length > 0 ? todayTasks.map((task: any, i: number) => {
+                    {planLoading ? (
+                      <div className="py-20 text-center opacity-30 animate-pulse font-black uppercase">Veriler Yükleniyor...</div>
+                    ) : todayTasks.length > 0 ? todayTasks.map((task: any, i: number) => {
                       const isActive = activeTimer && timerMode === 'focus';
                       const isCurrent = i === todayTasks.findIndex((t: any) => t.status === 'pending');
                       
@@ -445,7 +458,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                                 const ns = [...studyPlan.schedule];
                                 const di = ns.findIndex((s: any) => s.day === today);
                                 ns[di].tasks[i].status = task.status === 'completed' ? 'pending' : 'completed';
-                                setDoc(doc(db!, 'studyPlans', user.uid), { schedule: ns }, { merge: true });
+                                setDoc(doc(db!, 'studyPlans', user.uid), { schedule: ns, updatedAt: serverTimestamp() }, { merge: true });
                               }}
                               className={cn(
                                 "h-16 w-16 rounded-[1.75rem] shadow-2xl transition-all group-hover:rotate-6",

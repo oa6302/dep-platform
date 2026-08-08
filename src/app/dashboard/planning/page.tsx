@@ -23,8 +23,6 @@ import {
   Zap,
   Info,
   Target,
-  BarChart3,
-  TrendingUp,
   Activity,
   ArrowLeft,
   Home
@@ -74,15 +72,16 @@ export default function PlanningPage() {
     if (!userData) return;
     setIsGenerating(true);
     
-    const startDate = new Date(2025, 8, 1);
+    // Akademik Yıl Başlangıcı: 10 Ağustos 2025
+    const startDate = new Date(2025, 7, 10); 
     const diff = Date.now() - startDate.getTime();
     const currentWeek = Math.max(1, Math.min(Math.floor(diff / (7 * 24 * 60 * 60 * 1000)) + 1, 52));
     
-    const examConfig = EXAM_CONFIGS[userData.targetExam || 'YKS_SAY'] || EXAM_CONFIGS['YKS_SAY'];
+    const examConfig = EXAM_CONFIGS[userData.targetExam || 'YKS_SOZ'] || EXAM_CONFIGS['YKS_SOZ'];
 
     try {
       const result = await handleGenerateAiStudyPlan({
-        targetExam: userData.targetExam || 'YKS_SAY',
+        targetExam: userData.targetExam || 'YKS_SOZ',
         userName: userData.displayName || 'Öğrenci',
         lessons: examConfig.lessons,
         currentWeek: currentWeek
@@ -94,7 +93,7 @@ export default function PlanningPage() {
         setRecommendations(result.data.recommendations || []);
         toast({
           title: 'Akademik Strateji Hazır',
-          description: `AI, ${currentWeek}. haftaya özel hiyerarşik planınızı optimize etti.`,
+          description: `AI, 10 Ağustos başlangıçlı plana göre ${currentWeek}. haftayı optimize etti.`,
           className: "bg-primary text-white rounded-[2rem]"
         });
       } else {
@@ -117,7 +116,7 @@ export default function PlanningPage() {
     try {
       await setDoc(doc(db, 'studyPlans', user.uid), {
         userId: user.uid,
-        examId: userData.targetExam || 'YKS_SAY',
+        examId: userData.targetExam || 'YKS_SOZ',
         schedule: localSchedule,
         weeklyFocus,
         recommendations,

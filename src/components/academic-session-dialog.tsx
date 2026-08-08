@@ -17,25 +17,20 @@ import {
 } from "@/components/ui/select";
 import {
   Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
-  CheckCircle, Clock, Book, PlaySquare, Zap, Target, 
-  Layers, Brain, Sparkles, AlertTriangle, ShieldCheck, 
-  ArrowRight, Timer, Bookmark, FileText, RefreshCcw, 
-  Settings2, Hash, Calendar as CalendarIcon
+  CheckCircle, Zap, Target, 
+  Layers, Brain, Sparkles, ShieldCheck, 
+  Bookmark, RefreshCcw, 
+  Settings2, Calendar as CalendarIcon,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface AcademicSessionDialogProps {
   isOpen: boolean;
@@ -46,23 +41,27 @@ interface AcademicSessionDialogProps {
 }
 
 const MASTER_CURRICULUM: Record<string, Record<string, string[]>> = {
-  'ÜNİVERSİTE (YKS)': {
-    'TYT Matematik': ['Temel Kavramlar', 'Sayı Basamakları', 'Bölme Bölünebilme', 'OBEB OKEK', 'Rasyonel Sayılar', 'Basit Eşitsizlikler', 'Mutlak Değer', 'Üslü Sayılar', 'Köklü Sayılar', 'Çarpanlara Ayırma', 'Oran Orantı', 'Denklem Çözme', 'Problemler', 'Yaş Problemleri', 'Hareket Problemleri', 'İşçi Havuz Problemleri', 'Karışım Problemleri', 'Kümeler', 'Fonksiyonlar', 'Permütasyon', 'Kombinasyon', 'Olasılık', 'Veri', 'İstatistik'],
-    'AYT Matematik': ['Fonksiyonlar', 'Polinomlar', 'İkinci Dereceden Denklemler', 'Parabol', 'Trigonometri', 'Logaritma', 'Diziler', 'Limit', 'Süreklilik', 'Türev', 'İntegral', 'Karmaşık Sayılar', 'Binom', 'Analitik Geometri'],
-    'Geometri': ['Doğruda Açılar', 'Üçgenler', 'Dörtgenler', 'Çokgenler', 'Çember', 'Daire', 'Katı Cisimler', 'Analitik Geometri'],
-    'Türkçe': ['Sözcükte Anlam', 'Cümlede Anlam', 'Paragraf', 'Ses Bilgisi', 'Yazım Kuralları', 'Noktalama', 'Fiiller', 'Zamir', 'Sıfat', 'Zarf', 'Edat', 'Bağlaç', 'Cümle Türleri', 'Anlatım Bozukluğu'],
-    'Edebiyat': ['Şiir Bilgisi', 'İslamiyet Öncesi', 'Halk Edebiyatı', 'Divan Edebiyatı', 'Tanzimat', 'Servetifünun', 'Fecri Ati', 'Milli Edebiyat', 'Cumhuriyet Dönemi', 'Edebi Akımlar'],
-    'Tarih': ['İlk Çağ', 'İslam Tarihi', 'Osmanlı Kuruluş', 'Osmanlı Yükselme', 'Osmanlı Duraklama', 'Islahatlar', 'Kurtuluş Savaşı', 'Atatürk İlkeleri', 'Çağdaş Türk Tarihi'],
-    'Coğrafya': ['Harita Bilgisi', 'Dünya\'nın Şekli', 'İklim', 'Nüfus', 'Göçler', 'Yerleşme', 'Tarım', 'Sanayi', 'Türkiye Coğrafyası'],
-    'Felsefe': ['Bilgi FelseFesi', 'Varlık Felsefesi', 'Ahlak Felsefesi', 'Siyaset Felsefesi', 'Din Felsefesi', 'Bilim Felsefesi'],
-    'Din Kültürü': ['Inanç', 'İbadet', 'Ahlak', 'Kur\'an', 'Hz. Muhammed', 'İslam Düşüncesi'],
-    'Fizik': ['Fizik Bilimine Giriş', 'Hareket', 'Kuvvet', 'Enerji', 'Elektrik', 'Manyetizma', 'Basınç', 'Isı Sıcaklık', 'Dalgalar', 'Optik'],
-    'Kimya': ['Kimya Bilimi', 'Atom', 'Periyodik Sistem', 'Kimyasal Türler', 'Mol', 'Gazlar', 'Çözeltiler', 'Kimyasal Tepkimeler', 'Organik Kimya'],
-    'Biyoloji': ['Hücre', 'Canlıların Ortak Özellikleri', 'Kalıtım', 'Ekoloji', 'Sistemler', 'DNA RNA', 'Fotosentez', 'Solunum', 'Bitki Biyolojisi'],
+  'YKS SÖZEL 2026': {
+    'Türkçe': ['Sözcükte Anlam', 'Cümlede Anlam', 'Paragraf', 'Ses Bilgisi', 'Yazım Kuralları', 'Noktalama İşaretleri', 'Sözcük Türleri', 'Sözcüğün Yapısı', 'Cümle Ögeleri', 'Fiiller ve Fiilimsiler', 'Cümle Türleri', 'Anlatım Bozukluğu'],
+    'Edebiyat': ['Güzel Sanatlar ve Edebiyat', 'Şiir Bilgisi', 'Edebi Sanatlar', 'Metinlerin Sınıflandırılması', 'Halk Edebiyatı', 'Divan Edebiyatı', 'Tanzimat Edebiyatı', 'Servet-i Fünun Edebiyatı', 'Fecr-i Ati Topluluğu', 'Milli Edebiyat', 'Cumhuriyet Dönemi Şiir', 'Cumhuriyet Dönemi Roman', 'Cumhuriyet Dönemi Tiyatro', 'Edebi Akımlar'],
+    'Tarih': ['Tarih ve Zaman', 'İnsanlığın İlk Dönemleri', 'İlk ve Orta Çağlarda Türk Dünyası', 'İslam Medeniyetinin Doğuşu', 'Osmanlı Kuruluş Dönemi', 'Dünya Gücü Osmanlı', 'Yeni ve Yakın Çağ Avrupa', 'Kurtuluş Savaşı Hazırlık', 'Atatürk İlkeleri', 'Atatürk İnkılapları', 'Türk Dış Politikası', 'Çağdaş Türk ve Dünya Tarihi'],
+    'Coğrafya': ['Doğa ve İnsan', 'Dünya’nın Şekli ve Hareketleri', 'Harita Bilgisi', 'İklim Bilgisi', 'Nüfus ve Göç', 'Türkiye Ekonomisi', 'Ekosistem ve Madde Döngüsü', 'Doğal Afetler', 'Küresel Ortam ve Ülkeler'],
+    'Felsefe Grubu': ['Felsefeye Giriş', 'Bilgi Felsefesi', 'Psikolojiye Giriş', 'Birey ve Toplum (Sosyoloji)', 'Mantığa Giriş', 'Klasik Mantık', 'Sembolik Mantık'],
+    'Din Kültürü': ['Bilgi ve İnanç', 'İslam ve İbadet', 'Ahlak ve Değerler', 'İslam ve Bilim', 'İslam Düşüncesinde Yorumlar']
   },
-  'KAMU (KPSS)': {
-    'Genel Yetenek': ['Sözel Mantık', 'Sayısal Mantık', 'Matematik', 'Türkçe'],
-    'Genel Kültür': ['Tarih', 'Coğrafya', 'Vatandaşlık', 'Güncel Bilgiler'],
+  'KPSS ORTAÖĞRETİM 2025': {
+    'Türkçe': ['Sözcükte Anlam', 'Cümlede Anlam', 'Paragraf', 'Dil Bilgisi', 'Yazım ve Noktalama', 'Sözel Mantık'],
+    'Matematik': ['Temel Kavramlar', 'Sayılar', 'Üslü ve Köklü Sayılar', 'Çarpanlara Ayırma', 'Oran-Orantı', 'Problemler', 'Veri Analizi', 'Geometri Temelleri', 'Sayısal Mantık'],
+    'Tarih': ['İslamiyet Öncesi Türk Tarihi', 'Türk-İslam Tarihi', 'Osmanlı Siyasi Tarihi', 'Osmanlı Kültür ve Medeniyet', 'Kurtuluş Savaşı', 'Atatürk İlkeleri', 'Atatürk İnkılapları', 'Çağdaş Türk ve Dünya Tarihi'],
+    'Coğrafya': ['Türkiye’nin Yerşekilleri', 'Türkiye’nin İklimi', 'Türkiye’de Nüfus', 'Türkiye’de Tarım ve Hayvancılık', 'Türkiye’de Madenler', 'Türkiye’de Sanayi ve Ulaşım'],
+    'Vatandaşlık': ['Hukukun Temel Kavramları', 'Devlet ve Hükümet Sistemleri', 'Anayasa Tarihi', '1982 Anayasası', 'İdare Hukuku', 'Güncel Bilgiler']
+  },
+  'YKS SAYISAL 2026': {
+    'TYT Matematik': ['Temel Kavramlar', 'Problemler', 'Kümeler', 'Fonksiyonlar', 'Veri ve İstatistik'],
+    'AYT Matematik': ['Trigonometri', 'Logaritma', 'Limit', 'Türev', 'İntegral', 'Karmaşık Sayılar'],
+    'Fizik': ['Hareket ve Kuvvet', 'Enerji', 'Elektrik ve Manyetizma', 'Dalgalar', 'Optik', 'Modern Fizik'],
+    'Kimya': ['Kimyasal Türler', 'Mol Kavramı', 'Gazlar', 'Çözeltiler', 'Organik Kimya'],
+    'Biyoloji': ['Hücre', 'Kalıtım', 'Ekoloji', 'Sistemler', 'Canlıların Temel Bileşenleri']
   }
 };
 
@@ -79,7 +78,7 @@ const BOOKS = ['3D', '345', 'Orijinal', 'Bilgi Sarmal', 'Limit', 'Apotemi', 'Ben
 
 export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDay = 'Pazartesi', initialData }: AcademicSessionDialogProps) {
   const [mode, setMode] = useState<'manual' | 'ai'>('manual');
-  const [exam, setExam] = useState<string>('ÜNİVERSİTE (YKS)');
+  const [exam, setExam] = useState<string>(initialData?.exam || 'YKS SÖZEL 2026');
   const [subject, setSubject] = useState(initialData?.subject || '');
   const [topic, setTopic] = useState(initialData?.topic || '');
   const [difficulty, setDifficulty] = useState(initialData?.difficulty || 'medium');
@@ -89,6 +88,7 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
   const [startTime, setStartTime] = useState(initialData?.time || '09:00');
   const [startDate, setStartDate] = useState(initialData?.startDate || '');
   const [endDate, setEndDate] = useState(initialData?.endDate || '');
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   const subjects = useMemo(() => MASTER_CURRICULUM[exam] || {}, [exam]);
   const topics = useMemo(() => subjects[subject] || [], [subject, subjects]);
@@ -103,12 +103,24 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
   const estimatedNet = useMemo(() => (xpValue / 250).toFixed(2), [xpValue]);
 
   const handleApplyAiRecommendation = () => {
-    setMode('ai');
-    setSubject(exam.includes('SOZ') ? 'Edebiyat' : 'TYT Matematik');
-    setTopic(exam.includes('SOZ') ? 'Cumhuriyet Dönemi' : 'Problemler');
-    setDifficulty('hard');
-    setStudyType('questions');
-    setStartTime('14:00');
+    setIsAiLoading(true);
+    setTimeout(() => {
+      setMode('ai');
+      if (exam.includes('SÖZEL')) {
+        setSubject('Edebiyat');
+        setTopic('Cumhuriyet Dönemi Şiir');
+      } else if (exam.includes('KPSS')) {
+        setSubject('Tarih');
+        setTopic('Osmanlı Kültür ve Medeniyet');
+      } else {
+        setSubject('TYT Matematik');
+        setTopic('Problemler');
+      }
+      setDifficulty('hard');
+      setStudyType('questions');
+      setStartTime('14:00');
+      setIsAiLoading(false);
+    }, 800);
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -211,7 +223,6 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
                      </div>
                   </div>
 
-                  {/* START AND END DATE ROW */}
                   <div className="grid grid-cols-2 gap-6 pt-2">
                      <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-2">Başlangıç Tarihi</Label>
@@ -338,7 +349,6 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
 
           <div className="bg-slate-50 p-10 border-l border-primary/5 space-y-10 flex flex-col justify-between">
              <div className="space-y-10">
-                {/* AI RECOMMENDATION CARD - Fixed Card component */}
                 <Card className="rounded-[2.5rem] border-none bg-primary text-white p-8 space-y-6 relative overflow-hidden group shadow-2xl">
                    <div className="absolute top-0 right-0 w-32 h-32 bg-accent/20 blur-[60px] rounded-full translate-x-1/2 -translate-y-1/2"></div>
                    <div className="flex items-center gap-3 relative z-10">
@@ -346,15 +356,16 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
                       <span className="text-[9px] font-black uppercase tracking-[0.3em] opacity-40">AI ÖNERİSİ</span>
                    </div>
                    <p className="text-sm font-bold italic leading-relaxed relative z-10">
-                      "Son denemende <span className="text-accent underline">Fonksiyonlar</span> başarısı %48'de kaldı. Bugün bu konuyu çalışmanı öneririm."
+                      "Son denemende <span className="text-accent underline">Edebiyat</span> başarın %48'de kaldı. Bugün bu konuyu çalışmanı öneririm."
                    </p>
                    <Button 
                     type="button"
                     onClick={handleApplyAiRecommendation}
+                    disabled={isAiLoading}
                     size="sm" 
                     className="w-full h-11 rounded-xl bg-white/10 hover:bg-white/20 text-white font-black text-[9px] uppercase tracking-widest border border-white/10 transition-all active:scale-95"
                    >
-                     AI İLE DOLDUR
+                     {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'AI İLE DOLDUR'}
                    </Button>
                 </Card>
 

@@ -70,7 +70,7 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
     icon: HistoryIcon,
     description: 'TYT + AYT Sözel Puan Türü Tam Paket',
     targetGroup: '12. Sınıf ve Mezunlar',
-    lessons: ['Türkçe', 'Edebiyat', 'Tarih', 'Coğrafya', 'Felsefe', 'Din Kültürü'],
+    lessons: ['Türkçe', 'Edebiyat', 'Tarih', 'Coğrafya', 'Felsefe', 'Psikoloji', 'Sosyoloji', 'Mantık', 'Din Kültürü'],
     modules: [
       { title: "Sözel Analiz", icon: ScrollText, color: "bg-amber-600", desc: "Konu derinliği" },
       { title: "Eser-Yazar", icon: LibraryIcon, color: "bg-rose-500", desc: "Hafıza teknikleri" },
@@ -79,6 +79,20 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
   },
 
   // KPSS GRUBU
+  KPSS_ORTA: {
+    id: 'KPSS_ORTA',
+    category: 'KAMU SINAVLARI',
+    title: 'KPSS Ortaöğretim 2025',
+    icon: Landmark,
+    description: 'Lise Mezunları İçin Memurluk Hazırlığı',
+    targetGroup: 'Lise Mezunları',
+    lessons: ['Türkçe', 'Matematik', 'Tarih', 'Coğrafya', 'Vatandaşlık', 'Güncel Bilgiler'],
+    modules: [
+      { title: "Atama Puanı", icon: Users, color: "bg-indigo-600", desc: "Hedef puan hesabı" },
+      { title: "Vatandaşlık", icon: Gavel, color: "bg-slate-700", desc: "Pratik notlar" },
+    ],
+    aiFocus: 'Genel Kültür testindeki Tarih ağırlıklı sorulara bu ay %40 daha fazla odaklanıyoruz.'
+  },
   KPSS_LISANS: {
     id: 'KPSS_LISANS',
     category: 'KAMU SINAVLARI',

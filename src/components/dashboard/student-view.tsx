@@ -2,16 +2,12 @@
 
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useDoc, useFirestore } from '@/firebase';
 import { 
   CheckCircle, 
   Clock, 
   Calendar, 
-  Brain, 
-  Target, 
-  TrendingUp, 
   Zap, 
   Timer, 
   Play, 
@@ -20,25 +16,22 @@ import {
   Sparkles,
   ChevronRight,
   Plus,
-  BarChart3,
-  BookOpen,
+  TrendingUp,
   ArrowUpRight,
-  History,
   Trophy,
   Activity,
   PlaySquare,
   Book,
   MoreVertical,
-  Loader2
+  Loader2,
+  Settings2
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { 
   ResponsiveContainer, AreaChart, 
-  Area, XAxis, YAxis, Tooltip, BarChart, Bar, Cell
+  Area
 } from 'recharts';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
-import { EXAM_CONFIGS } from '@/lib/exam-configs';
 import { AcademicSessionDialog } from '@/components/academic-session-dialog';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -53,6 +46,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const db = useFirestore();
   const { toast } = useToast();
   const [activeTimer, setActiveTimer] = useState(false);
+  const [pomodoroMinutes, setPomodoroMinutes] = useState(25);
   const [timeLeft, setTimerLeft] = useState(25 * 60);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isRecLoading, setIsRecLoading] = useState(false);
@@ -72,9 +66,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
 
   const level = Math.floor(totalTasksCompleted / 10) + 1;
   const xp = totalTasksCompleted * 120;
-  const xpToNextLevel = 1000;
-  const currentXpInLevel = xp % 1000;
-  const progressToNextLevel = Math.min((currentXpInLevel / xpToNextLevel) * 100, 100);
+  const progressToNextLevel = Math.min(((xp % 1000) / 1000) * 100, 100);
 
   const today = new Intl.DateTimeFormat('tr-TR', { weekday: 'long' }).format(new Date());
   
@@ -84,6 +76,25 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     return (dayData?.tasks || []);
   }, [studyPlan, today]);
 
+  useEffect(() => {
+    let interval: any;
+    if (activeTimer && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimerLeft((prev) => prev - 1);
+      }, 1000);
+    } else if (timeLeft === 0) {
+      setActiveTimer(false);
+      toast({ title: 'Focus Tamamlandı!', description: 'Harika bir seanstı. Biraz dinlenmeye ne dersin?' });
+    }
+    return () => clearInterval(interval);
+  }, [activeTimer, timeLeft]);
+
+  const changePomodoroTime = (mins: number) => {
+    setPomodoroMinutes(mins);
+    setTimerLeft(mins * 60);
+    setActiveTimer(false);
+  };
+
   const stats = [
     { label: 'TOPLAM XP', val: xp.toLocaleString(), icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50' },
     { label: 'ÇALIŞMA', val: `${Math.floor(totalTasksCompleted * 0.75)} SAAT`, icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50' },
@@ -91,10 +102,10 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   ];
 
   const academicBalance = [
-    { subject: 'Matematik', val: 85, color: '#F59E0B' },
-    { subject: 'Edebiyat', val: 72, color: '#0F172A' },
-    { subject: 'Tarih', val: 90, color: '#F59E0B' },
-    { subject: 'Coğrafya', val: 64, color: '#0F172A' },
+    { subject: 'Edebiyat', val: 85, color: '#F59E0B' },
+    { subject: 'Tarih', val: 72, color: '#0F172A' },
+    { subject: 'Coğrafya', val: 90, color: '#F59E0B' },
+    { subject: 'Felsefe', val: 64, color: '#0F172A' },
     { subject: 'Türkçe', val: 94, color: '#F59E0B' },
   ];
 
@@ -118,7 +129,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     try {
       await setDoc(doc(db, 'studyPlans', user.uid), {
         userId: user.uid,
-        examId: userData?.targetExam || 'YKS_SAY',
+        examId: userData?.targetExam || 'YKS_SOZ',
         schedule: newSchedule,
         updatedAt: serverTimestamp()
       }, { merge: true });
@@ -135,16 +146,17 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
 
   const handleCreateRecommendedTask = async () => {
     setIsRecLoading(true);
-    const exam = userData?.targetExam || 'YKS_SAY';
+    const exam = userData?.targetExam || 'YKS_SOZ';
     
     const recommendedTask = {
-      subject: exam.includes('SOZ') ? 'Edebiyat' : 'TYT Matematik',
-      topic: exam.includes('SOZ') ? 'Cumhuriyet Dönemi' : 'Problemler',
+      subject: exam.includes('KPSS') ? 'Tarih' : 'Edebiyat',
+      topic: exam.includes('KPSS') ? 'Osmanlı Kültür ve Medeniyet' : 'Cumhuriyet Dönemi Şiir',
       time: '14:00',
       duration: '45 dk',
       difficulty: 'hard',
       xp: 75,
-      studyType: 'questions'
+      studyType: 'questions',
+      exam: exam
     };
 
     await handleQuickAddSession(recommendedTask);
@@ -160,7 +172,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   return (
     <div className="p-8 lg:p-12 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000">
       
-      {/* 4-COLUMN TOP STATS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {stats.map((stat, i) => (
           <Card key={i} className="p-8 rounded-[2.5rem] border-none shadow-[0_20px_40px_-10px_rgba(0,0,0,0.05)] bg-white flex items-center gap-6 group hover:shadow-xl transition-all hover:-translate-y-1 border border-primary/5">
@@ -174,7 +185,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
           </Card>
         ))}
 
-        {/* IMAGE SYNCED STREAK CARD */}
         <Card className="p-8 rounded-[2.5rem] border-none shadow-[0_20px_40px_-10px_rgba(0,0,0,0.05)] bg-white flex items-center justify-between group hover:shadow-xl transition-all hover:-translate-y-1 border border-primary/5 cursor-pointer">
           <div className="flex items-center gap-6">
             <div className="h-16 w-16 rounded-[1.5rem] bg-[#FFF1F2] flex items-center justify-center shrink-0 transition-transform group-hover:scale-110">
@@ -191,7 +201,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-12">
         
-        {/* OPERATIONAL AREA (8 COLUMNS) */}
         <div className="xl:col-span-8 space-y-12">
           
           <Card className="rounded-[4rem] border-none shadow-[0_60px_100px_-20px_rgba(15,23,42,0.12)] bg-white p-14 relative overflow-hidden group border border-primary/5">
@@ -346,7 +355,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
           </div>
         </div>
 
-        {/* ANALYTICS & METRICS PANEL (4 COLUMNS) */}
         <div className="xl:col-span-4 space-y-10">
           
           <Card className="rounded-[4rem] border-none shadow-[0_60px_120px_-30px_rgba(15,23,42,0.15)] bg-white overflow-hidden border border-primary/5">
@@ -360,7 +368,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
             </div>
             
             <div className="p-12 space-y-12">
-               {/* LEVEL CARD */}
                <div className="space-y-6">
                   <div className="flex items-center gap-6">
                     <div className="h-16 w-16 rounded-[1.5rem] bg-amber-50 flex items-center justify-center shadow-sm">
@@ -376,25 +383,42 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                   </div>
                </div>
 
-               {/* XP ENGINE SUMMARY */}
                <div className="flex items-center justify-between">
                   <div className="space-y-1">
                     <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest">BUGÜNKÜ XP</p>
-                    <p className="text-6xl font-black text-primary tracking-tighter text-shadow-deep">+{currentXpInLevel}</p>
+                    <p className="text-6xl font-black text-primary tracking-tighter text-shadow-deep">+{xp % 1000}</p>
                   </div>
                   <div className="h-16 w-16 rounded-[2rem] bg-emerald-50 flex items-center justify-center shadow-inner group cursor-pointer hover:bg-emerald-500 hover:text-white transition-all">
                     <TrendingUp className="h-8 w-8 text-emerald-500 group-hover:text-white transition-colors" />
                   </div>
                </div>
 
-               {/* FOCUS TERMINAL (POMODORO) */}
                <div className="p-10 bg-[#F8FAFC] rounded-[3.5rem] border border-primary/5 space-y-8 shadow-inner relative overflow-hidden group">
                   <div className="absolute top-0 right-0 w-40 h-48 bg-accent/5 blur-[60px] rounded-full"></div>
                   <div className="flex items-center justify-between relative z-10">
                      <span className="text-[11px] font-black uppercase tracking-[0.4em] text-primary/30 italic">FOCUS TERMINAL</span>
                      <Timer className="h-6 w-6 text-accent animate-pulse" />
                   </div>
-                  <p className="text-7xl font-black text-primary tracking-tighter leading-none text-shadow-deep relative z-10 text-center tabular-nums">{formatTime(timeLeft)}</p>
+                  
+                  <div className="flex flex-col items-center gap-6 relative z-10">
+                    <p className="text-7xl font-black text-primary tracking-tighter leading-none text-shadow-deep tabular-nums">{formatTime(timeLeft)}</p>
+                    
+                    <div className="flex gap-2 bg-white/50 p-1.5 rounded-2xl backdrop-blur-sm border border-primary/5">
+                      {[25, 45, 60].map((mins) => (
+                        <button 
+                          key={mins}
+                          onClick={() => changePomodoroTime(mins)}
+                          className={cn(
+                            "px-4 py-1.5 rounded-xl text-[10px] font-black transition-all",
+                            pomodoroMinutes === mins ? "bg-primary text-white shadow-lg" : "text-primary/40 hover:bg-white"
+                          )}
+                        >
+                          {mins} DK
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <Button onClick={() => setActiveTimer(!activeTimer)} className="w-full h-16 rounded-2xl bg-primary text-white hover:bg-accent transition-all font-black text-xs uppercase tracking-[0.3em] shadow-2xl relative z-10 group/btn">
                      {activeTimer ? 'SESSION AKTİF' : 'ODAKLANMAYI BAŞLAT'}
                      <Play className="ml-3 h-5 w-5 group-hover/btn:scale-110 transition-transform" />
@@ -403,7 +427,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
             </div>
           </Card>
 
-          {/* AI STRATEGIC RECOMMENDATION */}
           <Card className="p-12 rounded-[4rem] border-none shadow-[0_60px_100px_-20px_rgba(245,158,11,0.2)] bg-accent text-primary space-y-8 relative overflow-hidden group border border-white/20">
             <Sparkles className="absolute top-8 right-8 h-12 w-12 opacity-20 group-hover:scale-125 group-hover:rotate-12 transition-transform duration-700" />
             <div className="space-y-2 relative z-10">
@@ -412,7 +435,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
             </div>
             <div className="space-y-6 relative z-10">
               <p className="text-xl leading-relaxed font-bold italic text-shadow-deep">
-                "Bugün <span className="underline decoration-4 decoration-white/40 underline-offset-8">{userData?.targetExam?.includes('SOZ') ? 'Edebiyat' : 'TYT Matematik'} - {userData?.targetExam?.includes('SOZ') ? 'Cumhuriyet Dönemi' : 'Problemler'}</span> çalışırsan hedef netine <span className="text-white">+0.2 katkı</span> sağlayabilirsin."
+                "Bugün <span className="underline decoration-4 decoration-white/40 underline-offset-8">{userData?.targetExam?.includes('KPSS') ? 'Tarih' : 'Edebiyat'} - {userData?.targetExam?.includes('KPSS') ? 'Osmanlı Kültür' : 'Cumhuriyet Şiiri'}</span> çalışırsan hedef netine <span className="text-white">+0.2 katkı</span> sağlayabilirsin."
               </p>
               <Button 
                 onClick={handleCreateRecommendedTask}
@@ -424,35 +447,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
               </Button>
             </div>
           </Card>
-
-          {/* ACADEMIC MILESTONES (ACHIEVEMENTS) */}
-          <Card className="p-12 rounded-[4rem] border-none shadow-[0_40px_80px_-20px_rgba(0,0,0,0.06)] bg-white space-y-10 border border-primary/5">
-            <div className="flex justify-between items-center">
-               <h4 className="text-2xl font-black italic tracking-tighter uppercase text-primary">Son Başarılar</h4>
-               <Award className="h-7 w-7 text-accent" />
-            </div>
-            <div className="space-y-8">
-               {[
-                 { icon: Trophy, label: '1000 XP Barajı', desc: 'Akademik rütbe atlandı', color: 'text-amber-500', bg: 'bg-amber-50' },
-                 { icon: Flame, label: '7 Gün Seri', desc: 'Disiplin madalyası', color: 'text-rose-500', bg: 'bg-rose-50' },
-                 { icon: BookOpen, label: '100 Saat Çalışma', desc: 'Bilgi avcısı ünvanı', color: 'text-blue-500', bg: 'bg-blue-50' },
-               ].map((ach, i) => (
-                 <div key={i} className="flex gap-6 items-center group cursor-pointer">
-                    <div className={cn("h-14 w-14 rounded-[1.25rem] flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-inner", ach.bg)}>
-                       <ach.icon className={cn("h-7 w-7", ach.color)} />
-                    </div>
-                    <div className="space-y-1">
-                       <p className="text-base font-black text-primary uppercase italic leading-none">{ach.label}</p>
-                       <p className="text-[10px] font-bold text-muted-foreground opacity-60 uppercase tracking-widest">{ach.desc}</p>
-                    </div>
-                    <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                       <MoreVertical className="h-5 w-5 text-muted-foreground/30" />
-                    </div>
-                 </div>
-               ))}
-            </div>
-          </Card>
-
         </div>
       </div>
 
@@ -463,7 +457,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
         selectedDay={today}
       />
 
-      {/* FLOATING ACTION TERMINAL (FAB) */}
       <div className="fixed bottom-12 right-12 z-[100] group">
          <div className="absolute -inset-6 bg-accent/20 blur-[40px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
          <Button onClick={() => setIsAddDialogOpen(true)} className="h-28 w-28 rounded-[3.5rem] bg-[#0F172A] hover:bg-accent text-white shadow-[0_40px_80px_-20px_rgba(15,23,42,0.6)] transition-all duration-700 hover:scale-110 flex flex-col items-center justify-center gap-2 border-[10px] border-white relative z-10">

@@ -27,7 +27,9 @@ import {
   Bookmark, RefreshCcw, 
   Settings2, Calendar as CalendarIcon,
   Loader2,
-  Hash
+  Hash,
+  PlaySquare,
+  Book
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -323,21 +325,28 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
                   <div className="space-y-6">
                      <div className="flex items-center gap-4 text-primary opacity-20">
                         <Bookmark className="h-5 w-5" />
-                        <span className="text-[11px] font-black uppercase tracking-[0.4em]">Kaynak</span>
+                        <span className="text-[11px] font-black uppercase tracking-[0.4em]">Medya Kaynakları</span>
                         <div className="h-px flex-1 bg-current opacity-10"></div>
                      </div>
-                     <div className="grid grid-cols-2 gap-4">
-                        <Select name="book">
+                     <div className="grid grid-cols-1 gap-4">
+                        <div className="flex gap-4">
+                           <div className="flex-1 relative group">
+                              <PlaySquare className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-500 opacity-40 group-focus-within:opacity-100 transition-opacity" />
+                              <Input name="youtubeUrl" defaultValue={initialData?.youtubeUrl} placeholder="YouTube Video/Playlist Link..." className="h-14 rounded-xl bg-rose-50/30 border-none shadow-inner text-xs pl-12" />
+                           </div>
+                           <div className="flex-1 relative group">
+                              <Book className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-500 opacity-40 group-focus-within:opacity-100 transition-opacity" />
+                              <Input name="bookUrl" defaultValue={initialData?.bookUrl} placeholder="PDF / Ders Notu Link..." className="h-14 rounded-xl bg-blue-50/30 border-none shadow-inner text-xs pl-12" />
+                           </div>
+                        </div>
+                        <Select name="book" defaultValue={initialData?.book}>
                            <SelectTrigger className="h-14 rounded-xl bg-slate-50 border-none shadow-inner font-bold">
-                              <SelectValue placeholder="Kitap Seç" />
+                              <SelectValue placeholder="Kaynak Kitap Seç" />
                            </SelectTrigger>
                            <SelectContent className="rounded-xl">
                               {BOOKS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
                            </SelectContent>
                         </Select>
-                        <div className="flex gap-2">
-                           <Input name="youtubeUrl" placeholder="Playlist Link..." className="h-14 rounded-xl bg-rose-50 border-none shadow-inner text-xs" />
-                        </div>
                      </div>
                   </div>
                   <div className="space-y-6">

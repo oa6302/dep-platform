@@ -401,7 +401,21 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                                     {task.status === 'completed' ? 'TAMAMLANDI' : isCurrent && isActive ? 'DEVAM EDEN' : 'BEKLEMEDE'}
                                   </Badge>
                                 </div>
-                                <p className="text-lg font-medium text-muted-foreground italic opacity-60">{task.topic} • {task.duration}</p>
+                                <div className="flex items-center gap-4">
+                                  <p className="text-lg font-medium text-muted-foreground italic opacity-60">{task.topic} • {task.duration}</p>
+                                  <div className="flex gap-2">
+                                    {task.youtubeUrl && (
+                                      <a href={task.youtubeUrl} target="_blank" rel="noopener noreferrer" title="Video Dersi İzle" className="h-7 w-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center hover:bg-rose-100 transition-all border border-rose-100 shadow-sm group/link">
+                                        <PlaySquare className="h-4 w-4 group-hover/link:scale-110" />
+                                      </a>
+                                    )}
+                                    {task.bookUrl && (
+                                      <a href={task.bookUrl} target="_blank" rel="noopener noreferrer" title="PDF Kaynağı Aç" className="h-7 w-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition-all border border-blue-100 shadow-sm group/link">
+                                        <Book className="h-4 w-4 group-hover/link:scale-110" />
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
                             </div>
                           </div>
                           
@@ -489,7 +503,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                 <div className="bg-[#1E293B] p-10 text-white flex justify-between items-center relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 blur-[60px] rounded-full"></div>
                   <h4 className="text-3xl font-black italic tracking-tighter uppercase relative z-10">ODAKLANMA</h4>
-                  <Timer className="h-8 w-8 text-accent relative z-10" />
+                  <Target className="h-8 w-8 text-accent relative z-10" />
                 </div>
                 <div className="p-12 space-y-12">
                    <div className="text-center space-y-4">

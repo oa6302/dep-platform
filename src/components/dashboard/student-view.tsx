@@ -38,10 +38,6 @@ import {
   FileText
 } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { 
-  ResponsiveContainer, AreaChart, 
-  Area
-} from 'recharts';
 import { cn } from '@/lib/utils';
 import { AcademicSessionDialog } from '@/components/academic-session-dialog';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -78,6 +74,36 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     });
     return list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
   }, [studyPlan]);
+
+  // --- AI DECISION ENGINE LOGIC ---
+  const aiRecommendation = useMemo(() => {
+    const exam = userData?.targetExam || 'YKS_SOZ';
+    const isKpss = exam.includes('KPSS');
+    
+    // Veriye Dayalı Analiz: En az çalışılan dersi bul
+    const subjectStats: Record<string, number> = {};
+    completedTasks.forEach((t: any) => {
+      subjectStats[t.subject] = (subjectStats[t.subject] || 0) + 1;
+    });
+
+    let recSubject = isKpss ? 'Tarih' : 'Edebiyat';
+    let recTopic = isKpss ? 'Osmanlı Kültür ve Medeniyet' : 'Cumhuriyet Dönemi Şiir';
+    let contribution = 0.2;
+
+    // Eğer öğrenci Matematik'ten hiç görev tamamlamadıysa onu önceliklendir
+    if (!subjectStats['Matematik']) {
+      recSubject = 'Matematik';
+      recTopic = isKpss ? 'Problemler' : 'Temel Kavramlar';
+      contribution = 0.4;
+    }
+
+    return {
+      subject: recSubject,
+      topic: recTopic,
+      contribution: contribution.toFixed(1),
+      reason: "Son 7 gündür bu konuda düşük aktivite tespit edildi."
+    };
+  }, [completedTasks, userData]);
 
   const totalTasksCompleted = completedTasks.length;
   const level = Math.floor(totalTasksCompleted / 10) + 1;
@@ -124,7 +150,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
       toast({ 
         title: timerMode === 'focus' ? 'Focus Tamamlandı!' : 'Mola Bitti!', 
         description: timerMode === 'focus' ? 'Harika bir seanstı. Biraz dinlenmeye ne dersin?' : 'Mola sona erdi, yeni bir odaklanma seansına hazır mısın?',
-        className: "bg-primary text-white"
       });
     }
     return () => clearInterval(interval);
@@ -152,12 +177,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     }
   }, [ambientSound, activeTimer]);
 
-  const changePomodoroTime = (mins: number) => {
-    setPomodoroMinutes(mins);
-    setTimerLeft(mins * 60);
-    setActiveTimer(false);
-  };
-
   const switchMode = (mode: 'focus' | 'break') => {
     setTimerMode(mode);
     const defaultMins = mode === 'focus' ? 25 : 5;
@@ -166,11 +185,11 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     setActiveTimer(false);
   };
 
-  const stats = [
-    { label: 'TOPLAM XP', val: xp.toLocaleString(), icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50' },
-    { label: 'ÇALIŞMA', val: `${Math.floor(totalTasksCompleted * 0.75)} SAAT`, icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { label: 'NET ORT.', val: '84.5', icon: Target, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-  ];
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec < 10 ? '0' : ''}${sec}`;
+  };
 
   const handleQuickAddSession = async (taskData: any) => {
     if (!db || !user || isReadOnly) return;
@@ -199,7 +218,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
       
       toast({ 
         title: 'Görev Senkronize Edildi', 
-        description: `${taskData.subject} seansı bugünlük planınıza eklendi.`, 
+        description: `${taskData.subject} seansı programınıza eklendi.`, 
         className: "bg-primary text-white rounded-[2rem]" 
       });
     } catch (e) {
@@ -210,27 +229,20 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const handleCreateRecommendedTask = async () => {
     if (isReadOnly) return;
     setIsRecLoading(true);
-    const exam = userData?.targetExam || 'YKS_SOZ';
     
-    const recommendedTask = {
-      subject: exam.includes('KPSS') ? 'Tarih' : 'Edebiyat',
-      topic: exam.includes('KPSS') ? 'Osmanlı Kültür ve Medeniyet' : 'Cumhuriyet Dönemi Şiir',
+    const task = {
+      subject: aiRecommendation.subject,
+      topic: aiRecommendation.topic,
       time: '14:00',
       duration: '45 dk',
       difficulty: 'hard',
       xp: 75,
       studyType: 'questions',
-      exam: exam
+      exam: userData?.targetExam || 'YKS_SOZ'
     };
 
-    await handleQuickAddSession(recommendedTask);
+    await handleQuickAddSession(task);
     setIsRecLoading(false);
-  };
-
-  const formatTime = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m}:${sec < 10 ? '0' : ''}${sec}`;
   };
 
   return (
@@ -248,8 +260,12 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
 
         <TabsContent value="live" className="space-y-12 animate-in fade-in">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {stats.map((stat, i) => (
-              <Card key={i} className="p-8 rounded-[2.5rem] border-none shadow-[0_20px_40px_-10px_rgba(0,0,0,0.05)] bg-white flex items-center gap-6 group hover:shadow-xl transition-all hover:-translate-y-1 border border-primary/5">
+            {[
+              { label: 'TOPLAM XP', val: xp.toLocaleString(), icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50' },
+              { label: 'ÇALIŞMA', val: `${Math.floor(totalTasksCompleted * 0.75)} SAAT`, icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50' },
+              { label: 'NET ORT.', val: '84.5', icon: Target, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+            ].map((stat, i) => (
+              <Card key={i} className="p-8 rounded-[2.5rem] border-none shadow-sm bg-white flex items-center gap-6 group hover:shadow-xl transition-all hover:-translate-y-1 border border-primary/5">
                 <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:rotate-6 shadow-sm", stat.bg)}>
                   <stat.icon className={cn("h-7 w-7", stat.color)} />
                 </div>
@@ -260,7 +276,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
               </Card>
             ))}
 
-            <Card className="p-8 rounded-[2.5rem] border-none shadow-[0_20px_40px_-10px_rgba(0,0,0,0.05)] bg-white flex items-center justify-between group hover:shadow-xl transition-all hover:-translate-y-1 border border-primary/5 cursor-pointer">
+            <Card className="p-8 rounded-[2.5rem] border-none shadow-sm bg-white flex items-center justify-between group hover:shadow-xl transition-all hover:-translate-y-1 border border-primary/5 cursor-pointer">
               <div className="flex items-center gap-6">
                 <div className="h-16 w-16 rounded-[1.5rem] bg-[#FFF1F2] flex items-center justify-center shrink-0 transition-transform group-hover:scale-110">
                   <Flame className="h-8 w-8 text-[#FF4D4D] fill-current" />
@@ -365,6 +381,38 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
             </div>
 
             <div className="xl:col-span-4 space-y-10">
+              {/* AI DECISION SUPPORT CARD (ADS) */}
+              <Card className="p-12 rounded-[4rem] border-none shadow-[0_40px_80px_-20px_rgba(245,158,11,0.3)] bg-accent text-primary space-y-10 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 blur-[80px] rounded-full translate-x-1/2 -translate-y-1/2"></div>
+                <div className="space-y-6 relative z-10">
+                  <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-primary/10 text-primary font-black text-[9px] uppercase tracking-widest italic border border-primary/10">
+                    AKADEMİK ANALİZ MOTORU
+                  </div>
+                  <h4 className="text-4xl font-black italic tracking-tighter uppercase leading-[0.8] text-shadow-deep">AI BUGÜN <br />NE DİYOR?</h4>
+                </div>
+                
+                <p className="text-xl font-bold italic leading-relaxed relative z-10">
+                  "Bugün <span className="underline underline-offset-8 decoration-primary/20">{aiRecommendation.subject} - {aiRecommendation.topic}</span> çalışırsan hedef netine <span className="text-white text-shadow-deep">+{aiRecommendation.contribution} katkı</span> sağlayabilirsin."
+                </p>
+
+                <div className="space-y-4 pt-4 border-t border-primary/5">
+                   <div className="flex items-center gap-3 opacity-60">
+                      <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest">{aiRecommendation.reason}</p>
+                   </div>
+                </div>
+
+                <Button 
+                  onClick={handleCreateRecommendedTask} 
+                  disabled={isRecLoading || isReadOnly} 
+                  className="w-full h-20 rounded-[2rem] bg-primary hover:bg-black text-white font-black text-xs uppercase tracking-widest shadow-2xl transition-all active:scale-95 gap-4 group/btn"
+                >
+                  {isRecLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Zap className="h-6 w-6 text-accent group-hover/btn:animate-pulse" />} 
+                  GÖREVİ HEMEN OLUŞTUR
+                </Button>
+              </Card>
+
+              {/* FOCUS TERMINAL */}
               <Card className="rounded-[4rem] border-none shadow-xl bg-white overflow-hidden border border-primary/5">
                 <div className="bg-primary p-10 text-white flex justify-between items-center relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-48 h-48 bg-accent/10 blur-[80px] rounded-full"></div>
@@ -380,21 +428,44 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                       <button onClick={() => switchMode('focus')} className={cn("flex-1 py-3 rounded-xl text-[10px] font-black transition-all", timerMode === 'focus' ? "bg-primary text-white shadow-lg" : "text-primary/40")}>FOCUS</button>
                       <button onClick={() => switchMode('break')} className={cn("flex-1 py-3 rounded-xl text-[10px] font-black transition-all", timerMode === 'break' ? "bg-accent text-white shadow-lg" : "text-primary/40")}>BREAK</button>
                    </div>
+                   <div className="flex justify-center gap-4 py-4">
+                      {[25, 45, 60].map(m => (
+                        <button key={m} onClick={() => { setPomodoroMinutes(m); setTimerLeft(m * 60); }} className={cn("h-12 w-12 rounded-xl border-2 font-black text-xs transition-all", pomodoroMinutes === m ? "border-accent text-accent shadow-sm" : "border-slate-100 text-slate-300 hover:border-slate-200")}>{m}</button>
+                      ))}
+                   </div>
+                   <div className="flex justify-center gap-6 pb-6">
+                      {[
+                        { id: 'lofi', icon: Music },
+                        { id: 'rain', icon: CloudRain },
+                        { id: 'forest', icon: Trees }
+                      ].map(s => (
+                        <button key={s.id} onClick={() => setAmbientAmbient(ambientSound === s.id ? 'none' : s.id as any)} className={cn("h-12 w-12 rounded-2xl flex items-center justify-center transition-all shadow-inner", ambientSound === s.id ? "bg-accent text-white" : "bg-slate-50 text-slate-300 hover:bg-slate-100")}>
+                           <s.icon className="h-5 w-5" />
+                        </button>
+                      ))}
+                   </div>
                    <Button onClick={() => setActiveTimer(!activeTimer)} className="w-full h-16 rounded-[2rem] bg-primary text-white hover:bg-accent transition-all font-black text-xs uppercase tracking-[0.3em] shadow-2xl">
                      {activeTimer ? 'DURAKLAT' : 'BAŞLAT'}
                    </Button>
                 </div>
               </Card>
 
-              <Card className="p-12 rounded-[4rem] border-none shadow-2xl bg-accent text-primary space-y-8 relative overflow-hidden group">
-                <Sparkles className="absolute top-8 right-8 h-12 w-12 opacity-20" />
-                <h4 className="text-3xl font-black italic tracking-tighter uppercase leading-none">AI ÖNERİSİ</h4>
-                <p className="text-lg leading-relaxed font-bold italic">
-                  "Bugün {userData?.targetExam?.includes('KPSS') ? 'Tarih' : 'Edebiyat'} konularına odaklanman netlerini %5 artırabilir."
-                </p>
-                <Button onClick={handleCreateRecommendedTask} disabled={isRecLoading || isReadOnly} className="w-full h-14 rounded-2xl bg-white/20 hover:bg-white/40 text-primary font-black text-[11px] uppercase tracking-widest border border-white/20 shadow-sm transition-all active:scale-95 gap-3">
-                  {isRecLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />} Görevi Oluştur
-                </Button>
+              {/* ACADEMIC BALANCE */}
+              <Card className="p-10 rounded-[4rem] border-none shadow-xl bg-white border border-primary/5 space-y-8">
+                 <h4 className="text-2xl font-black italic tracking-tighter uppercase text-primary">AKADEMİK DENGE</h4>
+                 <div className="space-y-6">
+                    {academicBalance.map((item, i) => (
+                      <div key={i} className="space-y-3">
+                         <div className="flex justify-between items-end">
+                            <span className="text-[11px] font-black uppercase tracking-widest text-primary/60">{item.subject}</span>
+                            <span className="text-xl font-black text-primary italic">%{item.val}</span>
+                         </div>
+                         <div className="h-2 w-full bg-slate-50 rounded-full overflow-hidden shadow-inner border border-primary/5">
+                            <div className="h-full transition-all duration-1000" style={{ width: `${item.val}%`, backgroundColor: item.color }}></div>
+                         </div>
+                      </div>
+                    ))}
+                 </div>
               </Card>
             </div>
           </div>

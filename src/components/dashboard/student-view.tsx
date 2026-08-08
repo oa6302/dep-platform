@@ -3,7 +3,7 @@
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useDoc, useFirestore } from '@/firebase';
+import { useDoc, useFirestore, useUser } from '@/firebase';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   CheckCircle, 
@@ -34,7 +34,9 @@ import {
   Archive,
   BarChart3,
   History,
-  FileText
+  FileText,
+  Edit3,
+  Trash2
 } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
@@ -56,6 +58,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const [pomodoroMinutes, setPomodoroMinutes] = useState(25);
   const [timeLeft, setTimerLeft] = useState(25 * 60);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<{ index: number, data: any } | null>(null);
   const [isRecLoading, setIsRecLoading] = useState(false);
   const [ambientSound, setAmbientAmbient] = useState<'none' | 'lofi' | 'rain' | 'forest'>('none');
   
@@ -206,38 +209,55 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     return `${m}:${sec < 10 ? '0' : ''}${sec}`;
   };
 
-  const handleQuickAddSession = async (taskData: any) => {
+  const handleSaveSession = async (taskData: any) => {
     if (!db || !user || isReadOnly) return;
     const newSchedule = studyPlan?.schedule ? [...studyPlan.schedule] : [];
     let dayIndex = newSchedule.findIndex((s: any) => s.day === today);
     
-    const newTask = {
-        ...taskData,
-        status: 'pending',
-        createdAt: new Date().toISOString()
-    };
-
     if (dayIndex === -1) {
-      newSchedule.push({ day: today, tasks: [newTask] });
+      newSchedule.push({ day: today, tasks: [taskData] });
     } else {
-      newSchedule[dayIndex].tasks = [...newSchedule[dayIndex].tasks, newTask];
+      if (editingTask !== null) {
+        newSchedule[dayIndex].tasks[editingTask.index] = taskData;
+      } else {
+        newSchedule[dayIndex].tasks.push(taskData);
+      }
     }
     
     try {
       await setDoc(doc(db, 'studyPlans', user.uid), {
-        userId: user.uid,
-        examId: userData?.targetExam || 'YKS_SOZ',
         schedule: newSchedule,
         updatedAt: serverTimestamp()
       }, { merge: true });
       
       toast({ 
-        title: 'Görev Senkronize Edildi', 
-        description: `${taskData.subject} seansı programınıza eklendi.`, 
+        title: editingTask ? 'Görev Güncellendi' : 'Görev Eklendi', 
+        description: `${taskData.subject} seansı programınıza işlendi.`, 
         className: "bg-primary text-white rounded-[2rem]" 
       });
+      setEditingTask(null);
+      setIsAddDialogOpen(false);
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleDeleteTask = async (index: number) => {
+    if (!db || !user || isReadOnly || !confirm('Bu görevi silmek istediğinize emin misiniz?')) return;
+    const newSchedule = [...studyPlan.schedule];
+    const dayIndex = newSchedule.findIndex((s: any) => s.day === today);
+    
+    if (dayIndex > -1) {
+      newSchedule[dayIndex].tasks.splice(index, 1);
+      try {
+        await setDoc(doc(db, 'studyPlans', user.uid), {
+          schedule: newSchedule,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+        toast({ title: 'Görev Silindi', description: 'Programınızdan kaldırıldı.' });
+      } catch (e) {
+        console.error(e);
+      }
     }
   };
 
@@ -254,10 +274,12 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
       xp: 75,
       studyType: 'questions',
       questionCount: 40,
-      exam: userData?.targetExam || 'YKS_SOZ'
+      exam: userData?.targetExam || 'YKS_SOZ',
+      status: 'pending',
+      createdAt: new Date().toISOString()
     };
 
-    await handleQuickAddSession(task);
+    await handleSaveSession(task);
     setIsRecLoading(false);
   };
 
@@ -265,7 +287,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     <div className="p-8 lg:p-12 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000">
       
       <Tabs defaultValue="live" className="space-y-12">
-        <TabsList className="bg-slate-100/50 p-2 rounded-[2.5rem] h-20 shadow-inner flex border border-primary/5">
+        <TabsList className="bg-slate-100/50 p-2.5 rounded-[3rem] h-20 shadow-inner flex border border-primary/5">
           <TabsTrigger value="live" className="rounded-2xl px-10 h-full font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-lg gap-3">
             <Activity className="h-4 w-4" /> Canlı Panel
           </TabsTrigger>
@@ -327,8 +349,8 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                             <p className="text-lg font-black italic tracking-tighter">+350 XP</p>
                           </div>
                         </div>
-                        <Button onClick={() => setIsAddDialogOpen(true)} className="h-16 px-10 rounded-[1.75rem] bg-white border-2 border-primary/5 text-primary hover:bg-slate-50 font-black text-xs uppercase tracking-widest shadow-sm gap-4 transition-all">
-                          PROGRAMI YÖNET <ArrowUpRight className="h-5 w-5 text-accent" />
+                        <Button onClick={() => { setEditingTask(null); setIsAddDialogOpen(true); }} className="h-16 px-10 rounded-[1.75rem] bg-white border-2 border-primary/5 text-primary hover:bg-slate-50 font-black text-xs uppercase tracking-widest shadow-sm gap-4 transition-all">
+                          YENİ SEANS <Plus className="h-5 w-5 text-accent" />
                         </Button>
                       </div>
                   </div>
@@ -382,21 +404,42 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                                 <p className="text-lg font-medium text-muted-foreground italic opacity-60">{task.topic} • {task.duration}</p>
                             </div>
                           </div>
-                          <Button 
-                            size="icon" 
-                            disabled={isReadOnly}
-                            onClick={() => {
-                              const ns = [...studyPlan.schedule];
-                              const di = ns.findIndex((s: any) => s.day === today);
-                              ns[di].tasks[i].status = task.status === 'completed' ? 'pending' : 'completed';
-                              setDoc(doc(db!, 'studyPlans', user.uid), { schedule: ns }, { merge: true });
-                            }}
-                            className={cn(
-                              "h-16 w-16 rounded-[1.75rem] shadow-2xl transition-all group-hover:rotate-6",
-                              task.status === 'completed' ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-[#0F172A] text-white hover:bg-accent shadow-primary/20"
-                          )}>
-                            {task.status === 'completed' ? <CheckCircle className="h-8 w-8" /> : <Play className="h-8 w-8 fill-current" />}
-                          </Button>
+                          
+                          <div className="flex items-center gap-4">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              disabled={isReadOnly}
+                              onClick={() => { setEditingTask({ index: i, data: task }); setIsAddDialogOpen(true); }}
+                              className="h-12 w-12 rounded-xl text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-slate-100 hover:text-primary transition-all"
+                            >
+                              <Edit3 className="h-5 w-5" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              disabled={isReadOnly}
+                              onClick={() => handleDeleteTask(i)}
+                              className="h-12 w-12 rounded-xl text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-rose-50 hover:text-rose-500 transition-all"
+                            >
+                              <Trash2 className="h-5 w-5" />
+                            </Button>
+                            <Button 
+                              size="icon" 
+                              disabled={isReadOnly}
+                              onClick={() => {
+                                const ns = [...studyPlan.schedule];
+                                const di = ns.findIndex((s: any) => s.day === today);
+                                ns[di].tasks[i].status = task.status === 'completed' ? 'pending' : 'completed';
+                                setDoc(doc(db!, 'studyPlans', user.uid), { schedule: ns }, { merge: true });
+                              }}
+                              className={cn(
+                                "h-16 w-16 rounded-[1.75rem] shadow-2xl transition-all group-hover:rotate-6",
+                                task.status === 'completed' ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-[#0F172A] text-white hover:bg-accent shadow-primary/20"
+                            )}>
+                              {task.status === 'completed' ? <CheckCircle className="h-8 w-8" /> : <Play className="h-8 w-8 fill-current" />}
+                            </Button>
+                          </div>
                         </Card>
                       );
                     }) : (
@@ -608,14 +651,15 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
         <AcademicSessionDialog 
           isOpen={isAddDialogOpen}
           onOpenChange={setIsAddDialogOpen}
-          onSave={handleQuickAddSession}
+          onSave={handleSaveSession}
           selectedDay={today}
+          initialData={editingTask?.data}
         />
       )}
 
       {!isReadOnly && (
         <div className="fixed bottom-12 right-12 z-[100] group">
-          <Button onClick={() => setIsAddDialogOpen(true)} className="h-28 w-28 rounded-[3.5rem] bg-[#0F172A] hover:bg-accent text-white shadow-2xl transition-all duration-700 hover:scale-110 flex flex-col items-center justify-center gap-2 border-[10px] border-white relative z-10">
+          <Button onClick={() => { setEditingTask(null); setIsAddDialogOpen(true); }} className="h-28 w-28 rounded-[3.5rem] bg-[#0F172A] hover:bg-accent text-white shadow-2xl transition-all duration-700 hover:scale-110 flex flex-col items-center justify-center gap-2 border-[10px] border-white relative z-10">
               <Plus className="h-12 w-12 text-accent group-hover:rotate-90 transition-transform duration-500" />
               <span className="text-[9px] font-black tracking-[0.3em] uppercase opacity-40">NEW SESSION</span>
           </Button>

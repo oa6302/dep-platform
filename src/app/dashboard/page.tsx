@@ -28,16 +28,15 @@ import {
   Headset,
   Library,
   Users,
-  PieChart,
-  Eye,
-  XCircle,
   Loader2,
   Home,
   Compass,
   Calendar,
   ShieldCheck,
-  ArrowLeft,
   ShieldAlert,
+  ArrowLeft,
+  XCircle,
+  Eye,
 } from 'lucide-react';
 
 import { signOut } from 'firebase/auth';
@@ -75,6 +74,7 @@ function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const simulatedUserId = searchParams.get('simulate');
+  const authTab = searchParams.get('tab') === 'register' ? 'register' : 'login';
 
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
 
@@ -113,7 +113,6 @@ function DashboardContent() {
     if (user?.email === 'admin@gmail.com' && db && !docLoading) {
       const userRef = doc(db, 'users', user.uid);
       if (!userData) {
-        // Admin dökümanı yoksa oluştur
         setDoc(userRef, {
           uid: user.uid,
           email: user.email,
@@ -123,7 +122,6 @@ function DashboardContent() {
           updatedAt: serverTimestamp()
         }, { merge: true });
       } else if (userData.role !== 'admin') {
-        // Rolü admin değilse güncelle
         updateDoc(userRef, { 
           role: 'admin',
           updatedAt: serverTimestamp() 
@@ -131,12 +129,6 @@ function DashboardContent() {
       }
     }
   }, [user, userData, db, docLoading]);
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, authLoading, router]);
 
   // Dinamik Menü Oluşturucu
   const dynamicMenu = useMemo(() => {
@@ -187,7 +179,7 @@ function DashboardContent() {
   const handleLogout = async () => {
     if (!auth) return;
     await signOut(auth);
-    router.push('/login');
+    router.push('/dashboard');
   };
 
   const stopSimulation = () => {
@@ -207,50 +199,73 @@ function DashboardContent() {
     );
   }
 
-  // Profil Tamamlama Ekranı (Admin e-postası değilse ve veri yoksa)
-  if (user && !docLoading && !userData && user.email !== 'admin@gmail.com') {
+  /* =====================================================
+     GİRİŞ / KAYIT / PROFİL TAMAMLAMA EKRANI (UNIFIED)
+  ====================================================== */
+
+  const showAuthTerminal = !user || (!userData && user.email !== 'admin@gmail.com');
+
+  if (showAuthTerminal) {
+    const isProfileCompletion = !!user;
+    
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-8 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 blur-[150px] rounded-full -translate-y-1/2 translate-x-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-primary/5 blur-[150px] rounded-full translate-y-1/2 -translate-x-1/2"></div>
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-8 relative overflow-hidden selection:bg-accent selection:text-white">
+        {/* Background Effects */}
+        <div className="absolute top-[-25%] right-[-15%] w-[70%] h-[70%] bg-accent/5 blur-[200px] rounded-full animate-pulse"></div>
+        <div className="absolute bottom-[-25%] left-[-15%] w-[70%] h-[70%] bg-primary/5 blur-[200px] rounded-full animate-pulse" style={{ animationDelay: '2s' }}></div>
 
         <div className="w-full max-w-4xl relative z-10 space-y-12">
           <div className="flex flex-col items-center text-center space-y-8 animate-in fade-in slide-in-from-top-4 duration-1000">
             <div className="relative">
-              <div className="h-24 w-24 rounded-[2rem] bg-white shadow-2xl flex items-center justify-center p-4 border border-primary/5">
-                <Image src={logoUrl} alt="DEK Logo" width={60} height={60} className="object-contain" />
+              <div className="h-28 w-28 rounded-[2.75rem] bg-white shadow-2xl flex items-center justify-center p-5 border border-primary/5 transform transition-transform hover:rotate-6 duration-500">
+                <Image src={logoUrl} alt="DEK Logo" width={80} height={80} className="object-contain" priority />
               </div>
-              <div className="absolute -bottom-2 -right-2 h-10 w-10 bg-accent rounded-xl flex items-center justify-center text-white shadow-xl border-4 border-white animate-bounce">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
+              {isProfileCompletion && (
+                <div className="absolute -bottom-2 -right-2 h-11 w-11 bg-accent rounded-2xl flex items-center justify-center text-white shadow-xl border-4 border-white animate-bounce">
+                  <ShieldCheck className="h-6 w-6" />
+                </div>
+              )}
             </div>
             
             <div className="space-y-4">
-              <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-primary text-white font-black text-[10px] uppercase tracking-[0.4em] shadow-2xl shadow-primary/20 italic">
-                Sistem Kurulum Fazı v4.8
+              <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-primary text-white font-black text-[10px] uppercase tracking-[0.4em] shadow-2xl shadow-primary/20 italic border border-white/10">
+                {isProfileCompletion ? "SİSTEM KURULUM FAZI V4.8" : "GÜVENLİ ERİŞİM TERMİNALİ"}
               </div>
-              <h2 className="text-6xl font-black italic tracking-tighter text-primary uppercase leading-none text-shadow-premium">
-                PROFİLİNİZİ <span className="text-accent text-shadow-accent">TAMAMLAYIN</span>
+              <h2 className="text-6xl md:text-8xl font-black italic tracking-tighter text-primary uppercase leading-none text-shadow-premium">
+                {isProfileCompletion ? "PROFİLİNİZİ " : "AKADEMİK "}
+                <span className="text-accent text-shadow-accent">{isProfileCompletion ? "TAMAMLAYIN" : "GİRİŞ"}</span>
               </h2>
-              <p className="text-xl font-medium text-muted-foreground italic max-w-xl mx-auto">
-                Hoş geldiniz! Akademik komuta merkezinizi size özel yapılandırmak için son birkaç bilgiye ihtiyacımız var.
+              <p className="text-xl font-medium text-muted-foreground italic max-w-2xl mx-auto leading-relaxed">
+                {isProfileCompletion 
+                  ? "Hoş geldiniz! Akademik komuta merkezinizi size özel yapılandırmak için son birkaç bilgiye ihtiyacımız var." 
+                  : "Dijital Eğitim Koçu v4.8 terminaline bağlanmak için kimlik doğrulayın veya yeni bir düğüm oluşturun."}
               </p>
             </div>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-3xl rounded-[4rem] shadow-[0_80px_160px_-40px_rgba(15,23,42,0.2)] border border-white/20 overflow-hidden group">
-            <AuthForm mode="register" isProfileCompletion={true} />
+          <div className="bg-white/80 backdrop-blur-3xl rounded-[5rem] shadow-[0_120px_240px_-40px_rgba(15,23,42,0.2)] border border-white/20 overflow-hidden group relative">
+             <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-accent/10 transition-all duration-1000"></div>
+             <AuthForm mode={authTab} isProfileCompletion={isProfileCompletion} />
           </div>
 
-          <div className="flex justify-center animate-in fade-in duration-1000 delay-500">
-             <Button 
-               variant="ghost" 
-               onClick={handleLogout}
-               className="h-16 px-10 rounded-2xl font-black text-xs uppercase tracking-[0.3em] text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-all gap-4 group"
-             >
-                <LogOut className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
-                BAŞKA HESAPLA GİRİŞ YAP VEYA ÇIKIŞ YAP
-             </Button>
+          <div className="flex justify-center items-center gap-10 animate-in fade-in duration-1000 delay-500">
+             {isProfileCompletion ? (
+                <Button 
+                  variant="ghost" 
+                  onClick={handleLogout}
+                  className="h-14 px-8 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-all gap-4 group"
+                >
+                   <LogOut className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+                   BAŞKA HESAPLA GİRİŞ YAP VEYA ÇIKIŞ YAP
+                </Button>
+             ) : (
+                <Link href="/" className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground hover:text-primary transition-all flex items-center gap-4 group/back">
+                  <div className="h-10 w-10 rounded-2xl bg-white border border-primary/5 flex items-center justify-center shadow-sm group-hover/back:bg-primary group-hover/back:text-white transition-all">
+                    <ArrowLeft className="h-4 w-4 group-hover/back:-translate-x-1 transition-transform" />
+                  </div>
+                  SİSTEME GERİ DÖN
+                </Link>
+             )}
           </div>
         </div>
       </div>

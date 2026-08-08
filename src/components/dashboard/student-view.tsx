@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card } from '@/components/ui/card';
@@ -75,12 +74,37 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     return list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
   }, [studyPlan]);
 
+  const totalQuestions = useMemo(() => {
+    return completedTasks.reduce((acc, task) => acc + (task.questionCount || 0), 0);
+  }, [completedTasks]);
+
+  const totalExams = useMemo(() => {
+    return completedTasks.filter(task => task.studyType === 'exam').length;
+  }, [completedTasks]);
+
+  const today = new Intl.DateTimeFormat('tr-TR', { weekday: 'long' }).format(new Date());
+  
+  const todayTasks = useMemo(() => {
+    if (!studyPlan?.schedule) return [];
+    const dayData = studyPlan.schedule.find((s: any) => s.day === today);
+    return (dayData?.tasks || []);
+  }, [studyPlan, today]);
+
+  const remainingStudyTime = useMemo(() => {
+    const pending = todayTasks.filter((t: any) => t.status === 'pending');
+    let totalMins = 0;
+    pending.forEach((t: any) => {
+      const mins = parseInt(t.duration?.replace(/[^0-9]/g, '') || '0');
+      totalMins += mins;
+    });
+    return totalMins;
+  }, [todayTasks]);
+
   // --- AI DECISION ENGINE LOGIC ---
   const aiRecommendation = useMemo(() => {
     const exam = userData?.targetExam || 'YKS_SOZ';
     const isKpss = exam.includes('KPSS');
     
-    // Veriye Dayalı Analiz: En az çalışılan dersi bul
     const subjectStats: Record<string, number> = {};
     completedTasks.forEach((t: any) => {
       subjectStats[t.subject] = (subjectStats[t.subject] || 0) + 1;
@@ -90,7 +114,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     let recTopic = isKpss ? 'Osmanlı Kültür ve Medeniyet' : 'Cumhuriyet Dönemi Şiir';
     let contribution = 0.2;
 
-    // Eğer öğrenci Matematik'ten hiç görev tamamlamadıysa onu önceliklendir
     if (!subjectStats['Matematik']) {
       recSubject = 'Matematik';
       recTopic = isKpss ? 'Problemler' : 'Temel Kavramlar';
@@ -107,16 +130,8 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
 
   const totalTasksCompleted = completedTasks.length;
   const level = Math.floor(totalTasksCompleted / 10) + 1;
-  const xp = totalTasksCompleted * 120;
+  const xp = totalTasksCompleted * 120 + (totalQuestions * 2);
   const progressToNextLevel = Math.min(((xp % 1000) / 1000) * 100, 100);
-
-  const today = new Intl.DateTimeFormat('tr-TR', { weekday: 'long' }).format(new Date());
-  
-  const todayTasks = useMemo(() => {
-    if (!studyPlan?.schedule) return [];
-    const dayData = studyPlan.schedule.find((s: any) => s.day === today);
-    return (dayData?.tasks || []);
-  }, [studyPlan, today]);
 
   const academicBalance = useMemo(() => {
     const baseSubjects = [
@@ -238,6 +253,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
       difficulty: 'hard',
       xp: 75,
       studyType: 'questions',
+      questionCount: 40,
       exam: userData?.targetExam || 'YKS_SOZ'
     };
 
@@ -263,7 +279,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
             {[
               { label: 'TOPLAM XP', val: xp.toLocaleString(), icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50' },
               { label: 'ÇALIŞMA', val: `${Math.floor(totalTasksCompleted * 0.75)} SAAT`, icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50' },
-              { label: 'NET ORT.', val: '84.5', icon: Target, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+              { label: 'KALAN SÜRE', val: `${remainingStudyTime} DK`, icon: Timer, color: 'text-rose-500', bg: 'bg-rose-50' },
             ].map((stat, i) => (
               <Card key={i} className="p-8 rounded-[2.5rem] border-none shadow-sm bg-white flex items-center gap-6 group hover:shadow-xl transition-all hover:-translate-y-1 border border-primary/5">
                 <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:rotate-6 shadow-sm", stat.bg)}>
@@ -301,7 +317,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                       </div>
                       <div className="space-y-3">
                         <h1 className="text-6xl font-black text-primary tracking-tighter italic uppercase leading-none text-shadow-deep">GÜNAYDIN, <br /><span className="text-accent text-shadow-accent">{userData?.displayName?.split(' ')[0]}</span> 👋</h1>
-                        <p className="text-xl font-medium text-muted-foreground italic leading-relaxed max-w-lg">Bugün seni bekleyen <span className="text-primary font-bold">{todayTasks.length} kritik görev</span> ve yaklaşık <span className="text-primary font-bold">3 saatlik</span> bir akademik maraton var.</p>
+                        <p className="text-xl font-medium text-muted-foreground italic leading-relaxed max-w-lg">Bugün seni bekleyen <span className="text-primary font-bold">{todayTasks.length} kritik görev</span> ve yaklaşık <span className="text-primary font-bold">{Math.floor((todayTasks.reduce((acc: any, t: any) => acc + parseInt(t.duration?.replace(/[^0-9]/g, '') || '0'), 0)) / 60)} saatlik</span> bir akademik maraton var.</p>
                       </div>
                       <div className="flex gap-6">
                         <div className="px-6 py-4 rounded-[1.75rem] bg-primary text-white flex items-center gap-4 shadow-2xl shadow-primary/30 group/xp cursor-default">
@@ -338,39 +354,52 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                     </div>
                 </div>
                 <div className="grid gap-6">
-                    {todayTasks.length > 0 ? todayTasks.map((task: any, i: number) => (
-                      <Card key={i} className="group p-10 rounded-[3rem] border-none shadow-[0_20px_50px_-10px_rgba(0,0,0,0.04)] hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] transition-all hover:scale-[1.01] bg-white flex items-center justify-between border border-primary/5 border-l-[12px] border-l-primary">
-                        <div className="flex items-center gap-10">
-                          <div className="text-center w-24 shrink-0">
-                              <p className="text-2xl font-black text-primary tracking-tighter leading-none">{task.time}</p>
-                              <p className="text-[10px] font-black text-muted-foreground/40 uppercase mt-2 tracking-widest">START</p>
-                          </div>
-                          <div className="h-16 w-px bg-primary/10"></div>
-                          <div className="space-y-2">
-                              <div className="flex items-center gap-3">
-                                <h4 className="text-3xl font-black italic tracking-tight text-primary uppercase leading-none group-hover:text-accent transition-colors">{task.subject}</h4>
-                                <Badge variant="outline" className="text-[8px] font-black uppercase px-2 py-0 h-4 border-primary/10 opacity-40">{task.difficulty || 'Medium'}</Badge>
-                              </div>
-                              <p className="text-lg font-medium text-muted-foreground italic opacity-60">{task.topic} • {task.duration}</p>
-                          </div>
-                        </div>
-                        <Button 
-                          size="icon" 
-                          disabled={isReadOnly}
-                          onClick={() => {
-                            const ns = [...studyPlan.schedule];
-                            const di = ns.findIndex((s: any) => s.day === today);
-                            ns[di].tasks[i].status = task.status === 'completed' ? 'pending' : 'completed';
-                            setDoc(doc(db!, 'studyPlans', user.uid), { schedule: ns }, { merge: true });
-                          }}
-                          className={cn(
-                            "h-16 w-16 rounded-[1.75rem] shadow-2xl transition-all group-hover:rotate-6",
-                            task.status === 'completed' ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-[#0F172A] text-white hover:bg-accent shadow-primary/20"
+                    {todayTasks.length > 0 ? todayTasks.map((task: any, i: number) => {
+                      const isActive = activeTimer && timerMode === 'focus';
+                      const isCurrent = i === todayTasks.findIndex((t: any) => t.status === 'pending');
+                      
+                      return (
+                        <Card key={i} className={cn(
+                          "group p-10 rounded-[3rem] border-none shadow-[0_20px_50px_-10px_rgba(0,0,0,0.04)] hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] transition-all hover:scale-[1.01] bg-white flex items-center justify-between border border-primary/5 border-l-[12px]",
+                          task.status === 'completed' ? "border-l-emerald-500 opacity-60" : isCurrent && isActive ? "border-l-accent animate-pulse" : "border-l-primary"
                         )}>
-                          {task.status === 'completed' ? <CheckCircle className="h-8 w-8" /> : <Play className="h-8 w-8 fill-current" />}
-                        </Button>
-                      </Card>
-                    )) : (
+                          <div className="flex items-center gap-10">
+                            <div className="text-center w-24 shrink-0">
+                                <p className="text-2xl font-black text-primary tracking-tighter leading-none">{task.time}</p>
+                                <p className="text-[10px] font-black text-muted-foreground/40 uppercase mt-2 tracking-widest">START</p>
+                            </div>
+                            <div className="h-16 w-px bg-primary/10"></div>
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-3">
+                                  <h4 className="text-3xl font-black italic tracking-tight text-primary uppercase leading-none group-hover:text-accent transition-colors">{task.subject}</h4>
+                                  <Badge variant="outline" className={cn(
+                                    "text-[8px] font-black uppercase px-2 py-0 h-4 border-primary/10",
+                                    task.status === 'completed' ? "bg-emerald-50 text-emerald-600" : isCurrent && isActive ? "bg-accent text-primary" : "opacity-40"
+                                  )}>
+                                    {task.status === 'completed' ? 'TAMAMLANDI' : isCurrent && isActive ? 'DEVAM EDEN' : 'BEKLEMEDE'}
+                                  </Badge>
+                                </div>
+                                <p className="text-lg font-medium text-muted-foreground italic opacity-60">{task.topic} • {task.duration}</p>
+                            </div>
+                          </div>
+                          <Button 
+                            size="icon" 
+                            disabled={isReadOnly}
+                            onClick={() => {
+                              const ns = [...studyPlan.schedule];
+                              const di = ns.findIndex((s: any) => s.day === today);
+                              ns[di].tasks[i].status = task.status === 'completed' ? 'pending' : 'completed';
+                              setDoc(doc(db!, 'studyPlans', user.uid), { schedule: ns }, { merge: true });
+                            }}
+                            className={cn(
+                              "h-16 w-16 rounded-[1.75rem] shadow-2xl transition-all group-hover:rotate-6",
+                              task.status === 'completed' ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-[#0F172A] text-white hover:bg-accent shadow-primary/20"
+                          )}>
+                            {task.status === 'completed' ? <CheckCircle className="h-8 w-8" /> : <Play className="h-8 w-8 fill-current" />}
+                          </Button>
+                        </Card>
+                      );
+                    }) : (
                       <Card className="p-24 text-center bg-white/50 rounded-[4rem] border border-dashed border-primary/10 flex flex-col items-center gap-6">
                         <Calendar className="h-12 w-12 text-primary/10" />
                         <p className="font-black text-primary/20 uppercase tracking-[0.5em] text-xs italic">BUGÜN İÇİN PLANLANMIŞ GÖREV BULUNMUYOR.</p>
@@ -535,14 +564,14 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                 <BarChart3 className="h-6 w-6 text-accent" />
               </div>
               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">TOPLAM SORU</p>
-              <p className="text-5xl font-black text-primary italic">1.420</p>
+              <p className="text-5xl font-black text-primary italic">{totalQuestions.toLocaleString()}</p>
             </Card>
             <Card className="p-10 rounded-[3rem] bg-white border border-primary/5 shadow-xl space-y-4">
               <div className="h-12 w-12 rounded-2xl bg-rose-50 flex items-center justify-center">
                 <FileText className="h-6 w-6 text-rose-500" />
               </div>
               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">GİRİLEN DENEME</p>
-              <p className="text-5xl font-black text-primary italic">8</p>
+              <p className="text-5xl font-black text-primary italic">{totalExams}</p>
             </Card>
           </div>
 
@@ -560,7 +589,9 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                     </div>
                     <div className="space-y-1">
                       <h4 className="text-2xl font-black text-primary italic uppercase tracking-tighter">{task.subject} - {task.topic}</h4>
-                      <p className="text-xs font-bold text-muted-foreground italic uppercase tracking-widest">{task.day} • {task.duration} • +{task.xp} XP</p>
+                      <p className="text-xs font-bold text-muted-foreground italic uppercase tracking-widest">
+                        {task.day} • {task.duration} • +{task.xp} XP {task.questionCount > 0 && `• ${task.questionCount} Soru`}
+                      </p>
                     </div>
                   </div>
                   <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-emerald-500/20 text-emerald-600 bg-emerald-50">TAMAMLANDI</Badge>

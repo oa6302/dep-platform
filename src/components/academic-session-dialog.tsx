@@ -26,7 +26,8 @@ import {
   Layers, Brain, Sparkles, ShieldCheck, 
   Bookmark, RefreshCcw, 
   Settings2, Calendar as CalendarIcon,
-  Loader2
+  Loader2,
+  Hash
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -88,6 +89,7 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
   const [startTime, setStartTime] = useState(initialData?.time || '09:00');
   const [startDate, setStartDate] = useState(initialData?.startDate || '');
   const [endDate, setEndDate] = useState(initialData?.endDate || '');
+  const [questionCount, setQuestionCount] = useState(initialData?.questionCount?.toString() || '0');
   const [isAiLoading, setIsAiLoading] = useState(false);
 
   const subjects = useMemo(() => MASTER_CURRICULUM[exam] || {}, [exam]);
@@ -97,8 +99,10 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
     const map = { easy: 25, medium: 50, hard: 75 };
     let val = map[difficulty as keyof typeof map] || 50;
     if (studyType === 'exam') val = 150;
+    // Soru sayısına göre bonus XP
+    if (studyType === 'questions') val += Math.floor(parseInt(questionCount || '0') / 2);
     return val;
-  }, [difficulty, studyType]);
+  }, [difficulty, studyType, questionCount]);
 
   const estimatedNet = useMemo(() => (xpValue / 250).toFixed(2), [xpValue]);
 
@@ -118,6 +122,7 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
       }
       setDifficulty('hard');
       setStudyType('questions');
+      setQuestionCount('40');
       setStartTime('14:00');
       setIsAiLoading(false);
     }, 800);
@@ -139,6 +144,7 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
       difficulty,
       priority,
       studyType,
+      questionCount: parseInt(questionCount || '0'),
       xp: xpValue,
       book: formData.get('book'),
       bookUrl: formData.get('bookUrl'),
@@ -223,7 +229,7 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
                      </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6 pt-2">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
                      <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-2">Başlangıç Tarihi</Label>
                         <div className="relative">
@@ -248,6 +254,21 @@ export function AcademicSessionDialog({ isOpen, onOpenChange, onSave, selectedDa
                           />
                         </div>
                      </div>
+                     {studyType === 'questions' && (
+                       <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-emerald-600 ml-2">Soru Sayısı</Label>
+                          <div className="relative group">
+                            <Hash className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-emerald-500" />
+                            <Input 
+                              type="number" 
+                              value={questionCount} 
+                              onChange={(e) => setQuestionCount(e.target.value)} 
+                              className="h-16 rounded-2xl bg-emerald-50/30 border-2 border-transparent focus:border-emerald-500/20 shadow-inner font-black text-lg pl-12 text-center" 
+                              placeholder="0"
+                            />
+                          </div>
+                       </div>
+                     )}
                   </div>
                </div>
 

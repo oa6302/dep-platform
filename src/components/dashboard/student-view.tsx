@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card } from '@/components/ui/card';
@@ -61,7 +60,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<{ index: number, data: any } | null>(null);
   const [isRecLoading, setIsRecLoading] = useState(false);
-  const [ambientSound, setAmbientAmbient] = useState<'none' | 'lofi' | 'rain' | 'forest'>('none');
+  const [ambientSound, setAmbientSound] = useState<'none' | 'lofi' | 'rain' | 'forest'>('none');
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -175,6 +174,8 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   }, [activeTimer, timeLeft, toast, timerMode]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     if (ambientSound !== 'none' && activeTimer) {
       if (!audioRef.current) {
         audioRef.current = new Audio();
@@ -213,11 +214,9 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const handleSaveSession = async (taskData: any) => {
     if (!db || !user || isReadOnly) return;
     
-    // Sağlamlaştırma: Her zaman 7 günü kontrol et
     const daysArr = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
     const currentSchedule = studyPlan?.schedule ? [...studyPlan.schedule] : daysArr.map(d => ({ day: d, tasks: [] }));
     
-    // Eğer Firestore'da gün eksikse tamamla
     daysArr.forEach(d => {
       if (!currentSchedule.find((s: any) => s.day === d)) {
         currentSchedule.push({ day: d, tasks: [] });
@@ -446,7 +445,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                               variant="ghost" 
                               size="icon" 
                               disabled={isReadOnly}
-                              onClick={() => handleDeleteTask(i)}
+                              onClick={() => handleDeleteTask(index)}
                               className="h-12 w-12 rounded-xl text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-rose-50 hover:text-rose-500 transition-all"
                             >
                               <Trash2 className="h-5 w-5" />
@@ -573,7 +572,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                         ].map(s => (
                           <button 
                             key={s.id} 
-                            onClick={() => setAmbientAmbient(ambientSound === s.id ? 'none' : s.id as any)} 
+                            onClick={() => setAmbientSound(ambientSound === s.id ? 'none' : s.id as any)} 
                             className={cn(
                               "h-14 w-14 rounded-2xl flex items-center justify-center transition-all shadow-sm border", 
                               ambientSound === s.id ? "bg-accent border-accent text-white" : "bg-white border-slate-100 text-slate-300 hover:bg-slate-50"

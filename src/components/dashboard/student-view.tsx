@@ -22,9 +22,7 @@ import {
   Activity,
   PlaySquare,
   Book,
-  MoreVertical,
   Loader2,
-  Settings2,
   Target
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
@@ -77,6 +75,32 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     return (dayData?.tasks || []);
   }, [studyPlan, today]);
 
+  // Dinamik Akademik Denge Hesaplaması
+  const academicBalance = useMemo(() => {
+    const baseSubjects = [
+      { name: 'Matematik', color: '#F59E0B' },
+      { name: 'Türkçe', color: '#0F172A' },
+      { name: 'Edebiyat', color: '#F59E0B' },
+      { name: 'Tarih', color: '#0F172A' },
+      { name: 'Coğrafya', color: '#F59E0B' },
+    ];
+
+    return baseSubjects.map(s => {
+      let completedCount = 0;
+      studyPlan?.schedule?.forEach((day: any) => {
+        day.tasks?.forEach((task: any) => {
+          // Konu ismi ders ismini içeriyorsa veya birebir aynıysa
+          if ((task.subject?.includes(s.name) || task.subject === s.name) && task.status === 'completed') {
+            completedCount++;
+          }
+        });
+      });
+      // Her tamamlanan görev %20 katkı sağlar (5 görev = %100)
+      const calculatedVal = Math.min(completedCount * 20, 100);
+      return { subject: s.name, val: calculatedVal, color: s.color };
+    });
+  }, [studyPlan]);
+
   useEffect(() => {
     let interval: any;
     if (activeTimer && timeLeft > 0) {
@@ -88,7 +112,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
       toast({ title: 'Focus Tamamlandı!', description: 'Harika bir seanstı. Biraz dinlenmeye ne dersin?' });
     }
     return () => clearInterval(interval);
-  }, [activeTimer, timeLeft]);
+  }, [activeTimer, timeLeft, toast]);
 
   const changePomodoroTime = (mins: number) => {
     setPomodoroMinutes(mins);
@@ -102,16 +126,8 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     { label: 'NET ORT.', val: '84.5', icon: Target, color: 'text-emerald-500', bg: 'bg-emerald-50' },
   ];
 
-  const academicBalance = [
-    { subject: 'Edebiyat', val: 85, color: '#F59E0B' },
-    { subject: 'Tarih', val: 72, color: '#0F172A' },
-    { subject: 'Coğrafya', val: 90, color: '#F59E0B' },
-    { subject: 'Felsefe', val: 64, color: '#0F172A' },
-    { subject: 'Türkçe', val: 94, color: '#F59E0B' },
-  ];
-
   const handleQuickAddSession = async (taskData: any) => {
-    if (!db || !user) return;
+    if (!db || !user || isReadOnly) return;
     const newSchedule = studyPlan?.schedule ? [...studyPlan.schedule] : [];
     let dayIndex = newSchedule.findIndex((s: any) => s.day === today);
     
@@ -141,11 +157,12 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
         className: "bg-primary text-white rounded-[2rem]" 
       });
     } catch (e) {
-      toast({ variant: 'destructive', title: 'Hata', description: 'Görev eklenirken bir sorun oluştu.' });
+      console.error(e);
     }
   };
 
   const handleCreateRecommendedTask = async () => {
+    if (isReadOnly) return;
     setIsRecLoading(true);
     const exam = userData?.targetExam || 'YKS_SOZ';
     
@@ -248,9 +265,11 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                     <Calendar className="h-10 w-10 text-accent" /> BUGÜNKÜ PLAN
                    </h3>
                 </div>
-                <Button onClick={() => setIsAddDialogOpen(true)} variant="ghost" className="h-12 px-6 rounded-xl text-accent font-black text-xs uppercase tracking-widest hover:bg-accent/5 gap-3">
-                  <Plus className="h-4 w-4" /> SEANS EKLE
-                </Button>
+                {!isReadOnly && (
+                  <Button onClick={() => setIsAddDialogOpen(true)} variant="ghost" className="h-12 px-6 rounded-xl text-accent font-black text-xs uppercase tracking-widest hover:bg-accent/5 gap-3">
+                    <Plus className="h-4 w-4" /> SEANS EKLE
+                  </Button>
+                )}
              </div>
              
              <div className="grid gap-6">
@@ -277,6 +296,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
                        </div>
                        <Button 
                         size="icon" 
+                        disabled={isReadOnly}
                         onClick={() => {
                           const ns = [...studyPlan.schedule];
                           const di = ns.findIndex((s: any) => s.day === today);
@@ -440,7 +460,7 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
               </p>
               <Button 
                 onClick={handleCreateRecommendedTask}
-                disabled={isRecLoading}
+                disabled={isRecLoading || isReadOnly}
                 className="w-full h-14 rounded-2xl bg-white/20 hover:bg-white/40 text-primary font-black text-[11px] uppercase tracking-widest border border-white/20 shadow-sm transition-all active:scale-95 gap-3"
               >
                 {isRecLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
@@ -451,20 +471,24 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
         </div>
       </div>
 
-      <AcademicSessionDialog 
-        isOpen={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        onSave={handleQuickAddSession}
-        selectedDay={today}
-      />
+      {!isReadOnly && (
+        <AcademicSessionDialog 
+          isOpen={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          onSave={handleQuickAddSession}
+          selectedDay={today}
+        />
+      )}
 
-      <div className="fixed bottom-12 right-12 z-[100] group">
-         <div className="absolute -inset-6 bg-accent/20 blur-[40px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-         <Button onClick={() => setIsAddDialogOpen(true)} className="h-28 w-28 rounded-[3.5rem] bg-[#0F172A] hover:bg-accent text-white shadow-[0_40px_80px_-20px_rgba(15,23,42,0.6)] transition-all duration-700 hover:scale-110 flex flex-col items-center justify-center gap-2 border-[10px] border-white relative z-10">
-            <Plus className="h-12 w-12 text-accent group-hover:rotate-90 transition-transform duration-500" />
-            <span className="text-[9px] font-black tracking-[0.3em] uppercase opacity-40">NEW SESSION</span>
-         </Button>
-      </div>
+      {!isReadOnly && (
+        <div className="fixed bottom-12 right-12 z-[100] group">
+          <div className="absolute -inset-6 bg-accent/20 blur-[40px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+          <Button onClick={() => setIsAddDialogOpen(true)} className="h-28 w-28 rounded-[3.5rem] bg-[#0F172A] hover:bg-accent text-white shadow-[0_40px_80px_-20px_rgba(15,23,42,0.6)] transition-all duration-700 hover:scale-110 flex flex-col items-center justify-center gap-2 border-[10px] border-white relative z-10">
+              <Plus className="h-12 w-12 text-accent group-hover:rotate-90 transition-transform duration-500" />
+              <span className="text-[9px] font-black tracking-[0.3em] uppercase opacity-40">NEW SESSION</span>
+          </Button>
+        </div>
+      )}
 
     </div>
   );

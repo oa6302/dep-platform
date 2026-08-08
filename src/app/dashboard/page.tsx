@@ -36,6 +36,7 @@ import {
   Compass,
   Calendar,
   ShieldCheck,
+  ArrowLeft,
 } from 'lucide-react';
 
 import { signOut } from 'firebase/auth';
@@ -56,23 +57,6 @@ import { StudentView } from '@/components/dashboard/student-view';
 import { TeacherView } from '@/components/dashboard/teacher-view';
 import { AdminView } from '@/components/dashboard/admin-view';
 import { SchoolAdminView } from '@/components/dashboard/school-admin-view';
-
-/* ============================================================
-   TYPES
-============================================================ */
-
-interface DashboardUser {
-  uid?: string;
-  displayName?: string;
-  email?: string;
-  role?: string;
-  targetExam?: string;
-  schoolId?: string;
-  teacherId?: string;
-  classId?: string;
-  photoURL?: string;
-  [key: string]: any;
-}
 
 /* ============================================================
    DASHBOARD CONTENT
@@ -121,7 +105,6 @@ function DashboardContent() {
   const dynamicMenu = useMemo(() => {
     if (!currentViewData) return [];
 
-    // Admin Menüsü
     if (currentViewData.role === 'admin') {
       return [
         { label: 'Sistem Paneli', icon: LayoutDashboard, href: '/dashboard' },
@@ -131,7 +114,6 @@ function DashboardContent() {
       ];
     }
 
-    // Okul Yöneticisi Menüsü
     if (currentViewData.role === 'school_admin') {
       return [
         { label: 'Okul Paneli', icon: LayoutDashboard, href: '/dashboard' },
@@ -139,7 +121,6 @@ function DashboardContent() {
       ];
     }
 
-    // Eğitmen Menüsü
     if (currentViewData.role === 'teacher') {
       return [
         { label: 'Eğitmen Paneli', icon: LayoutDashboard, href: '/dashboard' },
@@ -148,7 +129,6 @@ function DashboardContent() {
       ];
     }
 
-    // Öğrenci Menüsü (Veya Simülasyon Modu)
     const items = [
       { label: 'Akademik Panel', icon: LayoutDashboard, href: '/dashboard' },
       { label: 'AI Analiz', icon: Brain, href: '/dashboard/ai-analysis', accent: true },
@@ -170,7 +150,7 @@ function DashboardContent() {
   const handleLogout = async () => {
     if (!auth) return;
     await signOut(auth);
-    router.push('/');
+    router.push('/login');
   };
 
   const stopSimulation = () => {
@@ -190,19 +170,51 @@ function DashboardContent() {
     );
   }
 
+  // Profil Tamamlama Ekranı
   if (user && !docLoading && !userData) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6">
-        <div className="w-full max-w-4xl">
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-white font-black text-[10px] uppercase tracking-widest">
-              <ShieldCheck className="h-4 w-4 text-accent" /> Sistem Kurulumu
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-8 relative overflow-hidden">
+        {/* Dekoratif Arka Plan */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 blur-[150px] rounded-full -translate-y-1/2 translate-x-1/2"></div>
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-primary/5 blur-[150px] rounded-full translate-y-1/2 -translate-x-1/2"></div>
+
+        <div className="w-full max-w-4xl relative z-10 space-y-12">
+          <div className="flex flex-col items-center text-center space-y-8 animate-in fade-in slide-in-from-top-4 duration-1000">
+            <div className="relative">
+              <div className="h-24 w-24 rounded-[2rem] bg-white shadow-2xl flex items-center justify-center p-4 border border-primary/5">
+                <Image src={logoUrl} alt="DEK Logo" width={60} height={60} className="object-contain" />
+              </div>
+              <div className="absolute -bottom-2 -right-2 h-10 w-10 bg-accent rounded-xl flex items-center justify-center text-white shadow-xl border-4 border-white animate-bounce">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
             </div>
-            <h2 className="mt-5 text-5xl font-black italic tracking-tighter text-primary uppercase">PROFİLİNİZİ <span className="text-accent">TAMAMLAYIN</span></h2>
-            <p className="mt-4 text-muted-foreground">Sistemi size özel yapılandırmak için son birkaç bilgiye ihtiyacımız var.</p>
+            
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-primary text-white font-black text-[10px] uppercase tracking-[0.4em] shadow-2xl shadow-primary/20 italic">
+                Sistem Kurulum Fazı v4.8
+              </div>
+              <h2 className="text-6xl font-black italic tracking-tighter text-primary uppercase leading-none text-shadow-premium">
+                PROFİLİNİZİ <span className="text-accent text-shadow-accent">TAMAMLAYIN</span>
+              </h2>
+              <p className="text-xl font-medium text-muted-foreground italic max-w-xl mx-auto">
+                Hoş geldiniz! Akademik komuta merkezinizi size özel yapılandırmak için son birkaç bilgiye ihtiyacımız var.
+              </p>
+            </div>
           </div>
-          <div className="bg-white rounded-[3rem] shadow-2xl border border-primary/5 overflow-hidden">
+
+          <div className="bg-white/80 backdrop-blur-3xl rounded-[4rem] shadow-[0_80px_160px_-40px_rgba(15,23,42,0.2)] border border-white/20 overflow-hidden group">
             <AuthForm mode="register" isProfileCompletion={true} />
+          </div>
+
+          <div className="flex justify-center animate-in fade-in duration-1000 delay-500">
+             <Button 
+               variant="ghost" 
+               onClick={handleLogout}
+               className="h-16 px-10 rounded-2xl font-black text-xs uppercase tracking-[0.3em] text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-all gap-4 group"
+             >
+                <LogOut className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+                BAŞKA HESAPLA GİRİŞ YAP VEYA ÇIKIŞ YAP
+             </Button>
           </div>
         </div>
       </div>
@@ -211,7 +223,6 @@ function DashboardContent() {
 
   if (!user || !currentViewData) return null;
 
-  // Görünüm Seçici
   const renderView = () => {
     switch (currentViewData.role) {
       case 'teacher':
@@ -228,7 +239,6 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen">
-      {/* SIMULATION BAR */}
       {isSimulating && (
         <div className="bg-destructive/95 text-white px-6 py-4 flex items-center justify-between sticky top-0 z-[100] shadow-2xl backdrop-blur-md">
           <div className="flex items-center gap-4 text-xs font-black uppercase tracking-widest">
@@ -244,7 +254,6 @@ function DashboardContent() {
       )}
 
       <div className="grid lg:grid-cols-[320px_1fr] min-h-screen">
-        {/* SIDEBAR */}
         <aside className="bg-primary text-white hidden lg:flex flex-col border-r border-white/5 shadow-2xl sticky top-0 h-screen z-50">
           <div className="p-10">
             <Link href="/dashboard" className="flex items-center gap-5">
@@ -285,7 +294,6 @@ function DashboardContent() {
           </div>
         </aside>
 
-        {/* MAIN */}
         <main className="flex flex-col relative overflow-hidden bg-[#FAFBFF]">
           <header className="h-24 bg-white/80 backdrop-blur-3xl border-b border-primary/5 flex items-center justify-between px-8 xl:px-12 sticky top-0 z-40">
             <div className="flex items-center gap-5">

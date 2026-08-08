@@ -37,9 +37,11 @@ import {
   Calendar,
   ShieldCheck,
   ArrowLeft,
+  ShieldAlert,
 } from 'lucide-react';
 
 import { signOut } from 'firebase/auth';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -69,6 +71,7 @@ function DashboardContent() {
   } = useUser();
 
   const auth = useAuth();
+  const db = useFirestore();
   const router = useRouter();
   const searchParams = useSearchParams();
   const simulatedUserId = searchParams.get('simulate');
@@ -95,6 +98,18 @@ function DashboardContent() {
 
   const isGlobalLoading = authLoading || (!!user && docLoading) || (!!simulatedUserId && simulatedUserLoading);
 
+  // ADMIN OTOMATIK TANIMLAMA (admin@gmail.com için)
+  useEffect(() => {
+    if (user?.email === 'admin@gmail.com' && userData && userData.role !== 'admin' && db) {
+      const userRef = doc(db, 'users', user.uid);
+      updateDoc(userRef, { 
+        role: 'admin',
+        displayName: 'Sistem Yöneticisi',
+        updatedAt: serverTimestamp() 
+      });
+    }
+  }, [user, userData, db]);
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
@@ -107,10 +122,10 @@ function DashboardContent() {
 
     if (currentViewData.role === 'admin') {
       return [
-        { label: 'Sistem Paneli', icon: LayoutDashboard, href: '/dashboard' },
+        { label: 'Küresel Harekât', icon: LayoutDashboard, href: '/dashboard' },
         { label: 'Müfredat Motoru', icon: Library, href: '/dashboard/admin/curriculum' },
-        { label: 'Uzmanlar', icon: Users, href: '/dashboard/discover' },
-        { label: 'Destek', icon: Headset, href: '/dashboard/contact' },
+        { label: 'Uzman Yönetimi', icon: Users, href: '/dashboard/discover' },
+        { label: 'Destek Hattı', icon: Headset, href: '/dashboard/contact' },
       ];
     }
 
@@ -170,11 +185,10 @@ function DashboardContent() {
     );
   }
 
-  // Profil Tamamlama Ekranı
-  if (user && !docLoading && !userData) {
+  // Profil Tamamlama Ekranı (Admin e-postası değilse ve veri yoksa)
+  if (user && !docLoading && !userData && user.email !== 'admin@gmail.com') {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-8 relative overflow-hidden">
-        {/* Dekoratif Arka Plan */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 blur-[150px] rounded-full -translate-y-1/2 translate-x-1/2"></div>
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-primary/5 blur-[150px] rounded-full translate-y-1/2 -translate-x-1/2"></div>
 
@@ -225,12 +239,12 @@ function DashboardContent() {
 
   const renderView = () => {
     switch (currentViewData.role) {
+      case 'admin':
+        return <AdminView user={{ uid: currentViewUid }} userData={currentViewData} />;
       case 'teacher':
         return <TeacherView user={{ uid: currentViewUid }} userData={currentViewData} />;
       case 'school_admin':
         return <SchoolAdminView user={{ uid: currentViewUid }} userData={currentViewData} />;
-      case 'admin':
-        return <AdminView user={{ uid: currentViewUid }} userData={currentViewData} />;
       case 'student':
       default:
         return <StudentView user={{ uid: currentViewUid }} userData={currentViewData} isReadOnly={isSimulating} />;
@@ -269,7 +283,7 @@ function DashboardContent() {
 
           <nav className="flex-1 px-6 space-y-2">
             {dynamicMenu.map((item: any, index) => (
-              <Button key={index} variant="ghost" className={cn('w-full justify-start rounded-2xl h-14 group', item.href === '/dashboard' && !isSimulating ? 'bg-white/15 text-white font-black' : 'hover:bg-white/5 opacity-60 hover:opacity-100')} asChild>
+              <Button key={index} variant="ghost" className={cn('w-full justify-start rounded-2xl h-14 group', (item.href === '/dashboard' || item.href === router.asPath) && !isSimulating ? 'bg-white/15 text-white font-black' : 'hover:bg-white/5 opacity-60 hover:opacity-100')} asChild>
                 <Link href={item.href}>
                   <item.icon className={cn('mr-5 h-5 w-5', item.accent && 'text-accent')} />
                   <span className="text-sm tracking-tight italic uppercase">{item.label}</span>
@@ -301,10 +315,15 @@ function DashboardContent() {
                 <Home className="h-5 w-5" />
               </Button>
               <h1 className="text-xl xl:text-2xl font-black text-primary uppercase tracking-tighter italic">
-                {isSimulating ? 'SİMÜLASYON MODU' : currentViewData.role === 'student' ? 'AKADEMİK KOMUTA MERKEZİ' : 'AKADEMİK HAREKÂT MERKEZİ'}
+                {isSimulating ? 'SİMÜLASYON MODU' : currentViewData.role === 'admin' ? 'KÜRESEL HAREKÂT MERKEZİ' : currentViewData.role === 'student' ? 'AKADEMİK KOMUTA MERKEZİ' : 'AKADEMİK HAREKÂT MERKEZİ'}
               </h1>
             </div>
             <div className="flex items-center gap-5">
+              {currentViewData.role === 'admin' && (
+                <Badge className="bg-destructive/10 text-destructive border-none font-black text-[10px] uppercase tracking-widest gap-2">
+                  <ShieldAlert className="h-3 w-3" /> ROOT
+                </Badge>
+              )}
               <div className="hidden md:flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-emerald-500 italic">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> CANLI
               </div>

@@ -73,6 +73,7 @@ export function TeacherView({ user, userData }: TeacherViewProps) {
   const [studentSearch, setStudentSearch] = useState('');
   const [selectedClass, setSelectedClass] = useState('all');
 
+  // VERİ KAYNAĞI: users - coachId'si bu öğretmen olan öğrenciler
   const { data: students = [] } = useCollection<any>(
     'users',
     where('role', '==', 'student'),
@@ -115,8 +116,8 @@ export function TeacherView({ user, userData }: TeacherViewProps) {
   }, [students, selectedClass, studentSearch]);
 
   const openStudentSimulation = (student: any) => {
-    if (!student?.id) return;
-    router.push(`/dashboard?simulate=${encodeURIComponent(student.id)}`);
+    if (!student?.uid) return;
+    router.push(`/dashboard?simulate=${encodeURIComponent(student.uid)}`);
   };
 
   const copyCode = () => {
@@ -214,7 +215,7 @@ export function TeacherView({ user, userData }: TeacherViewProps) {
             <Sparkles className="h-3.5 w-3.5" /> Akademik Harekât Merkezi
           </div>
           <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-[0.9] text-shadow-premium">
-            Hoş Geldiniz,<br /><span className="text-accent text-shadow-accent">{userData?.displayName}</span>
+            Hoş Geldiniz,<br /><span className="text-accent text-shadow-accent">{userData?.displayName || 'Eğitmen'}</span>
           </h2>
         </div>
         <Card className="bg-primary text-white border-none rounded-[2.5rem] px-10 py-6 flex items-center gap-10 shadow-[0_40px_80px_-20px_rgba(15,23,42,0.4)] relative overflow-hidden">
@@ -363,7 +364,7 @@ export function TeacherView({ user, userData }: TeacherViewProps) {
                     <Label>Ders Adı</Label>
                     <Input name="name" required placeholder="Örn: İleri Geometri" className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-black text-xl" />
                   </div>
-                  <Button type="submit" disabled={loading === 'add-subject' || !selectedProgram} className="w-full h-18 rounded-[1.75rem] bg-primary hover:bg-accent font-black text-xs uppercase tracking-widest gap-3">
+                  <Button type="submit" disabled={loading === 'add-subject'} className="w-full h-18 rounded-[1.75rem] bg-primary hover:bg-accent font-black text-xs uppercase tracking-widest gap-3">
                     {loading === 'add-subject' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />} Dersi Kaydet
                   </Button>
                 </form>

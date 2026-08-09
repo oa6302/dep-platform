@@ -130,15 +130,15 @@ export function TeacherView({ user, userData }: TeacherViewProps) {
     if (!db || !user) return;
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
-    const grade = formData.get('grade') as string;
-    if (!name || !grade) return;
+    const gradeVal = formData.get('grade') as string;
+    if (!name || !gradeVal) return;
 
     const id = `class_${user.uid}_${Date.now()}`;
     const docRef = doc(db, 'classrooms', id);
     const data = {
       id,
       name,
-      grade,
+      grade: gradeVal,
       teacherId: user.uid,
       schoolId: userData?.school || '',
       studentIds: [],
@@ -308,7 +308,7 @@ export function TeacherView({ user, userData }: TeacherViewProps) {
                     <Select name="grade" required>
                       <SelectTrigger className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold text-lg"><SelectValue placeholder="Seçiniz" /></SelectTrigger>
                       <SelectContent>
-                        {['8. Sınıf', '9. Sınıf', '10. Sınıf', '11. Sınıf', '12. Sınıf', 'Mezun'].map(g => <SelectItem key={grade} value={g}>{g}</SelectItem>)}
+                        {['8. Sınıf', '9. Sınıf', '10. Sınıf', '11. Sınıf', '12. Sınıf', 'Mezun'].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>

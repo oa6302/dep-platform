@@ -9,9 +9,10 @@ import { Label } from '@/components/ui/label';
 import { useFirestore } from '@/firebase';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, Loader2, User, CheckCircle2 } from 'lucide-react';
+import { Camera, Loader2, User, CheckCircle2, UserRound, Brain, Building } from 'lucide-react';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { cn } from '@/lib/utils';
 
 interface ProfileEditDialogProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export function ProfileEditDialog({ isOpen, onOpenChange, userData }: ProfileEdi
   const { toast } = useToast();
   const [displayName, setDisplayName] = useState(userData?.displayName || '');
   const [photoUrl, setPhotoUrl] = useState(userData?.photoUrl || '');
+  const [role, setRole] = useState(userData?.role || 'student');
   const [loading, setLoading] = useState(false);
 
   const defaultAvatar = PlaceHolderImages.find(img => img.id === 'default-avatar')?.imageUrl || "https://picsum.photos/seed/avatar-99/200/200";
@@ -56,14 +58,17 @@ export function ProfileEditDialog({ isOpen, onOpenChange, userData }: ProfileEdi
       await updateDoc(userRef, {
         displayName,
         photoUrl,
+        role,
         updatedAt: serverTimestamp()
       });
       toast({
-        title: 'Başarılı',
-        description: 'Profil bilgileriniz güncellendi.',
+        title: 'Sistem Güncellendi',
+        description: 'Profil bilgileriniz ve yetki seviyeniz başarıyla değiştirildi.',
         className: "bg-primary text-white rounded-[2rem]"
       });
       onOpenChange(false);
+      // Sayfayı yenileyerek yeni görünümün yüklenmesini sağlar
+      window.location.reload();
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -81,7 +86,7 @@ export function ProfileEditDialog({ isOpen, onOpenChange, userData }: ProfileEdi
         <DialogHeader className="space-y-4 text-center">
           <DialogTitle className="text-3xl font-black italic tracking-tighter uppercase text-primary">Profili Düzenle</DialogTitle>
           <DialogDescription className="font-medium italic">
-            Profil bilgilerinizi ve fotoğrafınızı buradan güncelleyebilirsiniz.
+            Bilgilerinizi ve sistem rolünüzü buradan güncelleyebilirsiniz.
           </DialogDescription>
         </DialogHeader>
 
@@ -108,10 +113,9 @@ export function ProfileEditDialog({ isOpen, onOpenChange, userData }: ProfileEdi
                 />
               </label>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Resim boyutu max 1MB</p>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-2">Görünür Ad</Label>
               <div className="relative group">
@@ -122,6 +126,33 @@ export function ProfileEditDialog({ isOpen, onOpenChange, userData }: ProfileEdi
                   className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner font-bold pl-12 focus-visible:ring-accent focus-visible:bg-white transition-all"
                   placeholder="Adınız Soyadınız"
                 />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-2 italic text-center block">SİSTEM ROLÜNÜ DEĞİŞTİR</Label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { id: 'student', label: 'ÖĞRENCİ', icon: UserRound },
+                  { id: 'teacher', label: 'EĞİTMEN', icon: Brain },
+                  { id: 'school_admin', label: 'KURUM', icon: Building },
+                ].map((r) => {
+                  const Icon = r.icon;
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => setRole(r.id)}
+                      className={cn(
+                        'p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2',
+                        role === r.id ? 'border-accent bg-accent/5 text-primary shadow-lg scale-105' : 'border-primary/5 bg-slate-50 opacity-40 hover:opacity-100'
+                      )}
+                    >
+                      <Icon className={cn('h-6 w-6', role === r.id ? 'text-accent' : 'text-primary')} />
+                      <span className="font-black text-[8px] tracking-widest">{r.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>

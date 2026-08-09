@@ -66,10 +66,9 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // VERİ KAYNAĞI: studyPlans/{userId} - Bu veri kalıcıdır.
+  // VERİ KAYNAĞI: studyPlans/{userId}
   const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   
-  // ARŞİV VERİSİ: Tamamlanmış görevleri toplar.
   const completedTasks = useMemo(() => {
     if (!studyPlan?.schedule) return [];
     const list: any[] = [];
@@ -83,10 +82,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
 
   const totalQuestions = useMemo(() => {
     return completedTasks.reduce((acc, task) => acc + (task.questionCount || 0), 0);
-  }, [completedTasks]);
-
-  const totalExams = useMemo(() => {
-    return completedTasks.filter(task => task.studyType === 'exam').length;
   }, [completedTasks]);
 
   const today = new Intl.DateTimeFormat('tr-TR', { weekday: 'long' }).format(new Date());
@@ -213,11 +208,9 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
   const handleSaveSession = (taskData: any) => {
     if (!db || !user || isReadOnly) return;
     
-    // Veri yapısını koruyarak güncelle
     const daysArr = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
     const currentSchedule = studyPlan?.schedule ? [...studyPlan.schedule] : daysArr.map(d => ({ day: d, tasks: [] }));
     
-    // Eksik günleri tamamla
     daysArr.forEach(d => {
       if (!currentSchedule.find((s: any) => s.day === d)) {
         currentSchedule.push({ day: d, tasks: [] });
@@ -255,6 +248,50 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
       });
       setEditingTask(null);
       setIsAddDialogOpen(false);
+    }
+  };
+
+  const handleCreateRecommendedTask = () => {
+    if (!db || !user || isReadOnly) return;
+    setIsRecLoading(true);
+
+    const newTask = {
+      time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+      subject: aiRecommendation.subject,
+      topic: aiRecommendation.topic,
+      duration: '45 dk',
+      difficulty: 'medium',
+      status: 'pending',
+      xp: 50,
+      createdAt: new Date().toISOString(),
+    };
+
+    const daysArr = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+    const currentSchedule = studyPlan?.schedule ? [...studyPlan.schedule] : daysArr.map(d => ({ day: d, tasks: [] }));
+    
+    let dayIndex = currentSchedule.findIndex((s: any) => s.day === today);
+    if (dayIndex > -1) {
+      currentSchedule[dayIndex].tasks.push(newTask);
+      
+      const planRef = doc(db, 'studyPlans', user.uid);
+      const planData = { schedule: currentSchedule, updatedAt: serverTimestamp() };
+      
+      setDoc(planRef, planData, { merge: true })
+        .then(() => {
+          toast({ 
+            title: 'AI Tavsiyesi İşlendi', 
+            description: `${aiRecommendation.subject} seansı programınıza eklendi.` 
+          });
+        })
+        .catch(async () => {
+          const error = new FirestorePermissionError({
+            path: planRef.path,
+            operation: 'write',
+            requestResourceData: planData,
+          });
+          errorEmitter.emit('permission-error', error);
+        })
+        .finally(() => setIsRecLoading(false));
     }
   };
 

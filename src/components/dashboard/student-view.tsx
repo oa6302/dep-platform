@@ -84,6 +84,10 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
     return completedTasks.reduce((acc, task) => acc + (task.questionCount || 0), 0);
   }, [completedTasks]);
 
+  const totalExams = useMemo(() => {
+    return completedTasks.filter((t: any) => t.studyType === 'exam' || t.subject?.toLowerCase().includes('deneme')).length;
+  }, [completedTasks]);
+
   const today = new Intl.DateTimeFormat('tr-TR', { weekday: 'long' }).format(new Date());
   
   const todayTasks = useMemo(() => {
@@ -128,6 +132,51 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
       reason: "Son 7 gündür bu konuda düşük aktivite tespit edildi."
     };
   }, [completedTasks, userData]);
+
+  const handleCreateRecommendedTask = () => {
+    if (!db || !user || isReadOnly) return;
+    setIsRecLoading(true);
+
+    const newTask = {
+      time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+      subject: aiRecommendation.subject,
+      topic: aiRecommendation.topic,
+      duration: '45 dk',
+      difficulty: 'medium',
+      status: 'pending',
+      xp: 50,
+      createdAt: new Date().toISOString(),
+    };
+
+    const daysArr = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+    const currentSchedule = studyPlan?.schedule ? [...studyPlan.schedule] : daysArr.map(d => ({ day: d, tasks: [] }));
+    
+    // Find today's index in the schedule
+    let dayIndex = currentSchedule.findIndex((s: any) => s.day === today);
+    if (dayIndex > -1) {
+      currentSchedule[dayIndex].tasks.push(newTask);
+      
+      const planRef = doc(db, 'studyPlans', user.uid);
+      const planData = { schedule: currentSchedule, updatedAt: serverTimestamp() };
+      
+      setDoc(planRef, planData, { merge: true })
+        .then(() => {
+          toast({ 
+            title: 'AI Tavsiyesi İşlendi', 
+            description: `${aiRecommendation.subject} seansı programınıza eklendi.` 
+          });
+        })
+        .catch(async () => {
+          const error = new FirestorePermissionError({
+            path: planRef.path,
+            operation: 'write',
+            requestResourceData: planData,
+          });
+          errorEmitter.emit('permission-error', error);
+        })
+        .finally(() => setIsRecLoading(false));
+    }
+  };
 
   const totalTasksCompleted = completedTasks.length;
   const xp = totalTasksCompleted * 120 + (totalQuestions * 2);
@@ -248,50 +297,6 @@ export function StudentView({ user, userData, isReadOnly = false }: StudentViewP
       });
       setEditingTask(null);
       setIsAddDialogOpen(false);
-    }
-  };
-
-  const handleCreateRecommendedTask = () => {
-    if (!db || !user || isReadOnly) return;
-    setIsRecLoading(true);
-
-    const newTask = {
-      time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
-      subject: aiRecommendation.subject,
-      topic: aiRecommendation.topic,
-      duration: '45 dk',
-      difficulty: 'medium',
-      status: 'pending',
-      xp: 50,
-      createdAt: new Date().toISOString(),
-    };
-
-    const daysArr = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
-    const currentSchedule = studyPlan?.schedule ? [...studyPlan.schedule] : daysArr.map(d => ({ day: d, tasks: [] }));
-    
-    let dayIndex = currentSchedule.findIndex((s: any) => s.day === today);
-    if (dayIndex > -1) {
-      currentSchedule[dayIndex].tasks.push(newTask);
-      
-      const planRef = doc(db, 'studyPlans', user.uid);
-      const planData = { schedule: currentSchedule, updatedAt: serverTimestamp() };
-      
-      setDoc(planRef, planData, { merge: true })
-        .then(() => {
-          toast({ 
-            title: 'AI Tavsiyesi İşlendi', 
-            description: `${aiRecommendation.subject} seansı programınıza eklendi.` 
-          });
-        })
-        .catch(async () => {
-          const error = new FirestorePermissionError({
-            path: planRef.path,
-            operation: 'write',
-            requestResourceData: planData,
-          });
-          errorEmitter.emit('permission-error', error);
-        })
-        .finally(() => setIsRecLoading(false));
     }
   };
 

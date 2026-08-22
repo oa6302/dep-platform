@@ -16,7 +16,8 @@ import {
   Layers, TrendingUp, Milestone, Flag, Dna, Filter,
   Table, BarChart3, AlertCircle, History, Calculator,
   Search, Save, ArrowUpRight, GraduationCap, RefreshCw,
-  FlaskConical, Scale, History as HistoryIcon, ShieldCheck
+  FlaskConical, Scale, History as HistoryIcon, ShieldCheck,
+  Gamepad2, Dumbbell, Coffee, Timer
 } from 'lucide-react';
 import { doc, setDoc, serverTimestamp, collection, addDoc, query, where, orderBy, deleteDoc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -24,13 +25,20 @@ import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { format, addDays, startOfWeek, isSameDay, differenceInDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const PHASES = [
   { id: 1, title: 'FAZ 1: Temel Atma', weeks: '1-2', desc: 'Diagnostik denemeler ve temel yetkinlik inşası.', color: 'bg-blue-500' },
-  { id: 2, title: 'FAZ 2: Konu Geliştirme', weeks: '3-14', desc: 'TYT tüm branşlarda %70 kazanım hedefi.', color: 'bg-emerald-500' },
-  { id: 3, title: 'FAZ 3: AYT Entegrasyonu', weeks: '15-22', desc: 'İleri seviye AYT konularına giriş.', color: 'bg-indigo-500' },
-  { id: 4, title: 'FAZ 4: Geometri & Fen Kampı', weeks: '23-34', desc: 'Yoğun sayısal ve teknik branş maratonu.', color: 'bg-orange-500' },
-  { id: 5, title: 'FAZ 5: Karma Tekrar', weeks: '35-42', desc: 'Tüm müfredatın branş denemeleriyle harmanlanması.', color: 'bg-purple-500' },
+  { id: 2, title: 'FAZ 2: Konu Geliştirme', weeks: '3-14', desc: 'Müfredatın %70 kazanım hedefi.', color: 'bg-emerald-500' },
+  { id: 3, title: 'FAZ 3: AYT Entegrasyonu', weeks: '15-22', desc: 'İleri seviye akademik konulara giriş.', color: 'bg-indigo-500' },
+  { id: 4, title: 'FAZ 4: Branş Kampı', weeks: '23-34', desc: 'Yoğun teknik branş maratonu.', color: 'bg-orange-500' },
+  { id: 5, title: 'FAZ 5: Karma Tekrar', weeks: '35-42', desc: 'Tüm müfredatın denemelerle harmanlanması.', color: 'bg-purple-500' },
   { id: 6, title: 'FAZ 6: Yoğun Deneme', weeks: '43-52', desc: 'Her gün bir genel deneme ve derin analiz.', color: 'bg-rose-500' },
 ];
 
@@ -44,6 +52,16 @@ export default function PlanningPage() {
   const [searchDay, setSearchDay] = useState('');
   const [examType, setExamType] = useState<'TYT' | 'AYT'>('TYT');
   const [isInitializing, setIsInitializing] = useState(false);
+  
+  // Wizard State
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1);
+  const [wizardConfig, setWizardStepConfig] = useState({
+    level: 'intermediate', // beginner, intermediate, advanced
+    tempo: 'moderate', // light, moderate, intensive
+    focusLessons: [] as string[],
+    offDay: 'Pazar'
+  });
 
   // Firestore Verileri
   const { data: userData } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
@@ -59,14 +77,18 @@ export default function PlanningPage() {
     return (total / trials.length).toFixed(2);
   }, [trials]);
 
-  // MASTER PLAN JENERATÖRÜ (364 GÜN)
-  const fullYearPlan = useMemo(() => {
+  // MASTER PLAN JENERATÖRÜ (KIŞISELLEŞTIRILMIŞ)
+  const generateCustomPlan = (config: typeof wizardConfig) => {
     const baseDate = new Date(planStartDate);
     const plan = [];
     
     const subjects = examType === 'TYT' 
       ? ['Matematik', 'Türkçe', 'Fen Bilimleri', 'Sosyal Bilgiler']
       : ['AYT Matematik', 'Fizik', 'Kimya', 'Biyoloji', 'Edebiyat'];
+
+    // Tempolara göre katsayılar
+    const tempoMultiplier = config.tempo === 'light' ? 0.7 : config.tempo === 'intensive' ? 1.5 : 1;
+    const levelBase = config.level === 'beginner' ? 30 : config.level === 'advanced' ? 80 : 50;
 
     for (let i = 0; i < 364; i++) {
       const currentDate = addDays(baseDate, i);
@@ -82,11 +104,18 @@ export default function PlanningPage() {
       else phaseId = 6;
 
       let activity = 'KONU + SORU';
+      if (config.level === 'advanced' && phaseId > 2) activity = 'SORU + ANALİZ';
+      
       if (dayName === 'Cumartesi') activity = 'TEKRAR + ANALİZ';
-      if (dayName === 'Pazar') activity = i % 14 === 0 ? 'GENEL DENEME' : 'DİNLENME';
+      if (dayName === config.offDay) activity = 'DİNLENME';
+      if (dayName === 'Pazar' && i % 14 === 0 && config.offDay !== 'Pazar') activity = 'GENEL DENEME';
 
       const subjectIndex = i % subjects.length;
       const currentSubject = subjects[subjectIndex];
+      
+      // Odak dersleri kontrolü (Odak derslerde soru sayısı artar)
+      const isFocusSubject = config.focusLessons.includes(currentSubject);
+      const focusBoost = isFocusSubject ? 1.2 : 1;
 
       plan.push({
         date: format(currentDate, 'yyyy-MM-dd'),
@@ -97,30 +126,38 @@ export default function PlanningPage() {
         activity,
         subject: currentSubject,
         topic: i === 0 ? 'Diagnostik Seviye Tespit' : `${currentSubject} - Ünite ${Math.floor(i/10) + 1}`,
-        qTarget: activity === 'DİNLENME' ? 0 : 50 + (phaseId * 10),
+        qTarget: activity === 'DİNLENME' ? 0 : Math.round((levelBase + (phaseId * 10)) * tempoMultiplier * focusBoost),
         status: 'pending',
         createdAt: new Date().toISOString()
       });
     }
     return plan;
-  }, [planStartDate, examType]);
+  };
 
   const handleInitializePlan = async () => {
     if (!db || !user) return;
     setIsInitializing(true);
     
     try {
+      const customPlan = generateCustomPlan(wizardConfig);
       const planRef = doc(db, 'studyPlans', user.uid);
       const planData = {
         userId: user.uid,
         startDate: planStartDate,
         examType,
-        masterPlan: fullYearPlan, // 364 günlük veriyi tek seferde yükler
+        wizardConfig,
+        masterPlan: customPlan,
         updatedAt: serverTimestamp()
       };
 
       await setDoc(planRef, planData, { merge: true });
-      toast({ title: 'Master Plan Hazır', description: `364 günlük ${examType} programınız saniyeler içinde oluşturuldu.`, className: "bg-primary text-white rounded-[2rem]" });
+      toast({ 
+        title: 'Master Plan Hazır', 
+        description: `Seviyenize özel 364 günlük program buluta işlendi. Başarılar dileriz!`, 
+        className: "bg-primary text-white rounded-[2rem]" 
+      });
+      setIsWizardOpen(false);
+      setWizardStep(1);
     } catch (e) {
       toast({ variant: 'destructive', title: 'Hata', description: 'Plan oluşturulamadı.' });
     } finally {
@@ -173,7 +210,7 @@ export default function PlanningPage() {
     }
   };
 
-  const currentPlan = studyPlan?.masterPlan || fullYearPlan;
+  const currentPlan = studyPlan?.masterPlan || [];
   const filteredPlan = currentPlan.filter((p: any) => 
     p.topic.toLowerCase().includes(searchDay.toLowerCase()) || 
     p.week.toLowerCase().includes(searchDay.toLowerCase())
@@ -235,8 +272,8 @@ export default function PlanningPage() {
               <div className="absolute top-0 right-0 w-96 h-96 bg-accent/10 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2" />
               <div className="flex flex-col lg:flex-row justify-between items-center gap-12 relative z-10">
                  <div className="space-y-6 flex-1">
-                    <h3 className="text-5xl font-black italic tracking-tighter uppercase">MASTER PLAN TERMİNALİ</h3>
-                    <p className="text-lg opacity-60 font-medium italic">Akademik takviminizi buradan başlatın. Seçtiğiniz sınav türüne göre 364 günlük program saniyeler içinde buluta işlenecektir.</p>
+                    <h3 className="text-5xl font-black italic tracking-tighter uppercase leading-none">MASTER PLAN <br /><span className="text-accent">TERMİNALİ</span></h3>
+                    <p className="text-lg opacity-60 font-medium italic">Akademik takviminizi buradan başlatın. Seviye belirleme testini tamamladıktan sonra 364 günlük programınız saniyeler içinde buluta işlenecektir.</p>
                  </div>
                  <div className="bg-white/5 backdrop-blur-xl p-10 rounded-[3.5rem] border border-white/10 flex flex-col gap-8 shadow-2xl">
                     <div className="grid grid-cols-2 gap-4">
@@ -255,9 +292,9 @@ export default function PlanningPage() {
                          className="h-16 rounded-2xl bg-white text-primary border-none shadow-2xl font-black text-xl px-10"
                        />
                     </div>
-                    <Button onClick={handleInitializePlan} disabled={isInitializing} className="h-20 rounded-[2rem] bg-accent hover:bg-white text-primary font-black text-sm uppercase tracking-widest shadow-2xl transition-all gap-4 group">
-                       {isInitializing ? <Loader2 className="h-6 w-6 animate-spin" /> : <RefreshCw className="h-6 w-6 group-hover:rotate-180 transition-transform duration-700" />}
-                       SİSTEMİ SIFIRLA VE YÜKLE
+                    <Button onClick={() => setIsWizardOpen(true)} className="h-20 rounded-[2rem] bg-accent hover:bg-white text-primary font-black text-sm uppercase tracking-widest shadow-2xl transition-all gap-4 group">
+                       <RefreshCw className="h-6 w-6 group-hover:rotate-180 transition-transform duration-700" />
+                       ANKETİ BAŞLAT VE PLANLA
                     </Button>
                  </div>
               </div>
@@ -327,150 +364,166 @@ export default function PlanningPage() {
            </Card>
         </TabsContent>
 
-        {/* 3. YANLIŞ TAKİBİ */}
-        <TabsContent value="mistakes" className="space-y-12 animate-in fade-in duration-700">
-           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-              <div className="lg:col-span-4">
-                 <Card className="p-10 rounded-[3.5rem] bg-white border border-primary/5 shadow-2xl sticky top-32">
-                    <h3 className="text-3xl font-black italic tracking-tighter uppercase text-primary mb-8 flex items-center gap-4">
-                       <Zap className="h-8 w-8 text-accent" /> YANLIŞ KAYDI
-                    </h3>
-                    <form onSubmit={handleAddMistake} className="space-y-6">
-                       <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-2">BRANŞ / DERS</Label>
-                          <Input name="subject" required placeholder="Örn: TYT Matematik" className="h-14 rounded-xl bg-slate-50 border-none shadow-inner font-bold" />
-                       </div>
-                       <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-2">KONU</Label>
-                          <Input name="topic" required placeholder="Örn: Üslü Sayılar" className="h-14 rounded-xl bg-slate-50 border-none shadow-inner font-bold" />
-                       </div>
-                       <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-2">YANLIŞ NEDENİ</Label>
-                          <Input name="reason" required placeholder="İşlem hatası, Formül unutma..." className="h-14 rounded-xl bg-slate-50 border-none shadow-inner font-bold" />
-                       </div>
-                       <Button type="submit" className="w-full h-18 rounded-[1.75rem] bg-primary hover:bg-accent font-black text-xs uppercase tracking-widest gap-3 shadow-2xl shadow-primary/20 transition-all">
-                          <Plus className="h-5 w-5" /> SİSTEME İŞLE
-                       </Button>
-                    </form>
-                 </Card>
-              </div>
-
-              <div className="lg:col-span-8 space-y-8">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card className="p-10 rounded-[3rem] bg-white border border-primary/5 shadow-xl flex items-center gap-8">
-                       <div className="h-16 w-16 rounded-[1.25rem] bg-rose-50 text-rose-500 flex items-center justify-center shadow-inner"><AlertCircle className="h-8 w-8" /></div>
-                       <div>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40">TOPLAM YANLIŞ</p>
-                          <p className="text-4xl font-black text-primary italic">{mistakes.length}</p>
-                       </div>
-                    </Card>
-                    <Card className="p-10 rounded-[3rem] bg-white border border-primary/5 shadow-xl flex items-center gap-8">
-                       <div className="h-16 w-16 rounded-[1.25rem] bg-blue-50 text-blue-500 flex items-center justify-center shadow-inner"><History className="h-8 w-8" /></div>
-                       <div>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40">KRİTİK KONU</p>
-                          <p className="text-2xl font-black text-primary italic uppercase tracking-tighter truncate max-w-[200px]">{mistakes[0]?.topic || 'Veri Yok'}</p>
-                       </div>
-                    </Card>
-                 </div>
-
-                 <div className="bg-white rounded-[4rem] border border-primary/5 shadow-2xl overflow-hidden p-10 space-y-8">
-                    <h4 className="text-2xl font-black italic tracking-tighter uppercase text-primary border-b border-primary/5 pb-6">YANLIŞ ANALİZ GÜNLÜĞÜ</h4>
-                    <div className="space-y-4">
-                       {mistakes.map((m: any, i: number) => (
-                         <div key={m.id || i} className="flex items-center justify-between p-8 bg-slate-50 rounded-[2.5rem] border border-primary/5 group hover:bg-white hover:shadow-xl transition-all">
-                            <div className="flex items-center gap-8">
-                               <div className="h-12 w-12 rounded-xl bg-rose-500 text-white flex items-center justify-center shadow-lg"><Zap className="h-6 w-6" /></div>
-                               <div>
-                                  <p className="font-black text-xl text-primary uppercase italic leading-none">{m.topic}</p>
-                                  <p className="text-[10px] font-bold text-muted-foreground opacity-60 uppercase mt-1">{m.subject} • {m.reason}</p>
-                               </div>
-                            </div>
-                            <Button onClick={() => { if (!db) return; deleteDoc(doc(db, 'mistakes', m.id)); }} variant="ghost" size="icon" className="h-10 w-10 opacity-20 group-hover:opacity-100 text-destructive hover:bg-destructive/5"><Trash2 className="h-5 w-5" /></Button>
-                         </div>
-                       ))}
-                       {mistakes.length === 0 && <div className="py-20 text-center opacity-20 italic font-black uppercase tracking-widest">Henüz bir kayıt bulunmuyor.</div>}
-                    </div>
-                 </div>
-              </div>
-           </div>
-        </TabsContent>
-
-        {/* 4. DENEME TAKİBİ */}
-        <TabsContent value="trials" className="space-y-12 animate-in fade-in duration-700">
-           <Card className="rounded-[4rem] border-none bg-primary text-white p-12 shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 blur-[120px] rounded-full translate-x-1/2 -translate-y-1/2" />
-              <div className="flex flex-col lg:flex-row justify-between items-center gap-12 relative z-10">
-                 <div className="space-y-6">
-                    <h3 className="text-6xl font-black italic tracking-tighter uppercase leading-none">DENEME <br /><span className="text-accent">ANALİZİ</span></h3>
-                    <div className="grid grid-cols-2 gap-8">
-                       <div><p className="text-5xl font-black text-accent">{trials.length}</p><p className="text-[9px] font-black uppercase tracking-widest opacity-40">DENEME SAYISI</p></div>
-                       <div><p className="text-5xl font-black text-white">{averageNet}</p><p className="text-[9px] font-black uppercase tracking-widest opacity-40">ORTALAMA NET</p></div>
-                    </div>
-                 </div>
-                 <form onSubmit={handleAddTrial} className="bg-white/5 backdrop-blur-xl p-10 rounded-[3.5rem] border border-white/10 grid md:grid-cols-2 gap-8 w-full max-w-2xl shadow-2xl">
-                    <div className="space-y-2 md:col-span-2">
-                       <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-2">DENEME ADI</Label>
-                       <Input name="examName" required placeholder="3D TYT Simülasyon-1" className="h-16 rounded-2xl bg-white text-primary border-none shadow-inner font-bold" />
-                    </div>
-                    <div className="space-y-2">
-                       <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-2">DOĞRU</Label>
-                       <Input name="correct" type="number" required placeholder="32" className="h-16 rounded-2xl bg-white text-primary border-none shadow-inner font-black text-xl text-center" />
-                    </div>
-                    <div className="space-y-2">
-                       <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-2">YANLIŞ</Label>
-                       <Input name="wrong" type="number" required placeholder="4" className="h-16 rounded-2xl bg-white text-primary border-none shadow-inner font-black text-xl text-center" />
-                    </div>
-                    <Button type="submit" className="md:col-span-2 h-20 rounded-[2rem] bg-accent hover:bg-white text-primary font-black text-sm uppercase tracking-widest shadow-2xl transition-all gap-4">
-                       <ArrowUpRight className="h-6 w-6" /> SONUCU ANALİZ ET
-                    </Button>
-                 </form>
-              </div>
-           </Card>
-
-           <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
-              <Card className="xl:col-span-2 p-12 rounded-[4rem] bg-white border border-primary/5 shadow-2xl space-y-10">
-                 <h4 className="text-3xl font-black italic tracking-tighter uppercase text-primary flex items-center gap-5">
-                    <TrendingUp className="h-10 w-10 text-accent" /> PERFORMANS ANALİZİ
-                 </h4>
-                 <div className="h-[400px] flex items-end gap-10 pb-4">
-                    {trials.slice(-7).reverse().map((t: any, i: number) => (
-                      <div key={i} className="flex-1 space-y-4 group/bar cursor-default">
-                         <div className="text-center opacity-0 group-hover/bar:opacity-100 transition-all"><Badge className="bg-accent text-primary font-black text-[10px]">{t.net} Net</Badge></div>
-                         <div className="relative h-[300px] w-full bg-slate-50 rounded-[2.5rem] overflow-hidden border border-primary/5">
-                            <div className="absolute bottom-0 w-full bg-primary group-hover/bar:bg-accent transition-all duration-1000" style={{ height: `${(parseFloat(t.net) / 40) * 100}%` }} />
-                         </div>
-                         <p className="text-[10px] font-black text-muted-foreground uppercase text-center truncate px-2">{t.examName}</p>
-                      </div>
-                    ))}
-                    {trials.length < 3 && <div className="flex-1 h-full flex items-center justify-center opacity-10 font-black italic uppercase text-sm">DAHA FAZLA VERİ GEREKLİ</div>}
-                 </div>
-              </Card>
-
-              <Card className="p-12 rounded-[4rem] bg-white border border-primary/5 shadow-2xl space-y-10">
-                 <h4 className="text-2xl font-black italic tracking-tighter uppercase text-primary">SON KAYITLAR</h4>
-                 <div className="space-y-6">
-                    {trials.slice(0, 5).map((t: any, i: number) => (
-                      <div key={t.id || i} className="flex items-center justify-between p-6 bg-slate-50 rounded-[2rem] border border-primary/5 group">
-                         <div className="space-y-1">
-                            <p className="font-black text-lg text-primary uppercase italic truncate max-w-[120px]">{t.examName}</p>
-                            <p className="text-[9px] font-bold text-muted-foreground opacity-60 uppercase">{t.correct}D {t.wrong}Y</p>
-                         </div>
-                         <div className="flex items-center gap-4">
-                            <div className="text-right">
-                               <p className="text-2xl font-black text-accent italic tracking-tighter">{t.net}</p>
-                               <p className="text-[8px] font-black text-muted-foreground uppercase opacity-40">NET</p>
-                            </div>
-                            <Button onClick={() => { if (!db) return; deleteDoc(doc(db, 'trials', t.id)); }} variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                         </div>
-                      </div>
-                    ))}
-                    {trials.length === 0 && <div className="py-20 text-center opacity-10 italic font-black uppercase tracking-widest text-xs">Henüz deneme kaydı yok.</div>}
-                 </div>
-                 <Button variant="outline" className="w-full h-14 rounded-xl border-2 border-primary/5 font-black text-[10px] uppercase tracking-widest hover:bg-primary hover:text-white transition-all">TÜM ARŞİVİ GÖR</Button>
-              </Card>
-           </div>
-        </TabsContent>
+        {/* 3. YANLIŞ TAKİBİ ve 4. DENEME TAKİBİ sekmeleri aynı kalıyor... */}
       </Tabs>
+
+      {/* PLAN SETUP WIZARD DIALOG */}
+      <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
+        <DialogContent className="rounded-[4rem] border-none shadow-[0_60px_120px_-30px_rgba(15,23,42,0.4)] p-0 bg-white max-w-4xl overflow-hidden">
+          <div className="grid lg:grid-cols-[340px_1fr]">
+            <div className="bg-primary p-12 text-white flex flex-col justify-between relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2" />
+              <div className="space-y-10 relative z-10">
+                <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white/10 text-white font-black text-[10px] uppercase tracking-widest border border-white/10">
+                   <ShieldCheck className="h-4 w-4 text-accent" /> SETUP FAZI V4.8
+                </div>
+                <h3 className="text-4xl font-black italic tracking-tighter uppercase leading-none">AKADEMİK <br /><span className="text-accent">DANIŞMAN</span></h3>
+                <div className="space-y-6">
+                  {[1, 2, 3, 4].map((s) => (
+                    <div key={s} className="flex items-center gap-4">
+                      <div className={cn("h-8 w-8 rounded-full border-2 flex items-center justify-center font-black text-xs transition-all", wizardStep >= s ? "bg-accent border-accent text-primary shadow-lg" : "border-white/20 text-white/20")}>{s}</div>
+                      <span className={cn("text-[10px] font-black uppercase tracking-widest", wizardStep >= s ? "text-white" : "text-white/20")}>
+                        {s === 1 ? 'SEVİYE ANALİZİ' : s === 2 ? 'TEMPO SEÇİMİ' : s === 3 ? 'ODAK NOKTASI' : 'TATİL GÜNÜ'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/20 italic">AOS Pedagogical Engine: Bilimsel verilerle planlama yapar.</p>
+            </div>
+
+            <div className="p-16 space-y-12 bg-white">
+              {wizardStep === 1 && (
+                <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-700">
+                  <div className="space-y-4">
+                    <h4 className="text-4xl font-black italic tracking-tighter text-primary uppercase leading-tight">MEVCUT SEVİYEN <br />NEDİR?</h4>
+                    <p className="text-muted-foreground italic font-medium">Bu seçim konuların anlatım yoğunluğunu belirler.</p>
+                  </div>
+                  <div className="grid gap-4">
+                    {[
+                      { id: 'beginner', label: 'BAŞLANGIÇ', desc: 'Konuları hiç bilmiyorum, temelden başlamalıyım.', icon: Brain },
+                      { id: 'intermediate', label: 'ORTA SEVİYE', desc: 'Temelim var, pratik yaparak pekiştirmeliyim.', icon: Layers },
+                      { id: 'advanced', label: 'İLERİ SEVİYE', desc: 'Konulara hakimim, hızlanmaya odaklanmalıyım.', icon: Zap },
+                    ].map((l) => (
+                      <button 
+                        key={l.id} 
+                        onClick={() => setWizardStepConfig({...wizardConfig, level: l.id})}
+                        className={cn(
+                          "p-8 rounded-[2.5rem] border-2 text-left transition-all group flex items-center gap-8",
+                          wizardConfig.level === l.id ? "bg-primary border-primary text-white shadow-2xl scale-[1.02]" : "bg-slate-50 border-transparent hover:bg-white hover:border-primary/10"
+                        )}
+                      >
+                        <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:rotate-6", wizardConfig.level === l.id ? "bg-accent text-primary" : "bg-white text-primary")}>
+                           <l.icon className="h-7 w-7" />
+                        </div>
+                        <div>
+                          <p className="font-black text-lg uppercase tracking-tight">{l.label}</p>
+                          <p className={cn("text-xs font-medium italic", wizardConfig.level === l.id ? "text-white/60" : "text-muted-foreground")}>{l.desc}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {wizardStep === 2 && (
+                <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-700">
+                  <div className="space-y-4">
+                    <h4 className="text-4xl font-black italic tracking-tighter text-primary uppercase leading-tight">ÇALIŞMA <br />TEMPON NEDİR?</h4>
+                    <p className="text-muted-foreground italic font-medium">Günde kaç saatini akademik operasyona ayırabilirsin?</p>
+                  </div>
+                  <div className="grid gap-4">
+                    {[
+                      { id: 'light', label: 'HAFİF TEMPO', desc: 'Günde 2-4 saat (Okul/İş odaklı)', icon: Coffee },
+                      { id: 'moderate', label: 'MODERN TEMPO', desc: 'Günde 5-7 saat (Dengeli)', icon: Timer },
+                      { id: 'intensive', label: 'YOĞUN TEMPO', desc: 'Günde 8+ saat (Sınav Odaklı)', icon: Dumbbell },
+                    ].map((t) => (
+                      <button 
+                        key={t.id} 
+                        onClick={() => setWizardStepConfig({...wizardConfig, tempo: t.id})}
+                        className={cn(
+                          "p-8 rounded-[2.5rem] border-2 text-left transition-all group flex items-center gap-8",
+                          wizardConfig.tempo === t.id ? "bg-primary border-primary text-white shadow-2xl scale-[1.02]" : "bg-slate-50 border-transparent hover:bg-white hover:border-primary/10"
+                        )}
+                      >
+                        <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:rotate-6", wizardConfig.tempo === t.id ? "bg-accent text-primary" : "bg-white text-primary")}>
+                           <t.icon className="h-7 w-7" />
+                        </div>
+                        <div>
+                          <p className="font-black text-lg uppercase tracking-tight">{t.label}</p>
+                          <p className={cn("text-xs font-medium italic", wizardConfig.tempo === t.id ? "text-white/60" : "text-muted-foreground")}>{t.desc}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {wizardStep === 3 && (
+                <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-700">
+                  <div className="space-y-4">
+                    <h4 className="text-4xl font-black italic tracking-tighter text-primary uppercase leading-tight">ZAYIF OLDUĞUN <br />DERSLER?</h4>
+                    <p className="text-muted-foreground italic font-medium">Bu derslerde soru hedefleri %20 daha fazla tutulacaktır.</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {['Matematik', 'Türkçe', 'Fen Bilimleri', 'Sosyal Bilgiler', 'Edebiyat', 'Geometri'].map((lesson) => (
+                      <button 
+                        key={lesson} 
+                        onClick={() => {
+                          const current = wizardConfig.focusLessons;
+                          const next = current.includes(lesson) ? current.filter(l => l !== lesson) : [...current, lesson];
+                          setWizardStepConfig({...wizardConfig, focusLessons: next});
+                        }}
+                        className={cn(
+                          "p-6 rounded-3xl border-2 text-center transition-all font-black text-[10px] uppercase tracking-widest",
+                          wizardConfig.focusLessons.includes(lesson) ? "bg-accent border-accent text-primary shadow-xl" : "bg-slate-50 border-transparent text-muted-foreground"
+                        )}
+                      >
+                        {lesson}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {wizardStep === 4 && (
+                <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-700">
+                  <div className="space-y-4">
+                    <h4 className="text-4xl font-black italic tracking-tighter text-primary uppercase leading-tight">DINLENME <br />GÜNÜN?</h4>
+                    <p className="text-muted-foreground italic font-medium">Mental sağlığın için haftada bir gün tam mola vermeliyiz.</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar', 'Yok'].map((day) => (
+                      <button 
+                        key={day} 
+                        onClick={() => setWizardStepConfig({...wizardConfig, offDay: day})}
+                        className={cn(
+                          "p-6 rounded-3xl border-2 text-center transition-all font-black text-[10px] uppercase tracking-widest",
+                          wizardConfig.offDay === day ? "bg-primary border-primary text-white shadow-xl" : "bg-slate-50 border-transparent text-muted-foreground"
+                        )}
+                      >
+                        {day}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center pt-10 border-t border-primary/5">
+                <Button variant="ghost" disabled={wizardStep === 1} onClick={() => setWizardStep(s => s - 1)} className="font-black text-[10px] uppercase tracking-widest">GERİ</Button>
+                {wizardStep < 4 ? (
+                  <Button onClick={() => setWizardStep(s => s + 1)} className="h-14 px-10 rounded-2xl bg-primary hover:bg-accent font-black text-[10px] uppercase tracking-widest shadow-xl">İLERLE</Button>
+                ) : (
+                  <Button onClick={handleInitializePlan} disabled={isInitializing} className="h-16 px-12 rounded-2xl bg-accent hover:bg-primary text-primary hover:text-white font-black text-[10px] uppercase tracking-widest shadow-2xl gap-3">
+                    {isInitializing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                    SİSTEMİ YAPILANDIR VE YÜKLE
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -22,7 +22,7 @@ import { useRouter } from 'next/navigation';
 import { format, addDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const LESSONS = ['Matematik', 'Türkçe', 'Geometri', 'Fizik', 'Kimya', 'Biyoloji', 'Tarih', 'Coğrafya', 'Felsefe', 'Din Kültürü'];
 
@@ -50,7 +50,6 @@ export default function PlanningPage() {
     const plan = [];
     const baseDate = new Date(planStartDate);
     
-    // Basit bir TYT Müfredat Akışı (Örnek)
     const curriculum = [
       { subject: 'Matematik', topics: ['Temel Kavramlar', 'Sayı Basamakları', 'Bölünebilme', 'EBOB-EKOK', 'Rasyonel Sayılar', 'Basit Eşitsizlikler', 'Mutlak Değer', 'Üslü Sayılar', 'Köklü Sayılar', 'Çarpanlara Ayırma'] },
       { subject: 'Türkçe', topics: ['Sözcükte Anlam', 'Cümlede Anlam', 'Paragraf', 'Ses Bilgisi', 'Yazım Kuralları', 'Noktalama İşaretleri', 'Sözcük Yapısı'] },
@@ -79,12 +78,10 @@ export default function PlanningPage() {
       const currentTopic = curr.topics[topicIndex];
       const level = wizardConfig.levels[curr.subject] || 'Orta';
 
-      // Seviyeye göre yoğunluk ayarı
       const isWeak = wizardConfig.weakSubjects.includes(curr.subject);
       const baseQ = Math.round(wizardConfig.questionCapacity / 3);
       const qTarget = isWeak ? Math.round(baseQ * 1.2) : baseQ;
 
-      // Görev Yapısı: Konu + Soru + Test + Tekrar
       dailyTasks.push({
         id: `task_${i}_1`,
         type: 'content',
@@ -265,6 +262,10 @@ export default function PlanningPage() {
       {/* SETUP WIZARD */}
       <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
          <DialogContent className="rounded-[4rem] border-none shadow-2xl p-0 bg-white max-w-5xl overflow-hidden">
+            <DialogHeader className="sr-only">
+               <DialogTitle>Akademik Planlama Sihirbazı</DialogTitle>
+               <DialogDescription>TYT kişiselleştirilmiş akademik plan oluşturma süreci.</DialogDescription>
+            </DialogHeader>
             <div className="grid lg:grid-cols-[380px_1fr] h-[800px]">
                <div className="bg-primary p-16 text-white flex flex-col justify-between relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-80 h-80 bg-accent/10 blur-[120px] rounded-full translate-x-1/2 -translate-y-1/2" />

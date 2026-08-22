@@ -1,7 +1,7 @@
 'use client';
 
 import { useUser, useDoc, useFirestore } from '@/firebase';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,8 +12,8 @@ import {
   Brain, Calendar, Zap, Loader2, ShieldCheck, 
   ArrowLeft, Home, Milestone, CheckCircle2, 
   Activity, Sparkles, Coffee, Timer, Dumbbell, 
-  ChevronRight, RefreshCw, BarChart3, Target, FlaskConical,
-  Scale, Languages, History as HistoryIcon, Layers
+  ChevronRight, RefreshCw, Target, Layers,
+  Info
 } from 'lucide-react';
 import { doc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -24,8 +24,9 @@ import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { EXAM_CONFIGS } from '@/lib/exam-configs';
 
-const LESSONS = ['Matematik', 'Türkçe', 'Geometri', 'Fizik', 'Kimya', 'Biyoloji', 'Tarih', 'Coğrafya', 'Felsefe', 'Din Kültürü'];
+const DEFAULT_LESSONS = ['Matematik', 'Türkçe', 'Geometri', 'Fizik', 'Kimya', 'Biyoloji', 'Tarih', 'Coğrafya', 'Felsefe', 'Din Kültürü'];
 
 export default function PlanningPage() {
   const { user } = useUser();
@@ -33,6 +34,9 @@ export default function PlanningPage() {
   const router = useRouter();
   const { toast } = useToast();
   
+  const { data: userData } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
+  const { data: studyPlan } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
+
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
   const [isInitializing, setIsInitializing] = useState(false);
@@ -44,18 +48,34 @@ export default function PlanningPage() {
     restDay: 'Pazar'
   });
 
-  const { data: studyPlan } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
+  // Kullanıcının alanına (TM, SAY vb.) göre dersleri belirle
+  const currentLessons = useMemo(() => {
+    if (userData?.targetExam && EXAM_CONFIGS[userData.targetExam]) {
+      return EXAM_CONFIGS[userData.targetExam].lessons;
+    }
+    return DEFAULT_LESSONS;
+  }, [userData]);
+
   const planStartDate = studyPlan?.startDate || format(new Date(), 'yyyy-MM-dd');
 
   const generateAdaptivePlan = () => {
     const plan = [];
     const baseDate = new Date(planStartDate);
     
-    const curriculum = [
-      { subject: 'Matematik', topics: ['Temel Kavramlar', 'Sayı Basamakları', 'Bölünebilme', 'EBOB-EKOK', 'Rasyonel Sayılar', 'Basit Eşitsizlikler', 'Mutlak Değer', 'Üslü Sayılar', 'Köklü Sayılar', 'Çarpanlara Ayırma'] },
-      { subject: 'Türkçe', topics: ['Sözcükte Anlam', 'Cümlede Anlam', 'Paragraf', 'Ses Bilgisi', 'Yazım Kuralları', 'Noktalama İşaretleri', 'Sözcük Yapısı'] },
-      { subject: 'Geometri', topics: ['Doğruda Açılar', 'Üçgende Açılar', 'Özel Üçgenler', 'Üçgende Alan', 'Üçgende Benzerlik'] }
-    ];
+    // Ders bazlı temel konu havuzu (MVP için basitleştirilmiş)
+    const curriculumMap: Record<string, string[]> = {
+      'Matematik': ['Temel Kavramlar', 'Sayılar', 'Problemler', 'Fonksiyonlar'],
+      'TYT Matematik': ['Temel Kavramlar', 'Sayılar', 'Problemler'],
+      'AYT Matematik': ['Trigonometri', 'Logaritma', 'Limit', 'Türev', 'İntegral'],
+      'Türkçe': ['Paragraf', 'Cümlede Anlam', 'Yazım Kuralları'],
+      'Edebiyat': ['Şiir Bilgisi', 'Cumhuriyet Dönemi', 'Divan Edebiyatı'],
+      'Geometri': ['Açılar', 'Üçgenler', 'Çember'],
+      'Tarih': ['İslamiyet Öncesi', 'Osmanlı Tarihi', 'İnkılap Tarihi'],
+      'Coğrafya': ['Nüfus', 'İklim', 'Harita Bilgisi'],
+      'Fizik': ['Madde ve Özellikleri', 'Kuvvet ve Hareket'],
+      'Kimya': ['Atom', 'Kimyasal Türler'],
+      'Biyoloji': ['Hücre', 'Kalıtım'],
+    };
 
     for (let i = 0; i < 364; i++) {
       const currentDate = addDays(baseDate, i);
@@ -73,20 +93,21 @@ export default function PlanningPage() {
       }
 
       const dailyTasks = [];
-      const subIndex = i % curriculum.length;
-      const curr = curriculum[subIndex];
-      const topicIndex = Math.floor(i / 7) % curr.topics.length;
-      const currentTopic = curr.topics[topicIndex];
-      const level = wizardConfig.levels[curr.subject] || 'Orta';
+      // Sadece kullanıcının alanındaki dersleri döngüye sok
+      const subIndex = i % currentLessons.length;
+      const lessonName = currentLessons[subIndex];
+      const lessonTopics = curriculumMap[lessonName] || ['Genel Konu Çalışması'];
+      const topicIndex = Math.floor(i / 7) % lessonTopics.length;
+      const currentTopic = lessonTopics[topicIndex];
 
-      const isWeak = wizardConfig.weakSubjects.includes(curr.subject);
+      const isWeak = wizardConfig.weakSubjects.includes(lessonName);
       const baseQ = Math.round(wizardConfig.questionCapacity / 3);
       const qTarget = isWeak ? Math.round(baseQ * 1.2) : baseQ;
 
       dailyTasks.push({
         id: `task_${i}_1`,
         type: 'content',
-        subject: curr.subject,
+        subject: lessonName,
         topic: currentTopic,
         duration: '45 dk',
         desc: 'Konu anlatımı ve formül çıkarma'
@@ -95,21 +116,11 @@ export default function PlanningPage() {
       dailyTasks.push({
         id: `task_${i}_2`,
         type: 'practice',
-        subject: curr.subject,
+        subject: lessonName,
         topic: currentTopic,
         qTarget: qTarget,
         desc: `${qTarget} soru çözümü (Karma)`
       });
-
-      if (i % 3 === 0) {
-        dailyTasks.push({
-          id: `task_${i}_3`,
-          type: 'review',
-          subject: curriculum[(subIndex + 1) % curriculum.length].subject,
-          topic: 'Geçmiş Konu Tekrarı',
-          qTarget: 20
-        });
-      }
 
       plan.push({
         date: format(currentDate, 'yyyy-MM-dd'),
@@ -145,7 +156,7 @@ export default function PlanningPage() {
       updatedAt: serverTimestamp()
     };
 
-    // Non-blocking writes
+    // Non-blocking writes - Firebase Studio environment optimized
     setDoc(planRef, planData, { merge: true })
       .catch(async (err) => {
         const permissionError = new FirestorePermissionError({
@@ -167,8 +178,8 @@ export default function PlanningPage() {
       });
 
     toast({ 
-      title: 'AOS v4.8 Yapılandırıldı', 
-      description: '364 günlük adaptif planınız buluta işlendi. Terminal saniyeler içinde güncellenecektir.', 
+      title: 'Strateji Aktif Edildi', 
+      description: '364 günlük adaptif planınız alanınıza göre yapılandırıldı.', 
       className: "bg-primary text-white rounded-[2rem]" 
     });
     
@@ -231,19 +242,22 @@ export default function PlanningPage() {
               <div className="flex flex-col lg:flex-row justify-between items-center gap-16 relative z-10">
                  <div className="space-y-8 flex-1">
                     <h3 className="text-7xl font-black italic tracking-tighter uppercase leading-none">PEDAGOGICAL <br /><span className="text-accent">ENGINE</span></h3>
-                    <p className="text-2xl opacity-60 font-medium italic leading-relaxed max-w-xl">364 günlük programınız; deneme netleriniz, yanlış soru oranınız ve günlük çalışma temponuza göre her sabah yeniden optimize edilir.</p>
+                    <p className="text-2xl opacity-60 font-medium italic leading-relaxed max-w-xl">364 günlük programınız; {userData?.targetExam || 'TYT'} müfredatına ve kapasitenize göre saniyeler içinde yeniden optimize edilir.</p>
                     <div className="flex gap-8">
                        <div><p className="text-5xl font-black text-accent italic">52</p><p className="text-[10px] font-black uppercase tracking-widest opacity-40">HAFTA</p></div>
                        <div className="w-px h-12 bg-white/10" />
                        <div><p className="text-5xl font-black text-white italic">364</p><p className="text-[10px] font-black uppercase tracking-widest opacity-40">GÜN</p></div>
                        <div className="w-px h-12 bg-white/10" />
-                       <div><p className="text-5xl font-black text-white italic">7</p><p className="text-[10px] font-black uppercase tracking-widest opacity-40">FAZ</p></div>
+                       <div><p className="text-5xl font-black text-white italic">{currentLessons.length}</p><p className="text-[10px] font-black uppercase tracking-widest opacity-40">AKTİF DERS</p></div>
                     </div>
                  </div>
                  <div className="bg-white/5 backdrop-blur-3xl p-12 rounded-[4rem] border border-white/10 shadow-2xl space-y-10 w-full max-w-md">
                     <div className="space-y-4">
-                       <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-4 italic">AKADEMİK TAKVİM BAŞLANGICI</Label>
-                       <Input type="date" value={planStartDate} className="h-20 rounded-[2rem] bg-white text-primary border-none shadow-2xl font-black text-2xl px-10" readOnly />
+                       <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-4 italic">ALAN ODAKLI MÜFREDAT</Label>
+                       <div className="p-6 bg-white/10 rounded-2xl border border-white/10">
+                          <p className="text-xl font-black text-accent uppercase italic">{userData?.targetExam?.replace('_', ' ') || 'TYT GENEL'}</p>
+                          <p className="text-[9px] font-bold text-white/40 mt-1 uppercase">SİSTEM TARAFINDAN OTOMATİK ALGILANDI</p>
+                       </div>
                     </div>
                     <Button onClick={() => setIsWizardOpen(true)} className="w-full h-24 rounded-[2.5rem] bg-accent hover:bg-white text-primary font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all gap-4">
                        ANKETİ BAŞLAT
@@ -319,10 +333,10 @@ export default function PlanningPage() {
                     <div className="space-y-12 animate-in fade-in slide-in-from-right-8 duration-700">
                        <div className="space-y-4">
                           <h4 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-tight">DERS BAZLI <br />SEVİYEN NEDİR?</h4>
-                          <p className="text-xl text-muted-foreground italic font-medium">Bu analiz konuların anlatım / soru / test oranlarını belirler.</p>
+                          <p className="text-xl text-muted-foreground italic font-medium">Bu analiz alanın olan ({userData?.targetExam?.replace('_', ' ')}) derslerine göre yapılır.</p>
                        </div>
                        <div className="grid gap-4 max-h-[400px] pr-4 overflow-y-auto scrollbar-hide">
-                          {LESSONS.map(lesson => (
+                          {currentLessons.map(lesson => (
                             <div key={lesson} className="flex items-center justify-between p-8 rounded-[2.5rem] bg-slate-50 border border-primary/5">
                                <span className="font-black text-sm uppercase tracking-widest text-primary">{lesson}</span>
                                <div className="flex gap-2">
@@ -370,7 +384,7 @@ export default function PlanningPage() {
                           <p className="text-xl text-muted-foreground italic font-medium">Bu derslerde soru hedefleri saniyeler içinde %20 artırılacaktır.</p>
                        </div>
                        <div className="grid grid-cols-2 gap-4">
-                          {LESSONS.map(lesson => (
+                          {currentLessons.map(lesson => (
                             <button 
                               key={lesson} 
                               onClick={() => {

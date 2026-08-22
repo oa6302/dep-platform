@@ -1,7 +1,7 @@
 'use client';
 
 import { useUser, useDoc, useFirestore } from '@/firebase';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ import {
   Brain, Calendar, Zap, Loader2, ShieldCheck, 
   ArrowLeft, Home, Milestone, CheckCircle2, 
   Activity, Sparkles, Coffee, Timer, Dumbbell, 
-  ChevronRight, RefreshCw, Target, Layers,
+  ChevronRight, Target, Layers,
   Info
 } from 'lucide-react';
 import { doc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -48,10 +48,10 @@ export default function PlanningPage() {
     restDay: 'Pazar'
   });
 
-  // Kullanıcının alanına (TM, SAY vb.) göre dersleri belirle
   const currentLessons = useMemo(() => {
-    if (userData?.targetExam && EXAM_CONFIGS[userData.targetExam]) {
-      return EXAM_CONFIGS[userData.targetExam].lessons;
+    const examId = userData?.targetExam || 'LGS';
+    if (EXAM_CONFIGS[examId]) {
+      return EXAM_CONFIGS[examId].lessons;
     }
     return DEFAULT_LESSONS;
   }, [userData]);
@@ -62,7 +62,6 @@ export default function PlanningPage() {
     const plan = [];
     const baseDate = new Date(planStartDate);
     
-    // Ders bazlı temel konu havuzu (MVP için basitleştirilmiş)
     const curriculumMap: Record<string, string[]> = {
       'Matematik': ['Temel Kavramlar', 'Sayılar', 'Problemler', 'Fonksiyonlar'],
       'TYT Matematik': ['Temel Kavramlar', 'Sayılar', 'Problemler'],
@@ -85,15 +84,16 @@ export default function PlanningPage() {
       if (dayName === wizardConfig.restDay) {
         plan.push({
           date: format(currentDate, 'yyyy-MM-dd'),
+          displayDate: format(currentDate, "d MMM ''yy", { locale: tr }),
           day: dayName,
           isRestDay: true,
-          tasks: []
+          tasks: [],
+          status: 'pending'
         });
         continue;
       }
 
       const dailyTasks = [];
-      // Sadece kullanıcının alanındaki dersleri döngüye sok
       const subIndex = i % currentLessons.length;
       const lessonName = currentLessons[subIndex];
       const lessonTopics = curriculumMap[lessonName] || ['Genel Konu Çalışması'];
@@ -156,13 +156,12 @@ export default function PlanningPage() {
       updatedAt: serverTimestamp()
     };
 
-    // Non-blocking writes - Firebase Studio environment optimized
     setDoc(planRef, planData, { merge: true })
       .catch(async (err) => {
         const permissionError = new FirestorePermissionError({
           path: planRef.path,
           operation: 'write',
-          requestResourceData: planData,
+          requestResourceData: { plan: '364_day_master_plan' },
         } satisfies SecurityRuleContext);
         errorEmitter.emit('permission-error', permissionError);
       });
@@ -178,13 +177,14 @@ export default function PlanningPage() {
       });
 
     toast({ 
-      title: 'Strateji Aktif Edildi', 
+      title: 'STRATEJİ AKTİF EDİLDİ', 
       description: '364 günlük adaptif planınız alanınıza göre yapılandırıldı.', 
       className: "bg-primary text-white rounded-[2rem]" 
     });
     
     setIsWizardOpen(false);
     setIsInitializing(false);
+    router.push('/dashboard');
   };
 
   return (
@@ -242,7 +242,7 @@ export default function PlanningPage() {
               <div className="flex flex-col lg:flex-row justify-between items-center gap-16 relative z-10">
                  <div className="space-y-8 flex-1">
                     <h3 className="text-7xl font-black italic tracking-tighter uppercase leading-none">PEDAGOGICAL <br /><span className="text-accent">ENGINE</span></h3>
-                    <p className="text-2xl opacity-60 font-medium italic leading-relaxed max-w-xl">364 günlük programınız; {userData?.targetExam || 'TYT'} müfredatına ve kapasitenize göre saniyeler içinde yeniden optimize edilir.</p>
+                    <p className="text-2xl opacity-60 font-medium italic leading-relaxed max-w-xl">364 günlük programınız; {userData?.targetExam?.replace('_', ' ') || 'TYT'} müfredatına ve kapasitenize göre saniyeler içinde yeniden optimize edilir.</p>
                     <div className="flex gap-8">
                        <div><p className="text-5xl font-black text-accent italic">52</p><p className="text-[10px] font-black uppercase tracking-widest opacity-40">HAFTA</p></div>
                        <div className="w-px h-12 bg-white/10" />
@@ -299,7 +299,6 @@ export default function PlanningPage() {
         </TabsContent>
       </Tabs>
 
-      {/* SETUP WIZARD */}
       <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
          <DialogContent className="rounded-[4rem] border-none shadow-2xl p-0 bg-white max-w-5xl overflow-hidden">
             <DialogHeader className="sr-only">

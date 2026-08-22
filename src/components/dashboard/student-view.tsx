@@ -1,11 +1,9 @@
-
 'use client';
 
 import { useDoc, useFirestore, useUser } from '@/firebase';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { 
   CheckCircle, Zap, Timer, Play, Sparkles, ChevronRight, 
   Target, Activity, Brain, Flame, ArrowUpRight, BarChart3,
@@ -20,6 +18,8 @@ import { tr } from 'date-fns/locale';
 import { doc, updateDoc, serverTimestamp, addDoc, collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 export function StudentView({ user, userData, isReadOnly = false }: { user: any, userData: any, isReadOnly?: boolean }) {
   const db = useFirestore();
@@ -36,20 +36,24 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
   }, [studyPlan, today]);
 
   const stats = useMemo(() => {
-    if (!studyPlan?.masterPlan) return { xp: 0, completed: 0, target: 0, accuracy: 88, streak: 12, openMistakes: 18 };
-    const completed = studyPlan.masterPlan.filter((p: any) => p.status === 'completed').length;
+    if (!studyPlan?.masterPlan) return { xp: '0', completed: 0, target: 0, accuracy: 0, streak: 0, openMistakes: 0 };
+    const completedCount = studyPlan.masterPlan.filter((p: any) => p.status === 'completed').length;
+    const totalTasks = studyPlan.masterPlan.length;
+    const capacity = studyPlan.wizardConfig?.questionCapacity || 150;
+    
     return {
-      xp: (completed * 100).toLocaleString(),
-      completed: completed,
-      target: studyPlan.wizardConfig?.questionCapacity || 150,
-      accuracy: 82,
+      xp: (completedCount * 100).toLocaleString(),
+      completed: completedCount,
+      target: capacity,
+      accuracy: Math.min(Math.round((completedCount / (totalTasks || 1)) * 100) + 72, 98), // Simüle edilmiş gelişim
       streak: 12,
-      openMistakes: 18
+      openMistakes: 14
     };
   }, [studyPlan]);
 
   const handleToggleTask = (taskId: string) => {
     if (!db || !user || !studyPlan || isReadOnly) return;
+    
     const newMasterPlan = studyPlan.masterPlan.map((p: any) => {
       if (p.date === today) {
         return {
@@ -61,16 +65,35 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
     });
 
     const planRef = doc(db, 'studyPlans', user.uid);
-    updateDoc(planRef, { masterPlan: newMasterPlan, updatedAt: serverTimestamp() });
+    updateDoc(planRef, { masterPlan: newMasterPlan, updatedAt: serverTimestamp() })
+      .catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: planRef.path,
+          operation: 'update',
+          requestResourceData: { masterPlan: 'updated' },
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      });
     
     if (currentDayPlan?.status !== 'completed') {
-      toast({ title: 'Görev Tamamlandı!', description: 'Akademik arşivinize işlendi.', className: "bg-emerald-500 text-white rounded-[2rem]" });
-      addDoc(collection(db, 'studies'), {
+      toast({ title: 'GÖREV TAMAMLANDI', description: 'Akademik arşivinize işlendi.', className: "bg-emerald-500 text-white rounded-[2rem]" });
+      
+      const studyData = {
         userId: user.uid,
         completedAt: serverTimestamp(),
         xp: 100,
         status: 'completed'
-      });
+      };
+      
+      addDoc(collection(db, 'studies'), studyData)
+        .catch(async (err) => {
+          const permissionError = new FirestorePermissionError({
+            path: 'studies',
+            operation: 'create',
+            requestResourceData: studyData,
+          } satisfies SecurityRuleContext);
+          errorEmitter.emit('permission-error', permissionError);
+        });
     }
   };
 
@@ -100,14 +123,27 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
       });
 
       const planRef = doc(db, 'studyPlans', user.uid);
-      updateDoc(planRef, { masterPlan: newMasterPlan, updatedAt: serverTimestamp() });
+      updateDoc(planRef, { masterPlan: newMasterPlan, updatedAt: serverTimestamp() })
+        .catch(async (err) => {
+          const permissionError = new FirestorePermissionError({
+            path: planRef.path,
+            operation: 'update',
+            requestResourceData: { masterPlan: 'recommended_task_added' },
+          } satisfies SecurityRuleContext);
+          errorEmitter.emit('permission-error', permissionError);
+        });
       
-      toast({ title: 'Görev Eklendi', description: 'Yapay zeka önerisi programa işlendi.' });
+      toast({ title: 'STRATEJİ GÜNCELLENDİ', description: 'AI önerisi bugünkü plana enjekte edildi.', className: "bg-primary text-white rounded-[2rem]" });
       setIsRecLoading(false);
     }, 800);
   };
 
-  if (planLoading) return <div className="p-20 text-center opacity-30 animate-pulse font-black uppercase italic">Senkronizasyon Başlatılıyor...</div>;
+  if (planLoading) return (
+    <div className="p-20 flex flex-col items-center justify-center gap-6 min-h-[60vh]">
+      <Loader2 className="h-12 w-12 animate-spin text-accent" />
+      <p className="text-xs font-black uppercase tracking-[0.4em] text-primary/40 animate-pulse italic">Akademik Motor Hazırlanıyor...</p>
+    </div>
+  );
 
   return (
     <div className="p-8 lg:p-14 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000 bg-[#FAFBFF]">
@@ -115,14 +151,14 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
       <section className="flex flex-col lg:flex-row justify-between items-end gap-10">
          <div className="space-y-6 flex-1">
             <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-slate-50 border border-primary/5 text-primary/40 font-black text-[10px] uppercase tracking-widest italic shadow-sm">
-               <Activity className="h-3.5 w-3.5 text-accent animate-pulse" /> ADAPTIVE MONITORING ACTIVE
+               <Activity className="h-3.5 w-3.5 text-accent animate-pulse" /> ADAPTIVE MONITORING ACTIVE v4.8
             </div>
             <div className="space-y-3">
                <h1 className="text-6xl md:text-8xl font-black text-primary tracking-tighter italic uppercase leading-[0.8] text-shadow-deep">
                   GÜNAYDIN, <br /><span className="text-accent text-shadow-accent">{userData?.displayName?.split(' ')[0] || 'ÖĞRENCİ'}</span> 👋
                </h1>
                <p className="text-2xl font-medium text-muted-foreground italic leading-relaxed max-w-2xl">
-                  Bugünkü akademik durumun: <span className="text-primary font-bold">%{stats.accuracy} Başarı</span>. Hedef performansın saniyeler içinde güncellendi.
+                  Bugünkü akademik durumun: <span className="text-primary font-bold">%{stats.accuracy} Başarı</span>. Hedef performansın saniyeler içinde optimize edildi.
                </p>
             </div>
             <div className="w-full max-w-xl space-y-3">
@@ -215,7 +251,7 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
                         </Card>
                      );
                   })}
-                  {!currentDayPlan && (
+                  {!currentDayPlan && !planLoading && (
                     <Card onClick={() => router.push('/dashboard/planning')} className="p-32 text-center bg-white/50 rounded-[5rem] border-4 border-dashed border-primary/10 flex flex-col items-center gap-8 cursor-pointer hover:bg-white hover:border-primary/20 transition-all">
                        <Sparkles className="h-16 w-16 text-accent opacity-20" />
                        <p className="text-xl font-black uppercase tracking-[0.4em] text-primary/20 italic">HENÜZ PLAN OLUŞTURULMADI</p>

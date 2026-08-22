@@ -15,15 +15,14 @@ import {
   Sparkles, Zap, Info, Target, Activity, ArrowLeft, Home, 
   Layers, TrendingUp, Milestone, Flag, Dna, Filter,
   Table, BarChart3, AlertCircle, History, Calculator,
-  Search, Save, ArrowUpRight, GraduationCap
+  Search, Save, ArrowUpRight, GraduationCap, RefreshCw
 } from 'lucide-react';
-import { doc, setDoc, serverTimestamp, collection, addDoc, query, where, orderBy } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, collection, addDoc, query, where, orderBy, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { EXAM_CONFIGS } from '@/lib/exam-configs';
-import { handleGenerateAiStudyPlan } from '@/app/actions';
-import { AcademicSessionDialog } from '@/components/academic-session-dialog';
 import { useRouter } from 'next/navigation';
+import { format, addDays, startOfWeek, isSameDay } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 const PHASES = [
   { id: 1, title: 'FAZ 1: Temel Atma', weeks: '1-2', desc: 'Diagnostik deneme, Temel Kavramlar ve Sayı Basamakları.', color: 'bg-blue-500' },
@@ -46,14 +45,88 @@ export default function PlanningPage() {
 
   // Firestore Verileri
   const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
-  const { data: mistakes = [] } = useCollection<any>(user?.uid ? query(collection(db!, 'mistakes'), where('userId', '==', user.uid), orderBy('createdAt', 'desc')) : null);
-  const { data: trials = [] } = useCollection<any>(user?.uid ? query(collection(db!, 'trials'), where('userId', '==', user.uid), orderBy('createdAt', 'desc')) : null);
+  const { data: mistakes = [] } = useCollection<any>(user?.uid && db ? query(collection(db, 'mistakes'), where('userId', '==', user.uid), orderBy('createdAt', 'desc')) : null);
+  const { data: trials = [] } = useCollection<any>(user?.uid && db ? query(collection(db, 'trials'), where('userId', '==', user.uid), orderBy('createdAt', 'desc')) : null);
 
   const averageNet = useMemo(() => {
-    if (trials.length === 0) return 0;
+    if (trials.length === 0) return '0.00';
     const total = trials.reduce((acc, curr) => acc + (parseFloat(curr.net) || 0), 0);
     return (total / trials.length).toFixed(2);
   }, [trials]);
+
+  // 364 Günlük Plan Üretici
+  const fullYearPlan = useMemo(() => {
+    const baseDate = new Date(startDate);
+    const plan = [];
+    
+    const topicsPhase2 = [
+      'Bölme ve Bölünebilme', 'Asal Sayılar', 'EBOB-EKOK', 'Rasyonel Sayılar', 
+      'Basit Eşitsizlikler', 'Mutlak Değer', 'Üslü Sayılar', 'Köklü Sayılar', 
+      'Çarpanlara Ayırma', 'Oran-Orantı', 'Denklem Çözme', 'Sayı Problemleri',
+      'Kesir Problemleri', 'Yaş Problemleri', 'İşçi Problemleri', 'Hız-Hareket',
+      'Yüzde-Kar-Zarar', 'Karışım Problemleri', 'Grafik Problemleri'
+    ];
+
+    for (let i = 0; i < 364; i++) {
+      const currentDate = addDays(baseDate, i);
+      const weekNum = Math.floor(i / 7) + 1;
+      const dayName = format(currentDate, 'EEEE', { locale: tr });
+      
+      let phaseId = 1;
+      let activity = 'KONU + SORU';
+      let subject = 'TYT Matematik';
+      let topic = 'Temel Kavramlar';
+      let qTarget = 60;
+
+      if (weekNum <= 2) {
+        phaseId = 1;
+        topic = i === 0 ? 'Diagnostik Deneme' : (i < 7 ? 'Sayı Kümeleri' : 'Sayı Basamakları');
+      } else if (weekNum <= 14) {
+        phaseId = 2;
+        const topicIndex = (weekNum - 3) % topicsPhase2.length;
+        topic = topicsPhase2[topicIndex];
+        if (dayName === 'Cuma') activity = 'TEST / PEKİŞTİRME';
+        if (dayName === 'Cumartesi') { activity = 'TEKRAR / ANALİZ'; topic = 'Haftalık Yanlış Analizi'; }
+        if (dayName === 'Pazar') { activity = i % 14 === 0 ? 'BRANŞ DENEMESİ' : 'DİNLENME'; topic = 'Mental Recovery'; }
+      } else if (weekNum <= 22) {
+        phaseId = 3;
+        topic = weekNum <= 19 ? 'Kümeler & Fonksiyonlar' : 'Polinomlar & 2. Derece Denklemler';
+      } else if (weekNum <= 34) {
+        phaseId = 4;
+        topic = 'Geometri Kampı - Üçgenler/Dörtgenler';
+      } else if (weekNum <= 42) {
+        phaseId = 5;
+        activity = 'KARMA TEKRAR';
+        topic = '44 Konu Genel Tekrar';
+      } else {
+        phaseId = 6;
+        activity = i % 2 === 0 ? 'TAM DENEME' : 'DERİN ANALİZ';
+        topic = 'TYT Genel Prova';
+        qTarget = i % 2 === 0 ? 40 : 120;
+      }
+
+      plan.push({
+        date: format(currentDate, "d MMM ''yy", { locale: tr }),
+        week: `H${String(weekNum).padStart(2, '0')}`,
+        day: dayName,
+        phase: phaseId,
+        activity,
+        subject,
+        topic,
+        qTarget,
+        fullDate: currentDate
+      });
+    }
+    return plan;
+  }, [startDate]);
+
+  const filteredPlan = useMemo(() => {
+    if (!searchDay) return fullYearPlan;
+    return fullYearPlan.filter(p => 
+      p.topic.toLowerCase().includes(searchDay.toLowerCase()) || 
+      p.week.toLowerCase().includes(searchDay.toLowerCase())
+    );
+  }, [fullYearPlan, searchDay]);
 
   const handleAddMistake = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -81,7 +154,7 @@ export default function PlanningPage() {
     const formData = new FormData(e.currentTarget);
     const correct = parseInt(formData.get('correct') as string) || 0;
     const wrong = parseInt(formData.get('wrong') as string) || 0;
-    const net = correct - (wrong * 0.25);
+    const net = (correct - (wrong * 0.25)).toFixed(2);
     
     const data = {
       userId: user.uid,
@@ -100,6 +173,16 @@ export default function PlanningPage() {
     }
   };
 
+  const handleDeleteItem = async (col: string, id: string) => {
+    if (!db || !confirm('Silmek istediğinize emin misiniz?')) return;
+    try {
+      await deleteDoc(doc(db, col, id));
+      toast({ title: 'Silindi', description: 'Kayıt veritabanından kaldırıldı.' });
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Hata', description: 'İşlem başarısız.' });
+    }
+  };
+
   return (
     <div className="p-8 lg:p-14 space-y-12 max-w-[1600px] mx-auto w-full animate-in fade-in duration-1000 bg-[#FAFBFF]">
       <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-12">
@@ -113,7 +196,7 @@ export default function PlanningPage() {
                <Activity className="h-4 w-4 text-accent animate-pulse" /> 364 GÜNLÜK MASTER PLAN v4.8
             </div>
             <h2 className="text-7xl md:text-9xl font-black tracking-tighter italic text-primary uppercase leading-[0.8] text-shadow-premium">
-               TYT <br /><span className="text-accent text-shadow-accent">STRATEJİSİ</span>
+               TYT <br /><span className="text-accent text-shadow-accent">MATEMATİK</span>
             </h2>
           </div>
         </div>
@@ -130,15 +213,15 @@ export default function PlanningPage() {
         <TabsList className="bg-slate-100/50 p-2.5 rounded-[3rem] h-24 shadow-inner flex border border-primary/5 overflow-x-auto scrollbar-hide">
           <TabsTrigger value="overview" className="rounded-[2.5rem] px-12 h-full font-black text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-xl gap-4"><Milestone className="h-5 w-5" /> 1. Genel Bakış</TabsTrigger>
           <TabsTrigger value="daily" className="rounded-[2.5rem] px-12 h-full font-black text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-xl gap-4"><Calendar className="h-5 w-5" /> 2. Günlük Plan</TabsTrigger>
-          <TabsTrigger value="mistakes" className="rounded-[2.5rem] px-12 h-full font-black text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-xl gap-4"><AlertCircle className="h-5 w-5" /> 3. Yanlış Takip</TabsTrigger>
-          <TabsTrigger value="trials" className="rounded-[2.5rem] px-12 h-full font-black text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-xl gap-4"><TrendingUp className="h-5 w-5" /> 4. Deneme Takip</TabsTrigger>
+          <TabsTrigger value="mistakes" className="rounded-[2.5rem] px-12 h-full font-black text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-xl gap-4"><AlertCircle className="h-5 w-5" /> 3. Yanlış Takibi</TabsTrigger>
+          <TabsTrigger value="trials" className="rounded-[2.5rem] px-12 h-full font-black text-xs uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-xl gap-4"><TrendingUp className="h-5 w-5" /> 4. Deneme Takibi</TabsTrigger>
         </TabsList>
 
         {/* 1. GENEL BAKIŞ */}
         <TabsContent value="overview" className="space-y-12 animate-in fade-in duration-700">
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {PHASES.map((phase) => (
-                <Card key={phase.id} className="p-10 rounded-[3.5rem] bg-white border border-primary/5 shadow-xl hover:-translate-y-2 transition-all group overflow-hidden">
+                <Card key={phase.id} className="p-10 rounded-[3.5rem] bg-white border border-primary/5 shadow-xl hover:-translate-y-2 transition-all group overflow-hidden relative">
                    <div className={cn("h-2 w-full absolute top-0 left-0", phase.color)} />
                    <div className="space-y-6">
                       <div className="flex justify-between items-center">
@@ -181,8 +264,8 @@ export default function PlanningPage() {
         <TabsContent value="daily" className="space-y-12 animate-in fade-in duration-700">
            <div className="flex flex-col lg:flex-row justify-between items-end gap-8">
               <div className="space-y-2">
-                 <p className="text-[11px] font-black uppercase tracking-[0.5em] text-muted-foreground/30 italic">364 DAYS ACADEMIC FLOW</p>
-                 <h3 className="text-6xl font-black italic tracking-tighter uppercase text-primary">OPERASYONEL TAKVİM</h3>
+                 <p className="text-[11px] font-black uppercase tracking-[0.5em] text-muted-foreground/30 italic">364 DAYS OPERATIONAL FLOW</p>
+                 <h3 className="text-6xl font-black italic tracking-tighter uppercase text-primary">STRATEJİK TAKVİM</h3>
               </div>
               <div className="relative w-full lg:w-96 group">
                  <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-muted-foreground group-focus-within:text-accent transition-all" />
@@ -195,31 +278,31 @@ export default function PlanningPage() {
               </div>
            </div>
 
-           <div className="bg-white rounded-[4rem] border border-primary/5 shadow-2xl overflow-hidden">
+           <Card className="rounded-[4rem] border border-primary/5 shadow-2xl overflow-hidden bg-white">
               <div className="overflow-x-auto">
                  <table className="w-full border-collapse">
                     <thead className="bg-slate-50 border-b border-primary/5">
                        <tr>
-                          {['TARİH', 'HAFTA', 'GÜN', 'FAZ', 'AKTİVİTE', 'KONU / İÇERİK', 'SORU', 'DURUM'].map((h) => (
+                          {['TARİH', 'HAFTA', 'GÜN', 'FAZ', 'AKTİVİTE', 'KONU / İÇERİK', 'HEDEF', 'DURUM'].map((h) => (
                             <th key={h} className="p-8 text-left text-[10px] font-black uppercase tracking-widest text-primary/40">{h}</th>
                           ))}
                        </tr>
                     </thead>
                     <tbody>
-                       {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                       {filteredPlan.slice(0, 100).map((p, i) => (
                          <tr key={i} className="group hover:bg-slate-50/50 transition-all border-b border-primary/5 last:border-none">
-                            <td className="p-8 font-bold text-primary">24 Ağu '26</td>
-                            <td className="p-8"><Badge variant="outline" className="font-black text-[9px] px-2 py-0.5 border-primary/10">H01</Badge></td>
-                            <td className="p-8 font-black text-primary italic uppercase tracking-tighter">Pazartesi</td>
-                            <td className="p-8"><div className="h-3 w-3 rounded-full bg-blue-500 shadow-lg shadow-blue-500/20" /></td>
-                            <td className="p-8"><Badge className="bg-primary text-white font-black text-[9px] uppercase tracking-widest">KONU + SORU</Badge></td>
+                            <td className="p-8 font-bold text-primary">{p.date}</td>
+                            <td className="p-8"><Badge variant="outline" className="font-black text-[9px] px-2 py-0.5 border-primary/10">{p.week}</Badge></td>
+                            <td className="p-8 font-black text-primary italic uppercase tracking-tighter">{p.day}</td>
+                            <td className="p-8"><div className={cn("h-3 w-3 rounded-full shadow-lg", PHASES[p.phase - 1]?.color || 'bg-slate-300')} /></td>
+                            <td className="p-8"><Badge className="bg-primary text-white font-black text-[9px] uppercase tracking-widest">{p.activity}</Badge></td>
                             <td className="p-8">
                                <div className="space-y-1">
-                                  <p className="font-black text-lg text-primary uppercase italic leading-none">Temel Kavramlar</p>
-                                  <p className="text-[10px] font-bold text-muted-foreground opacity-60 uppercase">Sayı Kümeleri ve Tanımlar</p>
+                                  <p className="font-black text-lg text-primary uppercase italic leading-none">{p.topic}</p>
+                                  <p className="text-[10px] font-bold text-muted-foreground opacity-60 uppercase">{p.subject}</p>
                                </div>
                             </td>
-                            <td className="p-8 font-black text-accent text-xl italic tracking-tighter">60</td>
+                            <td className="p-8 font-black text-accent text-xl italic tracking-tighter">{p.qTarget}</td>
                             <td className="p-8">
                                <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl bg-slate-100/50 text-primary opacity-20 hover:opacity-100 hover:bg-emerald-500 hover:text-white transition-all">
                                   <CheckCircle className="h-6 w-6" />
@@ -230,10 +313,10 @@ export default function PlanningPage() {
                     </tbody>
                  </table>
               </div>
-              <div className="p-10 bg-slate-50/50 text-center">
-                 <p className="text-xs font-black uppercase tracking-widest text-primary/20 italic">Programın devamı (364 Gün) sisteme yüklendi.</p>
+              <div className="p-10 bg-slate-50/50 text-center border-t border-primary/5">
+                 <p className="text-xs font-black uppercase tracking-widest text-primary/20 italic">AOS Master Engine: 364 Günlük programın ilk 100 günü listelenmiştir.</p>
               </div>
-           </div>
+           </Card>
         </TabsContent>
 
         {/* 3. YANLIŞ TAKİBİ */}
@@ -277,7 +360,7 @@ export default function PlanningPage() {
                        <div className="h-16 w-16 rounded-[1.25rem] bg-blue-50 text-blue-500 flex items-center justify-center shadow-inner"><History className="h-8 w-8" /></div>
                        <div>
                           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40">KRİTİK KONU</p>
-                          <p className="text-2xl font-black text-primary italic uppercase tracking-tighter">{mistakes[0]?.topic || 'Veri Yok'}</p>
+                          <p className="text-2xl font-black text-primary italic uppercase tracking-tighter truncate max-w-[200px]">{mistakes[0]?.topic || 'Veri Yok'}</p>
                        </div>
                     </Card>
                  </div>
@@ -286,7 +369,7 @@ export default function PlanningPage() {
                     <h4 className="text-2xl font-black italic tracking-tighter uppercase text-primary border-b border-primary/5 pb-6">YANLIŞ ANALİZ GÜNLÜĞÜ</h4>
                     <div className="space-y-4">
                        {mistakes.map((m: any, i: number) => (
-                         <div key={i} className="flex items-center justify-between p-8 bg-slate-50 rounded-[2.5rem] border border-primary/5 group hover:bg-white hover:shadow-xl transition-all">
+                         <div key={m.id || i} className="flex items-center justify-between p-8 bg-slate-50 rounded-[2.5rem] border border-primary/5 group hover:bg-white hover:shadow-xl transition-all">
                             <div className="flex items-center gap-8">
                                <div className="h-12 w-12 rounded-xl bg-rose-500 text-white flex items-center justify-center shadow-lg"><Zap className="h-6 w-6" /></div>
                                <div>
@@ -294,7 +377,7 @@ export default function PlanningPage() {
                                   <p className="text-[10px] font-bold text-muted-foreground opacity-60 uppercase mt-1">{m.subject} • {m.reason}</p>
                                </div>
                             </div>
-                            <Button variant="ghost" size="icon" className="h-10 w-10 opacity-20 group-hover:opacity-100 text-destructive"><Trash2 className="h-5 w-5" /></Button>
+                            <Button onClick={() => handleDeleteItem('mistakes', m.id)} variant="ghost" size="icon" className="h-10 w-10 opacity-20 group-hover:opacity-100 text-destructive hover:bg-destructive/5"><Trash2 className="h-5 w-5" /></Button>
                          </div>
                        ))}
                        {mistakes.length === 0 && <div className="py-20 text-center opacity-20 italic font-black uppercase tracking-widest">Henüz bir kayıt bulunmuyor.</div>}
@@ -304,13 +387,13 @@ export default function PlanningPage() {
            </div>
         </TabsContent>
 
-        {/* 4. DENEME TAKİP */}
+        {/* 4. DENEME TAKİBİ */}
         <TabsContent value="trials" className="space-y-12 animate-in fade-in duration-700">
            <Card className="rounded-[4rem] border-none bg-primary text-white p-12 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 blur-[120px] rounded-full translate-x-1/2 -translate-y-1/2" />
               <div className="flex flex-col lg:flex-row justify-between items-center gap-12 relative z-10">
                  <div className="space-y-6">
-                    <h3 className="text-6xl font-black italic tracking-tighter uppercase leading-none">DENEME <br /><span className="text-accent">DÜĞÜMÜ</span></h3>
+                    <h3 className="text-6xl font-black italic tracking-tighter uppercase leading-none">DENEME <br /><span className="text-accent">ANALİZİ</span></h3>
                     <div className="grid grid-cols-2 gap-8">
                        <div><p className="text-5xl font-black text-accent">{trials.length}</p><p className="text-[9px] font-black uppercase tracking-widest opacity-40">DENEME SAYISI</p></div>
                        <div><p className="text-5xl font-black text-white">{averageNet}</p><p className="text-[9px] font-black uppercase tracking-widest opacity-40">ORTALAMA NET</p></div>
@@ -342,16 +425,16 @@ export default function PlanningPage() {
                     <TrendingUp className="h-10 w-10 text-accent" /> PERFORMANS ANALİZİ
                  </h4>
                  <div className="h-[400px] flex items-end gap-10 pb-4">
-                    {trials.slice(-7).map((t: any, i: number) => (
+                    {trials.slice(-7).reverse().map((t: any, i: number) => (
                       <div key={i} className="flex-1 space-y-4 group/bar cursor-default">
                          <div className="text-center opacity-0 group-hover/bar:opacity-100 transition-all"><Badge className="bg-accent text-primary font-black text-[10px]">{t.net} Net</Badge></div>
                          <div className="relative h-[300px] w-full bg-slate-50 rounded-[2.5rem] overflow-hidden border border-primary/5">
-                            <div className="absolute bottom-0 w-full bg-primary group-hover/bar:bg-accent transition-all duration-1000" style={{ height: `${(t.net / 40) * 100}%` }} />
+                            <div className="absolute bottom-0 w-full bg-primary group-hover/bar:bg-accent transition-all duration-1000" style={{ height: `${(parseFloat(t.net) / 40) * 100}%` }} />
                          </div>
                          <p className="text-[10px] font-black text-muted-foreground uppercase text-center truncate px-2">{t.examName}</p>
                       </div>
                     ))}
-                    {trials.length < 3 && <div className="flex-1 flex items-center justify-center opacity-10 font-black italic uppercase text-sm">DAHA FAZLA VERİ GEREKLİ</div>}
+                    {trials.length < 3 && <div className="flex-1 h-full flex items-center justify-center opacity-10 font-black italic uppercase text-sm">DAHA FAZLA VERİ GEREKLİ</div>}
                  </div>
               </Card>
 
@@ -359,14 +442,17 @@ export default function PlanningPage() {
                  <h4 className="text-2xl font-black italic tracking-tighter uppercase text-primary">SON KAYITLAR</h4>
                  <div className="space-y-6">
                     {trials.slice(0, 5).map((t: any, i: number) => (
-                      <div key={i} className="flex items-center justify-between p-6 bg-slate-50 rounded-[2rem] border border-primary/5">
+                      <div key={t.id || i} className="flex items-center justify-between p-6 bg-slate-50 rounded-[2rem] border border-primary/5 group">
                          <div className="space-y-1">
                             <p className="font-black text-lg text-primary uppercase italic truncate max-w-[120px]">{t.examName}</p>
                             <p className="text-[9px] font-bold text-muted-foreground opacity-60 uppercase">{t.correct}D {t.wrong}Y</p>
                          </div>
-                         <div className="text-right">
-                            <p className="text-2xl font-black text-accent italic tracking-tighter">{t.net}</p>
-                            <p className="text-[8px] font-black text-muted-foreground uppercase opacity-40">NET</p>
+                         <div className="flex items-center gap-4">
+                            <div className="text-right">
+                               <p className="text-2xl font-black text-accent italic tracking-tighter">{t.net}</p>
+                               <p className="text-[8px] font-black text-muted-foreground uppercase opacity-40">NET</p>
+                            </div>
+                            <Button onClick={() => handleDeleteItem('trials', t.id)} variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 text-destructive"><Trash2 className="h-4 w-4" /></Button>
                          </div>
                       </div>
                     ))}

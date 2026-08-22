@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useDoc, useFirestore } from '@/firebase';
@@ -23,6 +22,8 @@ import { format, addDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 const LESSONS = ['Matematik', 'Türkçe', 'Geometri', 'Fizik', 'Kimya', 'Biyoloji', 'Tarih', 'Coğrafya', 'Felsefe', 'Din Kültürü'];
 
@@ -123,31 +124,56 @@ export default function PlanningPage() {
     return plan;
   };
 
-  const handleSavePlan = async () => {
+  const handleSavePlan = () => {
     if (!db || !user) return;
     setIsInitializing(true);
-    try {
-      const adaptivePlan = generateAdaptivePlan();
-      await setDoc(doc(db, 'studyPlans', user.uid), {
-        userId: user.uid,
-        startDate: planStartDate,
-        masterPlan: adaptivePlan,
-        wizardConfig,
-        updatedAt: serverTimestamp()
-      }, { merge: true });
 
-      await updateDoc(doc(db, 'users', user.uid), {
-        studentProfile: wizardConfig,
-        updatedAt: serverTimestamp()
+    const adaptivePlan = generateAdaptivePlan();
+    const planRef = doc(db, 'studyPlans', user.uid);
+    const userRef = doc(db, 'users', user.uid);
+
+    const planData = {
+      userId: user.uid,
+      startDate: planStartDate,
+      masterPlan: adaptivePlan,
+      wizardConfig,
+      updatedAt: serverTimestamp()
+    };
+
+    const studentProfileData = {
+      studentProfile: wizardConfig,
+      updatedAt: serverTimestamp()
+    };
+
+    // Non-blocking writes
+    setDoc(planRef, planData, { merge: true })
+      .catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: planRef.path,
+          operation: 'write',
+          requestResourceData: planData,
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
       });
 
-      toast({ title: 'AOS v4.8 Yapılandırıldı', description: '364 günlük adaptif planınız buluta işlendi.', className: "bg-primary text-white rounded-[2rem]" });
-      setIsWizardOpen(false);
-    } catch (e) {
-      toast({ variant: 'destructive', title: 'Hata', description: 'Plan oluşturulamadı.' });
-    } finally {
-      setIsInitializing(false);
-    }
+    updateDoc(userRef, studentProfileData)
+      .catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: userRef.path,
+          operation: 'update',
+          requestResourceData: studentProfileData,
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      });
+
+    toast({ 
+      title: 'AOS v4.8 Yapılandırıldı', 
+      description: '364 günlük adaptif planınız buluta işlendi. Terminal saniyeler içinde güncellenecektir.', 
+      className: "bg-primary text-white rounded-[2rem]" 
+    });
+    
+    setIsWizardOpen(false);
+    setIsInitializing(false);
   };
 
   return (
@@ -217,7 +243,7 @@ export default function PlanningPage() {
                  <div className="bg-white/5 backdrop-blur-3xl p-12 rounded-[4rem] border border-white/10 shadow-2xl space-y-10 w-full max-w-md">
                     <div className="space-y-4">
                        <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-4 italic">AKADEMİK TAKVİM BAŞLANGICI</Label>
-                       <Input type="date" value={planStartDate} className="h-20 rounded-[2rem] bg-white text-primary border-none shadow-2xl font-black text-2xl px-10" onChange={(e) => {}} />
+                       <Input type="date" value={planStartDate} className="h-20 rounded-[2rem] bg-white text-primary border-none shadow-2xl font-black text-2xl px-10" readOnly />
                     </div>
                     <Button onClick={() => setIsWizardOpen(true)} className="w-full h-24 rounded-[2.5rem] bg-accent hover:bg-white text-primary font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all gap-4">
                        ANKETİ BAŞLAT

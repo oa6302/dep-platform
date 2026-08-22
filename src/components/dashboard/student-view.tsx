@@ -10,7 +10,8 @@ import {
   CheckCircle, Zap, Timer, Play, Sparkles, ChevronRight, 
   Target, Activity, Brain, Flame, ArrowUpRight, BarChart3,
   Coffee, ShieldCheck, AlertCircle, RefreshCw, Layers,
-  PlaySquare, Book, FileText, CheckCircle2, Info
+  PlaySquare, Book, FileText, CheckCircle2, Info, Calendar,
+  Loader2
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -27,6 +28,7 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
   
   const today = format(new Date(), 'yyyy-MM-dd');
   const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
+  const [isRecLoading, setIsRecLoading] = useState(false);
 
   const currentDayPlan = useMemo(() => {
     if (!studyPlan?.masterPlan) return null;
@@ -39,7 +41,7 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
     return {
       xp: (completed * 100).toLocaleString(),
       completed: completed,
-      target: 150,
+      target: studyPlan.wizardConfig?.questionCapacity || 150,
       accuracy: 82,
       streak: 12,
       openMistakes: 18
@@ -70,6 +72,39 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
         status: 'completed'
       });
     }
+  };
+
+  const handleCreateRecommendedTask = () => {
+    if (!db || !user || !studyPlan || isReadOnly) return;
+    setIsRecLoading(true);
+    
+    setTimeout(() => {
+      const newTask = {
+        id: `rec_${Date.now()}`,
+        type: 'practice',
+        subject: 'Matematik',
+        topic: 'Problemler',
+        qTarget: 25,
+        duration: '30 dk',
+        desc: 'AI tarafından önerilen ek problem çözümü'
+      };
+
+      const newMasterPlan = studyPlan.masterPlan.map((p: any) => {
+        if (p.date === today) {
+          return {
+            ...p,
+            tasks: [...(p.tasks || []), newTask]
+          };
+        }
+        return p;
+      });
+
+      const planRef = doc(db, 'studyPlans', user.uid);
+      updateDoc(planRef, { masterPlan: newMasterPlan, updatedAt: serverTimestamp() });
+      
+      toast({ title: 'Görev Eklendi', description: 'Yapay zeka önerisi programa işlendi.' });
+      setIsRecLoading(false);
+    }, 800);
   };
 
   if (planLoading) return <div className="p-20 text-center opacity-30 animate-pulse font-black uppercase italic">Senkronizasyon Başlatılıyor...</div>;
@@ -205,8 +240,8 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
                   <p className="text-xl font-medium italic leading-relaxed text-white/80">
                      "Son 3 denemede Matematik Problemler bölümünde performansın düşüyor. Bu nedenle önümüzdeki hafta problem çalışmalarını %25 artırdım ve Çarşamba gününe ek tekrar koydum."
                   </p>
-                  <Button variant="outline" className="w-full h-16 rounded-2xl border-white/10 bg-white/5 hover:bg-white/10 text-white font-black text-[10px] uppercase tracking-widest gap-4">
-                     STRATEJİYİ GÖRÜNTÜLE <ArrowUpRight className="h-4 w-4" />
+                  <Button onClick={handleCreateRecommendedTask} disabled={isRecLoading || isReadOnly} className="w-full h-20 rounded-[2rem] bg-accent hover:bg-white text-primary font-black text-xs uppercase tracking-widest gap-4 shadow-2xl shadow-accent/20 group/btn">
+                    {isRecLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Zap className="h-6 w-6 text-primary group-hover/btn:animate-pulse" />} GÖREVİ HEMEN OLUŞTUR
                   </Button>
                </div>
             </Card>

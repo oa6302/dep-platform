@@ -18,16 +18,18 @@ import {
   PlayCircle,
   PauseCircle,
   RotateCcw,
-  Zap
+  Zap,
+  Plus
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { AcademicSessionDialog } from '@/components/academic-session-dialog';
 
 export function StudentView({ user, userData, isReadOnly = false }: { user: any, userData: any, isReadOnly?: boolean }) {
   const db = useFirestore();
@@ -37,9 +39,11 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
   const today = format(new Date(), 'yyyy-MM-dd');
   const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   
-  // Timer State (Focus Modülü için)
+  // States
   const [timeLeft, setTimeLeft] = useState(45 * 60);
   const [isActive, setIsActive] = useState(false);
+  const [isAddingTask, setIsAddingTask] = useState(false);
+  const [isRecLoading, setIsRecLoading] = useState(false);
 
   useEffect(() => {
     let interval: any = null;
@@ -96,6 +100,59 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
       });
   };
 
+  const handleSaveManualTask = (taskData: any) => {
+    if (!db || !user || !studyPlan || isReadOnly) return;
+
+    const newTask = {
+      ...taskData,
+      id: `manual_${Date.now()}`,
+      status: 'pending'
+    };
+
+    const newMasterPlan = studyPlan.masterPlan.map((p: any) => {
+      if (p.date === today) {
+        return {
+          ...p,
+          tasks: [...(p.tasks || []), newTask]
+        };
+      }
+      return p;
+    });
+
+    const planRef = doc(db, 'studyPlans', user.uid);
+    updateDoc(planRef, { masterPlan: newMasterPlan, updatedAt: serverTimestamp() })
+      .catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: planRef.path,
+          operation: 'update',
+          requestResourceData: { masterPlan: 'add_manual_task' },
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      });
+
+    toast({
+      title: 'GÖREV EKLENDİ',
+      description: `${taskData.subject} seansı bugünkü planınıza işlendi.`,
+      className: "bg-primary text-white rounded-[2rem]"
+    });
+  };
+
+  const handleCreateRecommendedTask = () => {
+    setIsRecLoading(true);
+    setTimeout(() => {
+      handleSaveManualTask({
+        subject: 'Matematik',
+        topic: 'Problemler Analizi',
+        time: format(new Date(), 'HH:mm'),
+        duration: '45 dk',
+        xp: 75,
+        difficulty: 'medium',
+        studyType: 'analysis'
+      });
+      setIsRecLoading(false);
+    }, 1000);
+  };
+
   if (planLoading) return (
     <div className="p-20 flex flex-col items-center justify-center gap-6 min-h-[60vh]">
       <Loader2 className="h-12 w-12 animate-spin text-accent" />
@@ -129,8 +186,12 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
                    <Button onClick={() => router.push('/dashboard/planning')} className="h-14 px-8 rounded-2xl bg-primary text-white font-black text-[10px] uppercase tracking-widest shadow-2xl gap-3">
                       <Calendar className="h-4 w-4" /> TAM AKIŞ
                    </Button>
-                   <Button variant="outline" className="h-14 px-8 rounded-2xl border-2 font-black text-[10px] uppercase tracking-widest text-primary/40 hover:bg-slate-50 transition-all">
-                      YENİ GÖREV +
+                   <Button 
+                    onClick={() => setIsAddingTask(true)}
+                    variant="outline" 
+                    className="h-14 px-8 rounded-2xl border-2 font-black text-[10px] uppercase tracking-widest text-primary/40 hover:bg-slate-50 transition-all gap-2"
+                   >
+                      <Plus className="h-3.5 w-3.5" /> YENİ GÖREV +
                    </Button>
                 </div>
              </div>
@@ -214,8 +275,13 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
                 <p className="text-xl font-bold italic leading-relaxed text-primary/80">
                    "Bugün Matematik ve Türkçe arasındaki çalışma dengeni korumalısın. Akşam saatleri deneme analizi için en verimli dilim olarak saptandı."
                 </p>
-                <Button className="w-full h-20 rounded-[2rem] bg-primary hover:bg-black text-white font-black text-xs uppercase tracking-widest gap-4 shadow-2xl group/btn">
-                   <Zap className="h-6 w-6 text-accent group-hover/btn:animate-pulse" /> ANALİZİ DERİNLEŞTİR
+                <Button 
+                  onClick={handleCreateRecommendedTask}
+                  disabled={isRecLoading || isReadOnly}
+                  className="w-full h-20 rounded-[2rem] bg-primary hover:bg-black text-white font-black text-xs uppercase tracking-widest gap-4 shadow-2xl group/btn"
+                >
+                   {isRecLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Zap className="h-6 w-6 text-accent group-hover/btn:animate-pulse" />} 
+                   GÖREVİ HEMEN OLUŞTUR
                 </Button>
              </div>
           </Card>
@@ -278,6 +344,14 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
           </Card>
         </div>
       </div>
+
+      {/* Manual Task Dialog */}
+      <AcademicSessionDialog 
+        isOpen={isAddingTask}
+        onOpenChange={setIsAddingTask}
+        onSave={handleSaveManualTask}
+        selectedDay={format(new Date(), 'EEEE')}
+      />
     </div>
   );
 }

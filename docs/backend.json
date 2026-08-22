@@ -3,70 +3,44 @@
   "entities": {
     "UserProfile": {
       "title": "Kullanıcı Profili",
-      "description": "Öğrenci, Öğretmen ve Yönetici bilgilerini, rollerini ve hedef sınavlarını saklar.",
+      "description": "Öğrenci, Öğretmen ve Yönetici bilgilerini, rollerini ve akademik profilini saklar.",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "displayName": { "type": "string" },
         "role": { "type": "string", "enum": ["student", "teacher", "school_admin", "admin"] },
-        "targetExam": { "type": "string", "description": "Kullanıcının hazırlandığı program ID'si." },
-        "coachId": { "type": "string" },
-        "activationCode": { "type": "string" },
-        "school": { "type": "string" },
-        "photoUrl": { "type": "string" },
+        "targetExam": { "type": "string" },
+        "studentProfile": {
+          "type": "object",
+          "properties": {
+            "levels": { "type": "object" },
+            "dailyCapacity": { "type": "number" },
+            "questionCapacity": { "type": "number" },
+            "weakSubjects": { "type": "array", "items": { "type": "string" } },
+            "restDay": { "type": "string" }
+          }
+        },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "email", "role"]
     },
     "StudyPlan": {
       "title": "Çalışma Planı",
-      "description": "Kullanıcının hiyerarşik (yıllık, aylık, haftalık) ders çalışma programını saklar.",
+      "description": "Adaptif 364 günlük program ve konu başarı takibi.",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
-        "examId": { "type": "string" },
-        "weeklyFocus": { "type": "string" },
-        "recommendations": { "type": "array", "items": { "type": "string" } },
-        "schedule": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "day": { "type": "string" },
-              "tasks": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "time": { "type": "string" },
-                    "subject": { "type": "string" },
-                    "topic": { "type": "string" },
-                    "subtopic": { "type": "string" },
-                    "duration": { "type": "string" },
-                    "difficulty": { "type": "string" },
-                    "priority": { "type": "string" },
-                    "studyType": { "type": "string" },
-                    "xp": { "type": "number" },
-                    "bookUrl": { "type": "string" },
-                    "youtubeUrl": { "type": "string" },
-                    "status": { "type": "string", "enum": ["pending", "completed", "delayed"] },
-                    "isSpacedRepetition": { "type": "boolean" },
-                    "questionCount": { "type": "number" },
-                    "createdAt": { "type": "string" }
-                  }
-                }
-              }
-            }
-          }
-        },
+        "startDate": { "type": "string" },
+        "masterPlan": { "type": "array" },
+        "topicProgress": { "type": "object" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "schedule"]
+      "required": ["userId", "masterPlan"]
     },
     "StudyEntry": {
       "title": "Tamamlanan Çalışma Kaydı",
-      "description": "Öğrencinin tamamladığı her bir seansın bağımsız kaydı.",
+      "description": "Öğrencinin tamamladığı her bir seansın logu.",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
@@ -74,87 +48,9 @@
         "topic": { "type": "string" },
         "xp": { "type": "number" },
         "questionCount": { "type": "number" },
-        "studyType": { "type": "string" },
+        "accuracy": { "type": "number" },
         "completedAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["userId", "subject", "completedAt"]
-    },
-    "Program": {
-      "title": "Sınav Programı",
-      "description": "LGS, YKS, KPSS gibi ana program tanımları.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "title": { "type": "string" },
-        "category": { "type": "string" },
-        "description": { "type": "string" },
-        "targetGroup": { "type": "string" },
-        "iconName": { "type": "string" },
-        "color": { "type": "string" },
-        "aiFocus": { "type": "string" },
-        "order": { "type": "number" }
-      },
-      "required": ["title", "category"]
-    },
-    "Subject": {
-      "title": "Ders",
-      "description": "Bir programa ait ders tanımları.",
-      "type": "object",
-      "properties": {
-        "programId": { "type": "string" },
-        "name": { "type": "string" },
-        "code": { "type": "string" },
-        "iconName": { "type": "string" },
-        "color": { "type": "string" },
-        "order": { "type": "number" },
-        "isActive": { "type": "boolean" },
-        "creatorId": { "type": "string" }
-      },
-      "required": ["programId", "name"]
-    },
-    "Unit": {
-      "title": "Ünite",
-      "description": "Bir derse ait ünite tanımları.",
-      "type": "object",
-      "properties": {
-        "subjectId": { "type": "string" },
-        "name": { "type": "string" },
-        "order": { "type": "number" },
-        "creatorId": { "type": "string" }
-      },
-      "required": ["subjectId", "name"]
-    },
-    "Topic": {
-      "title": "Konu",
-      "description": "Bir üniteye ait konu ve kazanım tanımları.",
-      "type": "object",
-      "properties": {
-        "unitId": { "type": "string" },
-        "name": { "type": "string" },
-        "description": { "type": "string" },
-        "videoUrl": { "type": "string" },
-        "pdfUrl": { "type": "string" },
-        "questionCount": { "type": "number" },
-        "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"] },
-        "order": { "type": "number" },
-        "creatorId": { "type": "string" }
-      },
-      "required": ["unitId", "name"]
-    },
-    "Classroom": {
-      "title": "Sınıf/Şube",
-      "description": "Öğretmenin yönettiği sınıf ve şubeler.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "grade": { "type": "string" },
-        "teacherId": { "type": "string" },
-        "schoolId": { "type": "string" },
-        "studentIds": { "type": "array", "items": { "type": "string" } },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["name", "teacherId"]
+      }
     }
   },
   "auth": {
@@ -167,31 +63,11 @@
     },
     "/studyPlans/{userId}": {
       "schema": "StudyPlan",
-      "description": "Kullanıcıların hiyerarşik çalışma programları."
+      "description": "Adaptif akademik programlar."
     },
     "/studies/{studyId}": {
       "schema": "StudyEntry",
-      "description": "Tamamlanan çalışma kayıtlarının bağımsız logları."
-    },
-    "/programs/{programId}": {
-      "schema": "Program",
-      "description": "Sınav programları (LGS, YKS vb.)"
-    },
-    "/subjects/{subjectId}": {
-      "schema": "Subject",
-      "description": "Dersler."
-    },
-    "/units/{unitId}": {
-      "schema": "Unit",
-      "description": "Üniteler."
-    },
-    "/topics/{topicId}": {
-      "schema": "Topic",
-      "description": "Konular ve kazanımlar."
-    },
-    "/classrooms/{classroomId}": {
-      "schema": "Classroom",
-      "description": "Sınıflar ve şubeler."
+      "description": "Çalışma logları."
     }
   }
 }

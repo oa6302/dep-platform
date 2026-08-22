@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -37,6 +36,9 @@ import {
   ArrowLeft,
   XCircle,
   Eye,
+  BookOpen,
+  PieChart,
+  Target
 } from 'lucide-react';
 
 import { signOut } from 'firebase/auth';
@@ -48,8 +50,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { EXAM_CONFIGS } from '@/lib/exam-configs';
-
 import { ProfileEditDialog } from '@/components/profile-edit-dialog';
 import { AuthForm } from '@/components/auth-form';
 
@@ -59,16 +59,8 @@ import { TeacherView } from '@/components/dashboard/teacher-view';
 import { AdminView } from '@/components/dashboard/admin-view';
 import { SchoolAdminView } from '@/components/dashboard/school-admin-view';
 
-/* ============================================================
-   DASHBOARD CONTENT
-============================================================ */
-
 function DashboardContent() {
-  const {
-    user,
-    loading: authLoading,
-  } = useUser();
-
+  const { user, loading: authLoading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
   const router = useRouter();
@@ -78,102 +70,33 @@ function DashboardContent() {
 
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
 
-  // Mevcut Kullanıcı Verisi
-  const {
-    data: userData,
-    loading: docLoading,
-  } = useDoc(user?.uid ? `users/${user.uid}` : null);
-
-  // Simüle Edilen Kullanıcı Verisi (Öğretmen simülasyonu için)
-  const {
-    data: simulatedUserData,
-    loading: simulatedUserLoading,
-  } = useDoc(simulatedUserId ? `users/${simulatedUserId}` : null);
+  const { data: userData, loading: docLoading } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
+  const { data: simulatedUserData, loading: simulatedUserLoading } = useDoc<any>(simulatedUserId ? `users/${simulatedUserId}` : null);
 
   const isSimulating = Boolean(simulatedUserId);
-  
-  // ADMIN FALLBACK: Admin e-postası ise ve veri henüz yoksa varsayılan admin objesi üret
   const currentViewData = useMemo(() => {
     if (isSimulating) return simulatedUserData;
     if (userData) return userData;
-    if (user?.email === 'admin@gmail.com') {
-      return { role: 'admin', displayName: 'Sistem Yöneticisi', email: user.email };
-    }
     return null;
-  }, [isSimulating, simulatedUserData, userData, user]);
+  }, [isSimulating, simulatedUserData, userData]);
 
   const currentViewUid = isSimulating ? simulatedUserId : user?.uid;
-
   const logoUrl = PlaceHolderImages.find((img) => img.id === 'app-logo')?.imageUrl || 'https://picsum.photos/seed/edu-logo-102/400/400';
+  const isGlobalLoading = authLoading || (!!user && docLoading);
 
-  const isGlobalLoading = authLoading || (!!user && docLoading && user.email !== 'admin@gmail.com') || (!!simulatedUserId && simulatedUserLoading);
-
-  // ADMIN OTOMATIK TANIMLAMA & FIRESTORE KAYDI
-  useEffect(() => {
-    if (user?.email === 'admin@gmail.com' && db && !docLoading) {
-      const userRef = doc(db, 'users', user.uid);
-      if (!userData) {
-        setDoc(userRef, {
-          uid: user.uid,
-          email: user.email,
-          role: 'admin',
-          displayName: 'Sistem Yöneticisi',
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        }, { merge: true });
-      } else if (userData.role !== 'admin') {
-        updateDoc(userRef, { 
-          role: 'admin',
-          updatedAt: serverTimestamp() 
-        });
-      }
-    }
-  }, [user, userData, db, docLoading]);
-
-  // Dinamik Menü Oluşturucu
   const dynamicMenu = useMemo(() => {
     if (!currentViewData) return [];
-
-    if (currentViewData.role === 'admin') {
-      return [
-        { label: 'Küresel Harekât', icon: LayoutDashboard, href: '/dashboard' },
-        { label: 'Müfredat Motoru', icon: Library, href: '/dashboard/admin/curriculum' },
-        { label: 'Uzman Yönetimi', icon: Users, href: '/dashboard/discover' },
-        { label: 'Destek Hattı', icon: Headset, href: '/dashboard/contact' },
-      ];
-    }
-
-    if (currentViewData.role === 'school_admin') {
-      return [
-        { label: 'Okul Paneli', icon: LayoutDashboard, href: '/dashboard' },
-        { label: 'Destek', icon: Headset, href: '/dashboard/contact' },
-      ];
-    }
-
-    if (currentViewData.role === 'teacher') {
-      return [
-        { label: 'Eğitmen Paneli', icon: LayoutDashboard, href: '/dashboard' },
-        { label: 'Uzman Keşfet', icon: Compass, href: '/dashboard/discover' },
-        { label: 'Destek', icon: Headset, href: '/dashboard/contact' },
-      ];
-    }
-
-    const items = [
+    
+    // GÖRSELDEKİ MENÜ SIRALAMASI
+    return [
       { label: 'Akademik Panel', icon: LayoutDashboard, href: '/dashboard' },
-      { label: 'AI Analiz', icon: Brain, href: '/dashboard/ai-analysis', accent: true },
-      { label: 'Akıllı Planlama', icon: Calendar, href: '/dashboard/planning' },
-      { label: 'Uzman Keşfet', icon: Compass, href: '/dashboard/discover' },
+      { label: 'Eğitmen', icon: User, href: '/dashboard/discover' },
+      { label: 'Ders Programı', icon: Calendar, href: '/dashboard/planning' },
+      { label: 'Analiz', icon: PieChart, href: '/dashboard/ai-analysis' },
+      { label: 'Strateji', icon: Target, href: '/dashboard/planning' },
+      { label: 'Kütüphane', icon: BookOpen, href: '#' },
+      { label: 'Destek', icon: Headset, href: '/dashboard/contact' },
     ];
-
-    const config = EXAM_CONFIGS[currentViewData.targetExam || 'LGS'] || EXAM_CONFIGS['LGS'];
-    if (config?.modules) {
-      config.modules.slice(0, 2).forEach((mod: any) => {
-        items.push({ label: mod.title, icon: mod.icon, href: '#' });
-      });
-    }
-
-    items.push({ label: 'Destek Hattı', icon: Headset, href: '/dashboard/contact' });
-    return items;
   }, [currentViewData]);
 
   const handleLogout = async () => {
@@ -182,199 +105,75 @@ function DashboardContent() {
     router.push('/dashboard');
   };
 
-  const stopSimulation = () => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete('simulate');
-    router.push(`/dashboard${params.toString() ? '?' + params.toString() : ''}`);
-  };
+  if (isGlobalLoading) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+      <Loader2 className="h-12 w-12 animate-spin text-accent" />
+    </div>
+  );
 
-  if (isGlobalLoading) {
+  if (!user || !userData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
-        <div className="flex flex-col items-center gap-6">
-          <Loader2 className="h-12 w-12 animate-spin text-accent" />
-          <p className="text-xs font-black uppercase tracking-[0.4em] text-primary/40">Akademik Motor Hazırlanıyor</p>
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-8">
+        <div className="w-full max-w-4xl space-y-12">
+           <AuthForm mode={authTab} isProfileCompletion={!!user} />
         </div>
       </div>
     );
   }
-
-  /* =====================================================
-     GİRİŞ / KAYIT / PROFİL TAMAMLAMA EKRANI (UNIFIED)
-  ====================================================== */
-
-  const showAuthTerminal = !user || (!userData && user.email !== 'admin@gmail.com');
-
-  if (showAuthTerminal) {
-    const isProfileCompletion = !!user;
-    
-    return (
-      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-8 relative overflow-hidden selection:bg-accent selection:text-white">
-        {/* Background Effects */}
-        <div className="absolute top-[-25%] right-[-15%] w-[70%] h-[70%] bg-accent/5 blur-[200px] rounded-full animate-pulse"></div>
-        <div className="absolute bottom-[-25%] left-[-15%] w-[70%] h-[70%] bg-primary/5 blur-[200px] rounded-full animate-pulse" style={{ animationDelay: '2s' }}></div>
-
-        <div className="w-full max-w-4xl relative z-10 space-y-12">
-          <div className="flex flex-col items-center text-center space-y-8 animate-in fade-in slide-in-from-top-4 duration-1000">
-            <div className="relative">
-              <div className="h-28 w-28 rounded-[2.75rem] bg-white shadow-2xl flex items-center justify-center p-5 border border-primary/5 transform transition-transform hover:rotate-6 duration-500">
-                <Image src={logoUrl} alt="DEK Logo" width={80} height={80} className="object-contain" priority />
-              </div>
-              {isProfileCompletion && (
-                <div className="absolute -bottom-2 -right-2 h-11 w-11 bg-accent rounded-2xl flex items-center justify-center text-white shadow-xl border-4 border-white animate-bounce">
-                  <ShieldCheck className="h-6 w-6" />
-                </div>
-              )}
-            </div>
-            
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-primary text-white font-black text-[10px] uppercase tracking-[0.4em] shadow-2xl shadow-primary/20 italic border border-white/10">
-                {isProfileCompletion ? "SİSTEM KURULUM FAZI V4.8" : "GÜVENLİ ERİŞİM TERMİNALİ"}
-              </div>
-              <h2 className="text-6xl md:text-8xl font-black italic tracking-tighter text-primary uppercase leading-none text-shadow-premium">
-                {isProfileCompletion ? "PROFİLİNİZİ " : "AKADEMİK "}
-                <span className="text-accent text-shadow-accent">{isProfileCompletion ? "TAMAMLAYIN" : "GİRİŞ"}</span>
-              </h2>
-              <p className="text-xl font-medium text-muted-foreground italic max-w-2xl mx-auto leading-relaxed">
-                {isProfileCompletion 
-                  ? "Hoş geldiniz! Akademik komuta merkezinizi size özel yapılandırmak için son birkaç bilgiye ihtiyacımız var." 
-                  : "Dijital Eğitim Koçu v4.8 terminaline bağlanmak için kimlik doğrulayın veya yeni bir düğüm oluşturun."}
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white/80 backdrop-blur-3xl rounded-[5rem] shadow-[0_120px_240px_-40px_rgba(15,23,42,0.2)] border border-white/20 overflow-hidden group relative">
-             <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-accent/10 transition-all duration-1000"></div>
-             <AuthForm mode={authTab} isProfileCompletion={isProfileCompletion} />
-          </div>
-
-          <div className="flex justify-center items-center gap-10 animate-in fade-in duration-1000 delay-500">
-             {isProfileCompletion ? (
-                <Button 
-                  variant="ghost" 
-                  onClick={handleLogout}
-                  className="h-14 px-8 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-all gap-4 group"
-                >
-                   <LogOut className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
-                   BAŞKA HESAPLA GİRİŞ YAP VEYA ÇIKIŞ YAP
-                </Button>
-             ) : (
-                <Link href="/" className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground hover:text-primary transition-all flex items-center gap-4 group/back">
-                  <div className="h-10 w-10 rounded-2xl bg-white border border-primary/5 flex items-center justify-center shadow-sm group-hover/back:bg-primary group-hover/back:text-white transition-all">
-                    <ArrowLeft className="h-4 w-4 group-hover/back:-translate-x-1 transition-transform" />
-                  </div>
-                  SİSTEME GERİ DÖN
-                </Link>
-             )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user || !currentViewData) return null;
 
   const renderView = () => {
-    switch (currentViewData.role) {
-      case 'admin':
-        return <AdminView user={{ uid: currentViewUid }} userData={currentViewData} />;
-      case 'teacher':
-        return <TeacherView user={{ uid: currentViewUid }} userData={currentViewData} />;
-      case 'school_admin':
-        return <SchoolAdminView user={{ uid: currentViewUid }} userData={currentViewData} />;
-      case 'student':
-      default:
-        return <StudentView user={{ uid: currentViewUid }} userData={currentViewData} isReadOnly={isSimulating} />;
+    switch (currentViewData?.role) {
+      case 'admin': return <AdminView user={{ uid: currentViewUid }} userData={currentViewData} />;
+      case 'teacher': return <TeacherView user={{ uid: currentViewUid }} userData={currentViewData} />;
+      case 'school_admin': return <SchoolAdminView user={{ uid: currentViewUid }} userData={currentViewData} />;
+      default: return <StudentView user={{ uid: currentViewUid }} userData={currentViewData} isReadOnly={isSimulating} />;
     }
   };
 
   return (
-    <div className="min-h-screen">
-      {isSimulating && (
-        <div className="bg-destructive/95 text-white px-6 py-4 flex items-center justify-between sticky top-0 z-[100] shadow-2xl backdrop-blur-md">
-          <div className="flex items-center gap-4 text-xs font-black uppercase tracking-widest">
-            <Eye className="h-5 w-5" />
-            <span>SİMÜLASYON:</span>
-            <span className="underline underline-offset-4">{simulatedUserData?.displayName || 'Kullanıcı'}</span>
-            <Badge className="bg-white/20 text-white border-none">SALT OKUNUR</Badge>
-          </div>
-          <Button variant="ghost" onClick={stopSimulation} className="text-white hover:bg-white/10 font-black gap-2 rounded-xl border border-white/20">
-            <XCircle className="h-5 w-5" /> Kapat
-          </Button>
+    <div className="min-h-screen grid lg:grid-cols-[280px_1fr] bg-[#FAFBFF]">
+      {/* SIDEBAR: GÖRSELDEKİ KOYU LACİVERT YAPI */}
+      <aside className="bg-[#0F172A] text-white hidden lg:flex flex-col shadow-2xl sticky top-0 h-screen z-50">
+        <div className="p-10 flex items-center gap-4">
+           <div className="relative h-12 w-12 overflow-hidden rounded-xl bg-white p-2">
+              <Image src={logoUrl} alt="DEK Logo" fill className="object-contain" />
+           </div>
+           <div>
+              <span className="font-black text-2xl block tracking-tighter italic uppercase leading-none">DEK</span>
+              <span className="text-[7px] opacity-40 block font-black uppercase tracking-widest mt-1">AOS v4.8 Stable</span>
+           </div>
         </div>
-      )}
 
-      <div className="grid lg:grid-cols-[320px_1fr] min-h-screen">
-        <aside className="bg-primary text-white hidden lg:flex flex-col border-r border-white/5 shadow-2xl sticky top-0 h-screen z-50">
-          <div className="p-10">
-            <Link href="/dashboard" className="flex items-center gap-5">
-              <div className="relative h-14 w-14 overflow-hidden rounded-2xl bg-white p-2">
-                <Image src={logoUrl} alt="DEK Logo" fill className="object-contain" />
-              </div>
-              <div>
-                <span className="font-black text-3xl block tracking-tighter italic uppercase leading-none">DEK</span>
-                <span className="text-[8px] opacity-40 block font-black uppercase tracking-widest mt-1">Akademik Panel</span>
-              </div>
-            </Link>
-          </div>
+        <nav className="flex-1 px-6 space-y-1 pt-6">
+          {dynamicMenu.map((item, index) => (
+            <Button key={index} variant="ghost" className={cn('w-full justify-start rounded-2xl h-14 group', (item.label === 'Akademik Panel') ? 'bg-white/10 text-white font-black' : 'hover:bg-white/5 opacity-40 hover:opacity-100')} asChild>
+              <Link href={item.href}>
+                <item.icon className="mr-5 h-5 w-5" />
+                <span className="text-xs font-bold tracking-tight italic uppercase">{item.label}</span>
+              </Link>
+            </Button>
+          ))}
+        </nav>
 
-          <nav className="flex-1 px-6 space-y-2">
-            {dynamicMenu.map((item: any, index) => (
-              <Button key={index} variant="ghost" className={cn('w-full justify-start rounded-2xl h-14 group', (item.href === '/dashboard') && !isSimulating ? 'bg-white/15 text-white font-black' : 'hover:bg-white/5 opacity-60 hover:opacity-100')} asChild>
-                <Link href={item.href}>
-                  <item.icon className={cn('mr-5 h-5 w-5', item.accent && 'text-accent')} />
-                  <span className="text-sm tracking-tight italic uppercase">{item.label}</span>
-                </Link>
-              </Button>
-            ))}
-          </nav>
-
-          <div className="p-7">
-            <div onClick={() => setIsProfileDialogOpen(true)} className="p-5 bg-white/5 rounded-3xl border border-white/10 flex items-center gap-4 cursor-pointer hover:bg-white/10 transition-all">
-              <div className="h-12 w-12 rounded-xl bg-accent flex items-center justify-center text-white font-black text-xl">
-                {userData?.displayName?.charAt(0) || <User className="h-5 w-5" />}
+        <div className="p-8">
+           <div onClick={() => setIsProfileDialogOpen(true)} className="p-5 bg-white/5 rounded-3xl border border-white/5 flex items-center gap-4 cursor-pointer hover:bg-white/10 transition-all">
+              <div className="h-10 w-10 rounded-xl bg-accent flex items-center justify-center text-primary font-black text-lg italic">
+                {userData?.displayName?.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-black truncate">{userData?.displayName || 'Kullanıcı'}</p>
-                <p className="text-[9px] opacity-40 uppercase tracking-widest">{userData?.role?.replace('_', ' ') || 'HESABIM'}</p>
+                <p className="text-xs font-black truncate uppercase">{userData?.displayName}</p>
+                <p className="text-[7px] opacity-40 uppercase tracking-widest">AKADEMİK DÜĞÜM</p>
               </div>
-              <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-destructive rounded-xl" onClick={(e) => { e.stopPropagation(); handleLogout(); }}>
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </aside>
+              <LogOut className="h-4 w-4 opacity-20 hover:text-destructive transition-all" onClick={(e) => { e.stopPropagation(); handleLogout(); }} />
+           </div>
+        </div>
+      </aside>
 
-        <main className="flex flex-col relative overflow-hidden bg-[#FAFBFF]">
-          <header className="h-24 bg-white/80 backdrop-blur-3xl border-b border-primary/5 flex items-center justify-between px-8 xl:px-12 sticky top-0 z-40">
-            <div className="flex items-center gap-5">
-              <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-slate-100 hover:bg-primary hover:text-white">
-                <Home className="h-5 w-5" />
-              </Button>
-              <h1 className="text-xl xl:text-2xl font-black text-primary uppercase tracking-tighter italic">
-                {isSimulating ? 'SİMÜLASYON MODU' : currentViewData.role === 'admin' ? 'KÜRESEL HAREKÂT MERKEZİ' : currentViewData.role === 'student' ? 'AKADEMİK KOMUTA MERKEZİ' : 'AKADEMİK HAREKÂT MERKEZİ'}
-              </h1>
-            </div>
-            <div className="flex items-center gap-5">
-              {currentViewData.role === 'admin' && (
-                <Badge className="bg-destructive/10 text-destructive border-none font-black text-[10px] uppercase tracking-widest gap-2">
-                  <ShieldAlert className="h-3 w-3" /> ROOT
-                </Badge>
-              )}
-              <div className="hidden md:flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-emerald-500 italic">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> CANLI
-              </div>
-              <div onClick={() => setIsProfileDialogOpen(true)} className="h-12 w-12 rounded-xl bg-accent overflow-hidden cursor-pointer shadow-xl flex items-center justify-center font-black text-white text-lg italic">
-                {currentViewData?.displayName?.charAt(0) || <User className="h-5 w-5" />}
-              </div>
-            </div>
-          </header>
-
-          <div className="flex-1 overflow-y-auto scrollbar-hide">
-            {renderView()}
-          </div>
-        </main>
-      </div>
+      <main className="flex flex-col relative">
+        <div className="flex-1 overflow-y-auto scrollbar-hide">
+          {renderView()}
+        </div>
+      </main>
 
       <ProfileEditDialog isOpen={isProfileDialogOpen} onOpenChange={setIsProfileDialogOpen} userData={userData} />
     </div>

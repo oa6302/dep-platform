@@ -20,11 +20,8 @@ import {
 import {
   collection,
   doc,
-  getDocs,
-  query,
   serverTimestamp,
   setDoc,
-  where,
   orderBy,
 } from 'firebase/firestore';
 
@@ -44,7 +41,6 @@ import {
   Building,
   CheckCircle,
   Zap,
-  ShieldCheck,
   Target,
 } from 'lucide-react';
 
@@ -129,16 +125,23 @@ export function AuthForm({
 
       await updateProfile(finalUser, { displayName: displayName.trim() });
 
-      const userData = {
+      // Build data object without undefined values
+      const userData: any = {
         uid: finalUser.uid,
         email: finalUser.email || email.trim().toLowerCase(),
         displayName: displayName.trim(),
         role,
         targetExam,
         updatedAt: serverTimestamp(),
-        createdAt: isProfileCompletion ? undefined : serverTimestamp(),
-        school: role === 'student' ? undefined : schoolName.trim(),
       };
+
+      if (!isProfileCompletion) {
+        userData.createdAt = serverTimestamp();
+      }
+
+      if (role !== 'student' && schoolName) {
+        userData.school = schoolName.trim();
+      }
 
       await setDoc(doc(db, 'users', finalUser.uid), userData, { merge: true });
       toast({ title: 'Sistem Yapılandırıldı', description: 'Profiliniz başarıyla oluşturuldu.' });

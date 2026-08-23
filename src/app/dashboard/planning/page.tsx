@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useUser, useDoc, useFirestore } from '@/firebase';
+import { useUser, useDoc, useFirestore, useCollection } from '@/firebase';
 import { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,428 +10,282 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Brain, Calendar, Zap, Loader2, ShieldCheck, 
-  ArrowLeft, Home, Milestone, CheckCircle2, 
-  Activity, Sparkles, Coffee, Timer, Dumbbell, 
-  ChevronRight, Target, Layers,
-  Info
+  BookOpen, Video, FileText, CheckCircle2, ChevronRight, 
+  ArrowLeft, Home, Search, Sparkles, LayoutTemplate, 
+  PlayCircle, FileQuestion, LineChart, Bookmark, 
+  MoreVertical, Filter, Database, Brain, Target,
+  PenTool, GraduationCap
 } from 'lucide-react';
-import { doc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
+import { doc, updateDoc, serverTimestamp, collection, query, where, orderBy } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { format, addDays } from 'date-fns';
-import { tr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { Progress } from '@/components/ui/progress';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 
-const DEFAULT_LESSONS = ['Matematik', 'Türkçe', 'Geometri', 'Fizik', 'Kimya', 'Biyoloji', 'Tarih', 'Coğrafya', 'Felsefe', 'Din Kültürü'];
+type ViewMode = 'courses' | 'topics' | 'detail';
 
-export default function PlanningPage() {
+export default function ContentCenterPage() {
   const { user } = useUser();
   const db = useFirestore();
   const router = useRouter();
-  const { toast } = useToast();
   
   const { data: userData } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
-  const { data: studyPlan } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
+  const targetExam = userData?.targetExam || 'YKS_SAY';
+  const examConfig = EXAM_CONFIGS[targetExam];
 
-  const [isWizardOpen, setIsWizardOpen] = useState(false);
-  const [wizardStep, setWizardStep] = useState(1);
-  const [isInitializing, setIsInitializing] = useState(false);
-  const [wizardConfig, setWizardConfig] = useState({
-    levels: {} as Record<string, string>,
-    dailyHours: 4,
-    questionCapacity: 150,
-    weakSubjects: [] as string[],
-    restDay: 'Pazar'
-  });
+  const [viewMode, setViewMode] = useState<ViewMode>('courses');
+  const [selectedSubject, setSelectedSubject] = useState<any>(null);
+  const [selectedTopic, setSelectedTopic] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const currentLessons = useMemo(() => {
-    const examId = userData?.targetExam || 'LGS';
-    if (EXAM_CONFIGS[examId]) {
-      return EXAM_CONFIGS[examId].lessons;
-    }
-    return DEFAULT_LESSONS;
-  }, [userData]);
+  // Firestore Data
+  const { data: subjects = [] } = useCollection<any>(
+    'subjects', 
+    where('programId', '==', targetExam),
+    orderBy('order', 'asc')
+  );
 
-  const planStartDate = studyPlan?.startDate || format(new Date(), 'yyyy-MM-dd');
+  const topicsQuery = useMemo(() => {
+    if (!db || !selectedSubject) return null;
+    return query(collection(db, 'topics'), where('subjectId', '==', selectedSubject.id), orderBy('order', 'asc'));
+  }, [db, selectedSubject]);
+  const { data: topics = [] } = useCollection<any>(topicsQuery);
 
-  const generateAdaptivePlan = () => {
-    const plan = [];
-    const baseDate = new Date(planStartDate);
-    
-    const curriculumMap: Record<string, string[]> = {
-      'Matematik': ['Temel Kavramlar', 'Sayılar', 'Problemler', 'Fonksiyonlar'],
-      'TYT Matematik': ['Temel Kavramlar', 'Sayılar', 'Problemler'],
-      'AYT Matematik': ['Trigonometri', 'Logaritma', 'Limit', 'Türev', 'İntegral'],
-      'Türkçe': ['Paragraf', 'Cümlede Anlam', 'Yazım Kuralları'],
-      'Edebiyat': ['Şiir Bilgisi', 'Cumhuriyet Dönemi', 'Divan Edebiyatı'],
-      'Geometri': ['Açılar', 'Üçgenler', 'Çember'],
-      'Tarih': ['İslamiyet Öncesi', 'Osmanlı Tarihi', 'İnkılap Tarihi'],
-      'Coğrafya': ['Nüfus', 'İklim', 'Harita Bilgisi'],
-      'Fizik': ['Madde ve Özellikleri', 'Kuvvet ve Hareket'],
-      'Kimya': ['Atom', 'Kimyasal Türler'],
-      'Biyoloji': ['Hücre', 'Kalıtım'],
-    };
-
-    for (let i = 0; i < 364; i++) {
-      const currentDate = addDays(baseDate, i);
-      const dayName = format(currentDate, 'EEEE', { locale: tr });
-      const weekNum = Math.floor(i / 7) + 1;
-      
-      if (dayName === wizardConfig.restDay) {
-        plan.push({
-          date: format(currentDate, 'yyyy-MM-dd'),
-          displayDate: format(currentDate, "d MMM ''yy", { locale: tr }),
-          day: dayName,
-          isRestDay: true,
-          tasks: [],
-          status: 'pending'
-        });
-        continue;
-      }
-
-      const dailyTasks = [];
-      const subIndex = i % currentLessons.length;
-      const lessonName = currentLessons[subIndex];
-      const lessonTopics = curriculumMap[lessonName] || ['Genel Konu Çalışması'];
-      const topicIndex = Math.floor(i / 7) % lessonTopics.length;
-      const currentTopic = lessonTopics[topicIndex];
-
-      const isWeak = wizardConfig.weakSubjects.includes(lessonName);
-      const baseQ = Math.round(wizardConfig.questionCapacity / 3);
-      const qTarget = isWeak ? Math.round(baseQ * 1.2) : baseQ;
-
-      dailyTasks.push({
-        id: `task_${i}_1`,
-        type: 'content',
-        subject: lessonName,
-        topic: currentTopic,
-        duration: '45 dk',
-        desc: 'Konu anlatımı ve formül çıkarma'
-      });
-
-      dailyTasks.push({
-        id: `task_${i}_2`,
-        type: 'practice',
-        subject: lessonName,
-        topic: currentTopic,
-        qTarget: qTarget,
-        desc: `${qTarget} soru çözümü (Karma)`
-      });
-
-      plan.push({
-        date: format(currentDate, 'yyyy-MM-dd'),
-        displayDate: format(currentDate, "d MMM ''yy", { locale: tr }),
-        week: `H${weekNum}`,
-        day: dayName,
-        isRestDay: false,
-        tasks: dailyTasks,
-        status: 'pending'
-      });
-    }
-    return plan;
+  const handleSubjectClick = (subject: any) => {
+    setSelectedSubject(subject);
+    setViewMode('topics');
   };
 
-  const handleSavePlan = () => {
-    if (!db || !user) return;
-    setIsInitializing(true);
+  const handleTopicClick = (topic: any) => {
+    setSelectedTopic(topic);
+    setViewMode('detail');
+  };
 
-    const adaptivePlan = generateAdaptivePlan();
-    const planRef = doc(db, 'studyPlans', user.uid);
-    const userRef = doc(db, 'users', user.uid);
-
-    const planData = {
-      userId: user.uid,
-      startDate: planStartDate,
-      masterPlan: adaptivePlan,
-      wizardConfig,
-      updatedAt: serverTimestamp()
-    };
-
-    const studentProfileData = {
-      studentProfile: wizardConfig,
-      updatedAt: serverTimestamp()
-    };
-
-    setDoc(planRef, planData, { merge: true })
-      .catch(async (err) => {
-        const permissionError = new FirestorePermissionError({
-          path: planRef.path,
-          operation: 'write',
-          requestResourceData: { plan: '364_day_master_plan' },
-        } satisfies SecurityRuleContext);
-        errorEmitter.emit('permission-error', permissionError);
-      });
-
-    updateDoc(userRef, studentProfileData)
-      .catch(async (err) => {
-        const permissionError = new FirestorePermissionError({
-          path: userRef.path,
-          operation: 'update',
-          requestResourceData: studentProfileData,
-        } satisfies SecurityRuleContext);
-        errorEmitter.emit('permission-error', permissionError);
-      });
-
-    toast({ 
-      title: 'STRATEJİ AKTİF EDİLDİ', 
-      description: '364 günlük adaptif planınız alanınıza göre yapılandırıldı.', 
-      className: "bg-primary text-white rounded-[2rem]" 
-    });
-    
-    setIsWizardOpen(false);
-    setIsInitializing(false);
-    router.push('/dashboard');
+  const goBack = () => {
+    if (viewMode === 'detail') setViewMode('topics');
+    else if (viewMode === 'topics') setViewMode('courses');
+    else router.push('/dashboard');
   };
 
   return (
-    <div className="p-8 lg:p-14 space-y-12 max-w-7xl mx-auto w-full animate-in fade-in duration-1000 bg-[#FAFBFF]">
+    <div className="p-8 lg:p-14 space-y-12 max-w-7xl mx-auto w-full animate-in fade-in duration-700 bg-[#FAFBFF]">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
         <div className="space-y-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-primary/5 hover:bg-primary hover:text-white transition-all"><ArrowLeft className="h-6 w-6" /></Button>
+            <Button variant="ghost" size="icon" onClick={goBack} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-primary/5 hover:bg-primary hover:text-white transition-all"><ArrowLeft className="h-6 w-6" /></Button>
             <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-primary/5 hover:bg-primary hover:text-white transition-all"><Home className="h-6 w-6" /></Button>
           </div>
           <div className="space-y-2">
              <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-primary text-white font-black text-[10px] uppercase tracking-widest shadow-xl">
-                <Sparkles className="h-3.5 w-3.5 text-accent animate-pulse" /> AOS ADAPTIVE ENGINE v4.8
+                <Database className="h-3.5 w-3.5 text-accent" /> AOS CONTENT CENTER v4.8
              </div>
              <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-premium">
-                AKADEMİK <br /><span className="text-accent text-shadow-accent">STRATEJİ</span>
+                {viewMode === 'courses' ? 'DERS VE' : selectedSubject?.name || 'MÜFREDAT'} <br />
+                <span className="text-accent text-shadow-accent">
+                  {viewMode === 'courses' ? 'İÇERİK MERKEZİ' : (selectedTopic?.name || 'YÖNETİMİ')}
+                </span>
              </h2>
           </div>
         </div>
-        <Button onClick={() => setIsWizardOpen(true)} className="h-24 px-12 rounded-[2.5rem] bg-primary hover:bg-accent text-white transition-all duration-700 font-black text-sm uppercase tracking-[0.3em] gap-6 shadow-[0_40px_80px_-20px_rgba(15,23,42,0.4)] group">
-           <Zap className="h-8 w-8 text-accent group-hover:animate-pulse" /> ANKETİ BAŞLAT VE PLANLA
-        </Button>
+        
+        <div className="relative group w-full md:w-96">
+           <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-accent transition-colors" />
+           <Input 
+             placeholder="Konu, test veya video ara..." 
+             value={searchQuery}
+             onChange={(e) => setSearchQuery(e.target.value)}
+             className="pl-14 h-16 rounded-2xl bg-white border-none shadow-xl font-bold focus-visible:ring-accent transition-all"
+           />
+        </div>
       </header>
 
-      <Tabs defaultValue="overview" className="space-y-12">
-        <TabsList className="bg-slate-100/50 p-2 rounded-[3rem] h-20 flex gap-2 border border-primary/5">
-          <TabsTrigger value="overview" className="rounded-2xl px-10 h-full font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-lg gap-3"><Milestone className="h-4 w-4" /> FAZ ANALİZİ</TabsTrigger>
-          <TabsTrigger value="daily" className="rounded-2xl px-10 h-full font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-lg gap-3"><Calendar className="h-4 w-4" /> 364 GÜNLÜK AKIŞ</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-12 animate-in fade-in">
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {[
-                { title: 'TEMEL ATMA', week: '1-4', icon: Layers, color: 'bg-blue-500' },
-                { title: 'GELİŞTİRME', week: '5-16', icon: Activity, color: 'bg-emerald-500' },
-                { title: 'DENEME KAMPI', week: '17-40', icon: Target, color: 'bg-orange-500' },
-                { title: 'ROOT ANALİZ', week: '41-52', icon: Brain, color: 'bg-primary' },
-              ].map((f, i) => (
-                <Card key={i} className="p-10 rounded-[3.5rem] bg-white border border-primary/5 shadow-xl hover:-translate-y-2 transition-all group overflow-hidden relative">
-                   <div className={cn("h-1.5 w-full absolute top-0 left-0", f.color)} />
-                   <div className="space-y-6">
-                      <div className="flex justify-between items-center">
-                         <Badge variant="outline" className="font-black text-[9px] uppercase tracking-widest px-3 py-1 border-primary/10">{f.week}. HAFTA</Badge>
-                         <f.icon className="h-6 w-6 text-primary opacity-20" />
+      {/* VIEW: COURSE LIST */}
+      {viewMode === 'courses' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in slide-in-from-bottom-4 duration-700">
+           {subjects.map((subject: any) => (
+             <Card 
+               key={subject.id} 
+               onClick={() => handleSubjectClick(subject)}
+               className="group p-10 rounded-[3.5rem] bg-white border border-primary/5 shadow-xl hover:-translate-y-3 hover:shadow-2xl transition-all cursor-pointer relative overflow-hidden"
+             >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-accent/15 transition-all" />
+                <div className="space-y-8 relative z-10">
+                   <div className="flex justify-between items-start">
+                      <div className="h-20 w-20 rounded-[2rem] bg-primary/5 flex items-center justify-center text-primary group-hover:bg-accent group-hover:text-white transition-all shadow-inner group-hover:rotate-6">
+                         <BookOpen className="h-10 w-10" />
                       </div>
-                      <h4 className="text-2xl font-black italic tracking-tighter text-primary uppercase leading-tight">{f.title}</h4>
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase opacity-40">Stratejik Hedefleme Aktif</p>
+                      <Badge variant="outline" className="font-black text-[10px] uppercase px-3 py-1 border-primary/10">%{subject.success || 0} BAŞARI</Badge>
+                   </div>
+                   <div className="space-y-2">
+                      <h4 className="text-3xl font-black italic tracking-tighter text-primary uppercase group-hover:text-accent transition-colors leading-none">{subject.name}</h4>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase opacity-40">Müfredat Bazlı İçerik</p>
+                   </div>
+                   <div className="grid grid-cols-2 gap-4 pt-4">
+                      <div className="space-y-1">
+                         <p className="text-xl font-black text-primary italic">18 / 42</p>
+                         <p className="text-[8px] font-black uppercase text-muted-foreground tracking-widest opacity-60">TAMAMLANAN KONU</p>
+                      </div>
+                      <div className="space-y-1 text-right">
+                         <p className="text-xl font-black text-accent italic">126</p>
+                         <p className="text-[8px] font-black uppercase text-muted-foreground tracking-widest opacity-60">TOPLAM TEST</p>
+                      </div>
+                   </div>
+                   <div className="pt-6 border-t border-primary/5 flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-primary/40">KONULARI GÖR</span>
+                      <ChevronRight className="h-5 w-5 text-accent" />
+                   </div>
+                </div>
+             </Card>
+           ))}
+        </div>
+      )}
+
+      {/* VIEW: TOPIC LIST */}
+      {viewMode === 'topics' && (
+        <div className="space-y-8 animate-in slide-in-from-right-8 duration-700">
+           <div className="grid grid-cols-1 gap-4">
+              {topics.map((topic: any, i: number) => (
+                <Card 
+                  key={topic.id} 
+                  onClick={() => handleTopicClick(topic)}
+                  className="group p-8 rounded-[2.5rem] bg-white border border-primary/5 shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all cursor-pointer flex items-center justify-between"
+                >
+                   <div className="flex items-center gap-10">
+                      <span className="text-2xl font-black text-primary/10 italic tracking-tighter font-mono">{(i+1).toString().padStart(2, '0')}</span>
+                      <div className="space-y-1">
+                         <h5 className="text-2xl font-black text-primary italic uppercase tracking-tighter group-hover:text-accent transition-colors">{topic.name}</h5>
+                         <div className="flex gap-4 items-center">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase opacity-40 italic">Son Çalışma: 22.08.2026</span>
+                            <div className="h-1 w-24 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-accent" style={{ width: '64%' }} /></div>
+                            <span className="text-[9px] font-black text-accent uppercase tracking-widest">%64 BAŞARI</span>
+                         </div>
+                      </div>
+                   </div>
+                   <div className="flex items-center gap-8">
+                      <div className="flex gap-4">
+                         <div className="flex items-center gap-1 text-muted-foreground/40"><Video className="h-4 w-4" /><span className="text-[10px] font-black italic">12</span></div>
+                         <div className="flex items-center gap-1 text-muted-foreground/40"><FileText className="h-4 w-4" /><span className="text-[10px] font-black italic">8</span></div>
+                      </div>
+                      <Button size="icon" className="h-12 w-12 rounded-[1.25rem] bg-primary group-hover:bg-accent transition-all shadow-xl"><ChevronRight className="h-5 w-5" /></Button>
                    </div>
                 </Card>
               ))}
            </div>
+        </div>
+      )}
 
-           <Card className="rounded-[4rem] border-none bg-primary text-white p-16 relative overflow-hidden group shadow-2xl">
+      {/* VIEW: TOPIC DETAIL */}
+      {viewMode === 'detail' && (
+        <div className="space-y-12 animate-in slide-in-from-right-8 duration-700">
+           <Card className="rounded-[4rem] border-none bg-primary text-white p-12 relative overflow-hidden group shadow-2xl">
               <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-accent/5 blur-[150px] rounded-full translate-x-1/2 -translate-y-1/2" />
               <div className="flex flex-col lg:flex-row justify-between items-center gap-16 relative z-10">
-                 <div className="space-y-8 flex-1">
-                    <h3 className="text-7xl font-black italic tracking-tighter uppercase leading-none">PEDAGOGICAL <br /><span className="text-accent">ENGINE</span></h3>
-                    <p className="text-2xl opacity-60 font-medium italic leading-relaxed max-w-xl">364 günlük programınız; {userData?.targetExam?.replace('_', ' ') || 'TYT'} müfredatına ve kapasitenize göre saniyeler içinde yeniden optimize edilir.</p>
-                    <div className="flex gap-8">
-                       <div><p className="text-5xl font-black text-accent italic">52</p><p className="text-[10px] font-black uppercase tracking-widest opacity-40">HAFTA</p></div>
-                       <div className="w-px h-12 bg-white/10" />
-                       <div><p className="text-5xl font-black text-white italic">364</p><p className="text-[10px] font-black uppercase tracking-widest opacity-40">GÜN</p></div>
-                       <div className="w-px h-12 bg-white/10" />
-                       <div><p className="text-5xl font-black text-white italic">{currentLessons.length}</p><p className="text-[10px] font-black uppercase tracking-widest opacity-40">AKTİF DERS</p></div>
+                 <div className="space-y-6 flex-1">
+                    <div className="flex items-center gap-4">
+                       <Badge className="bg-white/10 text-accent border-none font-black text-[10px] uppercase px-4 py-1">%{selectedTopic?.success || 64} BAŞARI SKORU</Badge>
+                       <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest italic">Son Çalışma: Bugün</span>
+                    </div>
+                    <h3 className="text-6xl font-black italic tracking-tighter uppercase leading-none">{selectedTopic?.name}</h3>
+                    <div className="flex gap-10 pt-4">
+                       <div><p className="text-4xl font-black text-accent italic">84</p><p className="text-[10px] font-black uppercase tracking-widest opacity-40">ÇÖZÜLEN</p></div>
+                       <div className="w-px h-10 bg-white/10" />
+                       <div><p className="text-4xl font-black text-white italic">54</p><p className="text-[10px] font-black uppercase tracking-widest opacity-40">DOĞRU</p></div>
+                       <div className="w-px h-10 bg-white/10" />
+                       <div><p className="text-4xl font-black text-rose-500 italic">30</p><p className="text-[10px] font-black uppercase tracking-widest opacity-40">YANLIŞ</p></div>
                     </div>
                  </div>
-                 <div className="bg-white/5 backdrop-blur-3xl p-12 rounded-[4rem] border border-white/10 shadow-2xl space-y-10 w-full max-w-md">
-                    <div className="space-y-4">
-                       <Label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-4 italic">ALAN ODAKLI MÜFREDAT</Label>
-                       <div className="p-6 bg-white/10 rounded-2xl border border-white/10">
-                          <p className="text-xl font-black text-accent uppercase italic">{userData?.targetExam?.replace('_', ' ') || 'TYT GENEL'}</p>
-                          <p className="text-[9px] font-bold text-white/40 mt-1 uppercase">SİSTEM TARAFINDAN OTOMATİK ALGILANDI</p>
-                       </div>
-                    </div>
-                    <Button onClick={() => setIsWizardOpen(true)} className="w-full h-24 rounded-[2.5rem] bg-accent hover:bg-white text-primary font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all gap-4">
-                       ANKETİ BAŞLAT
+                 <Card className="bg-white/5 backdrop-blur-3xl p-10 rounded-[3rem] border border-white/10 shadow-2xl space-y-6 w-full max-w-sm">
+                    <p className="text-xs font-bold italic text-white/60">"Bu konuda başarı oranını artırmak için saniyeler içinde 2 video ve 1 test öneriliyor."</p>
+                    <Button className="w-full h-16 rounded-2xl bg-accent hover:bg-white text-primary font-black text-xs uppercase tracking-widest shadow-2xl transition-all gap-4">
+                       <Sparkles className="h-4 w-4" /> AI ANALİZİ YAP
                     </Button>
+                 </Card>
+              </div>
+           </Card>
+
+           <Tabs defaultValue="lesson" className="space-y-12">
+              <TabsList className="bg-slate-100/50 p-2 rounded-[2.5rem] h-20 flex gap-2 border border-primary/5 overflow-x-auto scrollbar-hide">
+                 <TabsTrigger value="lesson" className="rounded-2xl px-8 h-full font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-lg gap-2"><BookOpen className="h-4 w-4" /> KONU ANLATIMI</TabsTrigger>
+                 <TabsTrigger value="videos" className="rounded-2xl px-8 h-full font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-lg gap-2"><PlayCircle className="h-4 w-4" /> VİDEOLAR</TabsTrigger>
+                 <TabsTrigger value="tests" className="rounded-2xl px-8 h-full font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-lg gap-2"><FileQuestion className="h-4 w-4" /> TESTLER</TabsTrigger>
+                 <TabsTrigger value="wrongs" className="rounded-2xl px-8 h-full font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-lg gap-2"><PenTool className="h-4 w-4 text-rose-500" /> YANLIŞLAR</TabsTrigger>
+                 <TabsTrigger value="analysis" className="rounded-2xl px-8 h-full font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-lg gap-2"><LineChart className="h-4 w-4" /> ANALİZ</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="lesson" className="animate-in fade-in slide-in-from-bottom-4">
+                 <Card className="p-12 rounded-[3.5rem] bg-white border border-primary/5 shadow-xl space-y-8">
+                    <div className="prose prose-slate max-w-none">
+                       <h4 className="text-3xl font-black italic text-primary uppercase tracking-tight mb-6">{selectedTopic?.name} Özet</h4>
+                       <p className="text-lg leading-relaxed font-medium text-muted-foreground italic">
+                          Bu bölümde {selectedTopic?.name} konusuna ait temel formüller, kritik ipuçları ve sınavlarda sıkça çıkan soru tiplerinin analizleri yer almaktadır.
+                       </p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8">
+                       <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-primary/5">
+                          <p className="font-black text-xs uppercase tracking-widest text-primary/40 mb-4 italic">Kritik Formüller</p>
+                          <div className="h-40 flex items-center justify-center border-2 border-dashed border-primary/5 rounded-2xl">
+                             <FileText className="h-10 w-10 text-primary/10" />
+                          </div>
+                       </div>
+                       <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-primary/5">
+                          <p className="font-black text-xs uppercase tracking-widest text-primary/40 mb-4 italic">Alt Konu Listesi</p>
+                          <ul className="space-y-4">
+                             {[1,2,3,4].map(i => (
+                               <li key={i} className="flex items-center gap-4 p-4 bg-white rounded-2xl shadow-sm border border-primary/5">
+                                  <div className="h-8 w-8 rounded-xl bg-primary/5 flex items-center justify-center font-black text-xs text-primary">{i}</div>
+                                  <span className="font-bold text-sm italic uppercase text-primary/70">Alt Konu Başlığı {i}</span>
+                                  <CheckCircle2 className="ml-auto h-5 w-5 text-emerald-500 opacity-20" />
+                               </li>
+                             ))}
+                          </ul>
+                       </div>
+                    </div>
+                 </Card>
+              </TabsContent>
+
+              <TabsContent value="videos" className="animate-in fade-in slide-in-from-bottom-4">
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {[1, 2, 3].map(i => (
+                      <Card key={i} className="group overflow-hidden rounded-[3rem] border-none shadow-xl bg-white transition-all hover:-translate-y-2">
+                         <div className="aspect-video bg-slate-200 relative flex items-center justify-center group-hover:scale-105 transition-transform duration-700">
+                            <PlayCircle className="h-16 w-16 text-primary group-hover:text-accent transition-colors" />
+                            <div className="absolute bottom-4 right-4 px-3 py-1 bg-black/60 backdrop-blur-md rounded-lg text-[10px] font-black text-white">32:14</div>
+                         </div>
+                         <div className="p-8 space-y-4">
+                            <Badge className="bg-primary/5 text-primary border-none font-black text-[8px] uppercase tracking-widest">BAŞLANGIÇ SEVİYE</Badge>
+                            <h5 className="text-xl font-black italic tracking-tighter text-primary uppercase leading-tight">{selectedTopic?.name} - Konu Anlatımı {i}</h5>
+                            <Button variant="outline" className="w-full h-12 rounded-xl border-2 font-black text-[10px] uppercase tracking-widest group-hover:bg-primary group-hover:text-white transition-all">VİDEOYU İZLE</Button>
+                         </div>
+                      </Card>
+                    ))}
                  </div>
-              </div>
-           </Card>
-        </TabsContent>
-
-        <TabsContent value="daily" className="animate-in fade-in">
-           <Card className="rounded-[4rem] border border-primary/5 shadow-2xl overflow-hidden bg-white">
-              <div className="overflow-x-auto">
-                 <table className="w-full">
-                    <thead className="bg-slate-50 border-b border-primary/5">
-                       <tr>
-                          {['TARİH', 'HAFTA', 'GÜN', 'DURUM', 'İÇERİK ÖZETİ', 'HEDEF'].map(h => <th key={h} className="p-10 text-left text-[10px] font-black uppercase tracking-widest text-primary/40">{h}</th>)}
-                       </tr>
-                    </thead>
-                    <tbody>
-                       {studyPlan?.masterPlan?.slice(0, 30).map((p: any, i: number) => (
-                         <tr key={i} className="border-b border-primary/5 hover:bg-slate-50/50 transition-all">
-                            <td className="p-10 font-bold text-primary">{p.displayDate}</td>
-                            <td className="p-10"><Badge variant="outline" className="font-black text-[9px] border-primary/10">{p.week}</Badge></td>
-                            <td className="p-10 font-black italic uppercase tracking-widest text-primary">{p.day}</td>
-                            <td className="p-10">{p.isRestDay ? <Badge className="bg-emerald-50 text-emerald-600 border-none font-black text-[9px]">MOLA</Badge> : <div className="h-3 w-3 rounded-full bg-slate-200" />}</td>
-                            <td className="p-10">
-                               <div className="space-y-1">
-                                  {p.tasks?.slice(0,1).map((t: any) => <p key={t.id} className="font-black text-lg text-primary uppercase italic">{t.subject} - {t.topic}</p>)}
-                                  <p className="text-[10px] font-bold text-muted-foreground opacity-40 uppercase">{p.tasks?.length || 0} OPERASYONEL GÖREV</p>
-                               </div>
-                            </td>
-                            <td className="p-10 font-black text-accent text-2xl italic tracking-tighter">+{p.tasks?.reduce((acc: number, t: any) => acc + (t.qTarget || 0), 0) || '-'}</td>
-                         </tr>
-                       ))}
-                    </tbody>
-                 </table>
-              </div>
-           </Card>
-        </TabsContent>
-      </Tabs>
-
-      <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
-         <DialogContent className="rounded-[4rem] border-none shadow-2xl p-0 bg-white max-w-5xl overflow-hidden">
-            <DialogHeader className="sr-only">
-               <DialogTitle>Akademik Planlama Sihirbazı</DialogTitle>
-               <DialogDescription>TYT kişiselleştirilmiş akademik plan oluşturma süreci.</DialogDescription>
-            </DialogHeader>
-            <div className="grid lg:grid-cols-[380px_1fr] h-[800px]">
-               <div className="bg-primary p-16 text-white flex flex-col justify-between relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-80 h-80 bg-accent/10 blur-[120px] rounded-full translate-x-1/2 -translate-y-1/2" />
-                  <div className="space-y-12 relative z-10">
-                     <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-white/10 text-white font-black text-[10px] uppercase tracking-[0.4em] border border-white/10 shadow-2xl italic">
-                        <ShieldCheck className="h-4 w-4 text-accent" /> AOS SETUP FAZI V4.8
-                     </div>
-                     <h3 className="text-5xl font-black italic tracking-tighter uppercase leading-none">AKADEMİK <br /><span className="text-accent text-shadow-accent">TEŞHİS</span></h3>
-                     <div className="space-y-8">
-                        {[1, 2, 3, 4].map(s => (
-                           <div key={s} className="flex items-center gap-6">
-                              <div className={cn("h-10 w-10 rounded-full border-2 flex items-center justify-center font-black text-xs transition-all duration-500", wizardStep >= s ? "bg-accent border-accent text-primary shadow-xl scale-110" : "border-white/10 text-white/20")}>{s}</div>
-                              <span className={cn("text-[11px] font-black uppercase tracking-[0.2em] transition-all", wizardStep >= s ? "text-white" : "text-white/20")}>
-                                 {s === 1 ? 'SEVİYE ANALİZİ' : s === 2 ? 'ÇALIŞMA TEMPON' : s === 3 ? 'ZAYIF DERSLER' : 'DİNLENME STRATEJİSİ'}
-                              </span>
-                           </div>
-                        ))}
-                     </div>
-                  </div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 italic">AOS Pedagogical Engine: Bilimsel verilerle planlama yapar.</p>
-               </div>
-
-               <div className="p-20 space-y-14 overflow-y-auto bg-white">
-                  {wizardStep === 1 && (
-                    <div className="space-y-12 animate-in fade-in slide-in-from-right-8 duration-700">
-                       <div className="space-y-4">
-                          <h4 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-tight">DERS BAZLI <br />SEVİYEN NEDİR?</h4>
-                          <p className="text-xl text-muted-foreground italic font-medium">Bu analiz alanın olan ({userData?.targetExam?.replace('_', ' ')}) derslerine göre yapılır.</p>
-                       </div>
-                       <div className="grid gap-4 max-h-[400px] pr-4 overflow-y-auto scrollbar-hide">
-                          {currentLessons.map(lesson => (
-                            <div key={lesson} className="flex items-center justify-between p-8 rounded-[2.5rem] bg-slate-50 border border-primary/5">
-                               <span className="font-black text-sm uppercase tracking-widest text-primary">{lesson}</span>
-                               <div className="flex gap-2">
-                                  {['Başlangıç', 'Orta', 'İleri'].map(lvl => (
-                                    <button 
-                                      key={lvl} 
-                                      onClick={() => setWizardConfig({...wizardConfig, levels: {...wizardConfig.levels, [lesson]: lvl}})}
-                                      className={cn("px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all", wizardConfig.levels[lesson] === lvl ? "bg-primary text-white shadow-lg" : "bg-white text-muted-foreground hover:bg-slate-200")}
-                                    >
-                                      {lvl}
-                                    </button>
-                                  ))}
-                               </div>
+              </TabsContent>
+              
+              <TabsContent value="tests" className="animate-in fade-in slide-in-from-bottom-4">
+                 <div className="grid gap-6">
+                    {[1, 2, 3, 4].map(i => (
+                      <Card key={i} className="group p-8 rounded-[2.5rem] bg-white border border-primary/5 shadow-lg flex items-center justify-between hover:shadow-xl transition-all">
+                         <div className="flex items-center gap-8">
+                            <div className="h-16 w-16 rounded-[1.25rem] bg-primary text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-all"><FileQuestion className="h-8 w-8" /></div>
+                            <div className="space-y-1">
+                               <h5 className="text-xl font-black italic text-primary uppercase tracking-tighter">{selectedTopic?.name} Test 0{i}</h5>
+                               <p className="text-[10px] font-bold text-muted-foreground uppercase italic opacity-40">20 Soru • 30 Dakika • Orta Seviye</p>
                             </div>
-                          ))}
-                       </div>
-                    </div>
-                  )}
-
-                  {wizardStep === 2 && (
-                    <div className="space-y-12 animate-in fade-in slide-in-from-right-8 duration-700">
-                       <div className="space-y-4">
-                          <h4 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-tight">ÇALIŞMA <br />TEMPON NEDİR?</h4>
-                          <p className="text-xl text-muted-foreground italic font-medium">Günlük ne kadarlık bir akademik yükü kaldırabilirsin?</p>
-                       </div>
-                       <div className="grid gap-6">
-                          {[
-                            { id: 'light', label: 'DÜŞÜK TEMPO', desc: '1-2 saat / 40-80 soru', icon: Coffee, val: 80, hrs: 2 },
-                            { id: 'moderate', label: 'ORTA TEMPO', desc: '2-4 saat / 80-150 soru', icon: Timer, val: 150, hrs: 4 },
-                            { id: 'high', label: 'YÜKSEK TEMPO', desc: '4-6+ saat / 150-250+ soru', icon: Dumbbell, val: 250, hrs: 6 },
-                          ].map(t => (
-                            <button key={t.id} onClick={() => setWizardConfig({...wizardConfig, questionCapacity: t.val, dailyHours: t.hrs})} className={cn("p-10 rounded-[3rem] border-2 text-left transition-all flex items-center gap-10 group", wizardConfig.questionCapacity === t.val ? "bg-primary border-primary text-white shadow-3xl scale-[1.03]" : "bg-slate-50 border-transparent hover:bg-white hover:border-primary/10")}>
-                               <div className={cn("h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg group-hover:rotate-6 transition-all", wizardConfig.questionCapacity === t.val ? "bg-accent text-primary" : "bg-white text-primary")}><t.icon className="h-8 w-8" /></div>
-                               <div><p className="font-black text-xl uppercase tracking-tight leading-none mb-2">{t.label}</p><p className={cn("text-xs font-medium italic", wizardConfig.questionCapacity === t.val ? "text-white/60" : "text-muted-foreground")}>{t.desc}</p></div>
-                            </button>
-                          ))}
-                       </div>
-                    </div>
-                  )}
-
-                  {wizardStep === 3 && (
-                    <div className="space-y-12 animate-in fade-in slide-in-from-right-8 duration-700">
-                       <div className="space-y-4">
-                          <h4 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-tight">ZAYIF OLDUĞUN <br />DERSLER?</h4>
-                          <p className="text-xl text-muted-foreground italic font-medium">Bu derslerde soru hedefleri saniyeler içinde %20 artırılacaktır.</p>
-                       </div>
-                       <div className="grid grid-cols-2 gap-4">
-                          {currentLessons.map(lesson => (
-                            <button 
-                              key={lesson} 
-                              onClick={() => {
-                                const current = wizardConfig.weakSubjects;
-                                const next = current.includes(lesson) ? current.filter(l => l !== lesson) : [...current, lesson];
-                                setWizardConfig({...wizardConfig, weakSubjects: next});
-                              }}
-                              className={cn("p-8 rounded-[2rem] border-2 text-center transition-all font-black text-[11px] uppercase tracking-widest shadow-sm", wizardConfig.weakSubjects.includes(lesson) ? "bg-accent border-accent text-primary shadow-xl scale-[1.05]" : "bg-slate-50 border-transparent text-muted-foreground")}
-                            >
-                               {lesson}
-                            </button>
-                          ))}
-                       </div>
-                    </div>
-                  )}
-
-                  {wizardStep === 4 && (
-                    <div className="space-y-12 animate-in fade-in slide-in-from-right-8 duration-700">
-                       <div className="space-y-4">
-                          <h4 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-tight">DİNLENME <br />STRATEJİSİ?</h4>
-                          <p className="text-xl text-muted-foreground italic font-medium">Mental yorgunluğu önlemek için haftada bir günü tamamen boş bırakmalıyız.</p>
-                       </div>
-                       <div className="grid grid-cols-2 gap-4">
-                          {['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'].map(day => (
-                            <button key={day} onClick={() => setWizardConfig({...wizardConfig, restDay: day})} className={cn("p-8 rounded-[2rem] border-2 text-center transition-all font-black text-[11px] uppercase tracking-widest", wizardConfig.restDay === day ? "bg-primary border-primary text-white shadow-xl scale-[1.05]" : "bg-slate-50 border-transparent text-muted-foreground")}>
-                               {day}
-                            </button>
-                          ))}
-                       </div>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center pt-10 border-t border-primary/5">
-                     <Button variant="ghost" disabled={wizardStep === 1} onClick={() => setWizardStep(s => s - 1)} className="font-black text-[11px] uppercase tracking-widest italic opacity-40 hover:opacity-100 transition-all">GERİ DÖN</Button>
-                     {wizardStep < 4 ? (
-                       <Button onClick={() => setWizardStep(s => s + 1)} className="h-16 px-12 rounded-2xl bg-primary hover:bg-accent text-white font-black text-[11px] uppercase tracking-widest shadow-2xl transition-all">SONRAKİ ADIM</Button>
-                     ) : (
-                       <Button onClick={handleSavePlan} disabled={isInitializing} className="h-20 px-14 rounded-[2rem] bg-accent hover:bg-primary text-primary hover:text-white font-black text-sm uppercase tracking-widest shadow-2xl transition-all gap-4">
-                          {isInitializing ? <Loader2 className="h-6 w-6 animate-spin" /> : <ShieldCheck className="h-6 w-6" />}
-                          STRATEJİYİ AKTİF ET
-                       </Button>
-                     )}
-                  </div>
-               </div>
-            </div>
-         </DialogContent>
-      </Dialog>
+                         </div>
+                         <div className="flex items-center gap-6">
+                            <div className="text-right hidden md:block">
+                               <p className="text-sm font-black text-primary">%{70 + i * 5}</p>
+                               <p className="text-[8px] font-black uppercase text-muted-foreground opacity-40">SON BAŞARI</p>
+                            </div>
+                            <Button className="h-14 px-8 rounded-2xl bg-primary hover:bg-accent font-black text-xs uppercase tracking-widest shadow-2xl transition-all gap-2">BAŞLAT <ChevronRight className="h-4 w-4" /></Button>
+                         </div>
+                      </Card>
+                    ))}
+                 </div>
+              </TabsContent>
+           </Tabs>
+        </div>
+      )}
     </div>
   );
 }

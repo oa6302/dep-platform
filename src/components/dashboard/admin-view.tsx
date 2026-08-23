@@ -10,7 +10,7 @@ import {
   Activity, ShieldCheck, Globe, Database, UserPlus, Sparkles,
   ShieldAlert, LayoutDashboard, Terminal, HardDrive, Cpu,
   Trash2, UserCog, CheckCircle2, XCircle, Search, Mail,
-  Shield
+  Shield, Video, FileQuestion, BookOpen
 } from 'lucide-react';
 import { 
   orderBy, doc, setDoc, serverTimestamp, updateDoc, 
@@ -31,6 +31,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface AdminViewProps {
   user: any;
@@ -47,6 +55,9 @@ export function AdminView({ user, userData }: AdminViewProps) {
   const [userSeeding, setUserSeeding] = useState(false);
   const [userSearch, setUserSearch] = useState('');
   
+  const [isAddingVideo, setIsAddingVideo] = useState(false);
+  const [isAddingTest, setIsAddingTest] = useState(false);
+
   // Veri Çekme
   const { data: allUsers = [], loading: usersLoading } = useCollection<any>('users', orderBy('createdAt', 'desc'));
   
@@ -159,8 +170,9 @@ export function AdminView({ user, userData }: AdminViewProps) {
       </header>
 
       <Tabs defaultValue="stats" className="space-y-12">
-        <TabsList className="bg-slate-100 p-2 rounded-[2.5rem] h-20 flex gap-2">
+        <TabsList className="bg-slate-100 p-2 rounded-[2.5rem] h-20 flex gap-2 overflow-x-auto scrollbar-hide">
           <TabsTrigger value="stats" className="rounded-2xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-lg">Metrikler</TabsTrigger>
+          <TabsTrigger value="content" className="rounded-2xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-lg">İçerik Yönetimi</TabsTrigger>
           <TabsTrigger value="users" className="rounded-2xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-lg">Kullanıcı Yönetimi</TabsTrigger>
           <TabsTrigger value="system" className="rounded-2xl px-8 font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-lg">Sistem Araçları</TabsTrigger>
         </TabsList>
@@ -217,6 +229,40 @@ export function AdminView({ user, userData }: AdminViewProps) {
                 <p className="text-xs opacity-60 italic">"9003 portu üzerinden AOS v4.8 veritabanı akışı %100 sağlıklı."</p>
              </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="content" className="space-y-8">
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <Card className="p-10 rounded-[3rem] bg-white border border-primary/5 shadow-xl space-y-8 relative overflow-hidden group">
+                 <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 blur-3xl rounded-full" />
+                 <div className="h-16 w-16 rounded-2xl bg-rose-500 text-white flex items-center justify-center shadow-lg group-hover:rotate-6 transition-all"><Video className="h-8 w-8" /></div>
+                 <div>
+                    <h4 className="text-2xl font-black italic tracking-tighter uppercase text-primary">YouTube Videoları</h4>
+                    <p className="text-xs text-muted-foreground font-medium italic">Konulara özel video içerikleri ekleyin.</p>
+                 </div>
+                 <Button onClick={() => setIsAddingVideo(true)} className="w-full h-14 rounded-2xl bg-primary hover:bg-accent font-black text-[10px] uppercase tracking-widest gap-2 shadow-xl">İÇERİK EKLE <Plus className="h-4 w-4" /></Button>
+              </Card>
+
+              <Card className="p-10 rounded-[3rem] bg-white border border-primary/5 shadow-xl space-y-8 relative overflow-hidden group">
+                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full" />
+                 <div className="h-16 w-16 rounded-2xl bg-blue-500 text-white flex items-center justify-center shadow-lg group-hover:rotate-6 transition-all"><FileQuestion className="h-8 w-8" /></div>
+                 <div>
+                    <h4 className="text-2xl font-black italic tracking-tighter uppercase text-primary">Test & Sorular</h4>
+                    <p className="text-xs text-muted-foreground font-medium italic">Özel soru setleri ve PDF testler yükleyin.</p>
+                 </div>
+                 <Button onClick={() => setIsAddingTest(true)} className="w-full h-14 rounded-2xl bg-primary hover:bg-accent font-black text-[10px] uppercase tracking-widest gap-2 shadow-xl">TEST OLUŞTUR <Plus className="h-4 w-4" /></Button>
+              </Card>
+
+              <Card className="p-10 rounded-[3rem] bg-white border border-primary/5 shadow-xl space-y-8 relative overflow-hidden group">
+                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-3xl rounded-full" />
+                 <div className="h-16 w-16 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg group-hover:rotate-6 transition-all"><BookOpen className="h-8 w-8" /></div>
+                 <div>
+                    <h4 className="text-2xl font-black italic tracking-tighter uppercase text-primary">Konu Anlatımları</h4>
+                    <p className="text-xs text-muted-foreground font-medium italic">Master müfredat içeriklerini düzenleyin.</p>
+                 </div>
+                 <Button onClick={() => router.push('/dashboard/admin/curriculum')} className="w-full h-14 rounded-2xl bg-primary hover:bg-accent font-black text-[10px] uppercase tracking-widest gap-2 shadow-xl">MÜFREDATI YÖNET <ArrowRight className="h-4 w-4" /></Button>
+              </Card>
+           </div>
         </TabsContent>
 
         <TabsContent value="users" className="space-y-8">

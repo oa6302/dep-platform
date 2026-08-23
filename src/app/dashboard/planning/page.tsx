@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useUser, useDoc, useFirestore, useCollection } from '@/firebase';
+import { useUser, useFirestore, useCollection } from '@/firebase';
 import { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,7 @@ import { collection, query, where, orderBy } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
-type ViewMode = 'exams' | 'subjects' | 'units' | 'topics' | 'detail';
+type ViewMode = 'subjects' | 'units' | 'topics' | 'detail';
 
 export default function ContentCenterPage() {
   const { user } = useUser();
@@ -26,13 +27,13 @@ export default function ContentCenterPage() {
   const router = useRouter();
   
   const [viewMode, setViewMode] = useState<ViewMode>('subjects');
-  const [selectedExam, setSelectedExam] = useState<string>('TYT');
+  const [selectedExam] = useState<string>('TYT');
   const [selectedSubject, setSelectedSubject] = useState<any>(null);
   const [selectedUnit, setSelectedUnit] = useState<any>(null);
   const [selectedTopic, setSelectedTopic] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Tüm verileri dinamik olarak çekiyoruz
+  // Veritabanından tüm ilişkili verileri çekiyoruz
   const { data: allSubjects = [] } = useCollection<any>('subjects', where('programId', '==', selectedExam), orderBy('order', 'asc'));
   const { data: allUnits = [] } = useCollection<any>('units', orderBy('order', 'asc'));
   const { data: allTopics = [] } = useCollection<any>('topics', orderBy('order', 'asc'));
@@ -40,6 +41,7 @@ export default function ContentCenterPage() {
   const { data: allVideos = [] } = useCollection<any>('videos');
 
   const getStats = (subjectId: string) => {
+    // Placeholder (12 Ünite / 84 Test) yerine gerçek sayıları hesaplıyoruz
     const subjectUnits = allUnits.filter(u => u.subjectId === subjectId);
     const subjectUnitIds = subjectUnits.map(u => u.id);
     const subjectTopics = allTopics.filter(t => subjectUnitIds.includes(t.unitId));
@@ -50,7 +52,7 @@ export default function ContentCenterPage() {
       topics: subjectTopics.length,
       tests: allTests.filter(t => subjectTopicIds.includes(t.topicId)).length,
       videos: allVideos.filter(v => subjectTopicIds.includes(v.topicId)).length,
-      success: 0 // İleride student_progress'ten çekilecek
+      success: 0
     };
   };
 
@@ -58,7 +60,6 @@ export default function ContentCenterPage() {
     if (viewMode === 'detail') setViewMode('topics');
     else if (viewMode === 'topics') setViewMode('units');
     else if (viewMode === 'units') setViewMode('subjects');
-    else if (viewMode === 'subjects') setViewMode('exams');
     else router.push('/dashboard');
   };
 
@@ -69,6 +70,19 @@ export default function ContentCenterPage() {
   const filteredTopics = useMemo(() => {
     return allTopics.filter(t => t.unitId === selectedUnit?.id);
   }, [allTopics, selectedUnit]);
+
+  const IconMap: any = {
+    'TYT_TURKCE': BookOpen,
+    'TYT_MATEMATIK': Calculator,
+    'TYT_GEOMETRI': Ruler,
+    'TYT_FIZIK': Atom,
+    'TYT_KIMYA': FlaskConical,
+    'TYT_BIYOLOJI': Microscope,
+    'TYT_TARIH': History,
+    'TYT_COGRAFYA': Globe2,
+    'TYT_FELSEFE': Brain,
+    'TYT_DIN': Sun
+  };
 
   return (
     <div className="p-8 lg:p-14 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000 bg-[#FAFBFF] min-h-screen">
@@ -112,24 +126,11 @@ export default function ContentCenterPage() {
                  <h3 className="text-3xl font-black italic tracking-tighter text-primary uppercase">{selectedExam} DERSLERİ</h3>
                  <Badge className="bg-accent text-white border-none font-black text-[10px] uppercase px-4 py-1 shadow-lg shadow-accent/20">AKTİF MÜFREDAT</Badge>
               </div>
-              <Button variant="ghost" onClick={() => setViewMode('exams')} className="font-black text-[10px] uppercase tracking-widest text-primary/40 hover:text-primary">SINAV DEĞİŞTİR</Button>
            </div>
            
            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
               {allSubjects.map((subject: any) => {
                 const stats = getStats(subject.id);
-                const IconMap: any = {
-                  'TYT_TURKCE': BookOpen,
-                  'TYT_MATEMATIK': Calculator,
-                  'TYT_GEOMETRI': Ruler,
-                  'TYT_FIZIK': Atom,
-                  'TYT_KIMYA': FlaskConical,
-                  'TYT_BIYOLOJI': Microscope,
-                  'TYT_TARIH': History,
-                  'TYT_COGRAFYA': Globe2,
-                  'TYT_FELSEFE': Brain,
-                  'TYT_DIN': Sun
-                };
                 const Icon = IconMap[subject.id] || BookOpen;
 
                 return (
@@ -157,11 +158,11 @@ export default function ContentCenterPage() {
                         </div>
                         <div className="grid grid-cols-2 gap-y-4 pt-2">
                            <div className="space-y-0.5">
-                              <p className="text-lg font-black text-primary italic leading-none">{stats.units}</p>
+                              <p className="text-lg font-black text-primary italic leading-none">{stats.units || 0}</p>
                               <p className="text-[7px] font-black uppercase text-muted-foreground tracking-widest opacity-40">ÜNİTE</p>
                            </div>
                            <div className="space-y-0.5 text-right">
-                              <p className="text-lg font-black text-primary italic leading-none">{stats.tests}</p>
+                              <p className="text-lg font-black text-primary italic leading-none">{stats.tests || 0}</p>
                               <p className="text-[7px] font-black uppercase text-muted-foreground tracking-widest opacity-40">TEST</p>
                            </div>
                         </div>
@@ -174,6 +175,13 @@ export default function ContentCenterPage() {
                 );
               })}
            </div>
+           {allSubjects.length === 0 && (
+             <div className="py-20 text-center space-y-6">
+                <Sparkles className="h-12 w-12 text-accent opacity-20 mx-auto" />
+                <p className="text-xs font-black uppercase tracking-[0.4em] text-primary/30">Müfredat Motoru Kurulumu Bekleniyor...</p>
+                <p className="text-[10px] italic text-muted-foreground">Admin panelinden "Müfredat Motorunu Kur" butonuna basarak 10 branşı saniyeler içinde yükleyebilirsiniz.</p>
+             </div>
+           )}
         </section>
       )}
 

@@ -41,7 +41,6 @@ export default function ContentCenterPage() {
   const { data: allVideos = [] } = useCollection<any>('videos');
 
   const getStats = (subjectId: string) => {
-    // Placeholder (12 Ünite / 84 Test) yerine gerçek sayıları hesaplıyoruz
     const subjectUnits = allUnits.filter(u => u.subjectId === subjectId);
     const subjectUnitIds = subjectUnits.map(u => u.id);
     const subjectTopics = allTopics.filter(t => subjectUnitIds.includes(t.unitId));
@@ -178,7 +177,7 @@ export default function ContentCenterPage() {
            {allSubjects.length === 0 && (
              <div className="py-20 text-center space-y-6">
                 <Sparkles className="h-12 w-12 text-accent opacity-20 mx-auto" />
-                <p className="text-xs font-black uppercase tracking-[0.4em] text-primary/30">Müfredat Motoru Kurulumu Bekleniyor...</p>
+                <p className="text-xl font-black uppercase tracking-[0.4em] text-primary/30">MÜFREDAT MOTORU KURULUMU BEKLENİYOR...</p>
                 <p className="text-[10px] italic text-muted-foreground">Admin panelinden "Müfredat Motorunu Kur" butonuna basarak 10 branşı saniyeler içinde yükleyebilirsiniz.</p>
              </div>
            )}

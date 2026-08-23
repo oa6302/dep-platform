@@ -249,7 +249,7 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
                   <Card onClick={() => router.push('/dashboard/select-exam')} className="p-32 text-center bg-white/50 rounded-[5rem] border-4 border-dashed border-primary/10 flex flex-col items-center gap-8 cursor-pointer hover:bg-white hover:border-primary/20 transition-all group">
                      <Sparkles className="h-16 w-16 text-accent opacity-20 group-hover:scale-110 transition-transform" />
                      <p className="text-xl font-black uppercase tracking-[0.4em] text-primary/20 italic">HENÜZ PLAN OLUŞTURULMADI</p>
-                     <Button className="h-16 px-12 rounded-2xl bg-primary font-black text-xs uppercase tracking-widest gap-4 shadow-2xl">ANKETİ BAŞLAT <ChevronRight className="h-5 w-5" /></Button>
+                     <Button className="h-16 px-12 rounded-2xl bg-primary font-black text-xs uppercase tracking-widest gap-4 shadow-2xl">HEDEF BELİRLE VE BAŞLA <ChevronRight className="h-5 w-5" /></Button>
                   </Card>
                 )}
              </div>

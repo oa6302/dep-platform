@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useDoc, useFirestore, useCollection } from '@/firebase';
@@ -13,7 +12,8 @@ import {
   ArrowLeft, Home, Search, Sparkles, LayoutTemplate, 
   PlayCircle, FileQuestion, LineChart, Database, Brain, Target,
   PenTool, GraduationCap, Plus, Filter, Play, Trash2, Edit3,
-  Clock, Hash, ListChecks, History, AlertTriangle, RotateCcw
+  Clock, Hash, ListChecks, History, AlertTriangle, RotateCcw,
+  Atom, FlaskConical, Microscope, Sun
 } from 'lucide-react';
 import { collection, query, where, orderBy, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -152,46 +152,49 @@ export default function ContentCenterPage() {
            </div>
            
            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
-              {displaySubjects.map((subject: any) => (
-                <Card 
-                  key={subject.id} 
-                  onClick={() => { setSelectedSubject(subject); setViewMode('units'); }}
-                  className="group p-10 rounded-[3.5rem] bg-white border border-primary/5 shadow-xl hover:-translate-y-3 hover:shadow-[0_60px_120px_-30px_rgba(15,23,42,0.15)] transition-all cursor-pointer relative overflow-hidden"
-                >
-                   <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-accent/20 transition-all duration-700" />
-                   <div className="space-y-8 relative z-10">
-                      <div className="flex justify-between items-start">
-                         <div className="h-16 w-16 rounded-[1.5rem] bg-primary/5 flex items-center justify-center text-primary group-hover:bg-accent group-hover:text-white transition-all shadow-inner group-hover:rotate-6">
-                            <BookOpen className="h-8 w-8" />
-                         </div>
-                         <div className="text-right">
-                            <p className="text-sm font-black text-primary italic leading-none">%{subject.success || 0}</p>
-                            <p className="text-[7px] font-black uppercase text-muted-foreground tracking-widest opacity-40">BAŞARI</p>
-                         </div>
-                      </div>
-                      <div className="space-y-2">
-                         <h4 className="text-2xl font-black italic tracking-tighter text-primary uppercase leading-tight">{subject.name}</h4>
-                         <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden shadow-inner">
-                            <div className="h-full bg-accent transition-all duration-1000" style={{ width: `${subject.success || 0}%` }} />
-                         </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-y-4 pt-2">
-                         <div className="space-y-0.5">
-                            <p className="text-lg font-black text-primary italic leading-none">12</p>
-                            <p className="text-[7px] font-black uppercase text-muted-foreground tracking-widest opacity-40">ÜNİTE</p>
-                         </div>
-                         <div className="space-y-0.5 text-right">
-                            <p className="text-lg font-black text-primary italic leading-none">84</p>
-                            <p className="text-[7px] font-black uppercase text-muted-foreground tracking-widest opacity-40">TEST</p>
-                         </div>
-                      </div>
-                      <div className="pt-6 border-t border-primary/5 flex items-center justify-between group-hover:text-accent transition-colors">
-                         <span className="text-[9px] font-black uppercase tracking-widest">KONULARI GÖR</span>
-                         <ChevronRight className="h-4 w-4" />
-                      </div>
-                   </div>
-                </Card>
-              ))}
+              {displaySubjects.map((subject: any) => {
+                const Icon = subject.icon || BookOpen;
+                return (
+                  <Card 
+                    key={subject.id} 
+                    onClick={() => { setSelectedSubject(subject); setViewMode('units'); }}
+                    className="group p-10 rounded-[3.5rem] bg-white border border-primary/5 shadow-xl hover:-translate-y-3 hover:shadow-[0_60px_120px_-30px_rgba(15,23,42,0.15)] transition-all cursor-pointer relative overflow-hidden"
+                  >
+                     <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-accent/20 transition-all duration-700" />
+                     <div className="space-y-8 relative z-10">
+                        <div className="flex justify-between items-start">
+                           <div className="h-16 w-16 rounded-[1.5rem] bg-primary/5 flex items-center justify-center text-primary group-hover:bg-accent group-hover:text-white transition-all shadow-inner group-hover:rotate-6">
+                              <Icon className="h-8 w-8" />
+                           </div>
+                           <div className="text-right">
+                              <p className="text-sm font-black text-primary italic leading-none">%{subject.success || 0}</p>
+                              <p className="text-[7px] font-black uppercase text-muted-foreground tracking-widest opacity-40">BAŞARI</p>
+                           </div>
+                        </div>
+                        <div className="space-y-2">
+                           <h4 className="text-2xl font-black italic tracking-tighter text-primary uppercase leading-tight">{subject.name}</h4>
+                           <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden shadow-inner">
+                              <div className="h-full bg-accent transition-all duration-1000" style={{ width: `${subject.success || 0}%` }} />
+                           </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-y-4 pt-2">
+                           <div className="space-y-0.5">
+                              <p className="text-lg font-black text-primary italic leading-none">12</p>
+                              <p className="text-[7px] font-black uppercase text-muted-foreground tracking-widest opacity-40">ÜNİTE</p>
+                           </div>
+                           <div className="space-y-0.5 text-right">
+                              <p className="text-lg font-black text-primary italic leading-none">84</p>
+                              <p className="text-[7px] font-black uppercase text-muted-foreground tracking-widest opacity-40">TEST</p>
+                           </div>
+                        </div>
+                        <div className="pt-6 border-t border-primary/5 flex items-center justify-between group-hover:text-accent transition-colors">
+                           <span className="text-[9px] font-black uppercase tracking-widest">KONULARI GÖR</span>
+                           <ChevronRight className="h-4 w-4" />
+                        </div>
+                     </div>
+                  </Card>
+                );
+              })}
            </div>
         </section>
       )}

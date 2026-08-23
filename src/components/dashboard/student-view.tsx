@@ -24,7 +24,7 @@ import {
 import { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -39,7 +39,6 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
   const today = format(new Date(), 'yyyy-MM-dd');
   const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   
-  // States
   const [timeLeft, setTimeLeft] = useState(45 * 60);
   const [isActive, setIsActive] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -164,10 +163,7 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
     <div className="p-8 lg:p-14 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
         
-        {/* LEFT COLUMN: Header & Plan */}
         <div className="lg:col-span-8 space-y-12">
-          
-          {/* HEADER SECTION (GÜNAYDIN & PROGRESS) */}
           <section className="flex flex-col md:flex-row gap-10 items-center justify-between bg-white rounded-[4rem] p-12 shadow-[0_40px_80px_-20px_rgba(15,23,42,0.08)] border border-primary/5 relative overflow-hidden group">
              <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-accent/10 transition-all duration-1000" />
              <div className="space-y-6 relative z-10 flex-1">
@@ -184,7 +180,7 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
                 </p>
                 <div className="flex gap-4 pt-4">
                    <Button onClick={() => router.push('/dashboard/planning')} className="h-14 px-8 rounded-2xl bg-primary text-white font-black text-[10px] uppercase tracking-widest shadow-2xl gap-3">
-                      <Calendar className="h-4 w-4" /> TAM AKIŞ
+                      <Zap className="h-4 w-4" /> İÇERİK MERKEZİ
                    </Button>
                    <Button 
                     onClick={() => setIsAddingTask(true)}
@@ -215,7 +211,6 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
              </div>
           </section>
 
-          {/* TODAY'S PLAN SECTION */}
           <section className="space-y-10">
              <div className="flex items-center gap-6 px-4">
                 <div className="h-10 w-10 rounded-2xl bg-accent/10 flex items-center justify-center">
@@ -251,7 +246,7 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
                   </Card>
                 ))}
                 {!currentDayPlan && (
-                  <Card onClick={() => router.push('/dashboard/planning')} className="p-32 text-center bg-white/50 rounded-[5rem] border-4 border-dashed border-primary/10 flex flex-col items-center gap-8 cursor-pointer hover:bg-white hover:border-primary/20 transition-all group">
+                  <Card onClick={() => router.push('/dashboard/select-exam')} className="p-32 text-center bg-white/50 rounded-[5rem] border-4 border-dashed border-primary/10 flex flex-col items-center gap-8 cursor-pointer hover:bg-white hover:border-primary/20 transition-all group">
                      <Sparkles className="h-16 w-16 text-accent opacity-20 group-hover:scale-110 transition-transform" />
                      <p className="text-xl font-black uppercase tracking-[0.4em] text-primary/20 italic">HENÜZ PLAN OLUŞTURULMADI</p>
                      <Button className="h-16 px-12 rounded-2xl bg-primary font-black text-xs uppercase tracking-widest gap-4 shadow-2xl">ANKETİ BAŞLAT <ChevronRight className="h-5 w-5" /></Button>
@@ -261,10 +256,7 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
           </section>
         </div>
 
-        {/* RIGHT COLUMN: AI & Focus */}
         <div className="lg:col-span-4 space-y-12">
-          
-          {/* ORANGE AI CARD */}
           <Card className="rounded-[4rem] border-none shadow-[0_60px_120px_-30px_rgba(245,158,11,0.2)] bg-accent text-primary p-14 relative overflow-hidden group">
              <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2" />
              <div className="relative z-10 space-y-10">
@@ -286,7 +278,6 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
              </div>
           </Card>
 
-          {/* FOCUS TERMINAL */}
           <Card className="p-12 rounded-[4rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.1)] bg-white space-y-10 relative overflow-hidden group">
              <div className="flex items-center justify-between">
                 <h4 className="text-2xl font-black italic tracking-tighter uppercase text-primary">ODAKLANMA</h4>
@@ -331,7 +322,6 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
              </div>
           </Card>
 
-          {/* STATUS CARD */}
           <Card className="p-10 rounded-[3.5rem] border-none shadow-2xl bg-[#0F172A] text-white relative overflow-hidden">
              <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-accent/5 blur-[80px] rounded-full" />
              <div className="relative z-10 flex items-center justify-between">
@@ -345,7 +335,6 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
         </div>
       </div>
 
-      {/* Manual Task Dialog */}
       <AcademicSessionDialog 
         isOpen={isAddingTask}
         onOpenChange={setIsAddingTask}

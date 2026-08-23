@@ -38,22 +38,21 @@ import {
   Eye,
   BookOpen,
   PieChart,
-  Target
+  Target,
+  Video,
+  FileQuestion,
+  History
 } from 'lucide-react';
 
 import { signOut } from 'firebase/auth';
-import { doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
-import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ProfileEditDialog } from '@/components/profile-edit-dialog';
 import { AuthForm } from '@/components/auth-form';
 
-// Modüler View Importları
 import { StudentView } from '@/components/dashboard/student-view';
 import { TeacherView } from '@/components/dashboard/teacher-view';
 import { AdminView } from '@/components/dashboard/admin-view';
@@ -62,7 +61,6 @@ import { SchoolAdminView } from '@/components/dashboard/school-admin-view';
 function DashboardContent() {
   const { user, loading: authLoading } = useUser();
   const auth = useAuth();
-  const db = useFirestore();
   const router = useRouter();
   const searchParams = useSearchParams();
   const simulatedUserId = searchParams.get('simulate');
@@ -71,7 +69,7 @@ function DashboardContent() {
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
 
   const { data: userData, loading: docLoading } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
-  const { data: simulatedUserData, loading: simulatedUserLoading } = useDoc<any>(simulatedUserId ? `users/${simulatedUserId}` : null);
+  const { data: simulatedUserData } = useDoc<any>(simulatedUserId ? `users/${simulatedUserId}` : null);
 
   const isSimulating = Boolean(simulatedUserId);
   const currentViewData = useMemo(() => {
@@ -87,14 +85,12 @@ function DashboardContent() {
   const dynamicMenu = useMemo(() => {
     if (!currentViewData) return [];
     
-    // GÖRSELDEKİ MENÜ SIRALAMASI
     return [
       { label: 'Akademik Panel', icon: LayoutDashboard, href: '/dashboard' },
+      { label: 'İçerik Merkezi', icon: BookOpen, href: '/dashboard/planning' },
       { label: 'Eğitmen', icon: User, href: '/dashboard/discover' },
-      { label: 'Ders Programı', icon: Calendar, href: '/dashboard/planning' },
-      { label: 'Analiz', icon: PieChart, href: '/dashboard/ai-analysis' },
-      { label: 'Strateji', icon: Target, href: '/dashboard/planning' },
-      { label: 'Kütüphane', icon: BookOpen, href: '#' },
+      { label: 'Analiz & Risk', icon: PieChart, href: '/dashboard/ai-analysis' },
+      { label: 'Yanlışlarım', icon: History, href: '#' },
       { label: 'Destek', icon: Headset, href: '/dashboard/contact' },
     ];
   }, [currentViewData]);
@@ -132,7 +128,6 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen grid lg:grid-cols-[280px_1fr] bg-[#FAFBFF]">
-      {/* SIDEBAR: GÖRSELDEKİ KOYU LACİVERT YAPI */}
       <aside className="bg-[#0F172A] text-white hidden lg:flex flex-col shadow-2xl sticky top-0 h-screen z-50">
         <div className="p-10 flex items-center gap-4">
            <div className="relative h-12 w-12 overflow-hidden rounded-xl bg-white p-2">

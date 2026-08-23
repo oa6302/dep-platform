@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useDoc, useFirestore, useCollection } from '@/firebase';
@@ -7,19 +6,16 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   BookOpen, Video, FileText, CheckCircle2, ChevronRight, 
   ArrowLeft, Home, Search, Sparkles, LayoutTemplate, 
-  PlayCircle, FileQuestion, LineChart, Bookmark, 
-  MoreVertical, Filter, Database, Brain, Target,
+  PlayCircle, FileQuestion, LineChart, Database, Brain, Target,
   PenTool, GraduationCap
 } from 'lucide-react';
-import { doc, updateDoc, serverTimestamp, collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, where, orderBy } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Progress } from '@/components/ui/progress';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 
 type ViewMode = 'courses' | 'topics' | 'detail';
@@ -31,14 +27,12 @@ export default function ContentCenterPage() {
   
   const { data: userData } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
   const targetExam = userData?.targetExam || 'YKS_SAY';
-  const examConfig = EXAM_CONFIGS[targetExam];
 
   const [viewMode, setViewMode] = useState<ViewMode>('courses');
   const [selectedSubject, setSelectedSubject] = useState<any>(null);
   const [selectedTopic, setSelectedTopic] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Firestore Data
   const { data: subjects = [] } = useCollection<any>(
     'subjects', 
     where('programId', '==', targetExam),
@@ -99,7 +93,6 @@ export default function ContentCenterPage() {
         </div>
       </header>
 
-      {/* VIEW: COURSE LIST */}
       {viewMode === 'courses' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in slide-in-from-bottom-4 duration-700">
            {subjects.map((subject: any) => (
@@ -140,7 +133,6 @@ export default function ContentCenterPage() {
         </div>
       )}
 
-      {/* VIEW: TOPIC LIST */}
       {viewMode === 'topics' && (
         <div className="space-y-8 animate-in slide-in-from-right-8 duration-700">
            <div className="grid grid-cols-1 gap-4">
@@ -174,7 +166,6 @@ export default function ContentCenterPage() {
         </div>
       )}
 
-      {/* VIEW: TOPIC DETAIL */}
       {viewMode === 'detail' && (
         <div className="space-y-12 animate-in slide-in-from-right-8 duration-700">
            <Card className="rounded-[4rem] border-none bg-primary text-white p-12 relative overflow-hidden group shadow-2xl">

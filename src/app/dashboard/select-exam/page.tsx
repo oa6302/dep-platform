@@ -11,7 +11,7 @@ import { useState, useMemo } from 'react';
 import { 
   Loader2, ArrowLeft, Home, ChevronRight, Sparkles, 
   Trophy, Globe, GraduationCap, Landmark, ShieldCheck,
-  Zap, Brain
+  Zap, Brain, Star
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -43,19 +43,11 @@ export default function SelectExamPage() {
     const config = EXAM_CONFIGS[examId] || EXAM_CONFIGS['YKS_SAY'];
     const lessons = config.lessons;
     
-    // Varsayılan Müfredat Haritası (Simüle edilmiş)
-    const curriculumMap: Record<string, string[]> = {
-      'Matematik': ['Temel Kavramlar', 'Sayılar', 'Problemler', 'Fonksiyonlar'],
-      'Türkçe': ['Paragraf', 'Cümlede Anlam', 'Yazım Kuralları'],
-      'Geometri': ['Açılar', 'Üçgenler', 'Çember'],
-    };
-
     for (let i = 0; i < 364; i++) {
       const currentDate = addDays(baseDate, i);
       const dayName = format(currentDate, 'EEEE', { locale: tr });
       const weekNum = Math.floor(i / 7) + 1;
       
-      // Pazar günleri mola
       if (dayName === 'Pazar') {
         plan.push({
           date: format(currentDate, 'yyyy-MM-dd'),
@@ -71,26 +63,16 @@ export default function SelectExamPage() {
       const dailyTasks = [];
       const subIndex = i % lessons.length;
       const lessonName = lessons[subIndex];
-      const lessonTopics = curriculumMap[lessonName] || ['Genel Konu Çalışması'];
-      const topicIndex = Math.floor(i / 7) % lessonTopics.length;
-      const currentTopic = lessonTopics[topicIndex];
 
       dailyTasks.push({
         id: `task_${i}_1`,
         type: 'content',
         subject: lessonName,
-        topic: currentTopic,
+        topic: 'Konu Belirleniyor...',
         duration: '45 dk',
-        desc: 'Konu anlatımı ve formül çıkarma'
-      });
-
-      dailyTasks.push({
-        id: `task_${i}_2`,
-        type: 'practice',
-        subject: lessonName,
-        topic: currentTopic,
-        qTarget: 40,
-        desc: `40 soru çözümü (Karma)`
+        desc: 'Konu anlatımı ve temel kazanım çalışması',
+        status: 'pending',
+        time: '09:00'
       });
 
       plan.push({
@@ -147,8 +129,8 @@ export default function SelectExamPage() {
     updateDoc(userRef, studentProfileData)
       .then(() => {
         toast({ 
-          title: 'SİSTEM YAPILANDIRILDI', 
-          description: `${examId} için 1 yıllık stratejiniz oluşturuldu.`, 
+          title: 'HEDEF BELİRLENDİ', 
+          description: `${examId} hazırlık terminaliniz saniyeler içinde yapılandırıldı.`, 
           className: "bg-primary text-white rounded-[2rem]" 
         });
         router.push('/dashboard');
@@ -187,53 +169,46 @@ export default function SelectExamPage() {
               <Home className="h-6 w-6 group-hover/nav:scale-110" />
             </Button>
           </div>
+          <div className="flex items-center gap-3">
+             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/40 italic">AOS TARGET SELECTOR v4.8</span>
+          </div>
         </header>
 
-        <div className="text-center space-y-6 max-w-3xl mx-auto pt-8">
-          <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-white font-black text-[10px] uppercase tracking-widest shadow-xl">
-             <Trophy className="h-4 w-4 text-accent" /> Hedef Belirleme Terminali
-          </div>
-          <h1 className="text-6xl md:text-8xl font-black text-primary tracking-tighter italic uppercase text-shadow-premium leading-none">
-            Yolunu <span className="text-accent text-shadow-accent">Seç</span>
-          </h1>
-          <p className="text-xl text-muted-foreground font-medium italic">
-            Hazırlandığınız programa göre DEK AI tüm müfredatını, analizlerini ve çalışma temposunu saniyeler içinde yapılandıracaktır.
-          </p>
-        </div>
-
-        <div className="space-y-24 pt-12">
+        <div className="space-y-24 pt-8">
           {categories.map((cat) => (
             categorizedExams[cat.id]?.length > 0 && (
               <div key={cat.id} className="space-y-10">
                 <div className="flex items-center gap-6">
-                  <div className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg">
-                     <cat.icon className="h-6 w-6" />
+                  <div className="h-10 w-10 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shrink-0">
+                     <cat.icon className="h-5 w-5" />
                   </div>
-                  <h2 className="text-2xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep">{cat.label}</h2>
-                  <div className="h-px flex-1 bg-primary/5 shadow-inner"></div>
+                  <h2 className="text-[11px] font-black italic tracking-[0.3em] text-primary uppercase">{cat.label}</h2>
+                  <div className="h-px flex-1 bg-primary/10 shadow-inner"></div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                   {categorizedExams[cat.id]?.map((exam) => (
                     <Card 
                       key={exam.id} 
                       className={cn(
-                        "group relative overflow-hidden rounded-[3.5rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.08)] bg-white p-10 transition-all hover:-translate-y-4 hover:shadow-[0_60px_120px_-30px_rgba(15,23,42,0.15)] cursor-pointer border border-primary/5",
-                        isInitializing && selectedId === exam.id && "ring-4 ring-accent"
+                        "group relative overflow-hidden rounded-[3.5rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.08)] bg-white p-10 transition-all duration-500 hover:-translate-y-4 hover:shadow-[0_60px_120px_-30px_rgba(15,23,42,0.15)] cursor-pointer border-2 border-transparent",
+                        isInitializing && selectedId === exam.id ? "ring-4 ring-accent border-accent" : "hover:border-accent/20"
                       )}
                       onClick={() => !isInitializing && handleSelectExam(exam.id)}
                     >
                       <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-accent/15 transition-all"></div>
                       <div className="space-y-10">
-                        <div className="h-20 w-20 rounded-[2rem] bg-primary/5 flex items-center justify-center text-primary group-hover:bg-accent group-hover:text-white transition-all shadow-inner group-hover:rotate-6">
+                        <div className="h-20 w-20 rounded-[2rem] bg-slate-50 flex items-center justify-center text-primary group-hover:bg-accent group-hover:text-white transition-all shadow-inner group-hover:rotate-6">
                           {isInitializing && selectedId === exam.id ? <Loader2 className="h-10 w-10 animate-spin" /> : <exam.icon className="h-10 w-10" />}
                         </div>
                         <div className="space-y-3">
-                          <h3 className="text-3xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep group-hover:text-accent transition-colors leading-none">{exam.title}</h3>
-                          <p className="text-sm text-muted-foreground font-medium italic line-clamp-2">{exam.description}</p>
+                          <h3 className="text-2xl font-black italic tracking-tighter text-primary uppercase leading-tight group-hover:text-accent transition-colors">{exam.title}</h3>
+                          <p className="text-[10px] text-muted-foreground font-bold italic line-clamp-2 uppercase tracking-widest opacity-60">{exam.description}</p>
                         </div>
                         <div className="pt-6 border-t border-primary/5 flex items-center justify-between">
-                           <span className="text-[10px] font-black uppercase tracking-widest text-primary/40">{exam.targetGroup}</span>
-                           <ChevronRight className="h-5 w-5 opacity-20" />
+                           <span className="text-[9px] font-black uppercase tracking-widest text-primary/30">{exam.targetGroup}</span>
+                           <ChevronRight className="h-4 w-4 opacity-10 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                         </div>
                       </div>
                     </Card>

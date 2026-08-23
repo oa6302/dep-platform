@@ -11,7 +11,7 @@ import {
   Presentation, FileSpreadsheet, LayoutDashboard,
   Compass, Briefcase, Atom, FlaskConical, Calculator,
   Globe2, History as HistoryIcon, Languages as LangIcon,
-  Zap, Flame, FileCode, Users
+  Zap, Flame, FileCode, Users, Ruler, RotateCcw
 } from 'lucide-react';
 
 export type ExamModule = {
@@ -97,7 +97,7 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
     id: 'KPSS_LISANS',
     category: 'KAMU SINAVLARI',
     title: 'KPSS Lisans 2026',
-    icon: Landmark,
+    icon: Building,
     description: 'Genel Yetenek & Genel Kültür Hazırlık',
     targetGroup: 'Lisans Mezunları',
     lessons: ['Türkçe', 'Matematik', 'Tarih', 'Coğrafya', 'Vatandaşlık', 'Güncel Bilgiler'],
@@ -129,7 +129,7 @@ export const EXAM_CONFIGS: Record<string, ExamType> = {
     id: 'YDS',
     category: 'YABANCI DİL',
     title: 'YDS / YÖKDİL 2026',
-    icon: Languages,
+    icon: LangIcon,
     description: 'Yabancı Dil Bilgisi Seviye Tespit Sınavı',
     targetGroup: 'Dil Puanı Hedefleyenler',
     lessons: ['Reading', 'Grammar', 'Vocabulary', 'Listening', 'Writing'],

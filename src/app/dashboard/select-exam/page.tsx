@@ -17,6 +17,7 @@ import { format, addDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { cn } from '@/lib/utils';
 
 export default function SelectExamPage() {
   const { user } = useUser();

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -5,63 +6,36 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Play, 
-  Sparkles, 
-  ChevronRight, 
-  Target, 
-  Activity, 
-  Brain, 
-  CheckCircle2, 
-  Calendar,
-  Loader2,
-  Clock,
-  PlayCircle,
-  PauseCircle,
-  RotateCcw,
-  Zap,
-  Plus
+  Play, Sparkles, ChevronRight, Target, Activity, 
+  Brain, CheckCircle2, Calendar, Loader2, Clock, 
+  Zap, Plus, TrendingUp, BookOpen, BarChart3, Star
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { AcademicSessionDialog } from '@/components/academic-session-dialog';
+import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
 
-export function StudentView({ user, userData, isReadOnly = false }: { user: any, userData: any, isReadOnly?: boolean }) {
+export function StudentView({ user, userData }: { user: any, userData: any }) {
   const db = useFirestore();
   const router = useRouter();
-  const { toast } = useToast();
   
   const today = format(new Date(), 'yyyy-MM-dd');
   const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   
-  const [timeLeft, setTimeLeft] = useState(45 * 60);
-  const [isActive, setIsActive] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
-  const [isRecLoading, setIsRecLoading] = useState(false);
 
-  useEffect(() => {
-    let interval: any = null;
-    if (isActive && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((time) => time - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
-      setIsActive(false);
-      clearInterval(interval);
-    }
-    return () => clearInterval(interval);
-  }, [isActive, timeLeft]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+  const stats = useMemo(() => {
+    if (!studyPlan) return { hours: 0, topics: 0, questions: 0, tests: 0 };
+    return {
+      hours: (studyPlan.totalMinutes || 0) / 60,
+      topics: Object.values(userData?.completedTopics || {}).flat().length,
+      questions: studyPlan.totalQuestions || 0,
+      tests: studyPlan.totalTests || 0
+    };
+  }, [studyPlan, userData]);
 
   const currentDayPlan = useMemo(() => {
     if (!studyPlan?.masterPlan) return null;
@@ -74,182 +48,123 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
     return Math.round((completed / currentDayPlan.tasks.length) * 100);
   }, [currentDayPlan]);
 
-  const handleToggleTask = (taskId: string) => {
-    if (!db || !user || !studyPlan || isReadOnly) return;
-    
-    const newMasterPlan = studyPlan.masterPlan.map((p: any) => {
-      if (p.date === today) {
-        return {
-          ...p,
-          tasks: p.tasks.map((t: any) => t.id === taskId ? { ...t, status: t.status === 'completed' ? 'pending' : 'completed' } : t)
-        };
-      }
-      return p;
-    });
-
-    const planRef = doc(db, 'studyPlans', user.uid);
-    updateDoc(planRef, { masterPlan: newMasterPlan, updatedAt: serverTimestamp() })
-      .catch(async (err) => {
-        const permissionError = new FirestorePermissionError({
-          path: planRef.path,
-          operation: 'update',
-          requestResourceData: { masterPlan: 'task_toggle' },
-        } satisfies SecurityRuleContext);
-        errorEmitter.emit('permission-error', permissionError);
-      });
-  };
-
-  const handleSaveManualTask = (taskData: any) => {
-    if (!db || !user || !studyPlan || isReadOnly) return;
-
-    const newTask = {
-      ...taskData,
-      id: `manual_${Date.now()}`,
-      status: 'pending'
-    };
-
-    const newMasterPlan = studyPlan.masterPlan.map((p: any) => {
-      if (p.date === today) {
-        return {
-          ...p,
-          tasks: [...(p.tasks || []), newTask]
-        };
-      }
-      return p;
-    });
-
-    const planRef = doc(db, 'studyPlans', user.uid);
-    updateDoc(planRef, { masterPlan: newMasterPlan, updatedAt: serverTimestamp() })
-      .catch(async (err) => {
-        const permissionError = new FirestorePermissionError({
-          path: planRef.path,
-          operation: 'update',
-          requestResourceData: { masterPlan: 'add_manual_task' },
-        } satisfies SecurityRuleContext);
-        errorEmitter.emit('permission-error', permissionError);
-      });
-
-    toast({
-      title: 'GÖREV EKLENDİ',
-      description: `${taskData.subject} seansı bugünkü planınıza işlendi.`,
-      className: "bg-primary text-white rounded-[2rem]"
-    });
-  };
-
-  const handleCreateRecommendedTask = () => {
-    setIsRecLoading(true);
-    setTimeout(() => {
-      handleSaveManualTask({
-        subject: 'Matematik',
-        topic: 'Problemler Analizi',
-        time: format(new Date(), 'HH:mm'),
-        duration: '45 dk',
-        xp: 75,
-        difficulty: 'medium',
-        studyType: 'analysis'
-      });
-      setIsRecLoading(false);
-    }, 1000);
-  };
-
   if (planLoading) return (
     <div className="p-20 flex flex-col items-center justify-center gap-6 min-h-[60vh]">
       <Loader2 className="h-12 w-12 animate-spin text-accent" />
-      <p className="text-xs font-black uppercase tracking-[0.4em] text-primary/40 italic">Terminal Hazırlanıyor...</p>
+      <p className="text-xs font-black uppercase tracking-[0.4em] text-primary/40 italic">Veriler Senkronize Ediliyor...</p>
     </div>
   );
 
   return (
-    <div className="p-8 lg:p-14 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000">
+    <div className="p-8 lg:p-14 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000 bg-[#F8FAFC]">
+      {/* AI Asistan Kutusu (TM PRO Stil) */}
+      <section className="bg-gradient-to-br from-primary/5 to-secondary/5 border border-secondary/30 rounded-[2.5rem] p-10 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/5 blur-[100px] rounded-full" />
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
+          <div className="space-y-4 flex-1 text-center md:text-left">
+            <div className="inline-flex items-center gap-2 text-primary font-black text-[11px] uppercase tracking-widest">
+              <Brain className="h-4 w-4 text-secondary" /> YAPAY ZEKA ASİSTANI
+            </div>
+            <p className="text-xl font-bold text-slate-800 italic leading-relaxed">
+              "{stats.topics < 10 ? '🌱 Konu tamamlama oranın henüz başlangıç aşamasında. Öncelikle temel matematik konularına odaklanalım.' : '🎯 Verilerin iyi görünüyor, Edebiyat netlerini artırmak için denemelere ağırlık verebiliriz.'}"
+            </p>
+            <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+               <Button size="sm" className="bg-secondary hover:bg-secondary/90 rounded-xl px-6 font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-secondary/20" onClick={() => router.push('/dashboard/planning?tab=yearly')}>📋 AI PLAN ÖNERİSİ</Button>
+               <Button size="sm" variant="outline" className="rounded-xl px-6 font-bold uppercase text-[10px] tracking-widest bg-white" onClick={() => router.push('/dashboard/ai-analysis')}>🔍 AI ANALİZ RAPORU</Button>
+            </div>
+          </div>
+          <div className="hidden xl:block h-32 w-px bg-secondary/20 mx-10" />
+          <div className="grid grid-cols-2 gap-4 w-full md:w-auto">
+             <div className="bg-white p-6 rounded-2xl border border-slate-200 text-center shadow-sm">
+                <p className="text-2xl font-black text-secondary leading-none">{stats.hours.toFixed(1)}</p>
+                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-1">TOPLAM ÇALIŞMA</p>
+             </div>
+             <div className="bg-white p-6 rounded-2xl border border-slate-200 text-center shadow-sm">
+                <p className="text-2xl font-black text-primary leading-none">{stats.topics}</p>
+                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-1">KONU BİTTİ</p>
+             </div>
+          </div>
+        </div>
+      </section>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-        
         <div className="lg:col-span-8 space-y-12">
-          <section className="flex flex-col md:flex-row gap-10 items-center justify-between bg-white rounded-[4rem] p-12 shadow-[0_40px_80px_-20px_rgba(15,23,42,0.08)] border border-primary/5 relative overflow-hidden group">
-             <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-accent/10 transition-all duration-1000" />
-             <div className="space-y-6 relative z-10 flex-1">
-                <div className="flex items-center gap-3">
-                   <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                   <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/30 italic">AOS v4.8 Stable Engine</span>
-                </div>
-                <h1 className="text-7xl font-black text-primary tracking-tighter italic uppercase leading-[0.8] text-shadow-deep">
+          {/* Hoşgeldin ve Progress */}
+          <section className="bg-white rounded-[3.5rem] p-12 shadow-xl border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-10">
+             <div className="space-y-6 flex-1 text-center md:text-left">
+                <h1 className="text-6xl font-black text-primary tracking-tighter italic uppercase leading-[0.85] bg-gradient-to-br from-primary to-secondary bg-clip-text text-transparent">
                    GÜNAYDIN, <br />
-                   <span className="text-accent text-shadow-accent">{userData?.displayName?.split(' ')[0] || 'ÖĞRENCİ'} 👋</span>
+                   {userData?.displayName?.split(' ')[0] || 'ÖĞRENCİ'} 👋
                 </h1>
                 <p className="text-lg font-bold text-muted-foreground italic">
-                   Bugün için bekleyen <span className="text-primary">{currentDayPlan?.tasks?.length || 0} kritik görev</span> var.
+                   Yıllık planına göre bugün tamamlaman gereken <span className="text-secondary">{currentDayPlan?.tasks?.length || 0} kritik görev</span> bulunuyor.
                 </p>
-                <div className="flex gap-4 pt-4">
+                <div className="flex gap-4 pt-4 justify-center md:justify-start">
                    <Button onClick={() => router.push('/dashboard/planning')} className="h-14 px-8 rounded-2xl bg-primary text-white font-black text-[10px] uppercase tracking-widest shadow-2xl gap-3">
-                      <Zap className="h-4 w-4" /> İÇERİK MERKEZİ
+                      <Zap className="h-4 w-4 text-secondary" /> PLANI YÖNET
                    </Button>
-                   <Button 
-                    onClick={() => setIsAddingTask(true)}
-                    variant="outline" 
-                    className="h-14 px-8 rounded-2xl border-2 font-black text-[10px] uppercase tracking-widest text-primary/40 hover:bg-slate-50 transition-all gap-2"
-                   >
-                      <Plus className="h-3.5 w-3.5" /> YENİ GÖREV +
+                   <Button onClick={() => setIsAddingTask(true)} variant="outline" className="h-14 px-8 rounded-2xl border-2 font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all">
+                      <Plus className="h-4 w-4 mr-2" /> MANUEL EKLE
                    </Button>
                 </div>
              </div>
 
-             <div className="relative h-48 w-48 shrink-0 flex items-center justify-center group/progress">
+             <div className="relative h-44 w-44 shrink-0 flex items-center justify-center">
                 <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
                    <circle cx="50" cy="50" r="42" fill="none" stroke="#F1F5F9" strokeWidth="12" />
                    <circle 
                      cx="50" cy="50" r="42" fill="none" 
-                     stroke="#F59E0B" strokeWidth="12" 
+                     stroke="url(#grad)" strokeWidth="12" 
                      strokeDasharray="264" 
                      strokeDashoffset={264 - (264 * progress) / 100} 
                      strokeLinecap="round" 
-                     className="drop-shadow-[0_0_15px_rgba(245,158,11,0.5)] transition-all duration-1000" 
+                     className="transition-all duration-1000" 
                    />
+                   <defs>
+                      <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                         <stop offset="0%" stopColor="var(--primary)" />
+                         <stop offset="100%" stopColor="var(--secondary)" />
+                      </linearGradient>
+                   </defs>
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                   <span className="text-5xl font-black text-primary italic tracking-tighter text-shadow-deep">%{progress}</span>
-                   <span className="text-[8px] font-black uppercase tracking-widest opacity-40">TAMAMLANDI</span>
+                   <span className="text-4xl font-black text-primary italic">%{progress}</span>
+                   <span className="text-[8px] font-black uppercase tracking-widest opacity-40">GÜNLÜK HEDEF</span>
                 </div>
              </div>
           </section>
 
-          <section className="space-y-10">
-             <div className="flex items-center gap-6 px-4">
-                <div className="h-10 w-10 rounded-2xl bg-accent/10 flex items-center justify-center">
-                   <Calendar className="h-5 w-5 text-accent" />
-                </div>
-                <h2 className="text-4xl font-black italic tracking-tighter text-primary uppercase leading-none">BUGÜNKÜ PLAN</h2>
+          {/* Bugünkü Plan */}
+          <section className="space-y-8">
+             <div className="flex items-center justify-between px-6">
+                <h2 className="text-3xl font-black italic tracking-tighter text-primary uppercase">GÜNLÜK PROGRAM</h2>
+                <Badge variant="outline" className="rounded-xl px-4 py-1.5 font-bold uppercase text-[9px] tracking-widest bg-white shadow-sm">{format(new Date(), 'd MMMM yyyy')}</Badge>
              </div>
 
-             <div className="grid gap-6">
+             <div className="grid gap-4">
                 {currentDayPlan?.tasks?.map((t: any, i: number) => (
                   <Card key={i} className={cn(
-                    "group p-10 rounded-[3.5rem] border-none shadow-[0_20px_40px_-10px_rgba(15,23,42,0.06)] hover:shadow-[0_40px_80px_-20px_rgba(15,23,42,0.12)] transition-all hover:scale-[1.01] bg-white flex items-center justify-between",
+                    "group p-8 rounded-[2.5rem] border border-slate-100 shadow-lg hover:shadow-2xl hover:scale-[1.01] transition-all bg-white flex items-center justify-between",
                     t.status === 'completed' && "opacity-50"
                   )}>
-                    <div className="flex items-center gap-10">
-                       <span className="text-2xl font-black text-primary/20 italic tracking-tighter font-mono">{t.time || '09:00'}</span>
-                       <div className="h-1.5 w-12 rounded-full bg-slate-100" />
+                    <div className="flex items-center gap-8">
+                       <span className="text-xl font-black text-slate-300 italic tracking-tighter font-mono">{t.time || '09:00'}</span>
+                       <div className="h-10 w-px bg-slate-100" />
                        <div className="space-y-1">
-                          <h4 className="text-3xl font-black italic tracking-tight text-primary uppercase leading-none">{t.subject}</h4>
-                          <p className="text-sm font-bold text-muted-foreground italic opacity-60 uppercase tracking-widest">{t.topic}</p>
+                          <h4 className="text-2xl font-black italic tracking-tight text-primary uppercase leading-none">{t.subject}</h4>
+                          <p className="text-xs font-bold text-muted-foreground italic opacity-60 uppercase tracking-widest">{t.topic}</p>
                        </div>
                     </div>
-                    <Button 
-                      size="icon" 
-                      onClick={() => handleToggleTask(t.id)} 
-                      className={cn(
-                        "h-16 w-16 rounded-[2.25rem] shadow-2xl transition-all",
-                        t.status === 'completed' ? "bg-emerald-500 text-white" : "bg-primary text-white hover:bg-accent"
-                      )}
-                    >
-                       {t.status === 'completed' ? <CheckCircle2 className="h-8 w-8" /> : <Play className="h-8 w-8 fill-current" />}
+                    <Button size="icon" className={cn("h-14 w-14 rounded-2xl shadow-xl", t.status === 'completed' ? "bg-emerald-500 text-white" : "bg-secondary text-white hover:bg-primary")}>
+                       {t.status === 'completed' ? <CheckCircle2 className="h-6 w-6" /> : <Play className="h-6 w-6 fill-current" />}
                     </Button>
                   </Card>
                 ))}
                 {!currentDayPlan && (
-                  <Card onClick={() => router.push('/dashboard/select-exam')} className="p-32 text-center bg-white/50 rounded-[5rem] border-4 border-dashed border-primary/10 flex flex-col items-center gap-8 cursor-pointer hover:bg-white hover:border-primary/20 transition-all group">
-                     <Sparkles className="h-16 w-16 text-accent opacity-20 group-hover:scale-110 transition-transform" />
-                     <p className="text-xl font-black uppercase tracking-[0.4em] text-primary/20 italic">HENÜZ PLAN OLUŞTURULMADI</p>
-                     <Button className="h-16 px-12 rounded-2xl bg-primary font-black text-xs uppercase tracking-widest gap-4 shadow-2xl">HEDEF BELİRLE VE BAŞLA <ChevronRight className="h-5 w-5" /></Button>
+                  <Card onClick={() => router.push('/dashboard/planning?tab=yearly')} className="p-24 text-center bg-white/50 rounded-[4rem] border-4 border-dashed border-slate-200 flex flex-col items-center gap-6 cursor-pointer hover:bg-white hover:border-secondary/20 transition-all group">
+                     <Sparkles className="h-12 w-12 text-secondary opacity-20 group-hover:scale-110 transition-transform" />
+                     <p className="text-xl font-black uppercase tracking-[0.3em] text-primary/20 italic">HENÜZ YILLIK PLAN OLUŞTURULMADI</p>
+                     <Button className="h-14 px-10 rounded-2xl bg-primary font-black text-xs uppercase tracking-widest gap-4 shadow-2xl">AKILLI PLANI BAŞLAT <ChevronRight className="h-4 w-4" /></Button>
                   </Card>
                 )}
              </div>
@@ -257,79 +172,72 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
         </div>
 
         <div className="lg:col-span-4 space-y-12">
-          <Card className="rounded-[4rem] border-none shadow-[0_60px_120px_-30px_rgba(245,158,11,0.2)] bg-accent text-primary p-14 relative overflow-hidden group">
-             <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2" />
-             <div className="relative z-10 space-y-10">
-                <div className="space-y-4">
-                   <Badge className="bg-primary/10 text-primary border-none font-black text-[10px] uppercase tracking-widest">AKADEMİK TAVSİYE</Badge>
-                   <h3 className="text-4xl font-black italic tracking-tighter uppercase leading-none">AI BUGÜN <br />NE DİYOR?</h3>
-                </div>
-                <p className="text-xl font-bold italic leading-relaxed text-primary/80">
-                   "Bugün Matematik ve Türkçe arasındaki çalışma dengeni korumalısın. Akşam saatleri deneme analizi için en verimli dilim olarak saptandı."
-                </p>
-                <Button 
-                  onClick={handleCreateRecommendedTask}
-                  disabled={isRecLoading || isReadOnly}
-                  className="w-full h-20 rounded-[2rem] bg-primary hover:bg-black text-white font-black text-xs uppercase tracking-widest gap-4 shadow-2xl group/btn"
-                >
-                   {isRecLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Zap className="h-6 w-6 text-accent group-hover/btn:animate-pulse" />} 
-                   GÖREVİ HEMEN OLUŞTUR
-                </Button>
-             </div>
-          </Card>
-
-          <Card className="p-12 rounded-[4rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.1)] bg-white space-y-10 relative overflow-hidden group">
+          {/* Grafik Alanı (Weekly Study) */}
+          <Card className="rounded-[3rem] p-10 bg-white border border-slate-100 shadow-xl space-y-8">
              <div className="flex items-center justify-between">
-                <h4 className="text-2xl font-black italic tracking-tighter uppercase text-primary">ODAKLANMA</h4>
-                <Clock className="h-6 w-6 text-primary opacity-20" />
+                <h4 className="text-xl font-black italic tracking-tighter uppercase text-primary">ÇALIŞMA TRENDİ</h4>
+                <BarChart3 className="h-6 w-6 text-secondary opacity-20" />
              </div>
-             
-             <div className="text-center py-10">
-                <p className="text-[9rem] font-black text-primary tracking-tighter leading-none italic tabular-nums group-hover:scale-105 transition-transform duration-700">
-                   {formatTime(timeLeft)}
-                </p>
+             <div className="h-48 flex items-end gap-3 px-2">
+                {[40, 70, 50, 90, 60, 80, 75].map((h, i) => (
+                   <div key={i} className="flex-1 bg-slate-50 rounded-xl relative group/bar">
+                      <div className="absolute bottom-0 w-full bg-secondary rounded-xl transition-all duration-1000 group-hover/bar:bg-primary" style={{ height: `${h}%` }} />
+                   </div>
+                ))}
              </div>
-
-             <div className="flex gap-4">
-                <Button 
-                  onClick={() => setIsActive(!isActive)}
-                  className={cn(
-                    "flex-1 h-20 rounded-3xl font-black text-xs uppercase tracking-widest gap-4 transition-all shadow-xl",
-                    isActive ? "bg-destructive hover:bg-rose-700 text-white" : "bg-primary hover:bg-accent text-white"
-                  )}
-                >
-                   {isActive ? <PauseCircle className="h-6 w-6" /> : <PlayCircle className="h-6 w-6" />}
-                   {isActive ? 'DURDUR' : 'BAŞLAT'}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={() => { setTimeLeft(45 * 60); setIsActive(false); }}
-                  className="h-20 w-20 rounded-3xl border-2 hover:bg-slate-50 transition-all"
-                >
-                   <RotateCcw className="h-6 w-6 text-primary/40" />
-                </Button>
-             </div>
-
-             <div className="p-8 bg-[#F8FAFC] rounded-[2.5rem] border border-primary/5 flex items-center gap-6">
-                <div className="h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center">
-                   <Target className="h-6 w-6 text-accent" />
+             <div className="grid grid-cols-2 gap-4 pt-4">
+                <div className="text-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                   <p className="text-[9px] font-black text-muted-foreground uppercase mb-1">HAFTALIK NET</p>
+                   <p className="text-2xl font-black text-primary italic">+4.5</p>
                 </div>
-                <div className="space-y-1">
-                   <p className="text-[10px] font-black uppercase tracking-widest opacity-40 leading-none">Hedef Seans</p>
-                   <p className="text-lg font-black text-primary italic leading-none">45 Dakika</p>
+                <div className="text-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                   <p className="text-[9px] font-black text-muted-foreground uppercase mb-1">STRATEJİ</p>
+                   <p className="text-2xl font-black text-emerald-500 italic">İYİ</p>
                 </div>
              </div>
           </Card>
 
-          <Card className="p-10 rounded-[3.5rem] border-none shadow-2xl bg-[#0F172A] text-white relative overflow-hidden">
-             <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-accent/5 blur-[80px] rounded-full" />
-             <div className="relative z-10 flex items-center justify-between">
-                <div className="space-y-2">
-                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 italic">AOS OPERATIONAL STATUS</p>
-                   <h4 className="text-2xl font-black italic tracking-tighter uppercase text-white">SİSTEM STABİL</h4>
+          {/* Pomodoro & Odaklanma (TM PRO Stil) */}
+          <Card className="rounded-[3rem] p-10 bg-[#1a3a5f] text-white space-y-10 shadow-2xl relative overflow-hidden">
+             <div className="absolute top-0 right-0 w-48 h-48 bg-secondary/10 blur-[60px] rounded-full" />
+             <div className="flex items-center justify-between relative z-10">
+                <h4 className="text-xl font-black italic tracking-tighter uppercase">ODAKLANMA</h4>
+                <Clock className="h-6 w-6 text-secondary animate-pulse" />
+             </div>
+             <div className="text-center py-6 relative z-10">
+                <p className="text-[6rem] font-black text-white tracking-tighter leading-none italic tabular-nums text-shadow-deep">25:00</p>
+             </div>
+             <div className="flex gap-4 relative z-10">
+                <Button className="flex-1 h-16 rounded-2xl bg-secondary hover:bg-secondary/90 text-white font-black text-xs uppercase tracking-widest gap-3 shadow-xl">
+                   <Play className="h-5 w-5 fill-current" /> BAŞLAT
+                </Button>
+                <Button variant="ghost" size="icon" className="h-16 w-16 rounded-2xl border-2 border-white/10 hover:bg-white/5">
+                   <Plus className="h-6 w-6" />
+                </Button>
+             </div>
+          </Card>
+
+          {/* Ödüller & Rozetler */}
+          <Card className="rounded-[3rem] p-10 bg-white border border-slate-100 shadow-xl space-y-8">
+             <div className="flex items-center justify-between">
+                <h4 className="text-xl font-black italic tracking-tighter uppercase text-primary">ROZETLERİM</h4>
+                <Award className="h-6 w-6 text-secondary opacity-20" />
+             </div>
+             <div className="flex flex-wrap gap-4 justify-center">
+                {['📝', '🏆', '⏱️', '📚'].map((icon, i) => (
+                   <div key={i} className="h-14 w-14 rounded-2xl bg-slate-50 flex items-center justify-center text-2xl shadow-inner border border-slate-100 hover:scale-110 transition-all cursor-pointer grayscale hover:grayscale-0">
+                      {icon}
+                   </div>
+                ))}
+             </div>
+             <div className="pt-4 space-y-2">
+                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">
+                   <span>SEVİYE 4</span>
+                   <span className="text-secondary">740 / 1000 XP</span>
                 </div>
-                <Activity className="h-8 w-8 text-emerald-500 animate-pulse" />
+                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                   <div className="h-full bg-gradient-to-r from-primary to-secondary transition-all" style={{ width: '74%' }} />
+                </div>
              </div>
           </Card>
         </div>
@@ -338,7 +246,7 @@ export function StudentView({ user, userData, isReadOnly = false }: { user: any,
       <AcademicSessionDialog 
         isOpen={isAddingTask}
         onOpenChange={setIsAddingTask}
-        onSave={handleSaveManualTask}
+        onSave={(data) => console.log('Saving task:', data)}
         selectedDay={format(new Date(), 'EEEE')}
       />
     </div>

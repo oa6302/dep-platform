@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -56,7 +57,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
   return (
     <div className="p-8 lg:p-14 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000 bg-[#F8FAFC]">
       {/* AI Asistan Kutusu (TM PRO Stil) */}
-      <section className="bg-gradient-to-br from-primary/5 to-secondary/5 border border-secondary/30 rounded-[2.5rem] p-10 relative overflow-hidden group">
+      <section className="bg-gradient-to-br from-primary/5 to-secondary/5 border border-secondary/30 rounded-[2.5rem] p-10 relative overflow-hidden group shadow-sm">
         <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/5 blur-[100px] rounded-full" />
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
           <div className="space-y-4 flex-1 text-center md:text-left">
@@ -159,10 +160,10 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                   </Card>
                 ))}
                 {!currentDayPlan && (
-                  <Card onClick={() => router.push('/dashboard/planning?tab=yearly')} className="p-24 text-center bg-white/50 rounded-[4rem] border-4 border-dashed border-slate-200 flex flex-col items-center gap-6 cursor-pointer hover:bg-white hover:border-secondary/20 transition-all group">
+                  <Card onClick={() => router.push('/dashboard/select-exam')} className="p-24 text-center bg-white/50 rounded-[4rem] border-4 border-dashed border-slate-200 flex flex-col items-center gap-6 cursor-pointer hover:bg-white hover:border-secondary/20 transition-all group">
                      <Sparkles className="h-12 w-12 text-secondary opacity-20 group-hover:scale-110 transition-transform" />
                      <p className="text-xl font-black uppercase tracking-[0.3em] text-primary/20 italic">HENÜZ YILLIK PLAN OLUŞTURULMADI</p>
-                     <Button className="h-14 px-10 rounded-2xl bg-primary font-black text-xs uppercase tracking-widest gap-4 shadow-2xl">AKILLI PLANI BAŞLAT <ChevronRight className="h-4 w-4" /></Button>
+                     <Button className="h-14 px-10 rounded-2xl bg-primary font-black text-xs uppercase tracking-widest gap-4 shadow-2xl">HEDEF BELİRLE VE BAŞLA <ChevronRight className="h-4 w-4" /></Button>
                   </Card>
                 )}
              </div>

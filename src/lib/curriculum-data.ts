@@ -21,7 +21,7 @@ export const YKS_TM_TOPICS: Record<string, string[]> = {
     'İslamiyet Öncesi Türk Edebiyatı', 'İslami Dönem Türk Edebiyatı', 
     'Divan Edebiyatı', 'Halk Edebiyatı', 'Tanzimat Edebiyatı', 'Servet-i Fünun', 
     'Fecr-i Ati', 'Milli Edebiyat', 'Cumhuriyet Dönemi Şiir', 'Cumhuriyet Dönemi Roman', 
-    'Cumhuriyet Dönemi Tiyatro', 'Edebi Akımlar', 'Söz Sanatları'
+    'Cumhuriyat Dönemi Tiyatro', 'Edebi Akımlar', 'Söz Sanatları'
   ],
   'Tarih': [
     'Tarih Bilimine Giriş', 'İlk Çağ Uygarlıkları', 'İslam Tarihi', 'Türk-İslam Tarihi', 

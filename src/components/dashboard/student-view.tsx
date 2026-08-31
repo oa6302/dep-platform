@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -8,15 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Play, Sparkles, ChevronRight, Target, Activity, 
   Brain, CheckCircle2, Calendar, Loader2, Clock, 
-  Zap, Plus, TrendingUp, BookOpen, BarChart3, Star
+  Zap, Plus, TrendingUp, BookOpen, BarChart3, Star,
+  Award
 } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { AcademicSessionDialog } from '@/components/academic-session-dialog';
-import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
 
 export function StudentView({ user, userData }: { user: any, userData: any }) {
   const db = useFirestore();

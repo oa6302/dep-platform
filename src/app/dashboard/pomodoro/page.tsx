@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card } from '@/components/ui/card';
@@ -27,6 +26,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const DEFAULT_STREAMS = [
   { id: 'def1', videoId: 'tLqZk2mKz8U', title: 'RUHUN ŞİFASI - NEY SESİ', color: 'bg-emerald-600' },
@@ -216,14 +222,14 @@ export default function PomodoroPage() {
            </div>
 
            <div className="relative z-10 flex items-center justify-center gap-4 overflow-hidden py-10">
-              <p className="text-[10rem] sm:text-[12rem] md:text-[15rem] font-black italic tracking-tighter text-[#0F172A] leading-none text-shadow-premium">
+              <p className="text-[8rem] sm:text-[10rem] md:text-[12rem] font-black italic tracking-tighter text-[#0F172A] leading-none text-shadow-premium">
                  {String(minutes).padStart(2, '0')}
               </p>
               <div className="flex flex-col gap-3 py-6 px-3 bg-accent rounded-full shadow-[0_20px_40px_-10px_rgba(245,158,11,0.5)] shrink-0">
                  <div className="h-4 w-4 rounded-full bg-[#0F172A]" />
                  <div className="h-4 w-4 rounded-full bg-[#0F172A]" />
               </div>
-              <p className="text-[10rem] sm:text-[12rem] md:text-[15rem] font-black italic tracking-tighter text-[#0F172A] leading-none text-shadow-premium">
+              <p className="text-[8rem] sm:text-[10rem] md:text-[12rem] font-black italic tracking-tighter text-[#0F172A] leading-none text-shadow-premium">
                  {String(seconds).padStart(2, '0')}
               </p>
            </div>
@@ -388,7 +394,7 @@ export default function PomodoroPage() {
         <DialogContent className="rounded-[4rem] border-none shadow-2xl p-12 bg-white max-w-lg overflow-hidden">
            <DialogHeader className="space-y-4">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 text-primary font-black text-[10px] uppercase tracking-widest italic shadow-sm w-fit">
-                <Music className="h-3.3 text-accent" /> SONIC EDİTÖR
+                <Music className="h-3 w-3 text-accent" /> SONIC EDİTÖR
               </div>
               <DialogTitle className="text-4xl font-black italic tracking-tighter text-primary uppercase leading-none">
                 {editingStream ? 'KANALI DÜZENLE' : 'YENİ KANAL EKLE'}

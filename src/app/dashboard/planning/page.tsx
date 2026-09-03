@@ -10,14 +10,14 @@ import {
   Calendar, Clock, Zap, Loader2, Sparkles, 
   CheckCircle2, Trash2, ArrowLeft, 
   Home, RotateCcw, FastForward, Gauge, Edit3,
-  Youtube, Globe, Save, X
+  Youtube, Globe, Save, X, CalendarDays
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
 import { doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { format, addDays, isBefore } from 'date-fns';
+import { format, addDays, isBefore, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -56,12 +56,12 @@ export default function PlanningPage() {
   const [editingBlock, setEditingBlock] = useState<any>(null);
 
   const generateFasikulPlan = async () => {
-    if (!db || !user || !endDate) return;
+    if (!db || !user || !endDate || !startDate) return;
     setIsGenerating(true);
 
     try {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
+      const start = parseISO(startDate);
+      const end = parseISO(endDate);
       const diffDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
       const otherLessons = [
@@ -120,13 +120,14 @@ export default function PlanningPage() {
       await setDoc(planRef, {
         userId: user.uid,
         masterPlan: fullPlan,
+        startDate: startDate,
         targetExamDate: endDate,
         updatedAt: serverTimestamp()
       }, { merge: true });
 
       toast({ 
         title: 'Akademik Plan Senkronize Edildi', 
-        description: 'Paragraf rutini ve 2 günlük tam döngü sistemi saniyeler içinde aktif edildi.',
+        description: 'Seçtiğiniz tarihten itibaren tam döngü sistemi saniyeler içinde aktif edildi.',
         className: "bg-primary text-white rounded-2xl shadow-2xl"
       });
     } catch (error) {
@@ -175,6 +176,36 @@ export default function PlanningPage() {
         setEditingBlock({ ...block, date });
         setIsEditDialogOpen(true);
       }
+      return;
+    }
+
+    if (action === 'postpone') {
+      const currentDayIdx = studyPlan.masterPlan.findIndex((d: any) => d.date === date);
+      const nextDay = studyPlan.masterPlan[currentDayIdx + 1];
+      
+      if (!nextDay) {
+        toast({ variant: 'destructive', title: 'Hata', description: 'Ötelenecek sonraki gün bulunamadı. Lütfen planı uzatın.' });
+        return;
+      }
+
+      const currentDay = studyPlan.masterPlan[currentDayIdx];
+      const blockToMove = currentDay.blocks.find((b: any) => b.id === blockId);
+
+      const newPlan = studyPlan.masterPlan.map((day: any, idx: number) => {
+        if (idx === currentDayIdx) {
+          return { ...day, blocks: (day.blocks || []).filter((b: any) => b.id !== blockId) };
+        }
+        if (idx === currentDayIdx + 1) {
+          return { ...day, blocks: [...(day.blocks || []), { ...blockToMove, status: 'planned' }] };
+        }
+        return day;
+      });
+
+      const planRef = doc(db, 'studyPlans', user.uid);
+      updateDoc(planRef, { masterPlan: newPlan, updatedAt: serverTimestamp() })
+        .then(() => {
+          toast({ title: 'Görev Ötelendi', description: 'Çalışma saniyeler içinde bir sonraki güne aktarıldı.', className: "bg-accent text-primary rounded-2xl" });
+        });
       return;
     }
 
@@ -311,10 +342,20 @@ export default function PlanningPage() {
       </header>
 
       <Card className="rounded-[4rem] border-none shadow-[0_50px_100px_-20px_rgba(15,23,42,0.1)] bg-white p-12 space-y-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-           <div className="space-y-3 text-center md:text-left">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+           <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-6 italic">BAŞLANGIÇ TARİHİ</Label>
+              <div className="relative group">
+                 <CalendarDays className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-primary/20 group-focus-within:text-accent transition-colors" />
+                 <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-20 rounded-[2rem] bg-slate-50 border-none shadow-inner font-black text-2xl pl-16 pr-8" />
+              </div>
+           </div>
+           <div className="space-y-3">
               <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-6 italic">HEDEF SINAV TARİHİ</Label>
-              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-20 rounded-[2rem] bg-slate-50 border-none shadow-inner font-black text-2xl px-8" />
+              <div className="relative group">
+                 <Zap className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-primary/20 group-focus-within:text-accent transition-colors" />
+                 <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-20 rounded-[2rem] bg-slate-50 border-none shadow-inner font-black text-2xl pl-16 pr-8" />
+              </div>
               <p className="text-[9px] font-black text-accent uppercase tracking-widest mt-2 ml-6 italic">AYT DERSLERİ 1 ARALIK'TA OTOMATİK BAŞLAR</p>
            </div>
            <div className="space-y-3 flex items-end">
@@ -323,7 +364,7 @@ export default function PlanningPage() {
                 disabled={isGenerating || !endDate}
                 className="w-full h-20 rounded-[2rem] bg-primary hover:bg-accent transition-all duration-500 font-black text-xs uppercase tracking-[0.2em] gap-5 shadow-2xl shadow-primary/30 text-white"
               >
-                {isGenerating ? <Loader2 className="h-7 w-7 animate-spin" /> : <Zap className="h-7 w-7 text-accent" />}
+                {isGenerating ? <Loader2 className="h-7 w-7 animate-spin" /> : <Sparkles className="h-7 w-7 text-accent" />}
                 FASİKÜL MOTORUNU ÇALIŞTIR
               </Button>
            </div>
@@ -331,129 +372,143 @@ export default function PlanningPage() {
       </Card>
 
       <div className="space-y-24">
-        {(studyPlan?.masterPlan || []).slice(0, 14).map((day: any) => (
-          <div key={day.date} className="space-y-12">
-             <div className="flex items-center gap-6 px-6">
-                <h3 className="text-4xl font-black italic text-primary uppercase tracking-tighter">{day.date} — {day.day.toUpperCase()}</h3>
-                <div className="h-px flex-1 bg-slate-200" />
-             </div>
-             <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
-                {day.blocks?.map((block: any) => (
-                  <Card 
-                    key={block.id} 
-                    className={cn(
-                      "p-10 rounded-[5rem] border-none transition-all hover:scale-[1.02] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.15)] group relative overflow-hidden bg-white border-t-[14px]",
-                      block.status === 'done' && "opacity-80"
-                    )}
-                    style={{ borderTopColor: LESSON_COLORS[block.lesson] || '#334155' }}
-                  >
-                     <div className="space-y-12 relative z-10">
-                        <div className="flex justify-between items-start">
-                           <div className="space-y-1">
-                              <h4 className="text-[3.2rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-deep line-clamp-2">
-                                {block.topic}
-                              </h4>
-                              <div className="flex items-center gap-3">
-                                <p className="text-[11px] font-bold text-muted-foreground/40 uppercase tracking-[0.3em] italic">
-                                  {block.lesson === 'TYT Türkçe' ? 'GÜNLÜK PARAGRAF RUTİNİ' : 'GÜNLÜK FASİKÜL MODÜLÜ'}
-                                </p>
-                                <span className={cn("text-[9px] font-black uppercase px-3 py-1 rounded-full text-white", block.lesson.includes('AYT') ? 'bg-indigo-600' : 'bg-slate-400')}>
-                                  {block.lesson.includes('AYT') ? 'AYT' : 'TYT'}
-                                </span>
-                              </div>
-                           </div>
-                           <div className="flex items-center gap-4">
-                             {block.status === 'done' ? (
-                               <div className="bg-emerald-500 text-white px-6 py-2.5 rounded-full text-[11px] font-black flex items-center gap-3 shadow-xl">
-                                 <CheckCircle2 className="h-5 w-5" /> TAMAMLANDI
-                               </div>
-                             ) : (
-                               <div className="bg-rose-500 text-white px-6 py-2.5 rounded-full text-[11px] font-black flex items-center gap-3 shadow-xl">
-                                 <Clock className="h-5 w-5" /> BEKLİYOR
-                               </div>
-                             )}
-                           </div>
-                        </div>
+        {(studyPlan?.masterPlan || []).slice(0, 14).map((day: any) => {
+          const isPast = isBefore(parseISO(day.date), new Date()) && day.date !== format(new Date(), 'yyyy-MM-dd');
+          
+          return (
+            <div key={day.date} className={cn("space-y-12", isPast && "opacity-60")}>
+               <div className="flex items-center gap-6 px-6">
+                  <div className="flex items-center gap-4">
+                     <h3 className="text-4xl font-black italic text-primary uppercase tracking-tighter">{day.date} — {day.day.toUpperCase()}</h3>
+                     {isPast && <Badge className="bg-slate-200 text-slate-500 uppercase text-[10px] font-black py-1 px-4 rounded-full">GEÇMİŞ GÜN</Badge>}
+                     {day.date === format(new Date(), 'yyyy-MM-dd') && <Badge className="bg-accent text-primary uppercase text-[10px] font-black py-1 px-4 rounded-full animate-pulse shadow-lg shadow-accent/20">BUGÜN</Badge>}
+                  </div>
+                  <div className="h-px flex-1 bg-slate-200" />
+               </div>
+               <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
+                  {day.blocks?.map((block: any) => (
+                    <Card 
+                      key={block.id} 
+                      className={cn(
+                        "p-10 rounded-[5rem] border-none transition-all hover:scale-[1.02] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.15)] group relative overflow-hidden bg-white border-t-[14px]",
+                        block.status === 'done' && "opacity-80"
+                      )}
+                      style={{ borderTopColor: LESSON_COLORS[block.lesson] || '#334155' }}
+                    >
+                       <div className="space-y-12 relative z-10">
+                          <div className="flex justify-between items-start">
+                             <div className="space-y-1">
+                                <h4 className="text-[3.2rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-deep line-clamp-2">
+                                  {block.topic}
+                                </h4>
+                                <div className="flex items-center gap-3">
+                                  <p className="text-[11px] font-bold text-muted-foreground/40 uppercase tracking-[0.3em] italic">
+                                    {block.lesson === 'TYT Türkçe' ? 'GÜNLÜK PARAGRAF RUTİNİ' : 'GÜNLÜK FASİKÜL MODÜLÜ'}
+                                  </p>
+                                  <span className={cn("text-[9px] font-black uppercase px-3 py-1 rounded-full text-white", block.lesson.includes('AYT') ? 'bg-indigo-600' : 'bg-slate-400')}>
+                                    {block.lesson.includes('AYT') ? 'AYT' : 'TYT'}
+                                  </span>
+                                </div>
+                             </div>
+                             <div className="flex items-center gap-4">
+                               {block.status === 'done' ? (
+                                 <div className="bg-emerald-500 text-white px-6 py-2.5 rounded-full text-[11px] font-black flex items-center gap-3 shadow-xl">
+                                   <CheckCircle2 className="h-5 w-5" /> TAMAMLANDI
+                                 </div>
+                               ) : (
+                                 <div className="bg-rose-500 text-white px-6 py-2.5 rounded-full text-[11px] font-black flex items-center gap-3 shadow-xl">
+                                   <Clock className="h-5 w-5" /> BEKLİYOR
+                                 </div>
+                               )}
+                             </div>
+                          </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                           <div className="p-10 rounded-[3.5rem] bg-slate-50/50 border border-slate-100 space-y-6 relative overflow-hidden group/p1">
-                              <div className="flex justify-between items-center border-b border-slate-200 pb-4 mb-2">
-                                 <span className="text-[10px] font-black text-primary/40 uppercase tracking-[0.2em]">1. AŞAMA: KONU</span>
-                                 <span className="text-lg font-black text-primary italic">{block.phase1.time}</span>
-                              </div>
-                              <h5 className="font-black text-2xl italic text-primary leading-tight uppercase group-hover/p1:text-accent transition-colors">{block.phase1.type}</h5>
-                              <div className="flex flex-wrap gap-3">
-                                 <span className="text-[10px] font-black uppercase bg-white px-4 py-1.5 rounded-2xl text-primary border border-slate-200 shadow-sm flex items-center gap-2">⏱️ {block.phase1.duration}DK</span>
-                              </div>
-                              <div className="flex gap-6 pt-4">
-                                 <a href={block.phase1.resources?.youtube} target="_blank" className="hover:scale-125 transition-transform text-rose-500 opacity-60 hover:opacity-100"><Youtube className="h-7 w-7" /></a>
-                                 <a href={block.phase1.resources?.ogm} target="_blank" className="hover:scale-125 transition-transform text-blue-500 opacity-60 hover:opacity-100"><Globe className="h-7 w-7" /></a>
-                              </div>
-                           </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                             <div className="p-10 rounded-[3.5rem] bg-slate-50/50 border border-slate-100 space-y-6 relative overflow-hidden group/p1">
+                                <div className="flex justify-between items-center border-b border-slate-200 pb-4 mb-2">
+                                   <span className="text-[10px] font-black text-primary/40 uppercase tracking-[0.2em]">1. AŞAMA: KONU</span>
+                                   <span className="text-lg font-black text-primary italic">{block.phase1.time}</span>
+                                </div>
+                                <h5 className="font-black text-2xl italic text-primary leading-tight uppercase group-hover/p1:text-accent transition-colors">{block.phase1.type}</h5>
+                                <div className="flex flex-wrap gap-3">
+                                   <span className="text-[10px] font-black uppercase bg-white px-4 py-1.5 rounded-2xl text-primary border border-slate-200 shadow-sm flex items-center gap-2">⏱️ {block.phase1.duration}DK</span>
+                                </div>
+                                <div className="flex gap-6 pt-4">
+                                   <a href={block.phase1.resources?.youtube} target="_blank" className="hover:scale-125 transition-transform text-rose-500 opacity-60 hover:opacity-100"><Youtube className="h-7 w-7" /></a>
+                                   <a href={block.phase1.resources?.ogm} target="_blank" className="hover:scale-125 transition-transform text-blue-500 opacity-60 hover:opacity-100"><Globe className="h-7 w-7" /></a>
+                                </div>
+                             </div>
 
-                           <div className="p-10 rounded-[3.5rem] bg-orange-50/50 border border-orange-100 space-y-6 relative overflow-hidden group/p2">
-                              <div className="flex justify-between items-center border-b border-orange-200 pb-4 mb-2">
-                                 <span className="text-[10px] font-black text-accent uppercase tracking-[0.2em]">2. AŞAMA: TEST</span>
-                                 <span className="text-lg font-black text-primary italic">{block.phase2.time}</span>
-                              </div>
-                              <h5 className="font-black text-2xl italic text-primary leading-tight uppercase group-hover/p2:text-accent transition-colors">{block.phase2.type}</h5>
-                              <div className="flex flex-wrap gap-3">
-                                 <span className="text-[10px] font-black uppercase bg-white px-4 py-1.5 rounded-2xl text-accent border border-orange-200 shadow-sm flex items-center gap-2">⏱️ {block.phase2.duration}DK</span>
-                              </div>
-                              <div className="flex gap-6 pt-4">
-                                 <a href={block.phase2.resources?.youtube} target="_blank" className="hover:scale-125 transition-transform text-rose-500 opacity-60 hover:opacity-100"><Youtube className="h-7 w-7" /></a>
-                                 <a href={block.phase2.resources?.ogm} target="_blank" className="hover:scale-125 transition-transform text-blue-500 opacity-60 hover:opacity-100"><Globe className="h-7 w-7" /></a>
-                              </div>
-                           </div>
-                        </div>
+                             <div className="p-10 rounded-[3.5rem] bg-orange-50/50 border border-orange-100 space-y-6 relative overflow-hidden group/p2">
+                                <div className="flex justify-between items-center border-b border-orange-200 pb-4 mb-2">
+                                   <span className="text-[10px] font-black text-accent uppercase tracking-[0.2em]">2. AŞAMA: TEST</span>
+                                   <span className="text-lg font-black text-primary italic">{block.phase2.time}</span>
+                                </div>
+                                <h5 className="font-black text-2xl italic text-primary leading-tight uppercase group-hover/p2:text-accent transition-colors">{block.phase2.type}</h5>
+                                <div className="flex flex-wrap gap-3">
+                                   <span className="text-[10px] font-black uppercase bg-white px-4 py-1.5 rounded-2xl text-accent border border-orange-200 shadow-sm flex items-center gap-2">⏱️ {block.phase2.duration}DK</span>
+                                </div>
+                                <div className="flex gap-6 pt-4">
+                                   <a href={block.phase2.resources?.youtube} target="_blank" className="hover:scale-125 transition-transform text-rose-500 opacity-60 hover:opacity-100"><Youtube className="h-7 w-7" /></a>
+                                   <a href={block.phase2.resources?.ogm} target="_blank" className="hover:scale-125 transition-transform text-blue-500 opacity-60 hover:opacity-100"><Globe className="h-7 w-7" /></a>
+                                </div>
+                             </div>
+                          </div>
 
-                        {/* Actions Terminal */}
-                        <div className="flex justify-center gap-6 pt-10 border-t border-slate-50">
-                           <Button 
-                             onClick={() => handleTaskAction(day.date, block.id, 'done')}
-                             size="icon"
-                             className={cn(
-                               "h-16 w-16 rounded-full transition-all duration-500 shadow-xl", 
-                               block.status === 'done' ? "bg-slate-100 text-slate-400" : "bg-emerald-500 text-white hover:scale-110"
-                             )}
-                           ><CheckCircle2 className="h-7 w-7" /></Button>
+                          {/* Actions Terminal */}
+                          <div className="flex justify-center gap-6 pt-10 border-t border-slate-50">
+                             <Button 
+                               onClick={() => handleTaskAction(day.date, block.id, 'done')}
+                               size="icon"
+                               title="Tamamlandı Olarak İşaretle"
+                               className={cn(
+                                 "h-16 w-16 rounded-full transition-all duration-500 shadow-xl", 
+                                 block.status === 'done' ? "bg-slate-100 text-slate-400" : "bg-emerald-500 text-white hover:scale-110"
+                               )}
+                             ><CheckCircle2 className="h-7 w-7" /></Button>
 
-                           <Button 
-                             onClick={() => handleTaskAction(day.date, block.id, 'repeat')}
-                             size="icon" variant="outline" 
-                             className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-orange-500 text-orange-500 hover:bg-orange-50 transition-all hover:scale-110 shadow-lg"
-                           ><RotateCcw className="h-7 w-7" /></Button>
+                             <Button 
+                               onClick={() => handleTaskAction(day.date, block.id, 'repeat')}
+                               size="icon" variant="outline" 
+                               title="Tekrar Listesine Al"
+                               className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-orange-500 text-orange-500 hover:bg-orange-50 transition-all hover:scale-110 shadow-lg"
+                             ><RotateCcw className="h-7 w-7" /></Button>
 
-                           <Button 
-                             onClick={() => handleTaskAction(day.date, block.id, 'edit')}
-                             size="icon" variant="outline" 
-                             className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-primary text-primary hover:bg-slate-50 transition-all hover:scale-110 shadow-lg"
-                           ><Edit3 className="h-7 w-7" /></Button>
+                             <Button 
+                               onClick={() => handleTaskAction(day.date, block.id, 'postpone')}
+                               size="icon" variant="outline"
+                               title="Sonraki Güne Ötele"
+                               className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-accent text-accent hover:bg-accent/5 transition-all hover:scale-110 shadow-lg"
+                             ><FastForward className="h-7 w-7" /></Button>
 
-                           <Button 
-                             onClick={() => handleTaskAction(day.date, block.id, 'level')}
-                             size="icon" variant="outline" 
-                             className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-blue-500 text-blue-500 hover:bg-blue-50 transition-all hover:scale-110 shadow-lg"
-                           ><Gauge className="h-7 w-7" /></Button>
+                             <Button 
+                               onClick={() => handleTaskAction(day.date, block.id, 'edit')}
+                               size="icon" variant="outline" 
+                               title="Düzenle"
+                               className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-primary text-primary hover:bg-slate-50 transition-all hover:scale-110 shadow-lg"
+                             ><Edit3 className="h-7 w-7" /></Button>
 
-                           <Button 
-                             onClick={() => handleTaskAction(day.date, block.id, 'skip')}
-                             size="icon" variant="outline" 
-                             className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-slate-400 text-slate-400 hover:bg-slate-50 transition-all hover:scale-110 shadow-lg"
-                           ><FastForward className="h-7 w-7" /></Button>
+                             <Button 
+                               onClick={() => handleTaskAction(day.date, block.id, 'level')}
+                               size="icon" variant="outline" 
+                               title="Zorluk Seviyesi"
+                               className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-blue-500 text-blue-500 hover:bg-blue-50 transition-all hover:scale-110 shadow-lg"
+                             ><Gauge className="h-7 w-7" /></Button>
 
-                           <Button 
-                             onClick={() => handleTaskAction(day.date, block.id, 'delete')}
-                             size="icon" variant="outline" 
-                             className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-rose-500 text-rose-500 hover:bg-rose-50 transition-all hover:scale-110 shadow-lg"
-                           ><Trash2 className="h-7 w-7" /></Button>
-                        </div>
-                     </div>
-                  </Card>
-                ))}
-             </div>
-          </div>
-        ))}
+                             <Button 
+                               onClick={() => handleTaskAction(day.date, block.id, 'delete')}
+                               size="icon" variant="outline" 
+                               title="Kalıcı Olarak Sil"
+                               className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-rose-500 text-rose-500 hover:bg-rose-50 transition-all hover:scale-110 shadow-lg"
+                             ><Trash2 className="h-7 w-7" /></Button>
+                          </div>
+                       </div>
+                    </Card>
+                  ))}
+               </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Edit Dialog */}

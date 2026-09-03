@@ -17,7 +17,7 @@ import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
 import { doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { format, addDays, isBefore, parseISO, startOfToday, isAfter, isEqual } from 'date-fns';
+import { format, addDays, isBefore, parseISO, startOfToday, getDate } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -52,122 +52,11 @@ export default function PlanningPage() {
   const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   
   const [isGenerating, setIsGenerating] = useState(false);
-  // Kullanıcı talebi üzerine varsayılan tarihler
   const [startDate, setStartDate] = useState('2026-09-03');
   const [endDate, setEndDate] = useState('2027-06-15');
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<any>(null);
-
-  const generateFasikulPlan = async () => {
-    if (!db || !user || !endDate || !startDate) return;
-    setIsGenerating(true);
-
-    try {
-      const start = parseISO(startDate);
-      const end = parseISO(endDate);
-      const today = startOfToday();
-      
-      const diffDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-
-      const otherLessons = [
-        'TYT Matematik',
-        'AYT Matematik',
-        'Edebiyat',
-        'Tarih',
-        'Coğrafya',
-        'Felsefe'
-      ];
-
-      // Konu havuzlarını hazırla (Tamamlananları çıkar)
-      const completed = userData?.completedTopics || {};
-      const lessonQueues: Record<string, string[]> = {};
-      [...otherLessons, 'TYT Türkçe'].forEach(lesson => {
-        const allTopics = YKS_TM_TOPICS[lesson] || [];
-        const done = completed[lesson] || [];
-        // Sadece tamamlanmamış konuları kuyruğa al
-        lessonQueues[lesson] = allTopics.filter(t => !done.includes(t));
-        // Eğer tüm konular bittiyse, genel tekrar için hepsini geri al
-        if (lessonQueues[lesson].length === 0) lessonQueues[lesson] = [...allTopics];
-      });
-
-      const lessonPointers: Record<string, number> = {};
-      Object.keys(lessonQueues).forEach(l => { lessonPointers[l] = 0; });
-
-      const existingPlan = studyPlan?.masterPlan || [];
-      const newPlan = [];
-
-      for (let i = 0; i <= diffDays; i++) {
-        const currentDt = addDays(start, i);
-        const dateStr = format(currentDt, 'yyyy-MM-dd');
-        const dayName = format(currentDt, 'EEEE', { locale: tr });
-        
-        // KRİTİK: Daha önce çalışılan (geçmişteki) günleri koru
-        const existingDay = existingPlan.find((d: any) => d.date === dateStr);
-        if (existingDay && (isBefore(currentDt, today))) {
-          newPlan.push(existingDay);
-          continue;
-        }
-
-        // 1 Aralık AYT Başlangıç Kuralı
-        const aytStartDate = parseISO('2026-12-01');
-        const isAytActive = !isBefore(currentDt, aytStartDate);
-
-        const dailyBlocks = [];
-        
-        // 1. HER GÜN PARAGRAF (TYT Türkçe)
-        const trQueue = lessonQueues['TYT Türkçe'];
-        if (trQueue.length > 0) {
-          const trTopic = trQueue[lessonPointers['TYT Türkçe'] % trQueue.length];
-          dailyBlocks.push(createBlockData(dateStr, 'TYT Türkçe', trTopic, '09:00'));
-          lessonPointers['TYT Türkçe']++;
-        }
-
-        // 2. ROTASYON
-        const activePool = otherLessons.filter(l => {
-          if (l === 'AYT Matematik' || l === 'Edebiyat') return isAytActive;
-          return true;
-        });
-
-        const slotsPerDay = isAytActive ? 3 : 2;
-        const startHour = 11;
-
-        for (let j = 0; j < slotsPerDay; j++) {
-          const poolIndex = (i * slotsPerDay + j) % activePool.length;
-          const lesson = activePool[poolIndex];
-          const queue = lessonQueues[lesson];
-          if (queue && queue.length > 0) {
-            const topic = queue[lessonPointers[lesson] % queue.length];
-            const time = `${startHour + (j * 2)}:00`;
-            dailyBlocks.push(createBlockData(dateStr, lesson, topic, time));
-            lessonPointers[lesson]++;
-          }
-        }
-
-        newPlan.push({ date: dateStr, day: dayName, blocks: dailyBlocks });
-      }
-
-      const planRef = doc(db, 'studyPlans', user.uid);
-      await setDoc(planRef, {
-        userId: user.uid,
-        masterPlan: newPlan,
-        startDate: startDate,
-        targetExamDate: endDate,
-        updatedAt: serverTimestamp()
-      }, { merge: true });
-
-      toast({ 
-        title: 'Akademik Plan Güncellendi', 
-        description: 'Geçmiş verileriniz korundu, eksik konular 1 Aralık AYT kuralına göre yeniden planlandı.',
-        className: "bg-primary text-white rounded-2xl shadow-2xl"
-      });
-    } catch (error) {
-      console.error(error);
-      toast({ variant: 'destructive', title: 'Hata', description: 'Plan güncellenirken bir sorun oluştu.' });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
   const createBlockData = (dateStr: string, lesson: string, topic: string, time: string) => {
     return {
@@ -201,6 +90,175 @@ export default function PlanningPage() {
         }
       }
     };
+  };
+
+  const createReviewBlockData = (dateStr: string, title: string, time: string, duration: number, type: 'DAILY' | 'WEEKLY' | 'MONTHLY') => {
+    return {
+      id: `review_${dateStr}_${type}_${Math.random().toString(36).substr(2, 5)}`,
+      lesson: 'Genel',
+      topic: title,
+      status: 'planned',
+      difficulty: type === 'MONTHLY' ? 'ZOR' : 'ORTA',
+      phase1: {
+        type: `${type === 'DAILY' ? 'DÜNÜN' : type === 'WEEKLY' ? 'HAFTANIN' : 'AYIN'} ANALİZİ`,
+        time: time,
+        duration: duration,
+        questionTarget: type === 'DAILY' ? 15 : type === 'WEEKLY' ? 50 : 100,
+        resources: {
+          youtube: '',
+          ogm: '',
+          pdf: '',
+          kamp: ''
+        }
+      },
+      phase2: {
+        type: 'HATA VE EKSİK TAKİBİ',
+        time: format(addDays(new Date(`2000-01-01 ${time}`), 0).setHours(parseInt(time.split(':')[0]) + 1), 'HH:mm'),
+        duration: duration,
+        questionTarget: 0,
+        resources: {
+          youtube: '',
+          ogm: '',
+          pdf: '',
+          kamp: ''
+        }
+      }
+    };
+  };
+
+  const generateFasikulPlan = async () => {
+    if (!db || !user || !endDate || !startDate) return;
+    setIsGenerating(true);
+
+    try {
+      const start = parseISO(startDate);
+      const end = parseISO(endDate);
+      const today = startOfToday();
+      
+      const diffDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+
+      const otherLessons = [
+        'TYT Matematik',
+        'AYT Matematik',
+        'Edebiyat',
+        'Tarih',
+        'Coğrafya',
+        'Felsefe'
+      ];
+
+      const completed = userData?.completedTopics || {};
+      const lessonQueues: Record<string, string[]> = {};
+      [...otherLessons, 'TYT Türkçe'].forEach(lesson => {
+        const allTopics = YKS_TM_TOPICS[lesson] || [];
+        const done = completed[lesson] || [];
+        lessonQueues[lesson] = allTopics.filter(t => !done.includes(t));
+        if (lessonQueues[lesson].length === 0) lessonQueues[lesson] = [...allTopics];
+      });
+
+      const lessonPointers: Record<string, number> = {};
+      Object.keys(lessonQueues).forEach(l => { lessonPointers[l] = 0; });
+
+      const existingPlan = studyPlan?.masterPlan || [];
+      const newPlan = [];
+
+      for (let i = 0; i <= diffDays; i++) {
+        const currentDt = addDays(start, i);
+        const dateStr = format(currentDt, 'yyyy-MM-dd');
+        const dayName = format(currentDt, 'EEEE', { locale: tr });
+        const dayOfMonth = getDate(currentDt);
+        
+        // KRİTİK: Daha önce çalışılan (geçmişteki) günleri koru
+        const existingDay = existingPlan.find((d: any) => d.date === dateStr);
+        if (existingDay && (isBefore(currentDt, today))) {
+          newPlan.push(existingDay);
+          continue;
+        }
+
+        const aytStartDate = parseISO('2026-12-01');
+        const isAytActive = !isBefore(currentDt, aytStartDate);
+
+        const dailyBlocks = [];
+        
+        // 1. HER GÜN PARAGRAF (09:00)
+        const trQueue = lessonQueues['TYT Türkçe'];
+        if (trQueue.length > 0) {
+          const trTopic = trQueue[lessonPointers['TYT Türkçe'] % trQueue.length];
+          dailyBlocks.push(createBlockData(dateStr, 'TYT Türkçe', trTopic, '09:00'));
+          lessonPointers['TYT Türkçe']++;
+        }
+
+        // 2. DÜNÜN TEKRARI (12:00 - 13:00)
+        dailyBlocks.push(createReviewBlockData(dateStr, 'DÜNÜN ANALİZİ VE TEKRARI', '12:00', 60, 'DAILY'));
+
+        // 3. ROTASYON SLOTS
+        const activePool = otherLessons.filter(l => {
+          if (l === 'AYT Matematik' || l === 'Edebiyat') return isAytActive;
+          return true;
+        });
+
+        const slotsPerDay = isAytActive ? 3 : 2;
+        
+        for (let j = 0; j < slotsPerDay; j++) {
+          const poolIndex = (i * slotsPerDay + j) % activePool.length;
+          const lesson = activePool[poolIndex];
+          const queue = lessonQueues[lesson];
+          if (queue && queue.length > 0) {
+            const topic = queue[lessonPointers[lesson] % queue.length];
+            
+            let topicTime, testTime;
+            if (j === 0) {
+                topicTime = '11:00';
+                testTime = '13:00'; // 12:00 slotu Dünün Tekrarı için ayrıldı
+            } else {
+                topicTime = `${12 + (j * 2)}:00`;
+                testTime = `${13 + (j * 2)}:00`;
+            }
+
+            const standardBlock = createBlockData(dateStr, lesson, topic, topicTime);
+            dailyBlocks.push({
+                ...standardBlock,
+                phase2: {
+                    ...standardBlock.phase2,
+                    time: testTime
+                }
+            });
+            lessonPointers[lesson]++;
+          }
+        }
+
+        // 4. HAFTALIK TEKRAR (PAZARLARI)
+        if (dayName === 'Pazar') {
+          dailyBlocks.push(createReviewBlockData(dateStr, 'HAFTALIK GENEL STRATEJİ TEKRARI', '18:00', 90, 'WEEKLY'));
+        }
+
+        // 5. AYLIK TEKRAR (HER AYIN 30'U)
+        if (dayOfMonth === 30) {
+          dailyBlocks.push(createReviewBlockData(dateStr, 'AYLIK MASTER KAZANIM TEKRARI', '20:00', 120, 'MONTHLY'));
+        }
+
+        newPlan.push({ date: dateStr, day: dayName, blocks: dailyBlocks });
+      }
+
+      const planRef = doc(db, 'studyPlans', user.uid);
+      await setDoc(planRef, {
+        userId: user.uid,
+        masterPlan: newPlan,
+        startDate: startDate,
+        targetExamDate: endDate,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      toast({ 
+        title: 'Akademik Plan Güncellendi', 
+        description: 'Geçmiş verileriniz korundu, dünün tekrarı ve periyodik rutinler saniyeler içinde planlandı.',
+        className: "bg-primary text-white rounded-2xl shadow-2xl"
+      });
+    } catch (error) {
+      console.error(error);
+      toast({ variant: 'destructive', title: 'Hata', description: 'Plan güncellenirken bir sorun oluştu.' });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleTaskAction = (date: string, blockId: string, action: string) => {
@@ -418,7 +476,7 @@ export default function PlanningPage() {
         {studyPlan?.masterPlan && (
           <div className="flex items-center gap-3 p-6 bg-blue-50 rounded-3xl border border-blue-100 animate-in slide-in-from-top-2 duration-500">
              <AlertTriangle className="h-5 w-5 text-blue-500" />
-             <p className="text-xs font-bold text-blue-700 italic">Motoru tekrar çalıştırdığınızda geçmiş çalışmalarınız korunur ve gelecek günler eksik konularınıza göre saniyeler içinde yeniden optimize edilir.</p>
+             <p className="text-xs font-bold text-blue-700 italic">Motoru tekrar çalıştırdığınızda geçmiş çalışmalarınız ve özel düzenlemeleriniz korunur, gelecek günler ise yeni rutinlerinize göre optimize edilir.</p>
           </div>
         )}
       </Card>
@@ -428,7 +486,7 @@ export default function PlanningPage() {
           const currentDt = parseISO(day.date);
           const today = startOfToday();
           const isPast = isBefore(currentDt, today);
-          const isToday = isEqual(currentDt, today);
+          const isToday = format(currentDt, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
           
           return (
             <div key={day.date} className={cn("space-y-12", isPast && "opacity-60")}>
@@ -458,11 +516,13 @@ export default function PlanningPage() {
                                 </h4>
                                 <div className="flex items-center gap-3">
                                   <p className="text-[11px] font-bold text-muted-foreground/40 uppercase tracking-[0.3em] italic">
-                                    {block.lesson === 'TYT Türkçe' ? 'GÜNLÜK PARAGRAF RUTİNİ' : 'GÜNLÜK FASİKÜL MODÜLÜ'}
+                                    {block.lesson === 'Genel' ? 'PERİYODİK ANALİZ TERMİNALİ' : block.lesson === 'TYT Türkçe' ? 'GÜNLÜK PARAGRAF RUTİNİ' : 'GÜNLÜK FASİKÜL MODÜLÜ'}
                                   </p>
-                                  <span className={cn("text-[9px] font-black uppercase px-3 py-1 rounded-full text-white", block.lesson.includes('AYT') ? 'bg-indigo-600' : 'bg-slate-400')}>
-                                    {block.lesson.includes('AYT') ? 'AYT' : 'TYT'}
-                                  </span>
+                                  {block.lesson !== 'Genel' && (
+                                    <span className={cn("text-[9px] font-black uppercase px-3 py-1 rounded-full text-white", block.lesson.includes('AYT') ? 'bg-indigo-600' : 'bg-slate-400')}>
+                                      {block.lesson.includes('AYT') ? 'AYT' : 'TYT'}
+                                    </span>
+                                  )}
                                 </div>
                              </div>
                              <div className="flex items-center gap-4">
@@ -481,7 +541,7 @@ export default function PlanningPage() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                              <div className="p-10 rounded-[3.5rem] bg-slate-50/50 border border-slate-100 space-y-6 relative overflow-hidden group/p1">
                                 <div className="flex justify-between items-center border-b border-slate-200 pb-4 mb-2">
-                                   <span className="text-[10px] font-black text-primary/40 uppercase tracking-[0.2em]">1. AŞAMA: KONU</span>
+                                   <span className="text-[10px] font-black text-primary/40 uppercase tracking-[0.2em]">1. AŞAMA: KONU / ANALİZ</span>
                                    <span className="text-lg font-black text-primary italic">{block.phase1.time}</span>
                                 </div>
                                 <h5 className="font-black text-2xl italic text-primary leading-tight uppercase group-hover/p1:text-accent transition-colors">{block.phase1.type}</h5>
@@ -498,7 +558,7 @@ export default function PlanningPage() {
 
                              <div className="p-10 rounded-[3.5rem] bg-orange-50/50 border border-orange-100 space-y-6 relative overflow-hidden group/p2">
                                 <div className="flex justify-between items-center border-b border-orange-200 pb-4 mb-2">
-                                   <span className="text-[10px] font-black text-accent uppercase tracking-[0.2em]">2. AŞAMA: TEST</span>
+                                   <span className="text-[10px] font-black text-accent uppercase tracking-[0.2em]">2. AŞAMA: TEST / PEKİŞTİRME</span>
                                    <span className="text-lg font-black text-primary italic">{block.phase2.time}</span>
                                 </div>
                                 <h5 className="font-black text-2xl italic text-primary leading-tight uppercase group-hover/p2:text-accent transition-colors">{block.phase2.type}</h5>

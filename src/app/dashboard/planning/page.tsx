@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
-  Calendar, Clock, Target, Plus, Zap, Loader2, Sparkles, 
-  ChevronRight, Brain, CheckCircle2, History, Trash2, ArrowLeft, 
-  Home, RefreshCcw, RotateCcw, FastForward, Gauge, Edit3, ClipboardList, BookOpen,
-  ArrowRight, Youtube, FileText, Globe, Award, AlertCircle
+  Calendar, Clock, Zap, Loader2, Sparkles, 
+  CheckCircle2, Trash2, ArrowLeft, 
+  Home, RotateCcw, FastForward, Gauge, Edit3,
+  Youtube, FileText, Globe
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
@@ -20,17 +20,17 @@ import { useRouter } from 'next/navigation';
 import { format, addDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
-const LESSON_THEMES: Record<string, string> = {
-  'TYT Matematik': 'bg-[#1e293b] text-white',
-  'AYT Matematik': 'bg-[#0f172a] text-white',
-  'Geometri': 'bg-[#064e3b] text-white',
-  'TYT Türkçe': 'bg-[#1a3a5f] text-white',
-  'Edebiyat': 'bg-[#881337] text-white',
-  'Tarih': 'bg-[#7c2d12] text-white',
-  'Coğrafya': 'bg-[#14532d] text-white',
-  'Felsefe': 'bg-[#4c1d95] text-white',
-  'Din Kültürü': 'bg-[#312e81] text-white',
-  'Genel': 'bg-slate-700 text-white',
+const LESSON_COLORS: Record<string, string> = {
+  'TYT Matematik': '#1e293b',
+  'AYT Matematik': '#0f172a',
+  'Geometri': '#064e3b',
+  'TYT Türkçe': '#1a3a5f',
+  'Edebiyat': '#881337',
+  'Tarih': '#7c2d12',
+  'Coğrafya': '#14532d',
+  'Felsefe': '#4c1d95',
+  'Din Kültürü': '#312e81',
+  'Genel': '#334155',
 };
 
 export default function PlanningPage() {
@@ -66,6 +66,7 @@ export default function PlanningPage() {
 
         const dailyTasks = [];
         
+        // 1. SAAT: YENİ KONU
         lessons.forEach((lesson, lIdx) => {
           const topics = YKS_TM_TOPICS[lesson];
           const topic = topics[lessonPointers[lesson] % topics.length];
@@ -87,6 +88,7 @@ export default function PlanningPage() {
             }
           });
 
+          // 2. SAAT: TEST VE AYRINTI
           dailyTasks.push({
             id: `task_${dateStr}_${lesson}_test_${lIdx}`,
             lesson,
@@ -107,6 +109,7 @@ export default function PlanningPage() {
           lessonPointers[lesson]++;
         });
 
+        // 3. SAAT: DÜNÜN TEKRARI
         if (i > 0) {
           const yesterdayDt = addDays(start, i - 1);
           const yesterdayStr = format(yesterdayDt, 'yyyy-MM-dd');
@@ -133,7 +136,7 @@ export default function PlanningPage() {
         updatedAt: serverTimestamp()
       }, { merge: true });
 
-      toast({ title: 'Plan Senkronize Edildi', description: 'Fasikül hiyerarşisi 364 günlük takvime işlendi.' });
+      toast({ title: 'Plan Senkronize Edildi', description: 'Fasikül hiyerarşisi (Konu-Test-Tekrar) takvime işlendi.' });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Hata', description: 'Plan oluşturulamadı.' });
     } finally {
@@ -183,7 +186,7 @@ export default function PlanningPage() {
         </div>
       </header>
 
-      <Card className="rounded-[4rem] border-none shadow-[0_50px_100px_-20px_rgba(15,23,42,0.15)] bg-white p-12 space-y-10">
+      <Card className="rounded-[4rem] border-none shadow-[0_50px_100px_-20px_rgba(15,23,42,0.1)] bg-white p-12 space-y-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
            <div className="space-y-3">
               <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-6 italic">HEDEF SINAV TARİHİ</Label>
@@ -211,106 +214,107 @@ export default function PlanningPage() {
              </div>
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-10">
                 {day.tasks.map((t: any) => (
-                  <Card key={t.id} className={cn(
-                    "aspect-square p-5 rounded-[4rem] border-none flex flex-col justify-between transition-all hover:scale-[1.05] shadow-[0_45px_100px_-25px_rgba(15,23,42,0.4)] group relative overflow-hidden",
-                    LESSON_THEMES[t.lesson] || "bg-slate-700 text-white",
-                    t.status === 'done' && "opacity-40 grayscale scale-95"
-                  )}>
-                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 blur-3xl rounded-full" />
-                     
+                  <Card 
+                    key={t.id} 
+                    className={cn(
+                      "aspect-square p-5 rounded-[4rem] border-none flex flex-col justify-between transition-all hover:scale-[1.05] shadow-[0_45px_100px_-25px_rgba(15,23,42,0.12)] group relative overflow-hidden bg-white border-t-[8px]",
+                      t.status === 'done' && "opacity-60 grayscale scale-95"
+                    )}
+                    style={{ borderTopColor: LESSON_COLORS[t.lesson] || '#334155' }}
+                  >
                      <div className="space-y-2.5 relative z-10">
                         <div className="flex justify-between items-start">
-                           <span className="text-[9px] font-black uppercase px-4 py-1.5 rounded-full shadow-lg bg-white/10 backdrop-blur-xl border border-white/10 flex items-center gap-2 text-white">
+                           <span className="text-[9px] font-black uppercase px-4 py-1.5 rounded-full shadow-sm bg-slate-50 border border-slate-100 flex items-center gap-2 text-primary">
                              📋 {t.lesson.toUpperCase()}
                            </span>
                            <div className="flex items-center gap-2">
                              {t.status === 'done' ? (
-                               <div className="bg-emerald-500 text-white px-2 py-0.5 rounded-full text-[8px] font-black flex items-center gap-1">
+                               <div className="bg-emerald-500 text-white px-2 py-0.5 rounded-full text-[8px] font-black flex items-center gap-1 shadow-lg">
                                  <CheckCircle2 className="h-2.5 w-2.5" /> TAMAMLANDI
                                </div>
                              ) : (
-                               <div className="bg-rose-500 text-white px-2 py-0.5 rounded-full text-[8px] font-black flex items-center gap-1">
+                               <div className="bg-rose-500 text-white px-2 py-0.5 rounded-full text-[8px] font-black flex items-center gap-1 shadow-lg">
                                  <Clock className="h-2.5 w-2.5" /> BEKLİYOR
                                </div>
                              )}
-                             <span className="text-base font-black text-white/40 italic">{t.time || '10:00'}</span>
+                             <span className="text-base font-black text-slate-300 italic">{t.time || '10:00'}</span>
                            </div>
                         </div>
 
                         <div className="space-y-1">
-                           <h4 className="text-[1.5rem] font-black italic leading-[0.95] tracking-tighter uppercase text-white text-shadow-premium">
+                           <h4 className="text-[1.5rem] font-black italic leading-[0.95] tracking-tighter uppercase text-primary">
                               {t.type}
                            </h4>
-                           <p className="text-[10px] font-bold text-white/50 italic leading-tight truncate">
+                           <p className="text-[10px] font-bold text-muted-foreground italic leading-tight truncate">
                               {t.topic}
                            </p>
                         </div>
 
                         <div className="space-y-2">
                            <div className="flex flex-wrap gap-1.5">
-                              <span className="text-[8px] font-black uppercase bg-white/10 px-2.5 py-1.5 rounded-xl text-accent flex items-center gap-1 shadow-inner">🟡 {t.difficulty}</span>
-                              <span className="text-[8px] font-black uppercase bg-white/10 px-2.5 py-1.5 rounded-xl text-white flex items-center gap-1 shadow-inner">⏱️ {t.duration}DK</span>
-                              <span className="text-[8px] font-black uppercase bg-white/10 px-2.5 py-1.5 rounded-xl text-white flex items-center gap-1 shadow-inner">📝 {t.questionTarget} SORU</span>
+                              <span className="text-[8px] font-black uppercase bg-slate-50 px-2.5 py-1.5 rounded-xl text-accent flex items-center gap-1 shadow-inner border border-slate-100">🟡 {t.difficulty}</span>
+                              <span className="text-[8px] font-black uppercase bg-slate-50 px-2.5 py-1.5 rounded-xl text-primary flex items-center gap-1 shadow-inner border border-slate-100">⏱️ {t.duration}DK</span>
+                              <span className="text-[8px] font-black uppercase bg-slate-50 px-2.5 py-1.5 rounded-xl text-primary flex items-center gap-1 shadow-inner border border-slate-100">📝 {t.questionTarget} SORU</span>
                            </div>
                            <div className="flex items-center gap-4 pt-0.5">
                               {t.resources ? (
                                 <div className="flex gap-4">
-                                   <a href={t.resources.youtube} target="_blank" className="hover:scale-125 transition-transform text-white/60 hover:text-white"><Youtube className="h-4 w-4" /></a>
-                                   <a href={t.resources.ogm} target="_blank" className="hover:scale-125 transition-transform text-white/60 hover:text-white"><Globe className="h-4 w-4" /></a>
-                                   <a href={t.resources.pdf} target="_blank" className="hover:scale-125 transition-transform text-white/60 hover:text-white"><FileText className="h-4 w-4" /></a>
+                                   <a href={t.resources.youtube} target="_blank" className="hover:scale-125 transition-transform text-slate-400 hover:text-rose-500"><Youtube className="h-4 w-4" /></a>
+                                   <a href={t.resources.ogm} target="_blank" className="hover:scale-125 transition-transform text-slate-400 hover:text-blue-500"><Globe className="h-4 w-4" /></a>
+                                   <a href={t.resources.pdf} target="_blank" className="hover:scale-125 transition-transform text-slate-400 hover:text-primary"><FileText className="h-4 w-4" /></a>
                                 </div>
                               ) : (
-                                <span className="text-[8px] font-bold text-white/30 italic uppercase tracking-widest">Kaynak eklenmedi</span>
+                                <span className="text-[8px] font-bold text-slate-300 italic uppercase tracking-widest">Kaynak eklenmedi</span>
                               )}
                            </div>
                         </div>
                      </div>
                      
-                     <div className="grid grid-cols-3 gap-2 pt-3 border-t border-white/5 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-1 group-hover:translate-y-0">
+                     <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-50 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-1 group-hover:translate-y-0">
                         <Button 
                           onClick={() => handleTaskAction(day.date, t.id, 'done')}
                           size="icon" 
                           className={cn(
-                            "h-10 w-10 rounded-2xl transition-all shadow-2xl",
-                            t.status === 'done' ? "bg-white/20" : "bg-emerald-500 hover:bg-emerald-400"
+                            "h-10 w-10 rounded-2xl transition-all shadow-xl",
+                            t.status === 'done' ? "bg-slate-100 text-slate-400" : "bg-emerald-500 hover:bg-emerald-400 text-white"
                           )}
                         >
-                          <CheckCircle2 className="h-4 w-4 text-white" />
+                          <CheckCircle2 className="h-4 w-4" />
                         </Button>
                         <Button 
                           onClick={() => handleTaskAction(day.date, t.id, 'repeat')}
                           size="icon" 
-                          variant="ghost" 
-                          className="h-10 w-10 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-accent"
+                          variant="outline" 
+                          className="h-10 w-10 rounded-2xl bg-white hover:bg-orange-50 border-slate-100 text-orange-500"
                         >
                           <RotateCcw className="h-4 w-4" />
                         </Button>
                         <Button 
                           size="icon" 
-                          variant="ghost" 
-                          className="h-10 w-10 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/60"
+                          variant="outline" 
+                          className="h-10 w-10 rounded-2xl bg-white hover:bg-slate-50 border-slate-100 text-slate-400"
                         >
                           <FastForward className="h-4 w-4" />
                         </Button>
                         <Button 
                           size="icon" 
-                          variant="ghost" 
-                          className="h-10 w-10 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-blue-400"
+                          variant="outline" 
+                          className="h-10 w-10 rounded-2xl bg-white hover:bg-blue-50 border-slate-100 text-blue-500"
                         >
                           <Gauge className="h-4 w-4" />
                         </Button>
                         <Button 
                           size="icon" 
-                          variant="ghost" 
-                          className="h-10 w-10 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white"
+                          variant="outline" 
+                          className="h-10 w-10 rounded-2xl bg-white hover:bg-slate-50 border-slate-100 text-slate-900"
                         >
                           <Edit3 className="h-4 w-4" />
                         </Button>
                         <Button 
                           onClick={() => handleTaskAction(day.date, t.id, 'delete')}
                           size="icon" 
-                          variant="ghost" 
-                          className="h-10 w-10 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-rose-500"
+                          variant="outline" 
+                          className="h-10 w-10 rounded-2xl bg-white hover:bg-rose-50 border-slate-100 text-rose-500"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

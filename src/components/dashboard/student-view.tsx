@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Sparkles, Brain, CheckCircle2, Loader2, Clock, 
   Zap, Plus, Award, RotateCcw, FastForward, Gauge, Edit3, Trash2,
-  Youtube, Globe, BellRing
+  Youtube, Globe, BellRing, FileText
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -134,7 +134,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                    <div className="space-y-12 relative z-10">
                         <div className="flex justify-between items-start">
                            <div className="space-y-2">
-                              <h4 className="text-[3.5rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-deep">
+                              <h4 className="text-[3.5rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-deep line-clamp-1 max-w-[70%]">
                                 {block.topic}
                               </h4>
                               <p className="text-[12px] font-bold text-muted-foreground/30 uppercase tracking-[0.4em] italic">
@@ -155,33 +155,33 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                           {/* Phase 1 */}
                            <div className="p-10 rounded-[4rem] bg-slate-50/50 border border-slate-100 space-y-8 relative overflow-hidden group/p1 transition-all hover:bg-white hover:shadow-2xl">
                               <div className="flex justify-between items-center border-b border-slate-200 pb-6">
                                  <span className="text-[11px] font-black text-primary/30 uppercase tracking-[0.3em]">1. AŞAMA: KONU</span>
-                                 <span className="text-xl font-black text-primary italic">{block.phase1.time}</span>
+                                 <span className="text-xl font-black text-primary italic">{block.phase1?.time || '10:00'}</span>
                               </div>
-                              <h5 className="font-black text-[1.8rem] italic text-primary leading-tight uppercase group-hover/p1:text-accent transition-all">{block.phase1.type}</h5>
-                              <div className="flex flex-wrap gap-4">
-                                 <span className="text-[11px] font-black uppercase bg-white px-6 py-2 rounded-2xl text-primary border border-slate-200 shadow-sm flex items-center gap-3">⏱️ {block.phase1.duration}DK</span>
-                              </div>
+                              <h5 className="font-black text-[1.8rem] italic text-primary leading-tight uppercase group-hover/p1:text-accent transition-all">{block.phase1?.type || 'KONU ÇALIŞMASI'}</h5>
                               <div className="flex gap-8 pt-4">
-                                 <a href={block.phase1.resources?.youtube} target="_blank" className="hover:scale-125 transition-all text-rose-500 opacity-40 hover:opacity-100"><Youtube className="h-8 w-8" /></a>
-                                 <a href={block.phase1.resources?.ogm} target="_blank" className="hover:scale-125 transition-all text-blue-500 opacity-40 hover:opacity-100"><Globe className="h-8 w-8" /></a>
+                                 {block.phase1?.resources?.youtube && <a href={block.phase1.resources.youtube} target="_blank" className="hover:scale-125 transition-all text-rose-500 opacity-40 hover:opacity-100"><Youtube className="h-8 w-8" /></a>}
+                                 {block.phase1?.resources?.pdf && <a href={block.phase1.resources.pdf} target="_blank" className="hover:scale-125 transition-all text-blue-500 opacity-40 hover:opacity-100"><FileText className="h-8 w-8" /></a>}
+                                 {block.phase1?.resources?.kamp && <a href={block.phase1.resources.kamp} target="_blank" className="hover:scale-125 transition-all text-orange-500 opacity-40 hover:opacity-100"><Zap className="h-8 w-8" /></a>}
+                                 {block.phase1?.resources?.ogm && <a href={block.phase1.resources.ogm} target="_blank" className="hover:scale-125 transition-all text-emerald-500 opacity-40 hover:opacity-100"><Globe className="h-8 w-8" /></a>}
                               </div>
                            </div>
 
+                           {/* Phase 2 */}
                            <div className="p-10 rounded-[4rem] bg-orange-50/50 border border-orange-100 space-y-8 relative overflow-hidden group/p2 transition-all hover:bg-white hover:shadow-2xl">
                               <div className="flex justify-between items-center border-b border-orange-200 pb-6">
                                  <span className="text-[11px] font-black text-accent uppercase tracking-[0.3em]">2. AŞAMA: TEST</span>
-                                 <span className="text-xl font-black text-primary italic">{block.phase2.time}</span>
+                                 <span className="text-xl font-black text-primary italic">{block.phase2?.time || '11:00'}</span>
                               </div>
-                              <h5 className="font-black text-[1.8rem] italic text-primary leading-tight uppercase group-hover/p2:text-accent transition-all">{block.phase2.type}</h5>
-                              <div className="flex flex-wrap gap-4">
-                                 <span className="text-[11px] font-black uppercase bg-white px-6 py-2 rounded-2xl text-accent border border-orange-200 shadow-sm flex items-center gap-3">⏱️ {block.phase2.duration}DK</span>
-                              </div>
+                              <h5 className="font-black text-[1.8rem] italic text-primary leading-tight uppercase group-hover/p2:text-accent transition-all">{block.phase2?.type || 'TEST ÇALIŞMASI'}</h5>
                               <div className="flex gap-8 pt-4">
-                                 <a href={block.phase2.resources?.youtube} target="_blank" className="hover:scale-125 transition-all text-rose-500 opacity-40 hover:opacity-100"><Youtube className="h-8 w-8" /></a>
-                                 <a href={block.phase2.resources?.ogm} target="_blank" className="hover:scale-125 transition-all text-blue-500 opacity-40 hover:opacity-100"><Globe className="h-8 w-8" /></a>
+                                 {block.phase2?.resources?.youtube && <a href={block.phase2.resources.youtube} target="_blank" className="hover:scale-125 transition-all text-rose-500 opacity-40 hover:opacity-100"><Youtube className="h-8 w-8" /></a>}
+                                 {block.phase2?.resources?.pdf && <a href={block.phase2.resources.pdf} target="_blank" className="hover:scale-125 transition-all text-blue-500 opacity-40 hover:opacity-100"><FileText className="h-8 w-8" /></a>}
+                                 {block.phase2?.resources?.kamp && <a href={block.phase2.resources.kamp} target="_blank" className="hover:scale-125 transition-all text-orange-500 opacity-40 hover:opacity-100"><Zap className="h-8 w-8" /></a>}
+                                 {block.phase2?.resources?.ogm && <a href={block.phase2.resources.ogm} target="_blank" className="hover:scale-125 transition-all text-emerald-500 opacity-40 hover:opacity-100"><Globe className="h-8 w-8" /></a>}
                               </div>
                            </div>
                         </div>

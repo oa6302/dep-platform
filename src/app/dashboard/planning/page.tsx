@@ -444,68 +444,84 @@ export default function PlanningPage() {
                     <Card 
                       key={block.id} 
                       className={cn(
-                        "p-10 rounded-[5rem] border-none transition-all hover:scale-[1.02] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.15)] group relative overflow-hidden bg-white border-t-[14px]",
-                        block.status === 'done' && "opacity-80"
+                        "p-12 rounded-[5.5rem] border-none transition-all hover:scale-[1.02] shadow-[0_70px_130px_-30px_rgba(0,0,0,0.18)] group relative overflow-hidden bg-white border-t-[14px]",
+                        block.status === 'done' && "opacity-90"
                       )}
                       style={{ borderTopColor: LESSON_COLORS[block.lesson] || '#334155' }}
                     >
                        <div className="space-y-12 relative z-10">
                           <div className="flex justify-between items-start">
-                             <div className="space-y-1">
-                                <h4 className="text-[3.2rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-deep line-clamp-2">{block.topic}</h4>
-                                <p className="text-[11px] font-bold text-muted-foreground/40 uppercase tracking-[0.3em] italic">{block.lesson === 'Genel' ? 'PERİYODİK ANALİZ TERMİNALİ' : 'GÜNLÜK FASİKÜL MODÜLÜ'}</p>
+                             <div className="space-y-2">
+                                <h4 className="text-[3.5rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-deep line-clamp-2">{block.topic}</h4>
+                                <p className="text-[12px] font-bold text-muted-foreground/30 uppercase tracking-[0.4em] italic">{block.lesson === 'Genel' ? 'PERİYODİK ANALİZ TERMİNALİ' : 'GÜNLÜK FASİKÜL MODÜLÜ'}</p>
                              </div>
-                             <div className="bg-slate-50 px-6 py-2.5 rounded-full text-[11px] font-black flex items-center gap-3 border border-slate-100">
-                                {block.status === 'done' ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <Clock className="h-5 w-5 text-primary" />}
-                                {block.status === 'done' ? 'TAMAMLANDI' : 'BEKLİYOR'}
+                             <div className="flex items-center gap-6">
+                               {block.status === 'done' ? (
+                                 <div className="bg-emerald-500 text-white px-8 py-3 rounded-full text-[12px] font-black flex items-center gap-4 shadow-2xl animate-in zoom-in-75">
+                                   <CheckCircle2 className="h-6 w-6" /> TAMAMLANDI
+                                 </div>
+                               ) : (
+                                 <div className="bg-rose-500 text-white px-8 py-3 rounded-full text-[12px] font-black flex items-center gap-4 shadow-2xl">
+                                   <Clock className="h-6 w-6" /> BEKLİYOR
+                                 </div>
+                               )}
                              </div>
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                              {/* Phase 1 */}
-                             <div className="p-10 rounded-[3.5rem] bg-slate-50/50 border border-slate-100 space-y-6 relative group/p1">
-                                <div className="flex justify-between items-center border-b border-slate-200 pb-4">
-                                   <span className="text-[10px] font-black text-primary/40 uppercase tracking-[0.2em]">1. AŞAMA</span>
-                                   <span className="text-lg font-black text-primary italic">{block.phase1?.time || '10:00'}</span>
+                             <div className="p-10 rounded-[4rem] bg-slate-50/50 border border-slate-100 space-y-8 relative overflow-hidden group/p1 transition-all hover:bg-white hover:shadow-2xl">
+                                <div className="flex justify-between items-center border-b border-slate-200 pb-6">
+                                   <span className="text-[11px] font-black text-primary/30 uppercase tracking-[0.3em]">1. AŞAMA: KONU</span>
+                                   <span className="text-xl font-black text-primary italic">{block.phase1?.time || '10:00'}</span>
                                 </div>
-                                <h5 className="font-black text-2xl italic text-primary leading-tight uppercase group-hover/p1:text-accent transition-colors">{block.phase1?.type || 'KONU ÇALIŞMASI'}</h5>
-                                <div className="flex gap-4 pt-4">
-                                   {block.phase1?.resources?.youtube && <a href={block.phase1.resources.youtube} target="_blank" className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm hover:scale-110 transition-all text-rose-500"><Youtube className="h-5 w-5" /></a>}
-                                   {block.phase1?.resources?.pdf && <a href={block.phase1.resources.pdf} target="_blank" className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm hover:scale-110 transition-all text-blue-600"><FileText className="h-5 w-5" /></a>}
-                                   {block.phase1?.resources?.kamp && <a href={block.phase1.resources.kamp} target="_blank" className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm hover:scale-110 transition-all text-orange-500"><Zap className="h-5 w-5" /></a>}
-                                   {block.phase1?.resources?.ogm && <a href={block.phase1.resources.ogm} target="_blank" className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm hover:scale-110 transition-all text-emerald-600"><Globe className="h-5 w-5" /></a>}
+                                <h5 className="font-black text-[1.8rem] italic text-primary leading-tight uppercase group-hover/p1:text-accent transition-all">{block.phase1?.type || 'KONU ÇALIŞMASI'}</h5>
+                                <div className="flex gap-6 pt-4">
+                                   {block.phase1?.resources?.youtube && <a href={block.phase1.resources.youtube} target="_blank" className="hover:scale-125 transition-all text-rose-500 opacity-40 hover:opacity-100"><Youtube className="h-8 w-8" /></a>}
+                                   {block.phase1?.resources?.pdf && <a href={block.phase1.resources.pdf} target="_blank" className="hover:scale-125 transition-all text-blue-600 opacity-40 hover:opacity-100"><FileText className="h-8 w-8" /></a>}
+                                   {block.phase1?.resources?.kamp && <a href={block.phase1.resources.kamp} target="_blank" className="hover:scale-125 transition-all text-orange-500 opacity-40 hover:opacity-100"><Zap className="h-8 w-8" /></a>}
+                                   {block.phase1?.resources?.ogm && <a href={block.phase1.resources.ogm} target="_blank" className="hover:scale-125 transition-all text-emerald-600 opacity-40 hover:opacity-100"><Globe className="h-8 w-8" /></a>}
                                 </div>
                              </div>
 
                              {/* Phase 2 */}
-                             <div className="p-10 rounded-[3.5rem] bg-orange-50/50 border border-orange-100 space-y-6 relative group/p2">
-                                <div className="flex justify-between items-center border-b border-orange-200 pb-4">
-                                   <span className="text-[10px] font-black text-accent uppercase tracking-[0.2em]">2. AŞAMA</span>
-                                   <span className="text-lg font-black text-primary italic">{block.phase2?.time || '11:00'}</span>
+                             <div className="p-10 rounded-[4rem] bg-orange-50/50 border border-orange-100 space-y-8 relative overflow-hidden group/p2 transition-all hover:bg-white hover:shadow-2xl">
+                                <div className="flex justify-between items-center border-b border-orange-200 pb-6">
+                                   <span className="text-[11px] font-black text-accent uppercase tracking-[0.3em]">2. AŞAMA: TEST</span>
+                                   <span className="text-xl font-black text-primary italic">{block.phase2?.time || '11:00'}</span>
                                 </div>
-                                <h5 className="font-black text-2xl italic text-primary leading-tight uppercase group-hover/p2:text-accent transition-colors">{block.phase2?.type || 'TEST ÇALIŞMASI'}</h5>
-                                <div className="flex gap-4 pt-4">
-                                   {block.phase2?.resources?.youtube && <a href={block.phase2.resources.youtube} target="_blank" className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm hover:scale-110 transition-all text-rose-500"><Youtube className="h-5 w-5" /></a>}
-                                   {block.phase2?.resources?.pdf && <a href={block.phase2.resources.pdf} target="_blank" className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm hover:scale-110 transition-all text-blue-600"><FileText className="h-5 w-5" /></a>}
-                                   {block.phase2?.resources?.kamp && <a href={block.phase2.resources.kamp} target="_blank" className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm hover:scale-110 transition-all text-orange-500"><Zap className="h-5 w-5" /></a>}
-                                   {block.phase2?.resources?.ogm && <a href={block.phase2.resources.ogm} target="_blank" className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm hover:scale-110 transition-all text-emerald-600"><Globe className="h-5 w-5" /></a>}
+                                <h5 className="font-black text-[1.8rem] italic text-primary leading-tight uppercase group-hover/p2:text-accent transition-all">{block.phase2?.type || 'TEST ÇALIŞMASI'}</h5>
+                                <div className="flex gap-6 pt-4">
+                                   {block.phase2?.resources?.youtube && <a href={block.phase2.resources.youtube} target="_blank" className="hover:scale-125 transition-all text-rose-500 opacity-40 hover:opacity-100"><Youtube className="h-8 w-8" /></a>}
+                                   {block.phase2?.resources?.pdf && <a href={block.phase2.resources.pdf} target="_blank" className="hover:scale-125 transition-all text-blue-600 opacity-40 hover:opacity-100"><FileText className="h-8 w-8" /></a>}
+                                   {block.phase2?.resources?.kamp && <a href={block.phase2.resources.kamp} target="_blank" className="hover:scale-125 transition-all text-orange-500 opacity-40 hover:opacity-100"><Zap className="h-8 w-8" /></a>}
+                                   {block.phase2?.resources?.ogm && <a href={block.phase2.resources.ogm} target="_blank" className="hover:scale-125 transition-all text-emerald-600 opacity-40 hover:opacity-100"><Globe className="h-8 w-8" /></a>}
                                 </div>
                              </div>
                           </div>
 
                           {block.reminder && (
-                            <div className="p-6 bg-accent/5 border border-accent/10 rounded-[2.5rem] flex items-center gap-4">
-                               <BellRing className="h-5 w-5 text-accent" />
-                               <p className="text-sm font-black text-primary italic leading-tight">{block.reminder}</p>
+                            <div className="p-8 bg-accent/5 border border-accent/10 rounded-[3rem] flex items-center gap-6 animate-in slide-in-from-top-4 duration-500 group/rem">
+                               <div className="h-12 w-12 rounded-2xl bg-accent flex items-center justify-center text-primary shadow-xl group-hover/rem:scale-110 transition-transform">
+                                  <BellRing className="h-6 w-6" />
+                               </div>
+                               <p className="text-lg font-black text-primary italic leading-tight">{block.reminder}</p>
                             </div>
                           )}
 
-                          <div className="flex justify-center gap-6 pt-10 border-t border-slate-50 opacity-0 group-hover:opacity-100 transition-all">
-                             <Button onClick={() => handleTaskAction(day.date, block.id, 'done')} size="icon" className={cn("h-16 w-16 rounded-full", block.status === 'done' ? "bg-slate-100" : "bg-emerald-500 text-white")}><CheckCircle2 className="h-7 w-7" /></Button>
-                             <Button onClick={() => handleTaskAction(day.date, block.id, 'repeat')} size="icon" variant="outline" className="h-16 w-16 rounded-full hover:border-orange-500 text-orange-500"><RotateCcw className="h-7 w-7" /></Button>
-                             <Button onClick={() => handleTaskAction(day.date, block.id, 'postpone')} size="icon" variant="outline" className="h-16 w-16 rounded-full hover:border-accent text-accent"><FastForward className="h-7 w-7" /></Button>
-                             <Button onClick={() => handleTaskAction(day.date, block.id, 'edit')} size="icon" variant="outline" className="h-16 w-16 rounded-full hover:border-primary text-primary"><Edit3 className="h-7 w-7" /></Button>
-                             <Button onClick={() => handleTaskAction(day.date, block.id, 'delete')} size="icon" variant="outline" className="h-16 w-16 rounded-full hover:border-rose-500 text-rose-500"><Trash2 className="h-7 w-7" /></Button>
+                          <div className="flex justify-center gap-8 pt-12 border-t border-slate-50 opacity-0 group-hover:opacity-100 transition-all duration-700 translate-y-4 group-hover:translate-y-0">
+                             <Button 
+                               onClick={() => handleTaskAction(day.date, block.id, 'done')} 
+                               size="icon" 
+                               className={cn(
+                                 "h-20 w-20 rounded-full transition-all duration-500 shadow-[0_20px_40px_rgba(0,0,0,0.15)] hover:scale-110", 
+                                 block.status === 'done' ? "bg-slate-100 text-slate-400" : "bg-emerald-500 text-white shadow-emerald-500/30"
+                               )}
+                             ><CheckCircle2 className="h-9 w-9" /></Button>
+                             <Button onClick={() => handleTaskAction(day.date, block.id, 'repeat')} size="icon" variant="outline" className="h-20 w-20 rounded-full bg-white border-2 border-slate-100 hover:border-orange-500 text-orange-500 hover:bg-orange-50 transition-all duration-500 hover:scale-110 shadow-xl"><RotateCcw className="h-9 w-9" /></Button>
+                             <Button onClick={() => handleTaskAction(day.date, block.id, 'postpone')} size="icon" variant="outline" className="h-20 w-20 rounded-full bg-white border-2 border-slate-100 hover:border-accent text-accent hover:bg-accent/5 transition-all duration-500 hover:scale-110 shadow-xl"><FastForward className="h-9 w-9" /></Button>
+                             <Button onClick={() => handleTaskAction(day.date, block.id, 'edit')} size="icon" variant="outline" className="h-20 w-20 rounded-full bg-white border-2 border-slate-100 hover:border-primary text-primary hover:bg-slate-50 transition-all duration-500 hover:scale-110 shadow-xl"><Edit3 className="h-9 w-9" /></Button>
+                             <Button onClick={() => handleTaskAction(day.date, block.id, 'delete')} size="icon" variant="outline" className="h-20 w-20 rounded-full bg-white border-2 border-slate-100 hover:border-rose-500 text-rose-500 hover:bg-rose-50 transition-all duration-500 hover:scale-110 shadow-xl"><Trash2 className="h-9 w-9" /></Button>
                           </div>
                        </div>
                     </Card>

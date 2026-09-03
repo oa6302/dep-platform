@@ -19,15 +19,16 @@ import { useRouter } from 'next/navigation';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 const LESSON_COLORS: Record<string, string> = {
-  'TYT Matematik': 'bg-slate-900 border-slate-200 text-slate-50',
-  'AYT Matematik': 'bg-slate-800 border-slate-200 text-slate-50',
-  'Geometri': 'bg-emerald-900 border-emerald-200 text-emerald-50',
-  'Edebiyat': 'bg-rose-900 border-rose-200 text-rose-50',
-  'Tarih': 'bg-orange-900 border-orange-200 text-orange-50',
-  'Coğrafya': 'bg-green-900 border-green-200 text-green-50',
-  'Felsefe': 'bg-purple-900 border-purple-200 text-purple-50',
-  'Din Kültürü': 'bg-indigo-900 border-indigo-200 text-indigo-50',
-  'Genel': 'bg-slate-100 border-slate-200 text-slate-900',
+  'TYT Matematik': 'border-t-[#1e293b]',
+  'AYT Matematik': 'border-t-[#0f172a]',
+  'Geometri': 'border-t-[#064e3b]',
+  'TYT Türkçe': 'border-t-[#1a3a5f]',
+  'Edebiyat': 'border-t-[#881337]',
+  'Tarih': 'border-t-[#7c2d12]',
+  'Coğrafya': 'border-t-[#14532d]',
+  'Felsefe': 'border-t-[#4c1d95]',
+  'Din Kültürü': 'border-t-[#312e81]',
+  'Genel': 'border-t-slate-400',
 };
 
 export function StudentView({ user, userData }: { user: any, userData: any }) {
@@ -83,7 +84,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
               <Brain className="h-4 w-4 animate-pulse" /> AOS YAPAY ZEKA ASİSTANI
             </div>
             <p className="text-2xl font-bold italic leading-relaxed">
-               "Sınav tarihine kilitlendik: 15 Haziran 2027. Bugün {currentDayPlan?.tasks?.length || 0} kritik fasikül görevin var."
+               "Bugün 15 Haziran 2027 hedefine giden yolda {currentDayPlan?.tasks?.length || 0} kritik fasikül görevin var."
             </p>
           </div>
           <Button onClick={() => router.push('/dashboard/planning')} className="bg-accent hover:bg-white hover:text-primary transition-all rounded-[1.5rem] h-16 px-10 font-black uppercase text-[12px] tracking-widest shadow-2xl">HAFTALIK PLANI GÖR</Button>
@@ -100,51 +101,48 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
              {currentDayPlan?.tasks?.map((t: any) => (
                 <Card key={t.id} className={cn(
-                  "aspect-square p-10 rounded-[3.5rem] border-2 flex flex-col justify-between transition-all hover:shadow-[0_40px_80px_-20px_rgba(15,23,42,0.15)] hover:-translate-y-4 group relative overflow-hidden",
-                  LESSON_COLORS[t.lesson] || "bg-white border-slate-200",
+                  "aspect-square p-10 rounded-[3.5rem] border-2 border-slate-100 flex flex-col justify-between transition-all hover:shadow-[0_40px_80px_-20px_rgba(15,23,42,0.15)] hover:-translate-y-4 group relative overflow-hidden bg-white border-t-[6px]",
+                  LESSON_COLORS[t.lesson] || "border-t-slate-400",
                   t.status === 'done' && "opacity-50 grayscale"
                 )}>
                    <div className="space-y-6 relative z-10">
                       <div className="flex justify-between items-start">
-                         <span className={cn(
-                           "text-[10px] font-black uppercase px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2",
-                           t.lesson === 'Genel' ? "bg-primary text-white" : "bg-white text-slate-900"
-                         )}>
+                         <span className="text-[10px] font-black uppercase px-4 py-1.5 rounded-full shadow-sm bg-white border border-slate-100 flex items-center gap-2 text-primary">
                            📋 {t.lesson.toUpperCase()}
                          </span>
-                         <span className="text-[12px] font-black opacity-60 italic">{t.time}</span>
+                         <span className="text-[14px] font-black text-slate-400">{t.time}</span>
                       </div>
 
                       <div className="space-y-2">
-                         <h4 className="text-3xl font-black italic leading-[1] tracking-tighter uppercase">
+                         <h4 className="text-[1.75rem] font-black italic leading-[1] tracking-tighter uppercase text-primary">
                             {t.type}
                          </h4>
-                         <p className="text-sm font-bold opacity-60 italic leading-tight">
+                         <p className="text-sm font-bold text-slate-400 italic leading-tight">
                             {t.topic}
                          </p>
                       </div>
 
                       <div className="space-y-4">
                         <div className="flex flex-wrap gap-2">
-                           <span className="text-[10px] font-black uppercase bg-black/10 px-2 py-1 rounded-lg">🟡 {t.difficulty || 'ORTA'}</span>
-                           <span className="text-[10px] font-black uppercase bg-black/10 px-2 py-1 rounded-lg">⏱️ {t.duration || '60'}DK</span>
-                           <span className="text-[10px] font-black uppercase bg-black/10 px-2 py-1 rounded-lg">📝 {t.questionTarget || '20'} SORU</span>
+                           <span className="text-[10px] font-black uppercase bg-slate-100 px-3 py-1.5 rounded-xl text-primary flex items-center gap-1.5">🟡 {t.difficulty || 'ORTA'}</span>
+                           <span className="text-[10px] font-black uppercase bg-slate-100 px-3 py-1.5 rounded-xl text-primary flex items-center gap-1.5">⏱️ {t.duration || '60'}DK</span>
+                           <span className="text-[10px] font-black uppercase bg-slate-100 px-3 py-1.5 rounded-xl text-primary flex items-center gap-1.5">📝 {t.questionTarget || '20'} SORU</span>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4 pt-2">
                            {t.resources ? (
-                             <div className="flex gap-2">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/10 hover:bg-rose-500" asChild><a href={t.resources.youtube} target="_blank"><Youtube className="h-4 w-4" /></a></Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/10 hover:bg-emerald-500" asChild><a href={t.resources.ogm} target="_blank"><Globe className="h-4 w-4" /></a></Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/10 hover:bg-blue-500" asChild><a href={t.resources.pdf} target="_blank"><FileText className="h-4 w-4" /></a></Button>
+                             <div className="flex gap-4">
+                                <a href={t.resources.youtube} target="_blank" className="hover:scale-110 transition-transform"><Youtube className="h-5 w-5 text-slate-900" /></a>
+                                <a href={t.resources.ogm} target="_blank" className="hover:scale-110 transition-transform"><Globe className="h-5 w-5 text-slate-900" /></a>
+                                <a href={t.resources.pdf} target="_blank" className="hover:scale-110 transition-transform"><FileText className="h-5 w-5 text-slate-900" /></a>
                              </div>
                            ) : (
-                             <span className="text-[9px] font-black uppercase opacity-40 tracking-widest italic">KAYNAK EKLENMEDİ</span>
+                             <span className="text-[10px] font-bold text-slate-400 italic">Kaynak eklenmedi</span>
                            )}
                         </div>
                       </div>
                    </div>
 
-                   <div className="grid grid-cols-3 gap-3 pt-6 border-t border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                   <div className="grid grid-cols-3 gap-3 pt-6 border-t border-slate-50 opacity-0 group-hover:opacity-100 transition-all duration-300">
                       <Button 
                         size="icon" 
                         onClick={() => handleTaskAction(t.id, 'done')} 
@@ -153,25 +151,25 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                           t.status === 'done' ? "bg-slate-400" : "bg-emerald-500 hover:bg-emerald-600"
                         )}
                       >
-                         <CheckCircle2 className="h-5 w-5 text-white" />
+                         <CheckCircle2 className="h-6 w-6 text-white" />
                       </Button>
                       <Button 
                         size="icon" 
                         onClick={() => handleTaskAction(t.id, 'repeat')} 
                         variant="ghost" 
-                        className="h-12 w-12 rounded-2xl bg-white/10 hover:bg-white/20 border-2 border-orange-500/50"
+                        className="h-12 w-12 rounded-2xl bg-white border-2 border-orange-500/20 hover:bg-orange-50 text-orange-500"
                       >
-                        <RotateCcw className="h-5 w-5 text-orange-400" />
+                        <RotateCcw className="h-6 w-6" />
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-12 w-12 rounded-2xl bg-white/10 hover:bg-white/20 border-2 border-white/20"><FastForward className="h-5 w-5 text-white/60" /></Button>
-                      <Button size="icon" variant="ghost" className="h-12 w-12 rounded-2xl bg-white/10 hover:bg-white/20 border-2 border-blue-400/50"><Gauge className="h-5 w-5 text-blue-300" /></Button>
-                      <Button size="icon" variant="ghost" className="h-12 w-12 rounded-2xl bg-white/10 hover:bg-white/20 border-2 border-white/20"><Edit3 className="h-5 w-5 text-white" /></Button>
-                      <Button size="icon" variant="ghost" className="h-12 w-12 rounded-2xl bg-white/10 hover:bg-rose-500/30 border-2 border-rose-500/50 text-rose-500"><Trash2 className="h-5 w-5" /></Button>
+                      <Button size="icon" variant="ghost" className="h-12 w-12 rounded-2xl bg-white border-2 border-slate-100 hover:bg-slate-50 text-slate-400"><FastForward className="h-6 w-6" /></Button>
+                      <Button size="icon" variant="ghost" className="h-12 w-12 rounded-2xl bg-white border-2 border-blue-100 hover:bg-blue-50 text-blue-400"><Gauge className="h-6 w-6" /></Button>
+                      <Button size="icon" variant="ghost" className="h-12 w-12 rounded-2xl bg-white border-2 border-slate-100 hover:bg-slate-50 text-slate-900"><Edit3 className="h-6 w-6" /></Button>
+                      <Button size="icon" variant="ghost" className="h-12 w-12 rounded-2xl bg-white border-2 border-rose-100 hover:bg-rose-50 text-rose-500"><Trash2 className="h-6 w-6" /></Button>
                    </div>
                 </Card>
              ))}
              {!currentDayPlan && (
-                <Card onClick={() => router.push('/dashboard/planning')} className="aspect-square p-12 text-center bg-white/50 rounded-[4rem] border-4 border-dashed border-slate-200 flex flex-col items-center justify-center gap-6 cursor-pointer hover:bg-white hover:border-accent/20 transition-all group">
+                <Card onClick={() => router.push('/dashboard/planning')} className="aspect-square p-12 text-center bg-white rounded-[4rem] border-4 border-dashed border-slate-200 flex flex-col items-center justify-center gap-6 cursor-pointer hover:bg-white hover:border-accent/20 transition-all group">
                    <Zap className="h-16 w-16 text-accent opacity-20 group-hover:scale-110 transition-transform animate-pulse" />
                    <p className="text-xl font-black uppercase tracking-[0.3em] text-primary/20 italic">FASİKÜL PLANI BEKLENİYOR</p>
                    <Button className="h-14 px-10 rounded-2xl bg-primary font-black text-[10px] uppercase tracking-widest gap-4 shadow-2xl">PLANI OLUŞTUR VE BAŞLA</Button>

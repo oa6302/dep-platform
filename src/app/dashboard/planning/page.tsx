@@ -17,19 +17,20 @@ import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
 import { doc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { format, addDays, subDays } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
 const LESSON_COLORS: Record<string, string> = {
-  'TYT Matematik': 'bg-slate-900 border-slate-200 text-slate-50',
-  'AYT Matematik': 'bg-slate-800 border-slate-200 text-slate-50',
-  'Geometri': 'bg-emerald-900 border-emerald-200 text-emerald-50',
-  'Edebiyat': 'bg-rose-900 border-rose-200 text-rose-50',
-  'Tarih': 'bg-orange-900 border-orange-200 text-orange-50',
-  'Coğrafya': 'bg-green-900 border-green-200 text-green-50',
-  'Felsefe': 'bg-purple-900 border-purple-200 text-purple-50',
-  'Din Kültürü': 'bg-indigo-900 border-indigo-200 text-indigo-50',
-  'Genel': 'bg-slate-100 border-slate-200 text-slate-900',
+  'TYT Matematik': 'border-t-[#1e293b]',
+  'AYT Matematik': 'border-t-[#0f172a]',
+  'Geometri': 'border-t-[#064e3b]',
+  'TYT Türkçe': 'border-t-[#1a3a5f]',
+  'Edebiyat': 'border-t-[#881337]',
+  'Tarih': 'border-t-[#7c2d12]',
+  'Coğrafya': 'border-t-[#14532d]',
+  'Felsefe': 'border-t-[#4c1d95]',
+  'Din Kültürü': 'border-t-[#312e81]',
+  'Genel': 'border-t-slate-400',
 };
 
 export default function PlanningPage() {
@@ -37,7 +38,7 @@ export default function PlanningPage() {
   const db = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
-  const { data: studyPlan } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
+  const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -65,11 +66,12 @@ export default function PlanningPage() {
 
         const dailyTasks = [];
         
-        // 1. SAAT: Yeni Konu (Hiyerarşik)
+        // FASİKÜL DÖNGÜSÜ: Her gün her dersten 1 konu
         lessons.forEach((lesson, lIdx) => {
           const topics = YKS_TM_TOPICS[lesson];
           const topic = topics[lessonPointers[lesson] % topics.length];
           
+          // 1. SAAT: Yeni Konu
           dailyTasks.push({
             id: `task_${dateStr}_${lesson}_new_${lIdx}`,
             lesson,
@@ -86,13 +88,8 @@ export default function PlanningPage() {
               pdf: '#'
             }
           });
-        });
 
-        // 2. SAAT: Test ve Ayrıntı
-        lessons.forEach((lesson, lIdx) => {
-          const topics = YKS_TM_TOPICS[lesson];
-          const topic = topics[lessonPointers[lesson] % topics.length];
-          
+          // 2. SAAT: Ayrıntılar ve Testler
           dailyTasks.push({
             id: `task_${dateStr}_${lesson}_test_${lIdx}`,
             lesson,
@@ -102,18 +99,25 @@ export default function PlanningPage() {
             duration: 60,
             difficulty: 'ORTA',
             questionTarget: 20,
-            status: 'planned'
+            status: 'planned',
+            resources: {
+              youtube: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic + ' soru çözümü')}`,
+              ogm: `https://ogmmateryal.eba.gov.tr/soru-bankasi/${encodeURIComponent(lesson)}`,
+              pdf: '#'
+            }
           });
-          
+
           lessonPointers[lesson]++;
         });
 
-        // 3. SAAT: Kısa Tekrar
+        // 3. SAAT: Önceki Günün Tekrarı
         if (i > 0) {
+          const yesterdayDt = addDays(start, i - 1);
+          const yesterdayStr = format(yesterdayDt, 'yyyy-MM-dd');
           dailyTasks.push({
             id: `task_${dateStr}_review_${i}`,
             lesson: 'Genel',
-            topic: 'Dünün Kritik Kazanımları',
+            topic: `${yesterdayStr} Tarihli Kritik Kazanımlar`,
             type: 'GÜNLÜK TEKRAR DÖNGÜSÜ',
             time: '12:00',
             duration: 60,
@@ -133,7 +137,7 @@ export default function PlanningPage() {
         updatedAt: serverTimestamp()
       }, { merge: true });
 
-      toast({ title: 'Plan Güncellendi', description: '3 saatlik profesyonel döngünüz saniyeler içinde hazırlandı.' });
+      toast({ title: 'Plan Güncellendi', description: 'Fasikül hiyerarşisi saniyeler içinde 364 günlük takvime işlendi.' });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Hata', description: 'Plan oluşturulamadı.' });
     } finally {
@@ -203,106 +207,103 @@ export default function PlanningPage() {
       </Card>
 
       <div className="space-y-12">
-        {(studyPlan?.masterPlan || []).map((day: any) => (
+        {(studyPlan?.masterPlan || []).slice(0, 14).map((day: any) => (
           <div key={day.date} className="space-y-6">
              <div className="flex items-center gap-4 px-4">
-                <h3 className="text-2xl font-black italic text-primary uppercase">{day.date} — {day.day}</h3>
+                <h3 className="text-2xl font-black italic text-primary uppercase tracking-tighter">{day.date} — {day.day}</h3>
                 <div className="h-px flex-1 bg-slate-200" />
              </div>
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                 {day.tasks.map((t: any) => (
                   <Card key={t.id} className={cn(
-                    "aspect-square p-8 rounded-[3.5rem] border-2 flex flex-col justify-between transition-all hover:scale-[1.03] hover:shadow-2xl group relative overflow-hidden",
-                    LESSON_COLORS[t.lesson] || "bg-white border-slate-200",
+                    "aspect-square p-8 rounded-[3.5rem] border-2 border-slate-100 flex flex-col justify-between transition-all hover:scale-[1.03] hover:shadow-2xl group relative overflow-hidden bg-white border-t-[6px]",
+                    LESSON_COLORS[t.lesson] || "border-t-slate-400",
                     t.status === 'done' && "opacity-40 grayscale"
                   )}>
                      <div className="space-y-6 relative z-10">
                         <div className="flex justify-between items-start">
-                           <span className={cn(
-                             "text-[10px] font-black uppercase px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2",
-                             t.lesson === 'Genel' ? "bg-primary text-white" : "bg-white text-slate-900"
-                           )}>
+                           <span className="text-[10px] font-black uppercase px-4 py-1.5 rounded-full shadow-sm bg-white border border-slate-100 flex items-center gap-2 text-primary">
                              📋 {t.lesson.toUpperCase()}
                            </span>
-                           <span className="text-[12px] font-black opacity-60">{t.time}</span>
+                           <span className="text-[14px] font-black text-slate-400">{t.time}</span>
                         </div>
 
                         <div className="space-y-2">
-                           <h4 className="text-3xl font-black italic leading-[1] tracking-tighter uppercase">
+                           <h4 className="text-[1.75rem] font-black italic leading-[1] tracking-tighter uppercase text-primary">
                               {t.type}
                            </h4>
-                           <p className="text-sm font-bold opacity-60 italic leading-tight">
+                           <p className="text-sm font-bold text-slate-400 italic leading-tight">
                               {t.topic}
                            </p>
                         </div>
 
                         <div className="space-y-4">
                            <div className="flex flex-wrap gap-2">
-                              <span className="text-[10px] font-black uppercase bg-black/10 px-2 py-1 rounded-lg">🟡 {t.difficulty}</span>
-                              <span className="text-[10px] font-black uppercase bg-black/10 px-2 py-1 rounded-lg">⏱️ {t.duration}DK</span>
-                              <span className="text-[10px] font-black uppercase bg-black/10 px-2 py-1 rounded-lg">📝 {t.questionTarget} SORU</span>
+                              <span className="text-[10px] font-black uppercase bg-slate-100 px-3 py-1.5 rounded-xl text-primary flex items-center gap-1.5">🟡 {t.difficulty}</span>
+                              <span className="text-[10px] font-black uppercase bg-slate-100 px-3 py-1.5 rounded-xl text-primary flex items-center gap-1.5">⏱️ {t.duration}DK</span>
+                              <span className="text-[10px] font-black uppercase bg-slate-100 px-3 py-1.5 rounded-xl text-primary flex items-center gap-1.5">📝 {t.questionTarget} SORU</span>
                            </div>
-                           <div className="flex items-center gap-3">
+                           <div className="flex items-center gap-4 pt-2">
                               {t.resources ? (
-                                <div className="flex gap-2">
-                                   <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/10 hover:bg-rose-500" asChild><a href={t.resources.youtube} target="_blank"><Youtube className="h-4 w-4" /></a></Button>
-                                   <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/10 hover:bg-emerald-500" asChild><a href={t.resources.ogm} target="_blank"><Globe className="h-4 w-4" /></a></Button>
-                                   <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/10 hover:bg-blue-500" asChild><a href={t.resources.pdf} target="_blank"><FileText className="h-4 w-4" /></a></Button>
+                                <div className="flex gap-4">
+                                   <a href={t.resources.youtube} target="_blank" className="hover:scale-110 transition-transform"><Youtube className="h-5 w-5 text-slate-900" /></a>
+                                   <a href={t.resources.ogm} target="_blank" className="hover:scale-110 transition-transform"><Globe className="h-5 w-5 text-slate-900" /></a>
+                                   <a href={t.resources.pdf} target="_blank" className="hover:scale-110 transition-transform"><FileText className="h-5 w-5 text-slate-900" /></a>
                                 </div>
                               ) : (
-                                <span className="text-[9px] font-black uppercase opacity-40 tracking-widest italic">KAYNAK EKLENMEDİ</span>
+                                <span className="text-[10px] font-bold text-slate-400 italic">Kaynak eklenmedi</span>
                               )}
                            </div>
                         </div>
                      </div>
                      
-                     <div className="grid grid-cols-3 gap-2 pt-6 border-t border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                     <div className="grid grid-cols-3 gap-2 pt-6 border-t border-slate-50 opacity-0 group-hover:opacity-100 transition-all duration-300">
                         <Button 
                           onClick={() => handleTaskAction(day.date, t.id, 'done')}
                           size="icon" 
                           className={cn(
-                            "h-12 w-12 rounded-2xl transition-all shadow-xl",
+                            "h-12 w-12 rounded-2xl transition-all shadow-lg",
                             t.status === 'done' ? "bg-slate-400" : "bg-emerald-500 hover:bg-emerald-600"
                           )}
                         >
-                          <CheckCircle2 className="h-5 w-5 text-white" />
+                          <CheckCircle2 className="h-6 w-6 text-white" />
                         </Button>
                         <Button 
                           onClick={() => handleTaskAction(day.date, t.id, 'repeat')}
                           size="icon" 
                           variant="ghost" 
-                          className="h-12 w-12 rounded-2xl bg-white/10 hover:bg-white/20 border-2 border-orange-500/50"
+                          className="h-12 w-12 rounded-2xl bg-white border-2 border-orange-500/20 hover:bg-orange-50 text-orange-500"
                         >
-                          <RotateCcw className="h-5 w-5 text-orange-400" />
+                          <RotateCcw className="h-6 w-6" />
                         </Button>
                         <Button 
                           size="icon" 
                           variant="ghost" 
-                          className="h-12 w-12 rounded-2xl bg-white/10 hover:bg-white/20 border-2 border-white/20"
+                          className="h-12 w-12 rounded-2xl bg-white border-2 border-slate-100 hover:bg-slate-50 text-slate-400"
                         >
-                          <FastForward className="h-5 w-5 text-white/60" />
+                          <FastForward className="h-6 w-6" />
                         </Button>
                         <Button 
                           size="icon" 
                           variant="ghost" 
-                          className="h-12 w-12 rounded-2xl bg-white/10 hover:bg-white/20 border-2 border-blue-400/50"
+                          className="h-12 w-12 rounded-2xl bg-white border-2 border-blue-100 hover:bg-blue-50 text-blue-400"
                         >
-                          <Gauge className="h-5 w-5 text-blue-300" />
+                          <Gauge className="h-6 w-6" />
                         </Button>
                         <Button 
                           size="icon" 
                           variant="ghost" 
-                          className="h-12 w-12 rounded-2xl bg-white/10 hover:bg-white/20 border-2 border-white/20"
+                          className="h-12 w-12 rounded-2xl bg-white border-2 border-slate-100 hover:bg-slate-50 text-slate-900"
                         >
-                          <Edit3 className="h-5 w-5 text-white" />
+                          <Edit3 className="h-6 w-6" />
                         </Button>
                         <Button 
                           onClick={() => handleTaskAction(day.date, t.id, 'delete')}
                           size="icon" 
                           variant="ghost" 
-                          className="h-12 w-12 rounded-2xl bg-white/10 hover:bg-rose-500/30 border-2 border-rose-500/50 text-rose-500"
+                          className="h-12 w-12 rounded-2xl bg-white border-2 border-rose-100 hover:bg-rose-50 text-rose-500"
                         >
-                          <Trash2 className="h-5 w-5" />
+                          <Trash2 className="h-6 w-6" />
                         </Button>
                      </div>
                   </Card>
@@ -310,6 +311,11 @@ export default function PlanningPage() {
              </div>
           </div>
         ))}
+        {(studyPlan?.masterPlan || []).length > 14 && (
+          <div className="py-10 text-center">
+            <p className="text-slate-400 font-bold italic">Kalan plan verilerini görmek için sayfayı aşağı kaydırın veya filtreleyin.</p>
+          </div>
+        )}
       </div>
     </div>
   );

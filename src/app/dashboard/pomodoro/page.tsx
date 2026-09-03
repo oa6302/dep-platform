@@ -53,6 +53,7 @@ export default function PomodoroPage() {
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [mode, setMode] = useState<'work' | 'break'>('work');
+  const [focusGoal, setFocusGoal] = useState('DERİN ODAKLANMA MODU');
   
   // Dynamic Streams
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -74,7 +75,7 @@ export default function PomodoroPage() {
     if (streams.length > 0 && !streams.find(s => s.id === selectedStream?.id)) {
       setSelectedStream(streams[0]);
     }
-  }, [streams]);
+  }, [streams, selectedStream?.id]);
 
   const toggleTimer = () => setIsActive(!isActive);
 
@@ -236,7 +237,9 @@ export default function PomodoroPage() {
 
            <div className="flex items-center justify-center gap-6 relative z-10">
               <div className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-200" />
-              <p className="text-[10px] font-black uppercase tracking-[0.6em] text-primary/10 italic whitespace-nowrap">DERİN ODAKLANMA MODU</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.6em] text-primary/20 italic whitespace-nowrap px-4">
+                 {mode === 'work' ? focusGoal : 'ZİHİN TAZELEME MODU'}
+              </p>
               <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-200" />
            </div>
 
@@ -271,6 +274,18 @@ export default function PomodoroPage() {
               </div>
               
               <div className="grid grid-cols-2 gap-8 relative z-10">
+                 <div className="space-y-3 col-span-2">
+                    <Label className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/50 ml-4 italic">ODAK HEDEFİ</Label>
+                    <div className="relative group">
+                       <Target className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/20 group-focus-within:text-accent transition-colors" />
+                       <Input 
+                         value={focusGoal} 
+                         onChange={(e) => setFocusGoal(e.target.value.toUpperCase())}
+                         className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner pl-14 font-black text-sm text-primary focus-visible:ring-accent transition-all" 
+                         placeholder="ÖRN: MATEMATİK ÇALIŞMASI"
+                       />
+                    </div>
+                 </div>
                  <div className="space-y-3">
                     <Label className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/50 ml-4 italic">ÇALIŞMA (DK)</Label>
                     <div className="relative group">

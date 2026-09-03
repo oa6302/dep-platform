@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useDoc, useFirestore } from '@/firebase';
@@ -44,7 +43,7 @@ export default function DashboardPage() {
       completionRate,
       questions: studyPlan?.stats?.totalQuestions || 0,
       tests: studyPlan?.stats?.totalTests || 0,
-      dailySuccess: 84 // Örnek veri
+      dailySuccess: 84
     };
   }, [userData, studyPlan]);
 
@@ -67,7 +66,7 @@ export default function DashboardPage() {
       if (day.date === todayStr) {
         return {
           ...day,
-          tasks: day.tasks.map((t: any) => {
+          tasks: (day.tasks || day.blocks || []).map((t: any) => {
             if (t.id === taskId) {
               if (action === 'done') return { ...t, status: 'done' };
               if (action === 'repeat') return { ...t, status: 'repeat' };
@@ -88,7 +87,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex">
-      {/* Sidebar */}
       <aside className="w-[280px] bg-white border-r border-slate-100 flex flex-col fixed inset-y-0 left-0 z-50">
         <div className="p-8 border-b border-slate-50">
           <div className="text-2xl font-black italic tracking-tighter text-primary uppercase leading-none">
@@ -124,7 +122,6 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="ml-[280px] flex-1 p-12 lg:p-20">
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-16">
           <div className="space-y-2">
@@ -142,7 +139,6 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
            <Card className="p-10 rounded-[3rem] border-none shadow-xl bg-white flex flex-col items-center justify-center text-center group hover:-translate-y-2 transition-all">
               <div className="h-16 w-16 rounded-[1.75rem] bg-slate-50 flex items-center justify-center mb-6 shadow-inner group-hover:rotate-6 transition-all">
@@ -175,14 +171,13 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
-          {/* Tasks Column */}
           <div className="xl:col-span-8 space-y-10">
             <div className="flex justify-between items-center px-4">
               <h2 className="text-3xl font-black italic tracking-tighter text-primary uppercase">Bugünkü Fasikül Akışı</h2>
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40">{format(new Date(), 'd MMMM yyyy', { locale: tr })}</span>
             </div>
             <div className="space-y-4">
-              {todayPlan?.tasks?.length > 0 ? todayPlan.tasks.map((task: any, i: number) => (
+              {(todayPlan?.tasks || todayPlan?.blocks)?.length > 0 ? (todayPlan.tasks || todayPlan.blocks).map((task: any, i: number) => (
                 <Card key={task.id} className={cn(
                   "p-8 rounded-[2.5rem] border border-transparent transition-all group",
                   task.status === 'done' ? "bg-emerald-50/50 opacity-60" : "bg-white shadow-xl hover:border-accent/20"
@@ -196,8 +191,8 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex-1 text-center md:text-left">
                          <div className="flex items-center justify-center md:justify-start gap-3 mb-1">
-                            <h4 className="font-black text-2xl italic tracking-tight text-primary uppercase leading-none">{task.lesson}</h4>
-                            <span className="text-[9px] font-black uppercase bg-slate-100 px-2 py-0.5 rounded-full text-muted-foreground">{task.type}</span>
+                            <h4 className="font-black text-2xl italic tracking-tight text-primary uppercase leading-none">{task.lesson || task.subject}</h4>
+                            <span className="text-[9px] font-black uppercase bg-slate-100 px-2 py-0.5 rounded-full text-muted-foreground">{task.type || 'FASİKÜL'}</span>
                          </div>
                          <p className="text-sm font-bold text-muted-foreground italic uppercase tracking-widest opacity-60">{task.topic}</p>
                       </div>
@@ -207,7 +202,6 @@ export default function DashboardPage() {
                               <Button size="sm" onClick={() => handleTaskAction(task.id, 'done')} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4">Tamamlandı</Button>
                               <Button size="sm" variant="secondary" className="rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4">Başla</Button>
                               <Button size="sm" variant="ghost" onClick={() => handleTaskAction(task.id, 'repeat')} className="rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4 text-accent"><RotateCcw className="h-3 w-3 mr-2" /> Tekrar Et</Button>
-                              <Button size="sm" variant="ghost" className="rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4 text-muted-foreground"><FastForward className="h-3 w-3 mr-2" /> Ertele</Button>
                            </>
                          ) : (
                            <span className="text-[10px] font-black uppercase text-emerald-600 italic">✓ Tamamlandı</span>
@@ -224,14 +218,13 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Right Column */}
           <div className="xl:col-span-4 space-y-10">
              <Card className="rounded-[3.5rem] border-none shadow-xl bg-primary text-white p-10 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 blur-[60px] rounded-full translate-x-1/2 -translate-y-1/2" />
                 <Brain className="h-10 w-10 text-accent mb-6 animate-pulse" />
                 <h3 className="text-2xl font-black italic tracking-tighter uppercase mb-4 text-shadow-deep">AI Analiz Motoru</h3>
                 <p className="text-sm leading-relaxed font-medium opacity-70 italic mb-8">
-                  Haftalık Edebiyat netlerin %18 artış gösterdi. Ancak "Matematik/Problemler" konusunda kritik seviyedesin. Bugün bu konuya 45 dakika ayırman önerilir.
+                  Mevcut verilerinizle 15 Haziran 2027 hedefinize saniyeler içinde %84 oranında yaklaştınız. Problemler konusundaki son testinize dayanarak bugün ek bir çalışma saniyeler içinde planlandı.
                 </p>
                 <Button onClick={() => router.push('/dashboard/ai-analysis')} className="w-full h-14 rounded-2xl bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-2xl">Detaylı Analiz Al</Button>
              </Card>
@@ -244,33 +237,11 @@ export default function DashboardPage() {
                 <div className="space-y-6">
                    <div>
                       <div className="flex justify-between text-[10px] font-black uppercase tracking-widest opacity-40 mb-2">
-                         <span>TYT Hedefi (90 Net)</span>
+                         <span>TYT Hedefi</span>
                          <span>%72</span>
                       </div>
                       <Progress value={72} className="h-2 bg-slate-50" />
                    </div>
-                   <div>
-                      <div className="flex justify-between text-[10px] font-black uppercase tracking-widest opacity-40 mb-2">
-                         <span>AYT Hedefi (70 Net)</span>
-                         <span>%45</span>
-                      </div>
-                      <Progress value={45} className="h-2 bg-slate-50" />
-                   </div>
-                </div>
-             </Card>
-
-             <Card className="rounded-[3.5rem] border-none shadow-xl bg-white p-10 space-y-8">
-                <div className="flex items-center justify-between">
-                   <h3 className="text-xl font-black italic tracking-tighter text-primary uppercase leading-none">Kritik Konular</h3>
-                   <AlertTriangle className="h-5 w-5 text-destructive" />
-                </div>
-                <div className="space-y-3">
-                   {['Paragraf', 'Yaş Problemleri', 'Osmanlı Kuruluş'].map((konu, i) => (
-                      <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-white hover:shadow-lg transition-all cursor-pointer group">
-                         <span className="font-bold text-xs uppercase tracking-tight text-primary">{konu}</span>
-                         <span className="text-[9px] font-black uppercase text-destructive opacity-0 group-hover:opacity-100 transition-opacity italic">Tekrar Bekliyor</span>
-                      </div>
-                   ))}
                 </div>
              </Card>
           </div>

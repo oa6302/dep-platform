@@ -1,6 +1,8 @@
 /**
  * @fileOverview YKS TM Master Müfredat Verisi (ÖSYM 2026 Standartları)
- * TYT Türkçe alanı saniyeler içinde sadece Anlam Bilgisi ve Paragraf odaklı hale getirildi.
+ * - TYT Türkçe: Sadece Anlam Bilgisi ve Paragraf.
+ * - Felsefe: Geometri yerine entegre edildi.
+ * - AYT Matematik: Tam kapsamlı.
  */
 
 export const YKS_TM_TOPICS: Record<string, string[]> = {

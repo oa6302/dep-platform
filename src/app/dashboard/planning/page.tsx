@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -74,7 +73,6 @@ export default function PlanningPage() {
         'Felsefe'
       ];
 
-      // Konu pointer'larını her ders için ayrı tut
       const lessonPointers: Record<string, number> = {};
       [...otherLessons, 'TYT Türkçe'].forEach(l => { lessonPointers[l] = 0; });
 
@@ -85,7 +83,6 @@ export default function PlanningPage() {
         const dateStr = format(currentDt, 'yyyy-MM-dd');
         const dayName = format(currentDt, 'EEEE', { locale: tr });
         
-        // 1 Aralık AYT Kontrolü
         const dec1 = new Date(currentDt.getFullYear(), 11, 1);
         const aytActive = !isBefore(currentDt, dec1);
 
@@ -94,31 +91,23 @@ export default function PlanningPage() {
         // 1. HER GÜN PARAGRAF (TYT Türkçe)
         const trTopics = YKS_TM_TOPICS['TYT Türkçe'];
         const trTopic = trTopics[lessonPointers['TYT Türkçe'] % trTopics.length];
-        
         dailyBlocks.push(createBlockData(dateStr, 'TYT Türkçe', trTopic, '09:00'));
         lessonPointers['TYT Türkçe']++;
 
-        // 2. DİĞER DERSLERİN ROTASYONU (2 günde bir devretme mantığı)
+        // 2. ROTASYON
         const activePool = otherLessons.filter(l => {
           if (l === 'AYT Matematik' || l === 'Edebiyat') return aytActive;
           return true;
         });
 
-        // 2 günde tüm dersleri bitirmek için:
-        // Pre-Dec 1 (4 ders var): Günde 2 ders ekle (Toplam 3 olur)
-        // Post-Dec 1 (6 ders var): Günde 3 ders ekle (Toplam 4 olur)
         const slotsPerDay = aytActive ? 3 : 2;
         const startHour = 11;
 
         for (let j = 0; j < slotsPerDay; j++) {
-          // Bu i ve j'ye göre havuzdan ders seç
-          // i * slotsPerDay + j formülü ile global bir sıra oluştururuz
           const poolIndex = (i * slotsPerDay + j) % activePool.length;
           const lesson = activePool[poolIndex];
-          
           const topics = YKS_TM_TOPICS[lesson];
           const topic = topics[lessonPointers[lesson] % topics.length];
-          
           const time = `${startHour + (j * 2)}:00`;
           dailyBlocks.push(createBlockData(dateStr, lesson, topic, time));
           lessonPointers[lesson]++;
@@ -137,8 +126,8 @@ export default function PlanningPage() {
 
       toast({ 
         title: 'Akademik Plan Senkronize Edildi', 
-        description: 'Günlük 3-4 ders ve 2 günlük tam döngü sistemi saniyeler içinde aktif edildi.',
-        className: "bg-primary text-white rounded-2xl"
+        description: 'Paragraf rutini ve 2 günlük tam döngü sistemi saniyeler içinde aktif edildi.',
+        className: "bg-primary text-white rounded-2xl shadow-2xl"
       });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Hata', description: 'Plan oluşturulamadı.' });
@@ -193,7 +182,7 @@ export default function PlanningPage() {
       if (day.date === date) {
         return {
           ...day,
-          blocks: day.blocks.map((b: any) => {
+          blocks: (day.blocks || []).map((b: any) => {
             if (b.id === blockId) {
               if (action === 'done') return { ...b, status: b.status === 'done' ? 'planned' : 'done' };
               if (action === 'repeat') return { ...b, status: 'repeat' };
@@ -223,12 +212,6 @@ export default function PlanningPage() {
         });
         errorEmitter.emit('permission-error', permissionError);
       });
-    
-    toast({ 
-      title: 'İşlem Başarılı', 
-      description: action === 'delete' ? 'Görev silindi.' : 'Durum saniyeler içinde güncellendi.',
-      className: "bg-primary text-white rounded-2xl"
-    });
   };
 
   const handleSaveEdit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -241,13 +224,13 @@ export default function PlanningPage() {
 
     const newPlan = studyPlan.masterPlan.map((day: any) => {
       if (day.date === editingBlock.date && updatedDate !== editingBlock.date) {
-        return { ...day, blocks: day.blocks.filter((b: any) => b.id !== editingBlock.id) };
+        return { ...day, blocks: (day.blocks || []).filter((b: any) => b.id !== editingBlock.id) };
       }
       
       if (day.date === editingBlock.date && updatedDate === editingBlock.date) {
         return {
           ...day,
-          blocks: day.blocks.map((b: any) => {
+          blocks: (day.blocks || []).map((b: any) => {
             if (b.id === editingBlock.id) {
               return {
                 ...b,
@@ -398,7 +381,6 @@ export default function PlanningPage() {
                               <h5 className="font-black text-2xl italic text-primary leading-tight uppercase group-hover/p1:text-accent transition-colors">{block.phase1.type}</h5>
                               <div className="flex flex-wrap gap-3">
                                  <span className="text-[10px] font-black uppercase bg-white px-4 py-1.5 rounded-2xl text-primary border border-slate-200 shadow-sm flex items-center gap-2">⏱️ {block.phase1.duration}DK</span>
-                                 <span className="text-[10px] font-black uppercase bg-white px-4 py-1.5 rounded-2xl text-primary border border-slate-200 shadow-sm flex items-center gap-2">📝 {block.phase1.questionTarget} HEDEF</span>
                               </div>
                               <div className="flex gap-6 pt-4">
                                  <a href={block.phase1.resources?.youtube} target="_blank" className="hover:scale-125 transition-transform text-rose-500 opacity-60 hover:opacity-100"><Youtube className="h-7 w-7" /></a>
@@ -414,7 +396,6 @@ export default function PlanningPage() {
                               <h5 className="font-black text-2xl italic text-primary leading-tight uppercase group-hover/p2:text-accent transition-colors">{block.phase2.type}</h5>
                               <div className="flex flex-wrap gap-3">
                                  <span className="text-[10px] font-black uppercase bg-white px-4 py-1.5 rounded-2xl text-accent border border-orange-200 shadow-sm flex items-center gap-2">⏱️ {block.phase2.duration}DK</span>
-                                 <span className="text-[10px] font-black uppercase bg-white px-4 py-1.5 rounded-2xl text-accent border border-orange-200 shadow-sm flex items-center gap-2">📝 {block.phase2.questionTarget} SORU</span>
                               </div>
                               <div className="flex gap-6 pt-4">
                                  <a href={block.phase2.resources?.youtube} target="_blank" className="hover:scale-125 transition-transform text-rose-500 opacity-60 hover:opacity-100"><Youtube className="h-7 w-7" /></a>
@@ -432,36 +413,16 @@ export default function PlanningPage() {
                                block.status === 'done' ? "bg-slate-100 text-slate-400" : "bg-emerald-500 text-white hover:scale-110"
                              )}
                            ><CheckCircle2 className="h-7 w-7" /></Button>
-                           
                            <Button 
                              onClick={() => handleTaskAction(day.date, block.id, 'repeat')}
                              size="icon" variant="outline" 
                              className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-orange-500 text-orange-500 hover:bg-orange-50 transition-all hover:scale-110 shadow-lg"
                            ><RotateCcw className="h-7 w-7" /></Button>
-                           
                            <Button 
                              onClick={() => handleTaskAction(day.date, block.id, 'skip')}
                              size="icon" variant="outline" 
                              className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-slate-400 text-slate-400 hover:bg-slate-50 transition-all hover:scale-110 shadow-lg"
                            ><FastForward className="h-7 w-7" /></Button>
-                           
-                           <Button 
-                             onClick={() => handleTaskAction(day.date, block.id, 'level')}
-                             size="icon" variant="outline" 
-                             className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-blue-500 text-blue-500 hover:bg-blue-50 transition-all hover:scale-110 shadow-lg"
-                           ><Gauge className="h-7 w-7" /></Button>
-                           
-                           <Button 
-                             onClick={() => handleTaskAction(day.date, block.id, 'edit')}
-                             size="icon" variant="outline" 
-                             className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-primary text-slate-900 hover:bg-slate-50 transition-all hover:scale-110 shadow-lg"
-                           ><Edit3 className="h-7 w-7" /></Button>
-                           
-                           <Button 
-                             onClick={() => handleTaskAction(day.date, block.id, 'delete')}
-                             size="icon" variant="outline" 
-                             className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-rose-500 text-rose-500 hover:bg-rose-50 transition-all hover:scale-110 shadow-lg"
-                           ><Trash2 className="h-7 w-7" /></Button>
                         </div>
                      </div>
                   </Card>
@@ -470,58 +431,6 @@ export default function PlanningPage() {
           </div>
         ))}
       </div>
-
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="rounded-[3rem] border-none shadow-2xl p-10 bg-white max-w-2xl">
-          <DialogHeader className="space-y-4">
-             <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-primary/5 text-primary font-black text-[10px] uppercase tracking-widest italic">
-                <Edit3 className="h-3 w-3" /> FASİKÜL EDİTÖRÜ
-             </div>
-             <DialogTitle className="text-4xl font-black italic tracking-tighter text-primary uppercase">Bloğu Düzenle</DialogTitle>
-             <DialogDescription className="font-medium italic">Seçili fasikül bloğunun detaylarını revize edin.</DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleSaveEdit} className="space-y-8 pt-6">
-             <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                   <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-2">Konu Adı</Label>
-                   <Input name="topic" defaultValue={editingBlock?.topic} className="h-14 rounded-2xl bg-slate-50 border-none font-bold" />
-                </div>
-                <div className="space-y-2">
-                   <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-2">Tarih</Label>
-                   <Input name="date" type="date" defaultValue={editingBlock?.date} className="h-14 rounded-2xl bg-slate-50 border-none font-bold" />
-                </div>
-             </div>
-
-             <div className="grid grid-cols-2 gap-10">
-                <div className="space-y-6 p-6 bg-slate-50 rounded-[2rem]">
-                   <p className="text-[10px] font-black uppercase tracking-widest text-primary">AŞAMA 1: KONU</p>
-                   <div className="space-y-4">
-                      <Input name="p1Time" placeholder="Saat" defaultValue={editingBlock?.phase1?.time} className="h-12 rounded-xl bg-white border-none text-xs" />
-                      <Input name="p1Youtube" placeholder="Youtube Link" defaultValue={editingBlock?.phase1?.resources?.youtube} className="h-12 rounded-xl bg-white border-none text-xs" />
-                      <Input name="p1Ogm" placeholder="OGM Link" defaultValue={editingBlock?.phase1?.resources?.ogm} className="h-12 rounded-xl bg-white border-none text-xs" />
-                   </div>
-                </div>
-
-                <div className="space-y-6 p-6 bg-orange-50 rounded-[2rem]">
-                   <p className="text-[10px] font-black uppercase tracking-widest text-accent">AŞAMA 2: TEST</p>
-                   <div className="space-y-4">
-                      <Input name="p2Time" placeholder="Saat" defaultValue={editingBlock?.phase2?.time} className="h-12 rounded-xl bg-white border-none text-xs" />
-                      <Input name="p2Youtube" placeholder="Youtube Link" defaultValue={editingBlock?.phase2?.resources?.youtube} className="h-12 rounded-xl bg-white border-none text-xs" />
-                      <Input name="p2Ogm" placeholder="OGM Link" defaultValue={editingBlock?.phase2?.resources?.ogm} className="h-12 rounded-xl bg-white border-none text-xs" />
-                   </div>
-                </div>
-             </div>
-
-             <div className="flex gap-4">
-                <Button type="button" variant="ghost" onClick={() => setIsEditDialogOpen(false)} className="flex-1 h-16 rounded-2xl font-black text-xs uppercase tracking-widest">Vazgeç</Button>
-                <Button type="submit" className="flex-1 h-16 rounded-2xl bg-primary hover:bg-accent text-white font-black text-xs uppercase tracking-widest gap-3 shadow-2xl">
-                   <Save className="h-5 w-5" /> Değişiklikleri Kaydet
-                </Button>
-             </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

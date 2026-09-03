@@ -18,10 +18,10 @@ export const YKS_TM_TOPICS: Record<string, string[]> = {
     'Kümeler', 'Mantık', 'Fonksiyonlar', 'Veri ve İstatistik', 'Permütasyon-Kombinasyon', 
     'Olasılık'
   ],
-  'Geometri': [
-    'Doğruda ve Üçgende Açılar', 'Özel Üçgenler (Dik-İkizkenar)', 'Üçgende Alan ve Benzerlik', 
-    'Açıortay-Kenarortay', 'Çokgenler ve Dörtgenler', 'Paralelkenar-Dikdörtgen-Kare', 
-    'Çember ve Daire', 'Analitik Geometri', 'Katı Cisimler'
+  'Felsefe': [
+    'Felsefe ile Tanışma', 'Bilgi Felsefesi (Epistemoloji)', 'Varlık Felsefesi (Ontoloji)', 
+    'Ahlak Felsefesi (Etik)', 'Din Felsefesi', 'Siyaset Felsefesi', 
+    'Bilim Felsefesi', 'Felsefi Okuma ve Yazma'
   ],
   'Edebiyat': [
     'Söz Sanatları', 'Şiir Bilgisi', 'İslamiyet Öncesi Türk Edebiyatı', 'Halk Edebiyatı', 

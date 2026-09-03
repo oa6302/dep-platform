@@ -22,12 +22,11 @@ import { FirestorePermissionError } from '@/firebase/errors';
 const LESSON_COLORS: Record<string, string> = {
   'TYT Matematik': '#0f172a',
   'AYT Matematik': '#1e293b',
-  'Geometri': '#064e3b',
+  'Felsefe': '#4c1d95',
   'TYT Türkçe': '#1e40af',
   'Edebiyat': '#881337',
   'Tarih': '#7c2d12',
   'Coğrafya': '#14532d',
-  'Felsefe': '#4c1d95',
   'Din Kültürü': '#312e81',
   'Genel': '#334155',
 };

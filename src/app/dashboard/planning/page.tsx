@@ -10,14 +10,14 @@ import {
   Calendar, Clock, Zap, Loader2, Sparkles, 
   CheckCircle2, Trash2, ArrowLeft, 
   Home, RotateCcw, FastForward, Gauge, Edit3,
-  Youtube, Globe, Save, X, CalendarDays, FileText
+  Youtube, Globe, Save, X, CalendarDays, FileText, AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
 import { doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { format, addDays, isBefore, parseISO } from 'date-fns';
+import { format, addDays, isBefore, parseISO, startOfToday, isAfter, isEqual } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -47,10 +47,13 @@ export default function PlanningPage() {
   const db = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
+  
+  const { data: userData } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
   const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   
   const [isGenerating, setIsGenerating] = useState(false);
-  const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  // Kullanıcı talebi üzerine varsayılan tarihler
+  const [startDate, setStartDate] = useState('2026-09-03');
   const [endDate, setEndDate] = useState('2027-06-15');
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -63,6 +66,8 @@ export default function PlanningPage() {
     try {
       const start = parseISO(startDate);
       const end = parseISO(endDate);
+      const today = startOfToday();
+      
       const diffDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
       const otherLessons = [
@@ -74,65 +79,91 @@ export default function PlanningPage() {
         'Felsefe'
       ];
 
-      const lessonPointers: Record<string, number> = {};
-      [...otherLessons, 'TYT Türkçe'].forEach(l => { lessonPointers[l] = 0; });
+      // Konu havuzlarını hazırla (Tamamlananları çıkar)
+      const completed = userData?.completedTopics || {};
+      const lessonQueues: Record<string, string[]> = {};
+      [...otherLessons, 'TYT Türkçe'].forEach(lesson => {
+        const allTopics = YKS_TM_TOPICS[lesson] || [];
+        const done = completed[lesson] || [];
+        // Sadece tamamlanmamış konuları kuyruğa al
+        lessonQueues[lesson] = allTopics.filter(t => !done.includes(t));
+        // Eğer tüm konular bittiyse, genel tekrar için hepsini geri al
+        if (lessonQueues[lesson].length === 0) lessonQueues[lesson] = [...allTopics];
+      });
 
-      const fullPlan = [];
+      const lessonPointers: Record<string, number> = {};
+      Object.keys(lessonQueues).forEach(l => { lessonPointers[l] = 0; });
+
+      const existingPlan = studyPlan?.masterPlan || [];
+      const newPlan = [];
 
       for (let i = 0; i <= diffDays; i++) {
         const currentDt = addDays(start, i);
         const dateStr = format(currentDt, 'yyyy-MM-dd');
         const dayName = format(currentDt, 'EEEE', { locale: tr });
         
-        const dec1 = new Date(currentDt.getFullYear(), 11, 1);
-        const aytActive = !isBefore(currentDt, dec1);
+        // KRİTİK: Daha önce çalışılan (geçmişteki) günleri koru
+        const existingDay = existingPlan.find((d: any) => d.date === dateStr);
+        if (existingDay && (isBefore(currentDt, today))) {
+          newPlan.push(existingDay);
+          continue;
+        }
+
+        // 1 Aralık AYT Başlangıç Kuralı
+        const aytStartDate = parseISO('2026-12-01');
+        const isAytActive = !isBefore(currentDt, aytStartDate);
 
         const dailyBlocks = [];
         
         // 1. HER GÜN PARAGRAF (TYT Türkçe)
-        const trTopics = YKS_TM_TOPICS['TYT Türkçe'];
-        const trTopic = trTopics[lessonPointers['TYT Türkçe'] % trTopics.length];
-        dailyBlocks.push(createBlockData(dateStr, 'TYT Türkçe', trTopic, '09:00'));
-        lessonPointers['TYT Türkçe']++;
+        const trQueue = lessonQueues['TYT Türkçe'];
+        if (trQueue.length > 0) {
+          const trTopic = trQueue[lessonPointers['TYT Türkçe'] % trQueue.length];
+          dailyBlocks.push(createBlockData(dateStr, 'TYT Türkçe', trTopic, '09:00'));
+          lessonPointers['TYT Türkçe']++;
+        }
 
         // 2. ROTASYON
         const activePool = otherLessons.filter(l => {
-          if (l === 'AYT Matematik' || l === 'Edebiyat') return aytActive;
+          if (l === 'AYT Matematik' || l === 'Edebiyat') return isAytActive;
           return true;
         });
 
-        const slotsPerDay = aytActive ? 3 : 2;
+        const slotsPerDay = isAytActive ? 3 : 2;
         const startHour = 11;
 
         for (let j = 0; j < slotsPerDay; j++) {
           const poolIndex = (i * slotsPerDay + j) % activePool.length;
           const lesson = activePool[poolIndex];
-          const topics = YKS_TM_TOPICS[lesson];
-          const topic = topics[lessonPointers[lesson] % topics.length];
-          const time = `${startHour + (j * 2)}:00`;
-          dailyBlocks.push(createBlockData(dateStr, lesson, topic, time));
-          lessonPointers[lesson]++;
+          const queue = lessonQueues[lesson];
+          if (queue && queue.length > 0) {
+            const topic = queue[lessonPointers[lesson] % queue.length];
+            const time = `${startHour + (j * 2)}:00`;
+            dailyBlocks.push(createBlockData(dateStr, lesson, topic, time));
+            lessonPointers[lesson]++;
+          }
         }
 
-        fullPlan.push({ date: dateStr, day: dayName, blocks: dailyBlocks });
+        newPlan.push({ date: dateStr, day: dayName, blocks: dailyBlocks });
       }
 
       const planRef = doc(db, 'studyPlans', user.uid);
       await setDoc(planRef, {
         userId: user.uid,
-        masterPlan: fullPlan,
+        masterPlan: newPlan,
         startDate: startDate,
         targetExamDate: endDate,
         updatedAt: serverTimestamp()
       }, { merge: true });
 
       toast({ 
-        title: 'Akademik Plan Senkronize Edildi', 
-        description: 'Seçtiğiniz tarihten itibaren tam döngü sistemi saniyeler içinde aktif edildi.',
+        title: 'Akademik Plan Güncellendi', 
+        description: 'Geçmiş verileriniz korundu, eksik konular 1 Aralık AYT kuralına göre yeniden planlandı.',
         className: "bg-primary text-white rounded-2xl shadow-2xl"
       });
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Hata', description: 'Plan oluşturulamadı.' });
+      console.error(error);
+      toast({ variant: 'destructive', title: 'Hata', description: 'Plan güncellenirken bir sorun oluştu.' });
     } finally {
       setIsGenerating(false);
     }
@@ -189,7 +220,7 @@ export default function PlanningPage() {
       const nextDay = studyPlan.masterPlan[currentDayIdx + 1];
       
       if (!nextDay) {
-        toast({ variant: 'destructive', title: 'Hata', description: 'Ötelenecek sonraki gün bulunamadı. Lütfen planı uzatın.' });
+        toast({ variant: 'destructive', title: 'Hata', description: 'Ötelenecek sonraki gün bulunamadı.' });
         return;
       }
 
@@ -239,15 +270,7 @@ export default function PlanningPage() {
     });
 
     const planRef = doc(db, 'studyPlans', user.uid);
-    updateDoc(planRef, { masterPlan: newPlan, updatedAt: serverTimestamp() })
-      .catch(async (err) => {
-        const permissionError = new FirestorePermissionError({
-          path: planRef.path,
-          operation: 'update',
-          requestResourceData: { masterPlan: 'updated_via_action' },
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      });
+    updateDoc(planRef, { masterPlan: newPlan, updatedAt: serverTimestamp() });
   };
 
   const handleSaveEdit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -259,12 +282,9 @@ export default function PlanningPage() {
     const updatedDate = formData.get('date') as string;
 
     const newPlan = studyPlan.masterPlan.map((day: any) => {
-      // Önce mevcut günden sil (eğer tarih değiştiyse)
       if (day.date === editingBlock.date && updatedDate !== editingBlock.date) {
         return { ...day, blocks: (day.blocks || []).filter((b: any) => b.id !== editingBlock.id) };
       }
-      
-      // Mevcut gün güncelleniyorsa
       if (day.date === editingBlock.date && updatedDate === editingBlock.date) {
         return {
           ...day,
@@ -302,8 +322,6 @@ export default function PlanningPage() {
           })
         };
       }
-
-      // Yeni tarihe ekle
       if (day.date === updatedDate && updatedDate !== editingBlock.date) {
         const blocks = day.blocks || [];
         return {
@@ -337,14 +355,13 @@ export default function PlanningPage() {
           }]
         };
       }
-
       return day;
     });
 
     const planRef = doc(db, 'studyPlans', user.uid);
     try {
       await updateDoc(planRef, { masterPlan: newPlan, updatedAt: serverTimestamp() });
-      toast({ title: 'Güncellendi', description: 'Fasikül bloğu saniyeler içinde revize edildi.', className: "bg-primary text-white rounded-2xl" });
+      toast({ title: 'Güncellendi', description: 'Fasikül bloğu saniyeler içinde revize edildi.' });
       setIsEditDialogOpen(false);
     } catch (error) {
       toast({ variant: 'destructive', title: 'Hata', description: 'Güncelleme yapılamadı.' });
@@ -398,19 +415,28 @@ export default function PlanningPage() {
               </Button>
            </div>
         </div>
+        {studyPlan?.masterPlan && (
+          <div className="flex items-center gap-3 p-6 bg-blue-50 rounded-3xl border border-blue-100 animate-in slide-in-from-top-2 duration-500">
+             <AlertTriangle className="h-5 w-5 text-blue-500" />
+             <p className="text-xs font-bold text-blue-700 italic">Motoru tekrar çalıştırdığınızda geçmiş çalışmalarınız korunur ve gelecek günler eksik konularınıza göre saniyeler içinde yeniden optimize edilir.</p>
+          </div>
+        )}
       </Card>
 
       <div className="space-y-24">
-        {(studyPlan?.masterPlan || []).slice(0, 14).map((day: any) => {
-          const isPast = isBefore(parseISO(day.date), new Date()) && day.date !== format(new Date(), 'yyyy-MM-dd');
+        {(studyPlan?.masterPlan || []).map((day: any) => {
+          const currentDt = parseISO(day.date);
+          const today = startOfToday();
+          const isPast = isBefore(currentDt, today);
+          const isToday = isEqual(currentDt, today);
           
           return (
             <div key={day.date} className={cn("space-y-12", isPast && "opacity-60")}>
                <div className="flex items-center gap-6 px-6">
                   <div className="flex items-center gap-4">
-                     <h3 className="text-4xl font-black italic text-primary uppercase tracking-tighter">{day.date} — {day.day.toUpperCase()}</h3>
+                     <h3 className="text-4xl font-black italic text-primary uppercase tracking-tighter">{format(currentDt, 'd MMMM yyyy', { locale: tr })} — {day.day.toUpperCase()}</h3>
                      {isPast && <Badge className="bg-slate-200 text-slate-500 uppercase text-[10px] font-black py-1 px-4 rounded-full">GEÇMİŞ GÜN</Badge>}
-                     {day.date === format(new Date(), 'yyyy-MM-dd') && <Badge className="bg-accent text-primary uppercase text-[10px] font-black py-1 px-4 rounded-full animate-pulse shadow-lg shadow-accent/20">BUGÜN</Badge>}
+                     {isToday && <Badge className="bg-accent text-primary uppercase text-[10px] font-black py-1 px-4 rounded-full animate-pulse shadow-lg shadow-accent/20">BUGÜN</Badge>}
                   </div>
                   <div className="h-px flex-1 bg-slate-200" />
                </div>
@@ -488,12 +514,10 @@ export default function PlanningPage() {
                              </div>
                           </div>
 
-                          {/* Actions Terminal */}
                           <div className="flex justify-center gap-6 pt-10 border-t border-slate-50">
                              <Button 
                                onClick={() => handleTaskAction(day.date, block.id, 'done')}
                                size="icon"
-                               title="Tamamlandı Olarak İşaretle"
                                className={cn(
                                  "h-16 w-16 rounded-full transition-all duration-500 shadow-xl", 
                                  block.status === 'done' ? "bg-slate-100 text-slate-400" : "bg-emerald-500 text-white hover:scale-110"
@@ -503,35 +527,30 @@ export default function PlanningPage() {
                              <Button 
                                onClick={() => handleTaskAction(day.date, block.id, 'repeat')}
                                size="icon" variant="outline" 
-                               title="Tekrar Listesine Al"
                                className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-orange-500 text-orange-500 hover:bg-orange-50 transition-all hover:scale-110 shadow-lg"
                              ><RotateCcw className="h-7 w-7" /></Button>
 
                              <Button 
                                onClick={() => handleTaskAction(day.date, block.id, 'postpone')}
                                size="icon" variant="outline"
-                               title="Sonraki Güne Ötele"
                                className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-accent text-accent hover:bg-accent/5 transition-all hover:scale-110 shadow-lg"
                              ><FastForward className="h-7 w-7" /></Button>
 
                              <Button 
                                onClick={() => handleTaskAction(day.date, block.id, 'edit')}
                                size="icon" variant="outline" 
-                               title="Düzenle"
                                className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-primary text-primary hover:bg-slate-50 transition-all hover:scale-110 shadow-lg"
                              ><Edit3 className="h-7 w-7" /></Button>
 
                              <Button 
                                onClick={() => handleTaskAction(day.date, block.id, 'level')}
                                size="icon" variant="outline" 
-                               title="Zorluk Seviyesi"
                                className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-blue-500 text-blue-500 hover:bg-blue-50 transition-all hover:scale-110 shadow-lg"
                              ><Gauge className="h-7 w-7" /></Button>
 
                              <Button 
                                onClick={() => handleTaskAction(day.date, block.id, 'delete')}
                                size="icon" variant="outline" 
-                               title="Kalıcı Olarak Sil"
                                className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-rose-500 text-rose-500 hover:bg-rose-50 transition-all hover:scale-110 shadow-lg"
                              ><Trash2 className="h-7 w-7" /></Button>
                           </div>
@@ -544,7 +563,6 @@ export default function PlanningPage() {
         })}
       </div>
 
-      {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="rounded-[4rem] border-none shadow-2xl p-12 bg-white max-w-2xl overflow-hidden">
            <DialogHeader className="space-y-4">
@@ -569,7 +587,6 @@ export default function PlanningPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-10">
-                   {/* PHASE 1 */}
                    <div className="p-8 rounded-[2.5rem] bg-slate-50 space-y-6">
                       <h5 className="font-black text-xs uppercase tracking-widest text-primary/40">1. AŞAMA (KONU)</h5>
                       <div className="space-y-4">
@@ -594,7 +611,6 @@ export default function PlanningPage() {
                       </div>
                    </div>
 
-                   {/* PHASE 2 */}
                    <div className="p-8 rounded-[2.5rem] bg-orange-50 space-y-6">
                       <h5 className="font-black text-xs uppercase tracking-widest text-accent">2. AŞAMA (TEST)</h5>
                       <div className="space-y-4">

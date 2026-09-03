@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Sparkles, Brain, CheckCircle2, Loader2, Clock, 
   Zap, Plus, Award, RefreshCcw, FastForward, Gauge, Edit3, Trash2, RotateCcw,
-  Youtube, FileText, Globe
+  Youtube, FileText, Globe, AlertCircle
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -100,7 +100,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10">
              {currentDayPlan?.tasks?.map((t: any) => (
                 <Card key={t.id} className={cn(
-                  "aspect-square p-5 rounded-[4rem] border-none flex flex-col justify-between transition-all hover:scale-[1.03] shadow-[0_45px_100px_-25px_rgba(15,23,42,0.4)] group relative overflow-hidden",
+                  "aspect-square p-5 rounded-[4.5rem] border-none flex flex-col justify-between transition-all hover:scale-[1.03] shadow-[0_45px_100px_-25px_rgba(15,23,42,0.4)] group relative overflow-hidden",
                   LESSON_THEMES[t.lesson] || "bg-slate-700 text-white",
                   t.status === 'done' && "opacity-40 grayscale scale-95"
                 )}>
@@ -111,7 +111,18 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                          <span className="text-[9px] font-black uppercase px-4 py-1.5 rounded-full shadow-lg bg-white/10 backdrop-blur-xl border border-white/10 flex items-center gap-2 text-white">
                            📋 {t.lesson.toUpperCase()}
                          </span>
-                         <span className="text-base font-black text-white/40 italic">{t.time || '10:00'}</span>
+                         <div className="flex items-center gap-2">
+                             {t.status === 'done' ? (
+                               <div className="bg-emerald-500 text-white px-2 py-0.5 rounded-full text-[8px] font-black flex items-center gap-1 shadow-lg">
+                                 <CheckCircle2 className="h-2.5 w-2.5" /> TAMAMLANDI
+                               </div>
+                             ) : (
+                               <div className="bg-rose-500 text-white px-2 py-0.5 rounded-full text-[8px] font-black flex items-center gap-1 shadow-lg">
+                                 <Clock className="h-2.5 w-2.5" /> BEKLİYOR
+                               </div>
+                             )}
+                             <span className="text-base font-black text-white/40 italic">{t.time || '10:00'}</span>
+                         </div>
                       </div>
 
                       <div className="space-y-1">

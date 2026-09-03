@@ -10,7 +10,7 @@ import {
   Calendar, Clock, Target, Plus, Zap, Loader2, Sparkles, 
   ChevronRight, Brain, CheckCircle2, History, Trash2, ArrowLeft, 
   Home, RefreshCcw, RotateCcw, FastForward, Gauge, Edit3, ClipboardList, BookOpen,
-  ArrowRight, Youtube, FileText, Globe, Award
+  ArrowRight, Youtube, FileText, Globe, Award, AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
@@ -66,12 +66,10 @@ export default function PlanningPage() {
 
         const dailyTasks = [];
         
-        // FASİKÜL DÖNGÜSÜ: Her gün her dersten 1 konu
         lessons.forEach((lesson, lIdx) => {
           const topics = YKS_TM_TOPICS[lesson];
           const topic = topics[lessonPointers[lesson] % topics.length];
           
-          // 1. SAAT: Yeni Konu
           dailyTasks.push({
             id: `task_${dateStr}_${lesson}_new_${lIdx}`,
             lesson,
@@ -89,7 +87,6 @@ export default function PlanningPage() {
             }
           });
 
-          // 2. SAAT: Ayrıntılar ve Testler
           dailyTasks.push({
             id: `task_${dateStr}_${lesson}_test_${lIdx}`,
             lesson,
@@ -110,7 +107,6 @@ export default function PlanningPage() {
           lessonPointers[lesson]++;
         });
 
-        // 3. SAAT: Önceki Günün Tekrarı
         if (i > 0) {
           const yesterdayDt = addDays(start, i - 1);
           const yesterdayStr = format(yesterdayDt, 'yyyy-MM-dd');
@@ -137,7 +133,7 @@ export default function PlanningPage() {
         updatedAt: serverTimestamp()
       }, { merge: true });
 
-      toast({ title: 'Plan Senkronize Edildi', description: 'Fasikül hiyerarşisi saniyeler içinde 364 günlük takvime işlendi.' });
+      toast({ title: 'Plan Senkronize Edildi', description: 'Fasikül hiyerarşisi 364 günlük takvime işlendi.' });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Hata', description: 'Plan oluşturulamadı.' });
     } finally {
@@ -227,7 +223,18 @@ export default function PlanningPage() {
                            <span className="text-[9px] font-black uppercase px-4 py-1.5 rounded-full shadow-lg bg-white/10 backdrop-blur-xl border border-white/10 flex items-center gap-2 text-white">
                              📋 {t.lesson.toUpperCase()}
                            </span>
-                           <span className="text-base font-black text-white/40 italic">{t.time || '10:00'}</span>
+                           <div className="flex items-center gap-2">
+                             {t.status === 'done' ? (
+                               <div className="bg-emerald-500 text-white px-2 py-0.5 rounded-full text-[8px] font-black flex items-center gap-1">
+                                 <CheckCircle2 className="h-2.5 w-2.5" /> TAMAMLANDI
+                               </div>
+                             ) : (
+                               <div className="bg-rose-500 text-white px-2 py-0.5 rounded-full text-[8px] font-black flex items-center gap-1">
+                                 <Clock className="h-2.5 w-2.5" /> BEKLİYOR
+                               </div>
+                             )}
+                             <span className="text-base font-black text-white/40 italic">{t.time || '10:00'}</span>
+                           </div>
                         </div>
 
                         <div className="space-y-1">

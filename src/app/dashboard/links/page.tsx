@@ -36,6 +36,14 @@ import {
 } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
 
+// Varsayılan Kaynaklar
+const DEFAULT_LINKS = [
+  { id: 'def1', title: 'OGM Materyal - Video Konu Anlatımları', url: 'https://ogmmateryal.eba.gov.tr/konu-anlatimlari-video?video=1', type: 'web', category: 'RESMİ' },
+  { id: 'def2', title: 'MEB Kazanım Kavrama Testleri Arşivi', url: 'https://odsgm.meb.gov.tr/www/kazanim-testleri/kategori/1', type: 'pdf', category: 'ARŞİV' },
+  { id: 'def3', title: 'EBA Akademik Destek Portalı', url: 'https://www.eba.gov.tr/akademik-destek', type: 'web', category: 'EĞİTİM' },
+  { id: 'def4', title: 'YKS Matematik Master Playlist', url: 'https://www.youtube.com/results?search_query=yks+matematik+konu+anlat%C4%B1m%C4%B1', type: 'youtube', category: 'VİDEO' },
+];
+
 export default function LinksPage() {
   const { user } = useUser();
   const db = useFirestore();
@@ -47,13 +55,18 @@ export default function LinksPage() {
   const [editingLink, setEditingLink] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  // Firestore sorgusunu sonsuz döngüyü önlemek için memoize ediyoruz
+  // Firestore sorgusu - index hatalarını önlemek için başlangıçta basitleştirildi
   const linksQuery = useMemo(() => {
     if (!db) return null;
-    return query(collection(db, 'academicLinks'), orderBy('createdAt', 'desc'));
+    return query(collection(db, 'academicLinks'));
   }, [db]);
 
-  const { data: links = [], loading: linksLoading } = useCollection<any>(linksQuery);
+  const { data: dbLinks = [], loading: linksLoading } = useCollection<any>(linksQuery);
+
+  // DB boşsa varsayılanları göster, değilse DB'dekileri
+  const links = useMemo(() => {
+    return dbLinks.length > 0 ? dbLinks : DEFAULT_LINKS;
+  }, [dbLinks]);
 
   const filtered = useMemo(() => {
     return links.filter(l => 
@@ -78,7 +91,7 @@ export default function LinksPage() {
     };
 
     try {
-      if (editingLink) {
+      if (editingLink && !editingLink.id.startsWith('def')) {
         await updateDoc(doc(db, 'academicLinks', editingLink.id), linkData);
         toast({ title: 'KAYNAK GÜNCELLENDİ', description: 'Değişiklikler saniyeler içinde senkronize edildi.', className: "bg-primary text-white rounded-2xl" });
       } else {
@@ -99,6 +112,10 @@ export default function LinksPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (id.startsWith('def')) {
+      toast({ title: 'BİLGİ', description: 'Varsayılan kaynaklar silinemez.', variant: 'default' });
+      return;
+    }
     if (!db || !confirm('Bu kaynağı kütüphaneden silmek istediğinize emin misiniz?')) return;
     try {
       await deleteDoc(doc(db, 'academicLinks', id));
@@ -109,6 +126,10 @@ export default function LinksPage() {
   };
 
   const openEdit = (link: any) => {
+    if (link.id.startsWith('def')) {
+      toast({ title: 'BİLGİ', description: 'Varsayılan kaynaklar düzenlenemez, ancak yenisini ekleyebilirsiniz.', variant: 'default' });
+      return;
+    }
     setEditingLink(link);
     setIsDialogOpen(true);
   };
@@ -216,14 +237,16 @@ export default function LinksPage() {
                      </div>
                      <div className="flex flex-col items-end gap-3">
                         <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/40 italic">{link.category}</span>
-                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                           <Button onClick={() => openEdit(link)} size="icon" variant="ghost" className="h-10 w-10 rounded-xl bg-slate-50 hover:bg-primary hover:text-white transition-all shadow-sm">
-                              <Edit3 className="h-4 w-4" />
-                           </Button>
-                           <Button onClick={() => handleDelete(link.id)} size="icon" variant="ghost" className="h-10 w-10 rounded-xl bg-slate-50 hover:bg-destructive hover:text-white transition-all shadow-sm">
-                              <Trash2 className="h-4 w-4" />
-                           </Button>
-                        </div>
+                        {!link.id.startsWith('def') && (
+                          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                             <Button onClick={() => openEdit(link)} size="icon" variant="ghost" className="h-10 w-10 rounded-xl bg-slate-50 hover:bg-primary hover:text-white transition-all shadow-sm">
+                                <Edit3 className="h-4 w-4" />
+                             </Button>
+                             <Button onClick={() => handleDelete(link.id)} size="icon" variant="ghost" className="h-10 w-10 rounded-xl bg-slate-50 hover:bg-destructive hover:text-white transition-all shadow-sm">
+                                <Trash2 className="h-4 w-4" />
+                             </Button>
+                          </div>
+                        )}
                      </div>
                   </div>
 

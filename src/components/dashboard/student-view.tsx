@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Sparkles, Brain, CheckCircle2, Loader2, Clock, 
   Zap, Plus, Award, RotateCcw, FastForward, Gauge, Edit3, Trash2,
-  Youtube, Globe
+  Youtube, Globe, BellRing
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -132,7 +132,6 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                   style={{ borderTopColor: LESSON_COLORS[block.lesson] || '#334155' }}
                 >
                    <div className="space-y-12 relative z-10">
-                        {/* Block Header */}
                         <div className="flex justify-between items-start">
                            <div className="space-y-2">
                               <h4 className="text-[3.5rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-deep">
@@ -155,7 +154,6 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                            </div>
                         </div>
 
-                        {/* Combined Panals */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                            <div className="p-10 rounded-[4rem] bg-slate-50/50 border border-slate-100 space-y-8 relative overflow-hidden group/p1 transition-all hover:bg-white hover:shadow-2xl">
                               <div className="flex justify-between items-center border-b border-slate-200 pb-6">
@@ -165,7 +163,6 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                               <h5 className="font-black text-[1.8rem] italic text-primary leading-tight uppercase group-hover/p1:text-accent transition-all">{block.phase1.type}</h5>
                               <div className="flex flex-wrap gap-4">
                                  <span className="text-[11px] font-black uppercase bg-white px-6 py-2 rounded-2xl text-primary border border-slate-200 shadow-sm flex items-center gap-3">⏱️ {block.phase1.duration}DK</span>
-                                 <span className="text-[11px] font-black uppercase bg-white px-6 py-2 rounded-2xl text-primary border border-slate-200 shadow-sm flex items-center gap-3">📝 {block.phase1.questionTarget} HEDEF</span>
                               </div>
                               <div className="flex gap-8 pt-4">
                                  <a href={block.phase1.resources?.youtube} target="_blank" className="hover:scale-125 transition-all text-rose-500 opacity-40 hover:opacity-100"><Youtube className="h-8 w-8" /></a>
@@ -181,7 +178,6 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                               <h5 className="font-black text-[1.8rem] italic text-primary leading-tight uppercase group-hover/p2:text-accent transition-all">{block.phase2.type}</h5>
                               <div className="flex flex-wrap gap-4">
                                  <span className="text-[11px] font-black uppercase bg-white px-6 py-2 rounded-2xl text-accent border border-orange-200 shadow-sm flex items-center gap-3">⏱️ {block.phase2.duration}DK</span>
-                                 <span className="text-[11px] font-black uppercase bg-white px-6 py-2 rounded-2xl text-accent border border-orange-200 shadow-sm flex items-center gap-3">📝 {block.phase2.questionTarget} SORU</span>
                               </div>
                               <div className="flex gap-8 pt-4">
                                  <a href={block.phase2.resources?.youtube} target="_blank" className="hover:scale-125 transition-all text-rose-500 opacity-40 hover:opacity-100"><Youtube className="h-8 w-8" /></a>
@@ -190,7 +186,15 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                            </div>
                         </div>
 
-                        {/* Actions Terminal */}
+                        {block.reminder && (
+                          <div className="mt-8 p-8 bg-accent/5 border border-accent/10 rounded-[3rem] flex items-center gap-6 animate-in slide-in-from-top-4 duration-500 group/rem">
+                             <div className="h-12 w-12 rounded-2xl bg-accent flex items-center justify-center text-primary shadow-xl group-hover/rem:scale-110 transition-transform">
+                                <BellRing className="h-6 w-6" />
+                             </div>
+                             <p className="text-lg font-black text-primary italic leading-tight">{block.reminder}</p>
+                          </div>
+                        )}
+
                         <div className="flex justify-center gap-8 pt-12 border-t border-slate-50 opacity-0 group-hover:opacity-100 transition-all duration-700 translate-y-4 group-hover:translate-y-0">
                            <Button 
                              onClick={() => handleTaskAction(block.id, 'done')}

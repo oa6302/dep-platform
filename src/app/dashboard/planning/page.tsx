@@ -10,7 +10,8 @@ import {
   Calendar, Clock, Zap, Loader2, Sparkles, 
   CheckCircle2, Trash2, ArrowLeft, 
   Home, RotateCcw, FastForward, Gauge, Edit3,
-  Youtube, Globe, Save, X, CalendarDays, FileText, AlertTriangle
+  Youtube, Globe, Save, X, CalendarDays, FileText, AlertTriangle,
+  BellRing, StickyNote
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
@@ -65,6 +66,7 @@ export default function PlanningPage() {
       topic,
       status: 'planned',
       difficulty: 'ORTA',
+      reminder: '',
       phase1: {
         type: 'YENİ KONU ÇALIŞMASI',
         time: time,
@@ -99,6 +101,7 @@ export default function PlanningPage() {
       topic: title,
       status: 'planned',
       difficulty: type === 'MONTHLY' ? 'ZOR' : 'ORTA',
+      reminder: type === 'MONTHLY' ? 'Tüm ayın eksik analizlerini terminalden indir.' : '',
       phase1: {
         type: `${type === 'DAILY' ? 'DÜNÜN' : type === 'WEEKLY' ? 'HAFTANIN' : 'AYIN'} ANALİZİ`,
         time: time,
@@ -167,7 +170,6 @@ export default function PlanningPage() {
         const dayName = format(currentDt, 'EEEE', { locale: tr });
         const dayOfMonth = getDate(currentDt);
         
-        // KRİTİK: Daha önce çalışılan (geçmişteki) günleri koru
         const existingDay = existingPlan.find((d: any) => d.date === dateStr);
         if (existingDay && (isBefore(currentDt, today))) {
           newPlan.push(existingDay);
@@ -179,7 +181,6 @@ export default function PlanningPage() {
 
         const dailyBlocks = [];
         
-        // 1. HER GÜN PARAGRAF (09:00)
         const trQueue = lessonQueues['TYT Türkçe'];
         if (trQueue.length > 0) {
           const trTopic = trQueue[lessonPointers['TYT Türkçe'] % trQueue.length];
@@ -187,10 +188,8 @@ export default function PlanningPage() {
           lessonPointers['TYT Türkçe']++;
         }
 
-        // 2. DÜNÜN TEKRARI (12:00 - 13:00)
         dailyBlocks.push(createReviewBlockData(dateStr, 'DÜNÜN ANALİZİ VE TEKRARI', '12:00', 60, 'DAILY'));
 
-        // 3. ROTASYON SLOTS
         const activePool = otherLessons.filter(l => {
           if (l === 'AYT Matematik' || l === 'Edebiyat') return isAytActive;
           return true;
@@ -208,7 +207,7 @@ export default function PlanningPage() {
             let topicTime, testTime;
             if (j === 0) {
                 topicTime = '11:00';
-                testTime = '13:00'; // 12:00 slotu Dünün Tekrarı için ayrıldı
+                testTime = '13:00';
             } else {
                 topicTime = `${12 + (j * 2)}:00`;
                 testTime = `${13 + (j * 2)}:00`;
@@ -226,12 +225,10 @@ export default function PlanningPage() {
           }
         }
 
-        // 4. HAFTALIK TEKRAR (PAZARLARI)
         if (dayName === 'Pazar') {
           dailyBlocks.push(createReviewBlockData(dateStr, 'HAFTALIK GENEL STRATEJİ TEKRARI', '18:00', 90, 'WEEKLY'));
         }
 
-        // 5. AYLIK TEKRAR (HER AYIN 30'U)
         if (dayOfMonth === 30) {
           dailyBlocks.push(createReviewBlockData(dateStr, 'AYLIK MASTER KAZANIM TEKRARI', '20:00', 120, 'MONTHLY'));
         }
@@ -338,6 +335,7 @@ export default function PlanningPage() {
     const formData = new FormData(e.currentTarget);
     const updatedTopic = formData.get('topic') as string;
     const updatedDate = formData.get('date') as string;
+    const updatedReminder = formData.get('reminder') as string;
 
     const newPlan = studyPlan.masterPlan.map((day: any) => {
       if (day.date === editingBlock.date && updatedDate !== editingBlock.date) {
@@ -352,6 +350,7 @@ export default function PlanningPage() {
                 ...b,
                 topic: updatedTopic,
                 difficulty: formData.get('difficulty'),
+                reminder: updatedReminder,
                 phase1: {
                   ...b.phase1,
                   time: formData.get('p1Time'),
@@ -388,6 +387,7 @@ export default function PlanningPage() {
             ...editingBlock,
             topic: updatedTopic,
             difficulty: formData.get('difficulty'),
+            reminder: updatedReminder,
             phase1: {
               ...editingBlock.phase1,
               time: formData.get('p1Time'),
@@ -574,6 +574,15 @@ export default function PlanningPage() {
                              </div>
                           </div>
 
+                          {block.reminder && (
+                            <div className="mt-8 p-6 bg-accent/5 border border-accent/10 rounded-[2.5rem] flex items-center gap-4 animate-in slide-in-from-top-4 duration-500">
+                               <div className="h-10 w-10 rounded-xl bg-accent flex items-center justify-center text-primary shadow-lg shrink-0">
+                                  <BellRing className="h-5 w-5" />
+                               </div>
+                               <p className="text-sm font-black text-primary italic leading-tight">{block.reminder}</p>
+                            </div>
+                          )}
+
                           <div className="flex justify-center gap-6 pt-10 border-t border-slate-50">
                              <Button 
                                onClick={() => handleTaskAction(day.date, block.id, 'done')}
@@ -644,6 +653,14 @@ export default function PlanningPage() {
                       <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-4 italic">TARİH</Label>
                       <Input name="date" type="date" required defaultValue={editingBlock.date} className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold" />
                    </div>
+                </div>
+
+                <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-4 italic">HATIRLATICI NOTU</Label>
+                    <div className="relative group">
+                       <BellRing className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-accent opacity-40" />
+                       <Input name="reminder" defaultValue={editingBlock.reminder} placeholder="Örn: Bu konunun testlerini mutlaka bitir!" className="h-16 pl-12 rounded-2xl bg-slate-50 border-none shadow-inner font-bold italic" />
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-10">

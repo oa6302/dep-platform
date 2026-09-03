@@ -43,7 +43,7 @@ export default function LandingPage() {
               <Sparkles className="h-4 w-4 text-accent animate-pulse" /> EĞİTİMİN YENİ NESİL TERMİNALİ
             </div>
             
-            <h1 className="text-5xl md:text-8xl lg:text-[8.5rem] font-black text-primary tracking-tighter leading-[0.85] italic text-shadow-premium uppercase animate-in fade-in slide-in-from-bottom-8 duration-1000">
+            <h1 className="text-5xl md:text-7xl lg:text-[8.5rem] font-black text-primary tracking-tighter leading-[0.85] italic text-shadow-premium uppercase animate-in fade-in slide-in-from-bottom-8 duration-1000">
               BAŞARIYI <br /><span className="text-accent text-shadow-accent">OTOMATİZE ET.</span>
             </h1>
 
@@ -62,12 +62,12 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Feature Preview (Live Terminal) - Fixed Contrast for Visibility */}
-        <section className="mt-40 relative px-6 py-24 md:py-32 bg-primary rounded-[3rem] md:rounded-[5rem] mx-4 md:mx-10 overflow-hidden group shadow-2xl">
+        {/* Feature Preview (Live Terminal) */}
+        <section className="mt-40 relative px-6 py-24 md:py-32 bg-primary rounded-[3rem] md:rounded-[5rem] mx-0 md:mx-10 overflow-hidden group shadow-2xl">
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-accent/5 blur-[150px] rounded-full translate-x-1/3 -translate-y-1/3" />
           <div className="container mx-auto grid lg:grid-cols-2 gap-20 items-center relative z-10">
             <div className="space-y-10 text-white text-center lg:text-left">
-               <h2 className="text-5xl md:text-7xl lg:text-9xl font-black italic tracking-tighter leading-[0.85] uppercase text-shadow-premium">Maksimum <br /><span className="text-accent text-shadow-accent">Odaklanma</span></h2>
+               <h2 className="text-5xl md:text-7xl lg:text-8xl font-black italic tracking-tighter leading-[0.85] uppercase text-shadow-premium">Maksimum <br /><span className="text-accent text-shadow-accent">Odaklanma</span></h2>
                <p className="text-xl md:text-2xl text-white/60 font-medium leading-relaxed italic max-w-xl">
                  Apple tasarım standartlarında optimize edilmiş Pomodoro terminali ile ders çalışma seanslarınızın verimini anında %40 artırın.
                </p>
@@ -83,12 +83,12 @@ export default function LandingPage() {
                </div>
             </div>
             
-            <div className="bg-white/5 backdrop-blur-3xl rounded-[4rem] p-12 md:p-16 border border-white/10 shadow-3xl text-center space-y-12">
+            <div className="bg-white/5 backdrop-blur-3xl rounded-[4rem] p-8 md:p-16 border border-white/10 shadow-3xl text-center space-y-12">
                <div className="flex justify-center gap-4">
-                  <span className="px-8 py-3 rounded-2xl bg-white text-primary text-[10px] font-black tracking-widest shadow-xl">ÇALIŞMA</span>
-                  <span className="px-8 py-3 rounded-2xl bg-white/5 text-white/40 text-[10px] font-black tracking-widest">MOLA</span>
+                  <span className="px-6 md:px-8 py-3 rounded-2xl bg-white text-primary text-[10px] font-black tracking-widest shadow-xl">ÇALIŞMA</span>
+                  <span className="px-6 md:px-8 py-3 rounded-2xl bg-white/5 text-white/40 text-[10px] font-black tracking-widest">MOLA</span>
                </div>
-               <p className="text-[8rem] md:text-[11rem] font-black italic tracking-tighter text-white leading-none text-shadow-premium">25<span className="text-accent animate-pulse">:</span>00</p>
+               <p className="text-[6rem] md:text-[11rem] font-black italic tracking-tighter text-white leading-none text-shadow-premium">25<span className="text-accent animate-pulse">:</span>00</p>
                <div className="flex justify-center gap-8">
                   <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-accent flex items-center justify-center text-primary shadow-2xl shadow-accent/20"><Zap className="h-8 w-8" /></div>
                   <div className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-white/10 flex items-center justify-center text-white border border-white/10"><TrendingUp className="h-8 w-8" /></div>

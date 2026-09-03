@@ -121,7 +121,6 @@ export default function PlanningPage() {
         let pool = [...(examConfig?.lessons || ['TYT Matematik', 'TYT Türkçe'])];
         // 1 ARALIK AYT Otonom Vites
         if (isAfter(date, aytStartDate) || date.getTime() === aytStartDate.getTime()) {
-           // AYT eklemesi
            if (currentExam === 'YKS_EA' || currentExam === 'YKS_SAY') {
               const aytMath = 'AYT Matematik';
               const aytSpec = currentExam === 'YKS_EA' ? 'Edebiyat' : 'Fizik';
@@ -140,17 +139,9 @@ export default function PlanningPage() {
         const dateStr = format(currentDt, 'yyyy-MM-dd');
         const dayName = format(currentDt, 'EEEE', { locale: tr });
         
-        const existingDay = (studyPlan?.masterPlan || []).find((d: any) => d.date === dateStr);
-        if (existingDay && (isBefore(currentDt, startOfToday()) || existingDay.blocks.some((b: any) => b.status === 'done'))) {
-          newPlan.push(existingDay);
-          continue;
-        }
-
         const pool = getLessonPool(currentDt);
         const dailyBlocks = [];
 
-        // 4 KART DÖNGÜSÜ: [Konu 1] [Konu 2] [Paragraf] [Tekrar]
-        
         // 1 & 2: Ana Konular
         for (let j = 0; j < 2; j++) {
           const lesson = pool[(i * 2 + j) % pool.length];
@@ -503,7 +494,7 @@ export default function PlanningPage() {
                       </div>
                    </div>
 
-                   <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
+                   <Collapsible title="Gelişmiş" open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
                       <CollapsibleTrigger asChild>
                          <Button variant="ghost" className="w-full h-12 rounded-[1.25rem] md:rounded-[1.75rem] font-black text-[10px] uppercase tracking-[0.3em] text-primary/20 gap-3 hover:bg-slate-50">
                             {isAdvancedOpen ? 'GEREKSİZ ALANLARI GİZLE' : '+ GELİŞMİŞ BİLGİLER'}
@@ -546,8 +537,8 @@ export default function PlanningPage() {
                       <Button onClick={() => handleSaveEdit(false)} className="w-full h-20 md:h-24 rounded-[1.75rem] md:rounded-[2.5rem] bg-[#0F172A] hover:bg-accent text-white font-black text-sm uppercase tracking-[0.4em] gap-4 shadow-[0_40px_80px_-20px_rgba(15,23,42,0.45)] transition-all active:scale-95 group">
                          <Save className="h-6 w-6 text-accent group-hover:animate-pulse" /> TERMİNALE KAYDET
                       </Button>
-                      <Button onClick={() => handleSaveEdit(true)} className="w-full h-16 md:h-20 rounded-[1.5rem] md:rounded-[2rem] bg-accent hover:bg-primary text-primary hover:text-white transition-all font-black text-xs uppercase tracking-[0.2em] gap-3 md:gap-4 shadow-2xl active:scale-95">
-                         SONRAKİ KARTA GEÇ <ArrowRight className="h-5 w-5" />
+                      <Button onClick={() => handleSaveEdit(true)} className="w-full h-16 md:h-20 rounded-[1.5rem] md:rounded-[2rem] bg-accent hover:bg-primary text-primary hover:text-white transition-all font-black text-xs uppercase tracking-[0.2em] gap-3 md:gap-4 shadow-2xl">
+                         SONRAKİ KARTA GEÇ <ArrowRight className="h-5 w-5 md:h-6 md:w-6" />
                       </Button>
                    </div>
                    

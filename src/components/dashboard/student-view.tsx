@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -8,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Sparkles, Brain, CheckCircle2, Loader2, 
   Youtube, FileText, BellRing, Calendar, Edit3, Trash2,
-  BookOpen
+  BookOpen, Zap
 } from 'lucide-react';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -163,4 +162,3 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
     </div>
   );
 }
-

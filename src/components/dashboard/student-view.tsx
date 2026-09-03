@@ -51,10 +51,11 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
             if (t.id === taskId) {
               if (action === 'done') return { ...t, status: t.status === 'done' ? 'planned' : 'done' };
               if (action === 'repeat') return { ...t, status: 'repeat' };
+              if (action === 'delete') return null;
               return t;
             }
             return t;
-          })
+          }).filter(Boolean)
         };
       }
       return day;
@@ -99,13 +100,13 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10">
              {currentDayPlan?.tasks?.map((t: any) => (
                 <Card key={t.id} className={cn(
-                  "aspect-square p-7 rounded-[4rem] border-none flex flex-col justify-between transition-all hover:scale-[1.03] shadow-[0_45px_100px_-25px_rgba(15,23,42,0.4)] group relative overflow-hidden",
+                  "aspect-square p-5 rounded-[4rem] border-none flex flex-col justify-between transition-all hover:scale-[1.03] shadow-[0_45px_100px_-25px_rgba(15,23,42,0.4)] group relative overflow-hidden",
                   LESSON_THEMES[t.lesson] || "bg-slate-700 text-white",
                   t.status === 'done' && "opacity-40 grayscale scale-95"
                 )}>
                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 blur-3xl rounded-full" />
                    
-                   <div className="space-y-4 relative z-10">
+                   <div className="space-y-2.5 relative z-10">
                       <div className="flex justify-between items-start">
                          <span className="text-[9px] font-black uppercase px-4 py-1.5 rounded-full shadow-lg bg-white/10 backdrop-blur-xl border border-white/10 flex items-center gap-2 text-white">
                            📋 {t.lesson.toUpperCase()}
@@ -114,26 +115,26 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                       </div>
 
                       <div className="space-y-1">
-                         <h4 className="text-[1.75rem] font-black italic leading-[0.95] tracking-tighter uppercase text-white text-shadow-premium">
+                         <h4 className="text-[1.5rem] font-black italic leading-[0.95] tracking-tighter uppercase text-white text-shadow-premium">
                             {t.type}
                          </h4>
-                         <p className="text-xs font-bold text-white/50 italic leading-tight">
+                         <p className="text-[10px] font-bold text-white/50 italic leading-tight truncate">
                             {t.topic}
                          </p>
                       </div>
 
-                      <div className="space-y-3">
-                        <div className="flex flex-wrap gap-2">
-                           <span className="text-[8px] font-black uppercase bg-white/10 px-3 py-1.5 rounded-xl text-accent flex items-center gap-1.5 shadow-inner">🟡 {t.difficulty || 'ORTA'}</span>
-                           <span className="text-[8px] font-black uppercase bg-white/10 px-3 py-1.5 rounded-xl text-white flex items-center gap-1.5 shadow-inner">⏱️ {t.duration || '60'}DK</span>
-                           <span className="text-[8px] font-black uppercase bg-white/10 px-3 py-1.5 rounded-xl text-white flex items-center gap-1.5 shadow-inner">📝 {t.questionTarget || '20'} SORU</span>
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-1.5">
+                           <span className="text-[8px] font-black uppercase bg-white/10 px-2.5 py-1.5 rounded-xl text-accent flex items-center gap-1 shadow-inner">🟡 {t.difficulty || 'ORTA'}</span>
+                           <span className="text-[8px] font-black uppercase bg-white/10 px-2.5 py-1.5 rounded-xl text-white flex items-center gap-1 shadow-inner">⏱️ {t.duration || '60'}DK</span>
+                           <span className="text-[8px] font-black uppercase bg-white/10 px-2.5 py-1.5 rounded-xl text-white flex items-center gap-1 shadow-inner">📝 {t.questionTarget || '20'} SORU</span>
                         </div>
-                        <div className="flex items-center gap-4 pt-1">
+                        <div className="flex items-center gap-4 pt-0.5">
                            {t.resources ? (
                              <div className="flex gap-4">
-                                <a href={t.resources.youtube} target="_blank" className="hover:scale-125 transition-transform text-white/60 hover:text-white"><Youtube className="h-5 w-5" /></a>
-                                <a href={t.resources.ogm} target="_blank" className="hover:scale-125 transition-transform text-white/60 hover:text-white"><Globe className="h-5 w-5" /></a>
-                                <a href={t.resources.pdf} target="_blank" className="hover:scale-125 transition-transform text-white/60 hover:text-white"><FileText className="h-5 w-5" /></a>
+                                <a href={t.resources.youtube} target="_blank" className="hover:scale-125 transition-transform text-white/60 hover:text-white"><Youtube className="h-4 w-4" /></a>
+                                <a href={t.resources.ogm} target="_blank" className="hover:scale-125 transition-transform text-white/60 hover:text-white"><Globe className="h-4 w-4" /></a>
+                                <a href={t.resources.pdf} target="_blank" className="hover:scale-125 transition-transform text-white/60 hover:text-white"><FileText className="h-4 w-4" /></a>
                              </div>
                            ) : (
                              <span className="text-[8px] font-bold text-white/30 italic uppercase tracking-widest">Kaynak eklenmedi</span>
@@ -142,29 +143,36 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                       </div>
                    </div>
 
-                   <div className="grid grid-cols-3 gap-2 pt-4 border-t border-white/5 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0">
+                   <div className="grid grid-cols-3 gap-2 pt-3 border-t border-white/5 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-1 group-hover:translate-y-0">
                       <Button 
                         size="icon" 
                         onClick={() => handleTaskAction(t.id, 'done')} 
                         className={cn(
-                          "h-11 w-11 rounded-2xl transition-all shadow-2xl", 
+                          "h-10 w-10 rounded-2xl transition-all shadow-2xl", 
                           t.status === 'done' ? "bg-white/20" : "bg-emerald-500 hover:bg-emerald-400"
                         )}
                       >
-                         <CheckCircle2 className="h-5 w-5 text-white" />
+                         <CheckCircle2 className="h-4 w-4 text-white" />
                       </Button>
                       <Button 
                         size="icon" 
                         onClick={() => handleTaskAction(t.id, 'repeat')} 
                         variant="ghost" 
-                        className="h-11 w-11 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-accent"
+                        className="h-10 w-10 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-accent"
                       >
-                        <RotateCcw className="h-5 w-5" />
+                        <RotateCcw className="h-4 w-4" />
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-11 w-11 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/60"><FastForward className="h-5 w-5" /></Button>
-                      <Button size="icon" variant="ghost" className="h-11 w-11 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-blue-400"><Gauge className="h-5 w-5" /></Button>
-                      <Button size="icon" variant="ghost" className="h-11 w-11 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white"><Edit3 className="h-5 w-5" /></Button>
-                      <Button size="icon" variant="ghost" className="h-11 w-11 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-rose-500"><Trash2 className="h-5 w-5" /></Button>
+                      <Button size="icon" variant="ghost" className="h-10 w-10 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/60"><FastForward className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" className="h-10 w-10 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-blue-400"><Gauge className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" className="h-10 w-10 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white"><Edit3 className="h-4 w-4" /></Button>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        onClick={() => handleTaskAction(t.id, 'delete')}
+                        className="h-10 w-10 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-rose-500"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                    </div>
                 </Card>
              ))}

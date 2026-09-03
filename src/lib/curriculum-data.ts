@@ -1,36 +1,41 @@
-
 /**
- * @fileOverview YKS TM Master Müfredat Verisi
+ * @fileOverview YKS TM Master Müfredat Verisi (ÖSYM 2026 Standartları)
  */
 
 export const YKS_TM_TOPICS: Record<string, string[]> = {
-  'Matematik': [
+  'TYT Türkçe': [
+    'Sözcükte Anlam', 'Cümlede Anlam', 'Paragraf (Konu-Ana Düşünce)', 'Paragraf (Yapı-Yorum)', 
+    'Ses Bilgisi', 'Yazım Kuralları', 'Noktalama İşaretleri', 'Sözcükte Yapı', 
+    'Sözcük Türleri (İsim-Sıfat)', 'Sözcük Türleri (Zamir-Zarf)', 'Sözcük Türleri (Edat-Bağlaç)',
+    'Fiiller ve Fiilimsiler', 'Cümlenin Ögeleri', 'Cümle Türleri', 'Anlatım Bozuklukları'
+  ],
+  'TYT Matematik': [
     'Temel Kavramlar', 'Sayı Basamakları', 'Bölme ve Bölünebilme', 'EBOB-EKOK', 
-    'Rasyonel Sayılar', 'Üslü Sayılar', 'Köklü Sayılar', 'Çarpanlara Ayırma', 
-    'Oran-Orantı', 'Denklem Çözme', 'Basit Eşitsizlikler', 'Mutlak Değer', 
-    'Fonksiyonlar', 'Polinomlar', '2.Derece Denklemler', 'Trigonometri', 
-    'Logaritma', 'Diziler', 'Limit', 'Türev', 'İntegral'
+    'Rasyonel Sayılar', 'Basit Eşitsizlikler', 'Mutlak Değer', 'Üslü Sayılar', 
+    'Köklü Sayılar', 'Çarpanlara Ayırma', 'Oran-Orantı', 'Denklem Çözme', 
+    'Sayı-Kesir Problemleri', 'Yaş Problemleri', 'Yüzde-Kar-Zarar Problemleri', 
+    'Karışım Problemleri', 'Hareket Problemleri', 'İşçi-Havuz Problemleri',
+    'Kümeler', 'Mantık', 'Fonksiyonlar', 'Veri ve İstatistik', 'Permütasyon-Kombinasyon', 
+    'Olasılık'
   ],
   'Geometri': [
-    'Doğruda Açılar', 'Üçgende Açılar', 'Üçgende Benzerlik', 'Üçgende Alan', 
-    'Çokgenler', 'Dörtgenler', 'Çember ve Daire', 'Analitik Geometri', 'Katı Cisimler'
+    'Doğruda ve Üçgende Açılar', 'Özel Üçgenler (Dik-İkizkenar)', 'Üçgende Alan ve Benzerlik', 
+    'Açıortay-Kenarortay', 'Çokgenler ve Dörtgenler', 'Paralelkenar-Dikdörtgen-Kare', 
+    'Çember ve Daire', 'Analitik Geometri', 'Katı Cisimler'
   ],
   'Edebiyat': [
-    'Sözcükte Anlam', 'Cümlede Anlam', 'Paragrafta Anlam', 'Divan Edebiyatı', 
-    'Halk Edebiyatı', 'Tanzimat Edebiyatı', 'Servet-i Fünun', 'Milli Edebiyat', 
-    'Cumhuriyet Dönemi Roman'
+    'Söz Sanatları', 'Şiir Bilgisi', 'İslamiyet Öncesi Türk Edebiyatı', 'Halk Edebiyatı', 
+    'Divan Edebiyatı', 'Tanzimat Edebiyatı', 'Servet-i Fünun', 'Milli Edebiyat', 
+    'Cumhuriyet Dönemi Şiir', 'Cumhuriyet Dönemi Roman', 'Cumhuriyet Dönemi Tiyatro'
   ],
   'Tarih': [
-    'Tarih Bilimine Giriş', 'İlk Çağ Uygarlıkları', 'İslam Tarihi', 
-    'Osmanlı Kuruluş Dönemi', 'Osmanlı Yükselme Dönemi', 'Kurtuluş Savaşı Hazırlık', 
-    'Atatürk İnkılapları'
+    'Tarih ve Zaman', 'İlk Çağ Uygarlıkları', 'İslam Tarihi', 'Türk-İslam Devletleri', 
+    'Osmanlı Kuruluş ve Yükselme', 'Osmanlı Duraklama ve Gerileme', 'Osmanlı Dağılma',
+    'Milli Mücadele Hazırlık', 'Kurtuluş Savaşı', 'Atatürk İlkeleri ve İnkılapları'
   ],
   'Coğrafya': [
-    'Harita Bilgisi', 'İklim Bilgisi', 'Türkiye\'nin Yer Şekilleri', 
-    'Nüfus ve Yerleşme', 'Türkiye\'de Tarım ve Sanayi'
-  ],
-  'Felsefe': [
-    'Felsefenin Anlamı', 'Bilgi Felsefesi', 'Varlık Felsefesi', 
-    'Ahlak Felsefesi', 'Siyaset Felsefesi'
+    'Doğa ve İnsan', 'Dünya\'nın Şekli ve Hareketleri', 'Harita Bilgisi', 'Atmosfer ve İklim', 
+    'İç ve Dış Kuvvetler', 'Nüfus ve Yerleşme', 'Ekonomik Faaliyetler', 'Bölgeler',
+    'Türkiye\'nin Yer Şekilleri', 'Doğal Afetler'
   ]
 };

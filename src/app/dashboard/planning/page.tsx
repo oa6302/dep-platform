@@ -6,7 +6,6 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Calendar, Clock, Target, Plus, Zap, Loader2, Sparkles, 
   ChevronRight, Brain, CheckCircle2, History, Trash2, ArrowLeft, 
@@ -31,18 +30,18 @@ export default function PlanningPage() {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState('');
+  const [endDate, setEndDate] = useState('2027-06-15');
   const [dailyHours, setDailyHours] = useState('3');
   const [startHour, setStartHour] = useState('10:00');
 
-  const dayColors: Record<string, string> = {
-    'Pazartesi': 'border-t-[6px] border-t-rose-500',
-    'Salı': 'border-t-[6px] border-t-orange-500',
-    'Çarşamba': 'border-t-[6px] border-t-emerald-500',
-    'Perşembe': 'border-t-[6px] border-t-blue-500',
-    'Cuma': 'border-t-[6px] border-t-purple-500',
-    'Cumartesi': 'border-t-[6px] border-t-teal-500',
-    'Pazar': 'border-t-[6px] border-t-pink-500',
+  const dayStyles: Record<string, string> = {
+    'Pazartesi': 'bg-rose-50/50 border-rose-200 text-rose-900',
+    'Salı': 'bg-orange-50/50 border-orange-200 text-orange-900',
+    'Çarşamba': 'bg-emerald-50/50 border-emerald-200 text-emerald-900',
+    'Perşembe': 'bg-blue-50/50 border-blue-200 text-blue-900',
+    'Cuma': 'bg-purple-50/50 border-purple-200 text-purple-900',
+    'Cumartesi': 'bg-teal-50/50 border-teal-200 text-teal-900',
+    'Pazar': 'bg-pink-50/50 border-pink-200 text-pink-900',
   };
 
   const generateFasikulPlan = async () => {
@@ -66,64 +65,57 @@ export default function PlanningPage() {
         const dayName = format(currentDt, 'EEEE', { locale: tr });
         const dateStr = format(currentDt, 'yyyy-MM-dd');
 
-        // Cumartesi: Haftalık Tekrar Günü
-        if (dayName === 'Cumartesi') {
-          fullPlan.push({
-            date: dateStr,
-            day: dayName,
-            tasks: [{
-              id: `task_${dateStr}_weekly_review`,
-              lesson: 'Genel',
-              topic: 'Haftalık Master Tekrar',
-              type: 'Haftalık Tekrar',
-              time: startHour,
-              duration: 180,
-              status: 'planned'
-            }]
-          });
-          continue;
-        }
-
         const dailyTasks = [];
-        // Her gün her dersten bir parça döngüsü
-        lessons.forEach((lesson, lIdx) => {
+        
+        // 1. SAAT: Yeni Konu (Her dersten birer parça - Fasikül Akışı)
+        lessons.forEach((lesson) => {
           const topics = YKS_TM_TOPICS[lesson];
           const topic = topics[lessonPointers[lesson] % topics.length];
           
-          // 1. SAAT: Yeni Konu
           dailyTasks.push({
-            id: `task_${dateStr}_${lesson}_new`,
+            id: `task_${dateStr}_${lesson}_new_${Math.random().toString(36).substr(2, 5)}`,
             lesson,
             topic,
-            type: 'Konu Çalışması',
+            type: 'Yeni Konu Çalışması',
             time: '10:00',
             duration: 60,
+            difficulty: 'Orta',
+            questionTarget: 10,
             status: 'planned'
           });
+        });
 
-          // 2. SAAT: Test & Ayrıntı
+        // 2. SAAT: Yeni Ayrıntılar ve Testler
+        lessons.forEach((lesson) => {
+          const topics = YKS_TM_TOPICS[lesson];
+          const topic = topics[lessonPointers[lesson] % topics.length];
+          
           dailyTasks.push({
-            id: `task_${dateStr}_${lesson}_test`,
+            id: `task_${dateStr}_${lesson}_test_${Math.random().toString(36).substr(2, 5)}`,
             lesson,
             topic,
-            type: 'Test Çözümü',
+            type: 'Test ve Ayrıntı',
             time: '11:00',
             duration: 60,
+            difficulty: 'Orta',
+            questionTarget: 20,
             status: 'planned'
           });
-
+          
           lessonPointers[lesson]++;
         });
 
-        // 3. SAAT: Dünün Tekrarı
+        // 3. SAAT: Önceki Günün Kısa Tekrarı
         if (i > 0) {
           dailyTasks.push({
-            id: `task_${dateStr}_prev_review`,
+            id: `task_${dateStr}_review_${Math.random().toString(36).substr(2, 5)}`,
             lesson: 'Genel',
             topic: 'Dünün Kazanım Tekrarı',
-            type: 'Hızlı Tekrar',
+            type: 'Kısa Tekrar',
             time: '12:00',
             duration: 60,
+            difficulty: 'Orta',
+            questionTarget: 15,
             status: 'planned'
           });
         }
@@ -138,7 +130,7 @@ export default function PlanningPage() {
       await setDoc(doc(db, 'studyPlans', user.uid), {
         userId: user.uid,
         masterPlan: fullPlan,
-        stats: { totalHours: 0, totalQuestions: 0, totalTests: 0 },
+        targetExamDate: endDate,
         updatedAt: serverTimestamp()
       }, { merge: true });
 
@@ -154,8 +146,34 @@ export default function PlanningPage() {
     }
   };
 
+  const handleTaskAction = async (date: string, taskId: string, action: string) => {
+    if (!db || !user || !studyPlan) return;
+    const newPlan = studyPlan.masterPlan.map((day: any) => {
+      if (day.date === date) {
+        return {
+          ...day,
+          tasks: day.tasks.map((t: any) => {
+            if (t.id === taskId) {
+              if (action === 'done') return { ...t, status: 'done' };
+              if (action === 'repeat') return { ...t, status: 'repeat' };
+              if (action === 'delete') return null;
+              return t;
+            }
+            return t;
+          }).filter(Boolean)
+        };
+      }
+      return day;
+    });
+
+    await updateDoc(doc(db, 'studyPlans', user.uid), {
+      masterPlan: newPlan,
+      updatedAt: serverTimestamp()
+    });
+  };
+
   return (
-    <div className="p-8 lg:p-14 space-y-12 max-w-[1600px] mx-auto w-full animate-in fade-in duration-1000 bg-[#F8FAFC]">
+    <div className="p-8 lg:p-14 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000 bg-[#F8FAFC]">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
         <div className="flex flex-col gap-6">
           <div className="flex items-center gap-4">
@@ -180,7 +198,7 @@ export default function PlanningPage() {
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-black text-xl" />
            </div>
            <div className="space-y-3">
-              <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-4 italic">Hedef / Sınav Tarihi</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-4 italic">Sınav Tarihi</Label>
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-black text-xl" />
            </div>
            <div className="space-y-3">
@@ -190,7 +208,7 @@ export default function PlanningPage() {
            <div className="space-y-3">
               <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-4 italic">Günlük Hedef</Label>
               <select value={dailyHours} onChange={(e) => setDailyHours(e.target.value)} className="w-full h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-black text-xl px-6 outline-none appearance-none">
-                 <option value="3">3 Saat (Dinamik)</option>
+                 <option value="3">3 Saat (Fasikül Döngüsü)</option>
                  <option value="5">5 Saat (Yoğun)</option>
                  <option value="8">8 Saat (Full Focus)</option>
               </select>
@@ -203,7 +221,7 @@ export default function PlanningPage() {
           className="w-full h-24 rounded-[2.5rem] bg-primary hover:bg-accent transition-all duration-700 font-black text-xl uppercase tracking-[0.4em] gap-6 shadow-[0_50px_100px_-20px_rgba(15,23,42,0.4)] group text-white"
         >
           {isGenerating ? <Loader2 className="h-10 w-10 animate-spin" /> : <Zap className="h-10 w-10 text-accent group-hover:animate-pulse" />}
-          YENİ PLANI HESAPLA VE KUR
+          YENİ FASİKÜL PLANINI KUR
         </Button>
       </Card>
 
@@ -214,38 +232,91 @@ export default function PlanningPage() {
                 <h3 className="text-2xl font-black italic text-primary uppercase">{day.date} — {day.day}</h3>
                 <div className="h-px flex-1 bg-slate-200" />
              </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                 {day.tasks.map((t: any) => (
                   <Card key={t.id} className={cn(
-                    "aspect-square p-8 rounded-[3.5rem] border-2 bg-white flex flex-col justify-between transition-all hover:scale-105 hover:shadow-2xl group",
-                    dayColors[day.day],
+                    "aspect-square p-8 rounded-[3.5rem] border-2 flex flex-col justify-between transition-all hover:scale-105 hover:shadow-2xl group",
+                    dayStyles[day.day] || "bg-white",
                     t.status === 'done' && "opacity-40 grayscale"
                   )}>
                      <div className="space-y-4">
                         <div className="flex justify-between items-start">
-                           <span className="text-[10px] font-black uppercase bg-primary text-white px-3 py-1 rounded-full">{t.type}</span>
-                           <span className="text-[11px] font-black text-accent">{t.time}</span>
+                           <span className="text-[10px] font-black uppercase bg-primary text-white px-3 py-1 rounded-full">📋 {t.lesson}</span>
+                           <span className="text-[11px] font-black text-primary/60">{t.time}</span>
                         </div>
-                        <h5 className="text-xl font-black text-primary uppercase leading-tight italic">📋 {t.lesson}</h5>
-                        <p className="text-[10px] font-bold text-muted-foreground italic leading-relaxed line-clamp-2">{t.topic}</p>
-                        <div className="flex flex-wrap gap-2 pt-2">
-                           <span className="text-[9px] font-black text-primary/40 uppercase">🟡 ORTA</span>
-                           <span className="text-[9px] font-black text-primary/40 uppercase">⏱️ {t.duration}DK</span>
+                        <h5 className="text-xl font-black text-primary uppercase leading-tight italic">
+                           {t.type}
+                        </h5>
+                        <p className="text-[10px] font-bold text-muted-foreground italic leading-relaxed line-clamp-2">
+                           {t.topic}
+                        </p>
+                        <div className="space-y-1.5">
+                           <div className="flex flex-wrap gap-2">
+                              <span className="text-[9px] font-black text-primary/40 uppercase">🟡 {t.difficulty}</span>
+                              <span className="text-[9px] font-black text-primary/40 uppercase">⏱️ {t.duration}DK</span>
+                              <span className="text-[9px] font-black text-primary/40 uppercase">📝 {t.questionTarget} SORU</span>
+                           </div>
+                           <p className="text-[9px] font-bold text-primary/30 uppercase italic">Kaynak eklenmedi</p>
                         </div>
                      </div>
-                     <div className="grid grid-cols-3 gap-2 pt-6 border-t border-slate-50 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button size="icon" className="h-10 w-10 rounded-2xl bg-emerald-500 shadow-lg"><CheckCircle2 className="h-4 w-4" /></Button>
-                        <Button size="icon" variant="outline" className="h-10 w-10 rounded-2xl"><RotateCcw className="h-4 w-4 text-accent" /></Button>
-                        <Button size="icon" variant="outline" className="h-10 w-10 rounded-2xl"><FastForward className="h-4 w-4 text-muted-foreground" /></Button>
-                        <Button size="icon" variant="outline" className="h-10 w-10 rounded-2xl"><Gauge className="h-4 w-4" /></Button>
-                        <Button size="icon" variant="outline" className="h-10 w-10 rounded-2xl"><Edit3 className="h-4 w-4" /></Button>
-                        <Button size="icon" variant="outline" className="h-10 w-10 rounded-2xl text-destructive hover:bg-destructive/5 border-none"><Trash2 className="h-4 w-4" /></Button>
+                     
+                     <div className="grid grid-cols-3 gap-2 pt-6 border-t border-primary/5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button 
+                          onClick={() => handleTaskAction(day.date, t.id, 'done')}
+                          size="icon" 
+                          className="h-10 w-10 rounded-2xl bg-emerald-500 hover:bg-emerald-600 shadow-lg"
+                        >
+                          <CheckCircle2 className="h-4 w-4 text-white" />
+                        </Button>
+                        <Button 
+                          onClick={() => handleTaskAction(day.date, t.id, 'repeat')}
+                          size="icon" 
+                          variant="outline" 
+                          className="h-10 w-10 rounded-2xl bg-white border-2 hover:bg-slate-50"
+                        >
+                          <RotateCcw className="h-4 w-4 text-accent" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="outline" 
+                          className="h-10 w-10 rounded-2xl bg-white border-2 hover:bg-slate-50"
+                        >
+                          <FastForward className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="outline" 
+                          className="h-10 w-10 rounded-2xl bg-white border-2 hover:bg-slate-50"
+                        >
+                          <Gauge className="h-4 w-4 text-primary" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="outline" 
+                          className="h-10 w-10 rounded-2xl bg-white border-2 hover:bg-slate-50"
+                        >
+                          <Edit3 className="h-4 w-4 text-primary" />
+                        </Button>
+                        <Button 
+                          onClick={() => handleTaskAction(day.date, t.id, 'delete')}
+                          size="icon" 
+                          variant="outline" 
+                          className="h-10 w-10 rounded-2xl bg-white border-2 text-destructive hover:bg-destructive/5"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                      </div>
                   </Card>
                 ))}
              </div>
           </div>
         ))}
+        {(!studyPlan?.masterPlan || studyPlan.masterPlan.length === 0) && (
+          <div className="py-40 text-center space-y-6">
+            <Zap className="h-20 w-20 text-accent opacity-20 mx-auto animate-pulse" />
+            <p className="text-xl font-black uppercase tracking-[0.4em] text-primary/20 italic">Henüz Bir Plan Oluşturulmadı</p>
+          </div>
+        )}
       </div>
     </div>
   );

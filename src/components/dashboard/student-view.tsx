@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -9,7 +8,7 @@ import {
   Play, Sparkles, ChevronRight, Target, Activity, 
   Brain, CheckCircle2, Calendar, Loader2, Clock, 
   Zap, Plus, TrendingUp, BookOpen, BarChart3, Star,
-  Award, RefreshCcw, FastForward, Gauge, Edit3, Trash2
+  Award, RefreshCcw, FastForward, Gauge, Edit3, Trash2, RotateCcw
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -17,7 +16,7 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
 import { AcademicSessionDialog } from '@/components/academic-session-dialog';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 export function StudentView({ user, userData }: { user: any, userData: any }) {
   const db = useFirestore();
@@ -29,14 +28,14 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
   
   const [isAddingTask, setIsAddingTask] = useState(false);
 
-  const dayColors: Record<string, string> = {
-    'Pazartesi': 'border-t-[6px] border-t-rose-500',
-    'Salı': 'border-t-[6px] border-t-orange-500',
-    'Çarşamba': 'border-t-[6px] border-t-emerald-500',
-    'Perşembe': 'border-t-[6px] border-t-blue-500',
-    'Cuma': 'border-t-[6px] border-t-purple-500',
-    'Cumartesi': 'border-t-[6px] border-t-teal-500',
-    'Pazar': 'border-t-[6px] border-t-pink-500',
+  const dayStyles: Record<string, string> = {
+    'Pazartesi': 'bg-rose-50/50 border-rose-200 text-rose-900',
+    'Salı': 'bg-orange-50/50 border-orange-200 text-orange-900',
+    'Çarşamba': 'bg-emerald-50/50 border-emerald-200 text-emerald-900',
+    'Perşembe': 'bg-blue-50/50 border-blue-200 text-blue-900',
+    'Cuma': 'bg-purple-50/50 border-purple-200 text-purple-900',
+    'Cumartesi': 'bg-teal-50/50 border-teal-200 text-teal-900',
+    'Pazar': 'bg-pink-50/50 border-pink-200 text-pink-900',
   };
 
   const currentDayPlan = useMemo(() => {
@@ -44,18 +43,28 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
     return studyPlan.masterPlan.find((p: any) => p.date === today);
   }, [studyPlan, today]);
 
-  const completeTask = async (taskId: string) => {
+  const handleTaskAction = async (taskId: string, action: string) => {
     if (!db || !user || !studyPlan) return;
     const newPlan = studyPlan.masterPlan.map((day: any) => {
       if (day.date === today) {
         return {
           ...day,
-          tasks: day.tasks.map((t: any) => t.id === taskId ? { ...t, status: t.status === 'done' ? 'planned' : 'done' } : t)
+          tasks: day.tasks.map((t: any) => {
+            if (t.id === taskId) {
+              if (action === 'done') return { ...t, status: t.status === 'done' ? 'planned' : 'done' };
+              if (action === 'repeat') return { ...t, status: 'repeat' };
+              return t;
+            }
+            return t;
+          })
         };
       }
       return day;
     });
-    await updateDoc(doc(db, 'studyPlans', user.uid), { masterPlan: newPlan });
+    await updateDoc(doc(db, 'studyPlans', user.uid), { 
+      masterPlan: newPlan,
+      updatedAt: serverTimestamp()
+    });
   };
 
   if (planLoading) return (
@@ -75,7 +84,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
               <Brain className="h-4 w-4 animate-pulse" /> AOS YAPAY ZEKA ASİSTANI
             </div>
             <p className="text-2xl font-bold italic leading-relaxed">
-               "Bugün {currentDayPlan?.tasks?.length || 0} kritik fasikül görevin var. 3 saatlik döngü ile verimini %40 artırabilirsin."
+               "Sınav tarihine kilitlendik: 15 Haziran 2027. Bugün {currentDayPlan?.tasks?.length || 0} kritik fasikül görevin var."
             </p>
           </div>
           <Button onClick={() => router.push('/dashboard/planning')} className="bg-accent hover:bg-white hover:text-primary transition-all rounded-[1.5rem] h-16 px-10 font-black uppercase text-[12px] tracking-widest shadow-2xl">HAFTALIK PLANI GÖR</Button>
@@ -92,34 +101,37 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
              {currentDayPlan?.tasks?.map((t: any) => (
                 <Card key={t.id} className={cn(
-                  "aspect-square p-10 rounded-[3.5rem] border-2 bg-white flex flex-col justify-between transition-all hover:shadow-[0_40px_80px_-20px_rgba(15,23,42,0.15)] hover:-translate-y-4 group",
-                  dayColors[dayName],
+                  "aspect-square p-10 rounded-[3.5rem] border-2 flex flex-col justify-between transition-all hover:shadow-[0_40px_80px_-20px_rgba(15,23,42,0.15)] hover:-translate-y-4 group",
+                  dayStyles[dayName] || "bg-white",
                   t.status === 'done' && "opacity-50 grayscale"
                 )}>
                    <div className="space-y-6">
                       <div className="flex justify-between items-start">
-                         <span className="text-[11px] font-black uppercase bg-primary/5 text-primary px-3 py-1 rounded-full">{t.type}</span>
-                         <span className="text-[12px] font-black text-accent tracking-tighter italic">{t.time}</span>
+                         <span className="text-[11px] font-black uppercase bg-primary text-white px-3 py-1 rounded-full">📋 {t.lesson}</span>
+                         <span className="text-[12px] font-black text-primary/60 italic">{t.time}</span>
                       </div>
                       <div className="space-y-2">
-                         <h4 className="text-2xl font-black text-primary leading-[1.1] uppercase tracking-tighter italic">📋 {t.lesson}</h4>
+                         <h4 className="text-2xl font-black text-primary leading-[1.1] uppercase tracking-tighter italic">{t.type}</h4>
                          <p className="text-[11px] font-bold text-muted-foreground italic opacity-60 leading-relaxed">{t.topic}</p>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                         <span className="badge bg-slate-50 text-[10px] font-black px-3 py-1.5 rounded-xl">🟡 {t.difficulty}</span>
-                         <span className="badge bg-slate-50 text-[10px] font-black px-3 py-1.5 rounded-xl">⏱️ {t.duration}dk</span>
-                         {t.questionTarget > 0 && <span className="badge bg-slate-50 text-[10px] font-black px-3 py-1.5 rounded-xl">📝 {t.questionTarget} soru</span>}
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                           <span className="badge bg-white/50 text-[10px] font-black px-3 py-1.5 rounded-xl border border-primary/5">🟡 {t.difficulty || 'Orta'}</span>
+                           <span className="badge bg-white/50 text-[10px] font-black px-3 py-1.5 rounded-xl border border-primary/5">⏱️ {t.duration || '60'}DK</span>
+                           <span className="badge bg-white/50 text-[10px] font-black px-3 py-1.5 rounded-xl border border-primary/5">📝 {t.questionTarget || '20'} SORU</span>
+                        </div>
+                        <p className="text-[9px] font-bold text-primary/30 uppercase italic">Kaynak eklenmedi</p>
                       </div>
                    </div>
-                   <div className="grid grid-cols-3 gap-3 pt-6 border-t border-slate-50">
-                      <Button size="icon" onClick={() => completeTask(t.id)} className={cn("h-12 w-12 rounded-2xl shadow-xl", t.status === 'done' ? "bg-emerald-500" : "bg-primary")}>
+                   <div className="grid grid-cols-3 gap-3 pt-6 border-t border-primary/5">
+                      <Button size="icon" onClick={() => handleTaskAction(t.id, 'done')} className={cn("h-12 w-12 rounded-2xl shadow-xl", t.status === 'done' ? "bg-emerald-500" : "bg-primary")}>
                          <CheckCircle2 className="h-5 w-5" />
                       </Button>
-                      <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl hover:bg-slate-50 border-2"><RefreshCcw className="h-5 w-5" /></Button>
-                      <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl hover:bg-slate-50 border-2"><FastForward className="h-5 w-5" /></Button>
-                      <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl hover:bg-slate-50 border-2"><Gauge className="h-5 w-5" /></Button>
-                      <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl hover:bg-slate-50 border-2"><Edit3 className="h-5 w-5" /></Button>
-                      <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl text-destructive border-2 hover:bg-destructive/5"><Trash2 className="h-5 w-5" /></Button>
+                      <Button size="icon" onClick={() => handleTaskAction(t.id, 'repeat')} variant="outline" className="h-12 w-12 rounded-2xl bg-white hover:bg-slate-50 border-2"><RotateCcw className="h-5 w-5 text-accent" /></Button>
+                      <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl bg-white hover:bg-slate-50 border-2"><FastForward className="h-5 w-5 text-muted-foreground" /></Button>
+                      <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl bg-white hover:bg-slate-50 border-2"><Gauge className="h-5 w-5 text-primary" /></Button>
+                      <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl bg-white hover:bg-slate-50 border-2"><Edit3 className="h-5 w-5 text-primary" /></Button>
+                      <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl text-destructive border-2 bg-white hover:bg-destructive/5"><Trash2 className="h-5 w-5" /></Button>
                    </div>
                 </Card>
              ))}

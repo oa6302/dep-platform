@@ -9,218 +9,154 @@ import {
   Play, Sparkles, ChevronRight, Target, Activity, 
   Brain, CheckCircle2, Calendar, Loader2, Clock, 
   Zap, Plus, TrendingUp, BookOpen, BarChart3, Star,
-  Award
+  Award, RefreshCcw, FastForward, Gauge, Edit3, Trash2
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { tr } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
 import { AcademicSessionDialog } from '@/components/academic-session-dialog';
+import { doc, updateDoc } from 'firebase/firestore';
 
 export function StudentView({ user, userData }: { user: any, userData: any }) {
   const db = useFirestore();
   const router = useRouter();
   
   const today = format(new Date(), 'yyyy-MM-dd');
+  const dayName = format(new Date(), 'EEEE', { locale: tr });
   const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   
   const [isAddingTask, setIsAddingTask] = useState(false);
 
-  const stats = useMemo(() => {
-    if (!studyPlan) return { hours: 0, topics: 0, questions: 0, tests: 0 };
-    return {
-      hours: (studyPlan.totalMinutes || 0) / 60,
-      topics: Object.values(userData?.completedTopics || {}).flat().length,
-      questions: studyPlan.totalQuestions || 0,
-      tests: studyPlan.totalTests || 0
-    };
-  }, [studyPlan, userData]);
+  const dayColors: Record<string, string> = {
+    'Pazartesi': 'border-t-[6px] border-t-rose-500',
+    'Salı': 'border-t-[6px] border-t-orange-500',
+    'Çarşamba': 'border-t-[6px] border-t-emerald-500',
+    'Perşembe': 'border-t-[6px] border-t-blue-500',
+    'Cuma': 'border-t-[6px] border-t-purple-500',
+    'Cumartesi': 'border-t-[6px] border-t-teal-500',
+    'Pazar': 'border-t-[6px] border-t-pink-500',
+  };
 
   const currentDayPlan = useMemo(() => {
     if (!studyPlan?.masterPlan) return null;
     return studyPlan.masterPlan.find((p: any) => p.date === today);
   }, [studyPlan, today]);
 
-  const progress = useMemo(() => {
-    if (!currentDayPlan || !currentDayPlan.tasks?.length) return 0;
-    const completed = currentDayPlan.tasks.filter((t: any) => t.status === 'completed').length;
-    return Math.round((completed / currentDayPlan.tasks.length) * 100);
-  }, [currentDayPlan]);
+  const completeTask = async (taskId: string) => {
+    if (!db || !user || !studyPlan) return;
+    const newPlan = studyPlan.masterPlan.map((day: any) => {
+      if (day.date === today) {
+        return {
+          ...day,
+          tasks: day.tasks.map((t: any) => t.id === taskId ? { ...t, status: t.status === 'done' ? 'planned' : 'done' } : t)
+        };
+      }
+      return day;
+    });
+    await updateDoc(doc(db, 'studyPlans', user.uid), { masterPlan: newPlan });
+  };
 
   if (planLoading) return (
     <div className="p-20 flex flex-col items-center justify-center gap-6 min-h-[60vh]">
       <Loader2 className="h-12 w-12 animate-spin text-accent" />
-      <p className="text-xs font-black uppercase tracking-[0.4em] text-primary/40 italic">Veriler Senkronize Ediliyor...</p>
+      <p className="text-xs font-black uppercase tracking-[0.4em] text-primary/40 italic">Terminal Senkronize Ediliyor...</p>
     </div>
   );
 
   return (
     <div className="p-8 lg:p-14 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000 bg-[#F8FAFC]">
-      {/* AI Asistan Kutusu (TM PRO Stil) */}
-      <section className="bg-gradient-to-br from-primary/5 to-secondary/5 border border-secondary/30 rounded-[2.5rem] p-10 relative overflow-hidden group shadow-sm">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/5 blur-[100px] rounded-full" />
+      <section className="bg-primary text-white rounded-[3rem] p-10 relative overflow-hidden group shadow-2xl">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 blur-[100px] rounded-full" />
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
           <div className="space-y-4 flex-1 text-center md:text-left">
-            <div className="inline-flex items-center gap-2 text-primary font-black text-[11px] uppercase tracking-widest">
-              <Brain className="h-4 w-4 text-secondary" /> YAPAY ZEKA ASİSTANI
+            <div className="inline-flex items-center gap-2 text-accent font-black text-[11px] uppercase tracking-widest">
+              <Brain className="h-4 w-4 animate-pulse" /> AOS YAPAY ZEKA ASİSTANI
             </div>
-            <p className="text-xl font-bold text-slate-800 italic leading-relaxed">
-              "{stats.topics < 10 ? '🌱 Konu tamamlama oranın henüz başlangıç aşamasında. Öncelikle temel matematik konularına odaklanalım.' : '🎯 Verilerin iyi görünüyor, Edebiyat netlerini artırmak için denemelere ağırlık verebiliriz.'}"
+            <p className="text-2xl font-bold italic leading-relaxed">
+               "Bugün {currentDayPlan?.tasks?.length || 0} kritik fasikül görevin var. 3 saatlik döngü ile verimini %40 artırabilirsin."
             </p>
-            <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-               <Button size="sm" className="bg-secondary hover:bg-secondary/90 rounded-xl px-6 font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-secondary/20" onClick={() => router.push('/dashboard/planning?tab=yearly')}>📋 AI PLAN ÖNERİSİ</Button>
-               <Button size="sm" variant="outline" className="rounded-xl px-6 font-bold uppercase text-[10px] tracking-widest bg-white" onClick={() => router.push('/dashboard/ai-analysis')}>🔍 AI ANALİZ RAPORU</Button>
-            </div>
           </div>
-          <div className="hidden xl:block h-32 w-px bg-secondary/20 mx-10" />
-          <div className="grid grid-cols-2 gap-4 w-full md:w-auto">
-             <div className="bg-white p-6 rounded-2xl border border-slate-200 text-center shadow-sm">
-                <p className="text-2xl font-black text-secondary leading-none">{stats.hours.toFixed(1)}</p>
-                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-1">TOPLAM ÇALIŞMA</p>
-             </div>
-             <div className="bg-white p-6 rounded-2xl border border-slate-200 text-center shadow-sm">
-                <p className="text-2xl font-black text-primary leading-none">{stats.topics}</p>
-                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-1">KONU BİTTİ</p>
-             </div>
-          </div>
+          <Button onClick={() => router.push('/dashboard/planning')} className="bg-accent hover:bg-white hover:text-primary transition-all rounded-[1.5rem] h-16 px-10 font-black uppercase text-[12px] tracking-widest shadow-2xl">HAFTALIK PLANI GÖR</Button>
         </div>
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-        <div className="lg:col-span-8 space-y-12">
-          {/* Hoşgeldin ve Progress */}
-          <section className="bg-white rounded-[3.5rem] p-12 shadow-xl border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-10">
-             <div className="space-y-6 flex-1 text-center md:text-left">
-                <h1 className="text-6xl font-black text-primary tracking-tighter italic uppercase leading-[0.85] bg-gradient-to-br from-primary to-secondary bg-clip-text text-transparent">
-                   GÜNAYDIN, <br />
-                   {userData?.displayName?.split(' ')[0] || 'ÖĞRENCİ'} 👋
-                </h1>
-                <p className="text-lg font-bold text-muted-foreground italic">
-                   Yıllık planına göre bugün tamamlaman gereken <span className="text-secondary">{currentDayPlan?.tasks?.length || 0} kritik görev</span> bulunuyor.
-                </p>
-                <div className="flex gap-4 pt-4 justify-center md:justify-start">
-                   <Button onClick={() => router.push('/dashboard/planning')} className="h-14 px-8 rounded-2xl bg-primary text-white font-black text-[10px] uppercase tracking-widest shadow-2xl gap-3">
-                      <Zap className="h-4 w-4 text-secondary" /> PLANI YÖNET
-                   </Button>
-                   <Button onClick={() => setIsAddingTask(true)} variant="outline" className="h-14 px-8 rounded-2xl border-2 font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all">
-                      <Plus className="h-4 w-4 mr-2" /> MANUEL EKLE
-                   </Button>
-                </div>
-             </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div className="lg:col-span-9 space-y-10">
+          <div className="flex items-center justify-between">
+             <h2 className="text-4xl font-black italic tracking-tighter text-primary uppercase">BUGÜNKÜ FASİKÜLÜN</h2>
+             <Badge className="bg-white text-primary border-2 border-slate-100 rounded-xl px-4 py-2 font-black uppercase text-[10px] tracking-widest shadow-sm">{format(new Date(), 'd MMMM yyyy', { locale: tr })}</Badge>
+          </div>
 
-             <div className="relative h-44 w-44 shrink-0 flex items-center justify-center">
-                <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
-                   <circle cx="50" cy="50" r="42" fill="none" stroke="#F1F5F9" strokeWidth="12" />
-                   <circle 
-                     cx="50" cy="50" r="42" fill="none" 
-                     stroke="url(#grad)" strokeWidth="12" 
-                     strokeDasharray="264" 
-                     strokeDashoffset={264 - (264 * progress) / 100} 
-                     strokeLinecap="round" 
-                     className="transition-all duration-1000" 
-                   />
-                   <defs>
-                      <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                         <stop offset="0%" stopColor="var(--primary)" />
-                         <stop offset="100%" stopColor="var(--secondary)" />
-                      </linearGradient>
-                   </defs>
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                   <span className="text-4xl font-black text-primary italic">%{progress}</span>
-                   <span className="text-[8px] font-black uppercase tracking-widest opacity-40">GÜNLÜK HEDEF</span>
-                </div>
-             </div>
-          </section>
-
-          {/* Bugünkü Plan */}
-          <section className="space-y-8">
-             <div className="flex items-center justify-between px-6">
-                <h2 className="text-3xl font-black italic tracking-tighter text-primary uppercase">GÜNLÜK PROGRAM</h2>
-                <Badge variant="outline" className="rounded-xl px-4 py-1.5 font-bold uppercase text-[9px] tracking-widest bg-white shadow-sm">{format(new Date(), 'd MMMM yyyy')}</Badge>
-             </div>
-
-             <div className="grid gap-4">
-                {currentDayPlan?.tasks?.map((t: any, i: number) => (
-                  <Card key={i} className={cn(
-                    "group p-8 rounded-[2.5rem] border border-slate-100 shadow-lg hover:shadow-2xl hover:scale-[1.01] transition-all bg-white flex items-center justify-between",
-                    t.status === 'completed' && "opacity-50"
-                  )}>
-                    <div className="flex items-center gap-8">
-                       <span className="text-xl font-black text-slate-300 italic tracking-tighter font-mono">{t.time || '09:00'}</span>
-                       <div className="h-10 w-px bg-slate-100" />
-                       <div className="space-y-1">
-                          <h4 className="text-2xl font-black italic tracking-tight text-primary uppercase leading-none">{t.subject}</h4>
-                          <p className="text-xs font-bold text-muted-foreground italic opacity-60 uppercase tracking-widest">{t.topic}</p>
-                       </div>
-                    </div>
-                    <Button size="icon" className={cn("h-14 w-14 rounded-2xl shadow-xl", t.status === 'completed' ? "bg-emerald-500 text-white" : "bg-secondary text-white hover:bg-primary")}>
-                       {t.status === 'completed' ? <CheckCircle2 className="h-6 w-6" /> : <Play className="h-6 w-6 fill-current" />}
-                    </Button>
-                  </Card>
-                ))}
-                {!currentDayPlan && (
-                  <Card onClick={() => router.push('/dashboard/select-exam')} className="p-24 text-center bg-white/50 rounded-[4rem] border-4 border-dashed border-slate-200 flex flex-col items-center gap-6 cursor-pointer hover:bg-white hover:border-secondary/20 transition-all group">
-                     <Sparkles className="h-12 w-12 text-secondary opacity-20 group-hover:scale-110 transition-transform" />
-                     <p className="text-xl font-black uppercase tracking-[0.3em] text-primary/20 italic">HENÜZ YILLIK PLAN OLUŞTURULMADI</p>
-                     <Button className="h-14 px-10 rounded-2xl bg-primary font-black text-xs uppercase tracking-widest gap-4 shadow-2xl">HEDEF BELİRLE VE BAŞLA <ChevronRight className="h-4 w-4" /></Button>
-                  </Card>
-                )}
-             </div>
-          </section>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+             {currentDayPlan?.tasks?.map((t: any) => (
+                <Card key={t.id} className={cn(
+                  "aspect-square p-10 rounded-[3.5rem] border-2 bg-white flex flex-col justify-between transition-all hover:shadow-[0_40px_80px_-20px_rgba(15,23,42,0.15)] hover:-translate-y-4 group",
+                  dayColors[dayName],
+                  t.status === 'done' && "opacity-50 grayscale"
+                )}>
+                   <div className="space-y-6">
+                      <div className="flex justify-between items-start">
+                         <span className="text-[11px] font-black uppercase bg-primary/5 text-primary px-3 py-1 rounded-full">{t.type}</span>
+                         <span className="text-[12px] font-black text-accent tracking-tighter italic">{t.time}</span>
+                      </div>
+                      <div className="space-y-2">
+                         <h4 className="text-2xl font-black text-primary leading-[1.1] uppercase tracking-tighter italic">📋 {t.lesson}</h4>
+                         <p className="text-[11px] font-bold text-muted-foreground italic opacity-60 leading-relaxed">{t.topic}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                         <span className="badge bg-slate-50 text-[10px] font-black px-3 py-1.5 rounded-xl">🟡 {t.difficulty}</span>
+                         <span className="badge bg-slate-50 text-[10px] font-black px-3 py-1.5 rounded-xl">⏱️ {t.duration}dk</span>
+                         {t.questionTarget > 0 && <span className="badge bg-slate-50 text-[10px] font-black px-3 py-1.5 rounded-xl">📝 {t.questionTarget} soru</span>}
+                      </div>
+                   </div>
+                   <div className="grid grid-cols-3 gap-3 pt-6 border-t border-slate-50">
+                      <Button size="icon" onClick={() => completeTask(t.id)} className={cn("h-12 w-12 rounded-2xl shadow-xl", t.status === 'done' ? "bg-emerald-500" : "bg-primary")}>
+                         <CheckCircle2 className="h-5 w-5" />
+                      </Button>
+                      <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl hover:bg-slate-50 border-2"><RefreshCcw className="h-5 w-5" /></Button>
+                      <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl hover:bg-slate-50 border-2"><FastForward className="h-5 w-5" /></Button>
+                      <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl hover:bg-slate-50 border-2"><Gauge className="h-5 w-5" /></Button>
+                      <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl hover:bg-slate-50 border-2"><Edit3 className="h-5 w-5" /></Button>
+                      <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl text-destructive border-2 hover:bg-destructive/5"><Trash2 className="h-5 w-5" /></Button>
+                   </div>
+                </Card>
+             ))}
+             {!currentDayPlan && (
+                <Card onClick={() => router.push('/dashboard/planning')} className="aspect-square p-12 text-center bg-white/50 rounded-[4rem] border-4 border-dashed border-slate-200 flex flex-col items-center justify-center gap-6 cursor-pointer hover:bg-white hover:border-accent/20 transition-all group">
+                   <Zap className="h-16 w-16 text-accent opacity-20 group-hover:scale-110 transition-transform animate-pulse" />
+                   <p className="text-xl font-black uppercase tracking-[0.3em] text-primary/20 italic">FASİKÜL PLANI BEKLENİYOR</p>
+                   <Button className="h-14 px-10 rounded-2xl bg-primary font-black text-[10px] uppercase tracking-widest gap-4 shadow-2xl">PLANI OLUŞTUR VE BAŞLA</Button>
+                </Card>
+             )}
+          </div>
         </div>
 
-        <div className="lg:col-span-4 space-y-12">
-          {/* Grafik Alanı (Weekly Study) */}
-          <Card className="rounded-[3rem] p-10 bg-white border border-slate-100 shadow-xl space-y-8">
-             <div className="flex items-center justify-between">
-                <h4 className="text-xl font-black italic tracking-tighter uppercase text-primary">ÇALIŞMA TRENDİ</h4>
-                <BarChart3 className="h-6 w-6 text-secondary opacity-20" />
-             </div>
-             <div className="h-48 flex items-end gap-3 px-2">
-                {[40, 70, 50, 90, 60, 80, 75].map((h, i) => (
-                   <div key={i} className="flex-1 bg-slate-50 rounded-xl relative group/bar">
-                      <div className="absolute bottom-0 w-full bg-secondary rounded-xl transition-all duration-1000 group-hover/bar:bg-primary" style={{ height: `${h}%` }} />
-                   </div>
-                ))}
-             </div>
-             <div className="grid grid-cols-2 gap-4 pt-4">
-                <div className="text-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                   <p className="text-[9px] font-black text-muted-foreground uppercase mb-1">HAFTALIK NET</p>
-                   <p className="text-2xl font-black text-primary italic">+4.5</p>
-                </div>
-                <div className="text-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                   <p className="text-[9px] font-black text-muted-foreground uppercase mb-1">STRATEJİ</p>
-                   <p className="text-2xl font-black text-emerald-500 italic">İYİ</p>
-                </div>
-             </div>
-          </Card>
-
-          {/* Pomodoro & Odaklanma (TM PRO Stil) */}
-          <Card className="rounded-[3rem] p-10 bg-[#1a3a5f] text-white space-y-10 shadow-2xl relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-48 h-48 bg-secondary/10 blur-[60px] rounded-full" />
+        <div className="lg:col-span-3 space-y-10">
+           <Card className="rounded-[3rem] p-10 bg-[#1a3a5f] text-white space-y-10 shadow-2xl relative overflow-hidden">
+             <div className="absolute top-0 right-0 w-48 h-48 bg-accent/10 blur-[60px] rounded-full" />
              <div className="flex items-center justify-between relative z-10">
                 <h4 className="text-xl font-black italic tracking-tighter uppercase">ODAKLANMA</h4>
-                <Clock className="h-6 w-6 text-secondary animate-pulse" />
+                <Clock className="h-6 w-6 text-accent animate-pulse" />
              </div>
              <div className="text-center py-6 relative z-10">
-                <p className="text-[6rem] font-black text-white tracking-tighter leading-none italic tabular-nums text-shadow-deep">25:00</p>
+                <p className="text-[5.5rem] font-black text-white tracking-tighter leading-none italic tabular-nums text-shadow-deep">25:00</p>
              </div>
              <div className="flex gap-4 relative z-10">
-                <Button className="flex-1 h-16 rounded-2xl bg-secondary hover:bg-secondary/90 text-white font-black text-xs uppercase tracking-widest gap-3 shadow-xl">
-                   <Play className="h-5 w-5 fill-current" /> BAŞLAT
+                <Button className="flex-1 h-16 rounded-2xl bg-accent hover:bg-accent/90 text-primary font-black text-[10px] uppercase tracking-widest gap-3 shadow-xl">
+                   BAŞLAT
                 </Button>
                 <Button variant="ghost" size="icon" className="h-16 w-16 rounded-2xl border-2 border-white/10 hover:bg-white/5">
                    <Plus className="h-6 w-6" />
                 </Button>
              </div>
-          </Card>
+           </Card>
 
-          {/* Ödüller & Rozetler */}
-          <Card className="rounded-[3rem] p-10 bg-white border border-slate-100 shadow-xl space-y-8">
+           <Card className="rounded-[3rem] p-10 bg-white border border-slate-100 shadow-xl space-y-8">
              <div className="flex items-center justify-between">
                 <h4 className="text-xl font-black italic tracking-tighter uppercase text-primary">ROZETLERİM</h4>
-                <Award className="h-6 w-6 text-secondary opacity-20" />
+                <Award className="h-6 w-6 text-accent opacity-20" />
              </div>
              <div className="flex flex-wrap gap-4 justify-center">
                 {['📝', '🏆', '⏱️', '📚'].map((icon, i) => (
@@ -232,10 +168,10 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
              <div className="pt-4 space-y-2">
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">
                    <span>SEVİYE 4</span>
-                   <span className="text-secondary">740 / 1000 XP</span>
+                   <span className="text-accent">740 / 1000 XP</span>
                 </div>
                 <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                   <div className="h-full bg-gradient-to-r from-primary to-secondary transition-all" style={{ width: '74%' }} />
+                   <div className="h-full bg-gradient-to-r from-primary to-accent transition-all" style={{ width: '74%' }} />
                 </div>
              </div>
           </Card>
@@ -246,7 +182,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
         isOpen={isAddingTask}
         onOpenChange={setIsAddingTask}
         onSave={(data) => console.log('Saving task:', data)}
-        selectedDay={format(new Date(), 'EEEE')}
+        selectedDay={dayName}
       />
     </div>
   );

@@ -10,7 +10,7 @@ import {
   Calendar, Clock, Zap, Loader2, Sparkles, 
   CheckCircle2, Trash2, ArrowLeft, 
   Home, RotateCcw, FastForward, Gauge, Edit3,
-  Youtube, Globe, Save, X, CalendarDays
+  Youtube, Globe, Save, X, CalendarDays, FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
@@ -28,6 +28,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Badge } from '@/components/ui/badge';
 
 const LESSON_COLORS: Record<string, string> = {
   'TYT Matematik': '#0f172a',
@@ -152,6 +153,8 @@ export default function PlanningPage() {
         resources: {
           youtube: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic)}`,
           ogm: `https://ogmmateryal.eba.gov.tr/konu-anlatimlari-video?video=1`,
+          pdf: '',
+          kamp: ''
         }
       },
       phase2: {
@@ -162,6 +165,8 @@ export default function PlanningPage() {
         resources: {
           youtube: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic + ' soru çözümü')}`,
           ogm: `https://ogmmateryal.eba.gov.tr/soru-bankasi/${encodeURIComponent(lesson)}`,
+          pdf: '',
+          kamp: ''
         }
       }
     };
@@ -272,12 +277,24 @@ export default function PlanningPage() {
                 phase1: {
                   ...b.phase1,
                   time: formData.get('p1Time'),
-                  resources: { ...b.phase1.resources, youtube: formData.get('p1Youtube'), ogm: formData.get('p1Ogm') }
+                  resources: { 
+                    ...b.phase1.resources, 
+                    youtube: formData.get('p1Youtube'), 
+                    ogm: formData.get('p1Ogm'),
+                    pdf: formData.get('p1Pdf'),
+                    kamp: formData.get('p1Kamp')
+                  }
                 },
                 phase2: {
                   ...b.phase2,
                   time: formData.get('p2Time'),
-                  resources: { ...b.phase2.resources, youtube: formData.get('p2Youtube'), ogm: formData.get('p2Ogm') }
+                  resources: { 
+                    ...b.phase2.resources, 
+                    youtube: formData.get('p2Youtube'), 
+                    ogm: formData.get('p2Ogm'),
+                    pdf: formData.get('p2Pdf'),
+                    kamp: formData.get('p2Kamp')
+                  }
                 }
               };
             }
@@ -298,12 +315,24 @@ export default function PlanningPage() {
             phase1: {
               ...editingBlock.phase1,
               time: formData.get('p1Time'),
-              resources: { ...editingBlock.phase1.resources, youtube: formData.get('p1Youtube'), ogm: formData.get('p1Ogm') }
+              resources: { 
+                ...editingBlock.phase1.resources, 
+                youtube: formData.get('p1Youtube'), 
+                ogm: formData.get('p1Ogm'),
+                pdf: formData.get('p1Pdf'),
+                kamp: formData.get('p1Kamp')
+              }
             },
             phase2: {
               ...editingBlock.phase2,
               time: formData.get('p2Time'),
-              resources: { ...editingBlock.phase2.resources, youtube: formData.get('p2Youtube'), ogm: formData.get('p2Ogm') }
+              resources: { 
+                ...editingBlock.phase2.resources, 
+                youtube: formData.get('p2Youtube'), 
+                ogm: formData.get('p2Ogm'),
+                pdf: formData.get('p2Pdf'),
+                kamp: formData.get('p2Kamp')
+              }
             }
           }]
         };
@@ -434,8 +463,10 @@ export default function PlanningPage() {
                                    <span className="text-[10px] font-black uppercase bg-white px-4 py-1.5 rounded-2xl text-primary border border-slate-200 shadow-sm flex items-center gap-2">⏱️ {block.phase1.duration}DK</span>
                                 </div>
                                 <div className="flex gap-6 pt-4">
-                                   <a href={block.phase1.resources?.youtube} target="_blank" className="hover:scale-125 transition-transform text-rose-500 opacity-60 hover:opacity-100"><Youtube className="h-7 w-7" /></a>
-                                   <a href={block.phase1.resources?.ogm} target="_blank" className="hover:scale-125 transition-transform text-blue-500 opacity-60 hover:opacity-100"><Globe className="h-7 w-7" /></a>
+                                   {block.phase1.resources?.youtube && <a href={block.phase1.resources.youtube} target="_blank" className="hover:scale-125 transition-transform text-rose-500 opacity-60 hover:opacity-100"><Youtube className="h-7 w-7" /></a>}
+                                   {block.phase1.resources?.pdf && <a href={block.phase1.resources.pdf} target="_blank" className="hover:scale-125 transition-transform text-blue-600 opacity-60 hover:opacity-100"><FileText className="h-7 w-7" /></a>}
+                                   {block.phase1.resources?.kamp && <a href={block.phase1.resources.kamp} target="_blank" className="hover:scale-125 transition-transform text-orange-500 opacity-60 hover:opacity-100"><Zap className="h-7 w-7" /></a>}
+                                   {block.phase1.resources?.ogm && <a href={block.phase1.resources.ogm} target="_blank" className="hover:scale-125 transition-transform text-emerald-600 opacity-60 hover:opacity-100"><Globe className="h-7 w-7" /></a>}
                                 </div>
                              </div>
 
@@ -449,8 +480,10 @@ export default function PlanningPage() {
                                    <span className="text-[10px] font-black uppercase bg-white px-4 py-1.5 rounded-2xl text-accent border border-orange-200 shadow-sm flex items-center gap-2">⏱️ {block.phase2.duration}DK</span>
                                 </div>
                                 <div className="flex gap-6 pt-4">
-                                   <a href={block.phase2.resources?.youtube} target="_blank" className="hover:scale-125 transition-transform text-rose-500 opacity-60 hover:opacity-100"><Youtube className="h-7 w-7" /></a>
-                                   <a href={block.phase2.resources?.ogm} target="_blank" className="hover:scale-125 transition-transform text-blue-500 opacity-60 hover:opacity-100"><Globe className="h-7 w-7" /></a>
+                                   {block.phase2.resources?.youtube && <a href={block.phase2.resources.youtube} target="_blank" className="hover:scale-125 transition-transform text-rose-500 opacity-60 hover:opacity-100"><Youtube className="h-7 w-7" /></a>}
+                                   {block.phase2.resources?.pdf && <a href={block.phase2.resources.pdf} target="_blank" className="hover:scale-125 transition-transform text-blue-600 opacity-60 hover:opacity-100"><FileText className="h-7 w-7" /></a>}
+                                   {block.phase2.resources?.kamp && <a href={block.phase2.resources.kamp} target="_blank" className="hover:scale-125 transition-transform text-orange-500 opacity-60 hover:opacity-100"><Zap className="h-7 w-7" /></a>}
+                                   {block.phase2.resources?.ogm && <a href={block.phase2.resources.ogm} target="_blank" className="hover:scale-125 transition-transform text-emerald-600 opacity-60 hover:opacity-100"><Globe className="h-7 w-7" /></a>}
                                 </div>
                              </div>
                           </div>
@@ -536,6 +569,7 @@ export default function PlanningPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-10">
+                   {/* PHASE 1 */}
                    <div className="p-8 rounded-[2.5rem] bg-slate-50 space-y-6">
                       <h5 className="font-black text-xs uppercase tracking-widest text-primary/40">1. AŞAMA (KONU)</h5>
                       <div className="space-y-4">
@@ -547,8 +581,20 @@ export default function PlanningPage() {
                             <Youtube className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-500/40" />
                             <Input name="p1Youtube" defaultValue={editingBlock.phase1.resources?.youtube} placeholder="YouTube Link" className="h-12 pl-12 rounded-xl bg-white border-none shadow-sm font-bold text-xs" />
                          </div>
+                         <div className="grid grid-cols-2 gap-3">
+                            <div className="relative group">
+                               <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-blue-500/40" />
+                               <Input name="p1Pdf" defaultValue={editingBlock.phase1.resources?.pdf} placeholder="PDF Link" className="h-11 pl-9 rounded-xl bg-white border-none shadow-sm font-bold text-[10px]" />
+                            </div>
+                            <div className="relative group">
+                               <Zap className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-orange-500/40" />
+                               <Input name="p1Kamp" defaultValue={editingBlock.phase1.resources?.kamp} placeholder="Kamp Link" className="h-11 pl-9 rounded-xl bg-white border-none shadow-sm font-bold text-[10px]" />
+                            </div>
+                         </div>
                       </div>
                    </div>
+
+                   {/* PHASE 2 */}
                    <div className="p-8 rounded-[2.5rem] bg-orange-50 space-y-6">
                       <h5 className="font-black text-xs uppercase tracking-widest text-accent">2. AŞAMA (TEST)</h5>
                       <div className="space-y-4">
@@ -559,6 +605,16 @@ export default function PlanningPage() {
                          <div className="relative group">
                             <Youtube className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-500/40" />
                             <Input name="p2Youtube" defaultValue={editingBlock.phase2.resources?.youtube} placeholder="YouTube Link" className="h-12 pl-12 rounded-xl bg-white border-none shadow-sm font-bold text-xs" />
+                         </div>
+                         <div className="grid grid-cols-2 gap-3">
+                            <div className="relative group">
+                               <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-blue-500/40" />
+                               <Input name="p2Pdf" defaultValue={editingBlock.phase2.resources?.pdf} placeholder="PDF Link" className="h-11 pl-9 rounded-xl bg-white border-none shadow-sm font-bold text-[10px]" />
+                            </div>
+                            <div className="relative group">
+                               <Zap className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-orange-500/40" />
+                               <Input name="p2Kamp" defaultValue={editingBlock.phase2.resources?.kamp} placeholder="Kamp Link" className="h-11 pl-9 rounded-xl bg-white border-none shadow-sm font-bold text-[10px]" />
+                            </div>
                          </div>
                       </div>
                    </div>

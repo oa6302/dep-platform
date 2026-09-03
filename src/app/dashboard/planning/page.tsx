@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -126,30 +125,43 @@ export default function PlanningPage() {
         }
 
         const dailyBlocks = [];
-        for (let j = 0; j < 3; j++) {
-          const lesson = subjectsPool[(i * 3 + j) % subjectsPool.length];
-          const topics = lessonQueues[lesson] || [];
-          const topic = topics[lessonPointers[lesson] % (topics.length || 1)] || 'Genel Tekrar';
-          
-          dailyBlocks.push({
-            id: `block_${dateStr}_${j}`,
-            lesson,
-            topic,
-            status: 'planned',
-            phase1: { type: 'KONU ÇALIŞMA', time: '10:00' },
-            phase2: { type: 'TEST ÇÖZME', time: '11:00' },
-            reminder: '',
-            targetQuestions: 40,
-            solvedQuestions: 0,
-            youtubeUrl: '',
-            pdfUrl: '',
-            mebiUrl: '',
-            isKonuDone: false,
-            isTestDone: false
-          });
-          lessonPointers[lesson]++;
-        }
+        // Slot 1: Ana Ders (Konu & Test) - 10:00 - 12:00
+        const lesson = subjectsPool[i % subjectsPool.length];
+        const topics = lessonQueues[lesson] || [];
+        const topic = topics[lessonPointers[lesson] % (topics.length || 1)] || 'Genel Tekrar';
+        
+        dailyBlocks.push({
+          id: `block_${dateStr}_main`,
+          lesson,
+          topic,
+          status: 'planned',
+          phase1: { type: 'KONU ÇALIŞMA', time: '10:00' },
+          phase2: { type: 'TEST ÇÖZME', time: '11:00' },
+          reminder: '',
+          targetQuestions: 40,
+          solvedQuestions: 0,
+          youtubeUrl: '',
+          pdfUrl: '',
+          mebiUrl: '',
+          isKonuDone: false,
+          isTestDone: false
+        });
+        lessonPointers[lesson]++;
 
+        // Slot 2: Paragraf Kampı - 11:00 (Dersle paralel veya ardışık)
+        dailyBlocks.push({
+          id: `block_${dateStr}_paragraf`,
+          lesson: 'Türkçe',
+          topic: '20 PARAGRAF KAMPI',
+          status: 'planned',
+          phase1: { type: 'ODAKLANMA', time: '11:00' },
+          phase2: { type: 'ANALİZ', time: '11:30' },
+          targetQuestions: 20,
+          solvedQuestions: 0,
+          isParagraf: true
+        });
+
+        // Slot 3: Dünün Analizi - 12:00 - 13:00
         dailyBlocks.push({
           id: `review_${dateStr}`,
           lesson: 'Genel',
@@ -259,9 +271,9 @@ export default function PlanningPage() {
   };
 
   return (
-    <div className="p-4 md:p-14 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000 bg-[#F8FAFC]">
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-        <div className="flex flex-col gap-6">
+    <div className="p-4 md:p-8 lg:p-14 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000 bg-[#F8FAFC]">
+      <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8">
+        <div className="flex flex-col gap-6 w-full xl:w-auto">
           <div className="flex items-center gap-4">
              <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-10 w-10 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><ArrowLeft className="h-4 w-4" /></Button>
              <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-10 w-10 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><Home className="h-4 w-4" /></Button>
@@ -270,13 +282,14 @@ export default function PlanningPage() {
              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-primary font-black text-[9px] uppercase tracking-widest shadow-lg shadow-accent/20 italic border border-accent/20">
                 <Calendar className="h-3 w-3" /> MASTER ACADEMIC ENGINE v4.8
              </div>
-             <h2 className="text-4xl md:text-5xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-premium">
+             <h2 className="text-3xl md:text-5xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-premium">
                 Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span>
              </h2>
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-4 items-center">
-           <div className="flex gap-2">
+        
+        <div className="flex flex-col sm:flex-row gap-4 items-center w-full xl:w-auto">
+           <div className="grid grid-cols-2 gap-2 w-full sm:w-auto">
              <div className="space-y-1">
                <Label className="text-[8px] font-black uppercase tracking-widest opacity-40 ml-2">BAŞLANGIÇ</Label>
                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-12 rounded-xl bg-white border-none shadow-xl font-bold text-xs" />
@@ -286,67 +299,67 @@ export default function PlanningPage() {
                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-12 rounded-xl bg-white border-none shadow-xl font-bold text-xs" />
              </div>
            </div>
-           <Button onClick={generateFasikulPlan} disabled={isGenerating} className="h-20 px-10 rounded-[1.75rem] bg-primary hover:bg-accent transition-all font-black text-[10px] uppercase tracking-widest gap-3 shadow-2xl text-white">
+           <Button onClick={generateFasikulPlan} disabled={isGenerating} className="w-full sm:w-auto h-16 md:h-20 px-10 rounded-[1.5rem] md:rounded-[1.75rem] bg-primary hover:bg-accent transition-all font-black text-[10px] uppercase tracking-widest gap-3 shadow-2xl text-white">
               {isGenerating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5 text-accent" />} MOTORU ÇALIŞTIR
            </Button>
         </div>
       </header>
 
-      <div className="space-y-24">
+      <div className="space-y-16 md:space-y-24">
         {(studyPlan?.masterPlan || []).map((day: any) => (
-          <div key={day.date} className="space-y-8 animate-in slide-in-from-bottom-8 duration-700">
+          <div key={day.date} className="space-y-6 md:space-y-8 animate-in slide-in-from-bottom-8 duration-700">
              <div className="flex items-center gap-6 px-4">
-                <h3 className="text-2xl md:text-3xl font-black italic text-primary uppercase tracking-tighter">{format(parseISO(day.date), 'd MMMM yyyy', { locale: tr })}</h3>
-                <div className="h-px flex-1 bg-slate-200 hidden md:block" />
+                <h3 className="text-xl md:text-3xl font-black italic text-primary uppercase tracking-tighter">{format(parseISO(day.date), 'd MMMM yyyy', { locale: tr })}</h3>
+                <div className="h-px flex-1 bg-slate-200 hidden sm:block" />
              </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 {day.blocks?.map((block: any) => (
-                  <Card key={block.id} className={cn("p-8 rounded-[3.5rem] border-none shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] group relative overflow-hidden bg-white hover:scale-[1.02] transition-all duration-500", block.status === 'done' && "opacity-60")}>
-                     <div className="space-y-6 relative z-10 h-full flex flex-col">
-                        <div className="flex justify-between items-start">
-                           <div className="space-y-1">
-                              <h4 className="text-2xl font-black italic leading-tight tracking-tighter uppercase text-primary text-shadow-deep line-clamp-2">{block.topic}</h4>
+                  <Card key={block.id} className={cn("p-6 md:p-8 rounded-[2.5rem] md:rounded-[3.5rem] border-none shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] group relative overflow-hidden bg-white hover:scale-[1.02] transition-all duration-500 flex flex-col h-full", block.status === 'done' && "opacity-60")}>
+                     <div className="space-y-6 relative z-10 h-full flex flex-col flex-1">
+                        <div className="flex justify-between items-start gap-2">
+                           <div className="space-y-1 flex-1 min-w-0">
+                              <h4 className="text-xl md:text-2xl font-black italic leading-tight tracking-tighter uppercase text-primary text-shadow-deep line-clamp-2">{block.topic}</h4>
                               <p className="text-[8px] font-bold text-muted-foreground/40 uppercase tracking-widest italic">#{block.lesson.substring(0, 3)}</p>
                            </div>
-                           <Badge className={cn("px-4 py-1.5 rounded-full text-[8px] font-black", block.status === 'done' ? "bg-emerald-500 text-white" : "bg-[#FF4D6D] text-white")}>
+                           <Badge className={cn("px-3 py-1 rounded-full text-[8px] font-black shrink-0", block.status === 'done' ? "bg-emerald-500 text-white" : "bg-[#FF4D6D] text-white")}>
                               {block.status === 'done' ? 'OK' : 'BEK'}
                            </Badge>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-4 flex-1">
-                           <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100 space-y-2 hover:bg-white transition-all">
+                        <div className="grid grid-cols-1 gap-3 md:gap-4 flex-1">
+                           <div className="p-3 md:p-4 rounded-2xl md:rounded-3xl bg-slate-50 border border-slate-100 space-y-2 hover:bg-white transition-all">
                               <div className="flex justify-between items-center border-b border-slate-200 pb-1.5">
-                                 <span className="text-[8px] font-black text-primary/30 uppercase">10:00 - KONU</span>
+                                 <span className="text-[8px] font-black text-primary/30 uppercase">{block.phase1?.time || '10:00'} - KONU</span>
                                  <div className="flex gap-2">
                                     {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="text-rose-500 hover:scale-110"><Youtube className="h-4 w-4" /></a>}
                                     {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="text-blue-500 hover:scale-110"><FileText className="h-4 w-4" /></a>}
                                  </div>
                               </div>
-                              <p className="text-[10px] font-bold text-primary opacity-60">Kazanım tescili ve akademik okuma.</p>
+                              <p className="text-[9px] md:text-[10px] font-bold text-primary opacity-60 line-clamp-1">{block.phase1?.type || 'AKADEMİK ÇALIŞMA'}</p>
                            </div>
-                           <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100 space-y-2 hover:bg-white transition-all">
+                           <div className="p-3 md:p-4 rounded-2xl md:rounded-3xl bg-slate-50 border border-slate-100 space-y-2 hover:bg-white transition-all">
                               <div className="flex justify-between items-center border-b border-slate-200 pb-1.5">
-                                 <span className="text-[8px] font-black text-primary/30 uppercase">11:00 - TEST</span>
+                                 <span className="text-[8px] font-black text-primary/30 uppercase">{block.phase2?.time || '11:00'} - TEST</span>
                                  <div className="flex gap-2">
-                                    <span className="text-[8px] font-black text-accent uppercase">{block.solvedQuestions || 0}/{block.targetQuestions || 40} SORU</span>
+                                    <span className="text-[8px] font-black text-accent uppercase">{block.solvedQuestions || 0}/{block.targetQuestions || 40}</span>
                                  </div>
                               </div>
-                              <p className="text-[10px] font-bold text-primary opacity-60">Fasikül testleri ve saniyeler içinde analiz.</p>
+                              <p className="text-[9px] md:text-[10px] font-bold text-primary opacity-60 line-clamp-1">{block.phase2?.type || 'PEKİŞTİRME'}</p>
                            </div>
                         </div>
 
                         {block.reminder && (
-                           <div className="p-3 bg-accent/5 border border-accent/10 rounded-2xl flex items-center gap-3">
+                           <div className="p-3 bg-accent/5 border border-accent/10 rounded-2xl flex items-center gap-3 mt-2">
                               <BellRing className="h-3 w-3 text-accent shrink-0" />
                               <p className="text-[9px] font-black text-primary italic leading-tight truncate">{block.reminder}</p>
                            </div>
                         )}
 
-                        <div className="flex justify-between gap-2 pt-4 border-t border-slate-50">
-                           <Button onClick={() => handleTaskAction(day.date, block.id, 'done')} size="icon" className={cn("h-10 w-10 rounded-full shadow-lg transition-all", block.status === 'done' ? "bg-slate-100 text-slate-400" : "bg-emerald-500 text-white")}><CheckCircle2 className="h-4 w-4" /></Button>
+                        <div className="flex justify-between gap-2 pt-4 mt-auto border-t border-slate-50">
+                           <Button onClick={() => handleTaskAction(day.date, block.id, 'done')} size="icon" className={cn("h-9 w-9 md:h-10 md:w-10 rounded-full shadow-lg transition-all", block.status === 'done' ? "bg-slate-100 text-slate-400" : "bg-emerald-500 text-white")}><CheckCircle2 className="h-4 w-4" /></Button>
                            <div className="flex gap-2">
-                              <Button onClick={() => handleTaskAction(day.date, block.id, 'edit')} size="icon" variant="outline" className="h-10 w-10 rounded-full bg-white border border-slate-100 text-primary shadow-md hover:bg-slate-50"><Edit3 className="h-4 w-4" /></Button>
-                              <Button onClick={() => handleTaskAction(day.date, block.id, 'delete')} size="icon" variant="outline" className="h-10 w-10 rounded-full bg-white border border-slate-100 text-rose-500 shadow-md hover:bg-rose-50"><Trash2 className="h-4 w-4" /></Button>
+                              <Button onClick={() => handleTaskAction(day.date, block.id, 'edit')} size="icon" variant="outline" className="h-9 w-9 md:h-10 md:w-10 rounded-full bg-white border border-slate-100 text-primary shadow-md hover:bg-slate-50"><Edit3 className="h-4 w-4" /></Button>
+                              <Button onClick={() => handleTaskAction(day.date, block.id, 'delete')} size="icon" variant="outline" className="h-9 w-9 md:h-10 md:w-10 rounded-full bg-white border border-slate-100 text-rose-500 shadow-md hover:bg-rose-50"><Trash2 className="h-4 w-4" /></Button>
                            </div>
                         </div>
                      </div>
@@ -358,24 +371,24 @@ export default function PlanningPage() {
       </div>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="rounded-[4rem] border-none shadow-2xl p-0 bg-white max-w-2xl overflow-hidden">
-           <DialogHeader className="p-10 pb-0">
+        <DialogContent className="rounded-[2.5rem] md:rounded-[4rem] border-none shadow-2xl p-0 bg-white max-w-2xl overflow-hidden">
+           <DialogHeader className="p-8 md:p-10 pb-0">
               <div className="inline-flex items-center gap-2 text-accent font-black text-[9px] uppercase tracking-widest italic">
                 <Sparkles className="h-3 w-3" /> BLOK EDİTÖRÜ v4.8
               </div>
-              <DialogTitle className="text-4xl font-black italic tracking-tighter text-primary uppercase leading-tight">GÖREV <span className="text-accent text-shadow-accent">TERMİNALİ</span></DialogTitle>
+              <DialogTitle className="text-2xl md:text-4xl font-black italic tracking-tighter text-primary uppercase leading-tight">GÖREV <span className="text-accent text-shadow-accent">TERMİNALİ</span></DialogTitle>
            </DialogHeader>
 
            {editingBlock && (
-             <ScrollArea className="max-h-[70vh] p-10 pt-6">
-                <div className="space-y-10">
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+             <ScrollArea className="max-h-[80vh] md:max-h-[70vh] p-8 md:p-10 pt-4 md:pt-6">
+                <div className="space-y-8 md:space-y-10">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                       <div className="space-y-2">
                          <Label className="text-[10px] font-black uppercase ml-2 opacity-40">KONU ADI</Label>
                          <Input 
                             value={editingBlock.topic} 
                             onChange={(e) => setEditingBlock({...editingBlock, topic: e.target.value})}
-                            className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-lg px-6" 
+                            className="h-12 md:h-14 rounded-xl md:rounded-2xl bg-slate-50 border-none font-bold text-base md:text-lg px-6" 
                          />
                       </div>
                       <div className="space-y-2">
@@ -383,15 +396,15 @@ export default function PlanningPage() {
                          <Input 
                             value={editingBlock.reminder || ''} 
                             onChange={(e) => setEditingBlock({...editingBlock, reminder: e.target.value})}
-                            className="h-14 rounded-2xl bg-slate-50 border-none font-bold px-6" 
+                            className="h-12 md:h-14 rounded-xl md:rounded-2xl bg-slate-50 border-none font-bold px-6" 
                             placeholder="Örn: 2. testi çözmeyi unutma"
                          />
                       </div>
                    </div>
 
-                   <div className="space-y-6">
+                   <div className="space-y-4 md:space-y-6">
                       <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 block ml-2">AKADEMİK KAYNAKLAR</Label>
-                      <div className="grid gap-4">
+                      <div className="grid gap-3 md:gap-4">
                          {[
                            { key: 'youtubeUrl', label: 'YOUTUBE LİNKİ', icon: Youtube, color: 'text-rose-500', type: 'youtube' as const },
                            { key: 'pdfUrl', label: 'PDF / OGM MATERYAL', icon: FileText, color: 'text-blue-500', type: 'pdf' as const },
@@ -399,18 +412,18 @@ export default function PlanningPage() {
                          ].map((item) => (
                             <div key={item.key} className="flex gap-2">
                                <div className="relative flex-1 group">
-                                  <item.icon className={cn("absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 opacity-40 transition-all group-focus-within:opacity-100", item.color)} />
+                                  <item.icon className={cn("absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 opacity-40 transition-all group-focus-within:opacity-100", item.color)} />
                                   <Input 
                                     value={editingBlock[item.key] || ''} 
                                     onChange={(e) => setEditingBlock({...editingBlock, [item.key]: e.target.value})}
-                                    className="h-14 rounded-2xl bg-slate-50 border-none pl-14 font-bold text-sm" 
+                                    className="h-12 md:h-14 rounded-xl md:rounded-2xl bg-slate-50 border-none pl-12 md:pl-14 font-bold text-xs" 
                                     placeholder={item.label}
                                   />
                                </div>
                                <Button 
                                   onClick={() => handleAutoFind(item.type)}
                                   variant="outline" 
-                                  className="h-14 w-14 rounded-2xl border-2 border-slate-50 bg-white hover:bg-slate-50 shadow-sm"
+                                  className="h-12 w-12 md:h-14 md:w-14 rounded-xl md:rounded-2xl border-2 border-slate-50 bg-white hover:bg-slate-50 shadow-sm shrink-0"
                                >
                                   <Search className="h-5 w-5 text-primary opacity-40" />
                                </Button>
@@ -419,7 +432,7 @@ export default function PlanningPage() {
                       </div>
                    </div>
 
-                   <div className="grid grid-cols-2 gap-8">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-4">
                          <Label className="text-[10px] font-black uppercase ml-2 opacity-40">SORU TAKİBİ</Label>
                          <div className="flex gap-4">
@@ -429,7 +442,7 @@ export default function PlanningPage() {
                                   type="number" 
                                   value={editingBlock.targetQuestions || 40} 
                                   onChange={(e) => setEditingBlock({...editingBlock, targetQuestions: parseInt(e.target.value)})}
-                                  className="h-12 rounded-xl bg-slate-50 border-none text-center font-black" 
+                                  className="h-10 md:h-12 rounded-xl bg-slate-50 border-none text-center font-black" 
                                />
                             </div>
                             <div className="flex-1 space-y-1">
@@ -438,29 +451,29 @@ export default function PlanningPage() {
                                   type="number" 
                                   value={editingBlock.solvedQuestions || 0} 
                                   onChange={(e) => setEditingBlock({...editingBlock, solvedQuestions: parseInt(e.target.value)})}
-                                  className="h-12 rounded-xl bg-slate-50 border-none text-center font-black" 
+                                  className="h-10 md:h-12 rounded-xl bg-slate-50 border-none text-center font-black" 
                                />
                             </div>
                          </div>
                       </div>
                       <div className="space-y-4">
                          <Label className="text-[10px] font-black uppercase ml-2 opacity-40">DURUM TESCİLİ</Label>
-                         <div className="grid grid-cols-2 gap-4">
-                            <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
+                         <div className="grid grid-cols-2 gap-3 md:gap-4">
+                            <div className="flex items-center gap-2 md:gap-3 p-3 md:p-4 bg-slate-50 rounded-xl md:rounded-2xl">
                                <Checkbox 
                                   checked={editingBlock.isKonuDone} 
                                   onCheckedChange={(val) => setEditingBlock({...editingBlock, isKonuDone: !!val})} 
-                                  className="rounded-lg h-6 w-6"
+                                  className="rounded-lg h-5 w-5 md:h-6 md:w-6"
                                />
-                               <span className="text-[9px] font-black uppercase">KONU</span>
+                               <span className="text-[8px] md:text-[9px] font-black uppercase">KONU</span>
                             </div>
-                            <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
+                            <div className="flex items-center gap-2 md:gap-3 p-3 md:p-4 bg-slate-50 rounded-xl md:rounded-2xl">
                                <Checkbox 
                                   checked={editingBlock.isTestDone} 
                                   onCheckedChange={(val) => setEditingBlock({...editingBlock, isTestDone: !!val})} 
-                                  className="rounded-lg h-6 w-6"
+                                  className="rounded-lg h-5 w-5 md:h-6 md:w-6"
                                />
-                               <span className="text-[9px] font-black uppercase">TEST</span>
+                               <span className="text-[8px] md:text-[9px] font-black uppercase">TEST</span>
                             </div>
                          </div>
                       </div>
@@ -468,19 +481,19 @@ export default function PlanningPage() {
 
                    <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
                       <CollapsibleTrigger asChild>
-                         <Button variant="ghost" className="w-full h-12 rounded-2xl font-black text-[10px] uppercase tracking-widest text-primary/40 gap-2">
+                         <Button variant="ghost" className="w-full h-10 md:h-12 rounded-xl md:rounded-2xl font-black text-[10px] uppercase tracking-widest text-primary/40 gap-2">
                             {isAdvancedOpen ? 'GEREKSİZ ALANLARI GİZLE' : '+ GELİŞMİŞ BİLGİLER'}
                             <ChevronDown className={cn("h-4 w-4 transition-transform", isAdvancedOpen && "rotate-180")} />
                          </Button>
                       </CollapsibleTrigger>
-                      <CollapsibleContent className="space-y-6 pt-6">
-                         <div className="grid grid-cols-2 gap-8">
+                      <CollapsibleContent className="space-y-4 md:space-y-6 pt-4 md:pt-6">
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                             <div className="space-y-2">
                                <Label className="text-[10px] font-black uppercase ml-2 opacity-40">ÇALIŞMA SÜRESİ</Label>
                                <Input 
                                   value={editingBlock.duration || '45 dk'} 
                                   onChange={(e) => setEditingBlock({...editingBlock, duration: e.target.value})}
-                                  className="h-12 rounded-xl bg-slate-50 border-none px-6 font-bold" 
+                                  className="h-10 md:h-12 rounded-lg md:rounded-xl bg-slate-50 border-none px-6 font-bold" 
                                />
                             </div>
                             <div className="space-y-2">
@@ -489,7 +502,7 @@ export default function PlanningPage() {
                                   type="date" 
                                   value={editingBlock.nextReviewDate || ''} 
                                   onChange={(e) => setEditingBlock({...editingBlock, nextReviewDate: e.target.value})}
-                                  className="h-12 rounded-xl bg-slate-50 border-none px-6 font-bold" 
+                                  className="h-10 md:h-12 rounded-lg md:rounded-xl bg-slate-50 border-none px-6 font-bold" 
                                />
                             </div>
                          </div>
@@ -498,25 +511,25 @@ export default function PlanningPage() {
                             <Input 
                                value={editingBlock.extraUrl || ''} 
                                onChange={(e) => setEditingBlock({...editingBlock, extraUrl: e.target.value})}
-                               className="h-12 rounded-xl bg-slate-50 border-none px-6 font-bold" 
+                               className="h-10 md:h-12 rounded-lg md:rounded-xl bg-slate-50 border-none px-6 font-bold" 
                                placeholder="https://..."
                             />
                          </div>
                       </CollapsibleContent>
                    </Collapsible>
 
-                   <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-100">
-                      <Button onClick={() => handleSaveEdit(false)} className="flex-1 h-20 rounded-[2rem] bg-[#0F172A] hover:bg-accent text-white font-black text-xs uppercase tracking-[0.3em] gap-4 shadow-2xl">
-                         <Save className="h-6 w-6 text-accent" /> KAYDET
+                   <div className="flex flex-col gap-3 md:gap-4 pt-4 md:pt-6 border-t border-slate-100">
+                      <Button onClick={() => handleSaveEdit(false)} className="w-full h-16 md:h-20 rounded-[1.5rem] md:rounded-[2rem] bg-[#0F172A] hover:bg-accent text-white font-black text-xs uppercase tracking-[0.3em] gap-3 md:gap-4 shadow-2xl">
+                         <Save className="h-5 w-5 md:h-6 md:w-6 text-accent" /> KAYDET
                       </Button>
-                      <Button onClick={() => handleSaveEdit(true)} className="flex-1 h-20 rounded-[2rem] bg-accent hover:bg-primary text-primary hover:text-white transition-all font-black text-xs uppercase tracking-[0.2em] gap-4 shadow-2xl">
-                         SONRAKİ KARTA GEÇ <ArrowRight className="h-6 w-6" />
+                      <Button onClick={() => handleSaveEdit(true)} className="w-full h-16 md:h-20 rounded-[1.5rem] md:rounded-[2rem] bg-accent hover:bg-primary text-primary hover:text-white transition-all font-black text-xs uppercase tracking-[0.2em] gap-3 md:gap-4 shadow-2xl">
+                         SONRAKİ KARTA GEÇ <ArrowRight className="h-5 w-5 md:h-6 md:w-6" />
                       </Button>
                    </div>
                    
-                   <div className="flex gap-4">
-                      <Button onClick={() => setIsEditDialogOpen(false)} variant="outline" className="flex-1 h-14 rounded-2xl border-2 font-black text-[10px] uppercase text-primary/40">VAZGEÇ</Button>
-                      <Button onClick={() => handleTaskAction(editingBlock.date, editingBlock.id, 'delete')} variant="outline" className="h-14 w-14 rounded-2xl border-2 border-rose-50 text-rose-500 hover:bg-rose-50"><Trash2 className="h-6 w-6" /></Button>
+                   <div className="flex gap-3 md:gap-4">
+                      <Button onClick={() => setIsEditDialogOpen(false)} variant="outline" className="flex-1 h-12 md:h-14 rounded-xl md:rounded-2xl border-2 font-black text-[10px] uppercase text-primary/40">VAZGEÇ</Button>
+                      <Button onClick={() => handleTaskAction(editingBlock.date, editingBlock.id, 'delete')} variant="outline" className="h-12 w-12 md:h-14 md:w-14 rounded-xl md:rounded-2xl border-2 border-rose-50 text-rose-500 hover:bg-rose-50 shrink-0"><Trash2 className="h-5 w-5 md:h-6 md:w-6" /></Button>
                    </div>
                 </div>
              </ScrollArea>

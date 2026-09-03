@@ -8,14 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
   Trophy, TrendingUp, Star, Plus, 
-  Loader2, ArrowLeft, Home, Zap, Target, BookOpenCheck, ChevronDown
+  Loader2, ArrowLeft, Home, Zap, Target, BookOpenCheck, ChevronDown, Calendar
 } from 'lucide-react';
 import { useState } from 'react';
-import { collection, addDoc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, orderBy, Timestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 export default function DenemeAnalysisPage() {
   const { user } = useUser();
@@ -28,7 +29,7 @@ export default function DenemeAnalysisPage() {
   const [selectedLesson, setSelectedLesson] = useState('');
 
   const { data: results = [] } = useCollection<any>(
-    user?.uid ? query(collection(db!, 'denemeResults'), where('userId', '==', user.uid), orderBy('createdAt', 'desc')) : null
+    user?.uid ? query(collection(db!, 'denemeResults'), where('userId', '==', user.uid), orderBy('examDate', 'desc')) : null
   );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -43,12 +44,16 @@ export default function DenemeAnalysisPage() {
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
+    const dateVal = formData.get('date') as string;
+    const examDate = dateVal ? new Date(dateVal) : new Date();
+
     const data = {
       userId: user.uid,
       type: examType,
       lesson: examType === 'DERS' ? selectedLesson : null,
       totalNet: parseFloat(formData.get('net') as string),
       points: parseFloat(formData.get('points') as string) || 0,
+      examDate: Timestamp.fromDate(examDate),
       createdAt: serverTimestamp(),
     };
 
@@ -131,6 +136,17 @@ export default function DenemeAnalysisPage() {
               )}
 
               <div className="space-y-3">
+                 <Label className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40 ml-4 italic text-primary">DENEME TARİHİ</Label>
+                 <Input 
+                   name="date" 
+                   type="date" 
+                   required 
+                   defaultValue={format(new Date(), 'yyyy-MM-dd')} 
+                   className="h-16 rounded-2xl bg-[#F8FAFC] border-none font-black text-xs uppercase px-6 outline-none shadow-inner focus-visible:ring-accent" 
+                 />
+              </div>
+
+              <div className="space-y-3">
                  <Label className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40 ml-4 italic text-primary">TOPLAM NET</Label>
                  <Input name="net" type="number" step="0.25" required placeholder="0.00" className="h-20 rounded-[2.25rem] bg-[#F8FAFC] border-none font-black text-4xl text-center shadow-inner focus-visible:ring-accent" />
               </div>
@@ -189,7 +205,10 @@ export default function DenemeAnalysisPage() {
                                 </p>
                                 {r.type === 'DERS' && <span className="bg-accent/10 text-accent text-[9px] font-black uppercase px-3 py-1 rounded-full border border-accent/20">BRANŞ</span>}
                              </div>
-                             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 italic">{new Date(r.createdAt?.toDate()).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 italic flex items-center gap-2">
+                                <Calendar className="h-3 w-3" />
+                                {r.examDate ? format(r.examDate.toDate(), 'd MMMM yyyy', { locale: require('date-fns/locale/tr') }) : 'Tarih Belirtilmedi'}
+                             </p>
                           </div>
                        </div>
                        <div className="text-center md:text-right mt-6 md:mt-0">
@@ -208,4 +227,3 @@ export default function DenemeAnalysisPage() {
     </div>
   );
 }
-

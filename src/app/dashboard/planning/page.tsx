@@ -10,7 +10,7 @@ import {
   Calendar, Clock, Target, Plus, Zap, Loader2, Sparkles, 
   ChevronRight, Brain, CheckCircle2, History, Trash2, ArrowLeft, 
   Home, RefreshCcw, RotateCcw, FastForward, Gauge, Edit3, ClipboardList, BookOpen,
-  ArrowRight, Youtube, FileText, Globe
+  ArrowRight, Youtube, FileText, Globe, Award
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
@@ -20,17 +20,27 @@ import { useRouter } from 'next/navigation';
 import { format, addDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
-const LESSON_COLORS: Record<string, string> = {
-  'TYT Matematik': 'border-t-[#1e293b]',
-  'AYT Matematik': 'border-t-[#0f172a]',
-  'Geometri': 'border-t-[#064e3b]',
-  'TYT Türkçe': 'border-t-[#1a3a5f]',
-  'Edebiyat': 'border-t-[#881337]',
-  'Tarih': 'border-t-[#7c2d12]',
-  'Coğrafya': 'border-t-[#14532d]',
-  'Felsefe': 'border-t-[#4c1d95]',
-  'Din Kültürü': 'border-t-[#312e81]',
-  'Genel': 'border-t-slate-400',
+const LESSON_THEMES: Record<string, string> = {
+  'TYT Matematik': 'bg-[#1e293b] text-white',
+  'AYT Matematik': 'bg-[#0f172a] text-white',
+  'Geometri': 'bg-[#064e3b] text-white',
+  'TYT Türkçe': 'bg-[#1a3a5f] text-white',
+  'Edebiyat': 'bg-[#881337] text-white',
+  'Tarih': 'bg-[#7c2d12] text-white',
+  'Coğrafya': 'bg-[#14532d] text-white',
+  'Felsefe': 'bg-[#4c1d95] text-white',
+  'Din Kültürü': 'bg-[#312e81] text-white',
+  'Genel': 'bg-slate-700 text-white',
+};
+
+const DAY_COLORS: Record<string, string> = {
+  'Pazartesi': 'border-t-rose-500',
+  'Salı': 'border-t-orange-500',
+  'Çarşamba': 'border-t-emerald-500',
+  'Perşembe': 'border-t-blue-500',
+  'Cuma': 'border-t-violet-500',
+  'Cumartesi': 'border-t-indigo-500',
+  'Pazar': 'border-t-pink-500',
 };
 
 export default function PlanningPage() {
@@ -137,7 +147,7 @@ export default function PlanningPage() {
         updatedAt: serverTimestamp()
       }, { merge: true });
 
-      toast({ title: 'Plan Güncellendi', description: 'Fasikül hiyerarşisi saniyeler içinde 364 günlük takvime işlendi.' });
+      toast({ title: 'Plan Senkronize Edildi', description: 'Fasikül hiyerarşisi saniyeler içinde 364 günlük takvime işlendi.' });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Hata', description: 'Plan oluşturulamadı.' });
     } finally {
@@ -177,133 +187,133 @@ export default function PlanningPage() {
              <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><Home className="h-5 w-5" /></Button>
           </div>
           <div className="space-y-2">
-             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20">
-                <Calendar className="h-3 w-3" /> Dinamik Planlama v4.8
+             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic">
+                <Calendar className="h-3.5 w-3.5" /> AOS DİNAMİK PLANLAYICI v4.8
              </div>
-             <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-deep">
-                Akademik <br /><span className="text-accent text-shadow-accent">Planlayıcı</span>
+             <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-premium">
+                Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span>
              </h2>
           </div>
         </div>
       </header>
 
-      <Card className="rounded-[4rem] border-none shadow-2xl bg-white p-12 space-y-10">
+      <Card className="rounded-[4rem] border-none shadow-[0_50px_100px_-20px_rgba(15,23,42,0.15)] bg-white p-12 space-y-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
            <div className="space-y-3">
-              <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-4 italic">Sınav Tarihi</Label>
-              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-black text-xl" />
+              <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-6 italic">HEDEF SINAV TARİHİ</Label>
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-20 rounded-[2rem] bg-slate-50 border-none shadow-inner font-black text-2xl px-8" />
            </div>
            <div className="space-y-3 flex items-end">
               <Button 
                 onClick={generateFasikulPlan}
                 disabled={isGenerating || !endDate}
-                className="w-full h-16 rounded-2xl bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest gap-4 shadow-2xl"
+                className="w-full h-20 rounded-[2rem] bg-primary hover:bg-accent transition-all duration-500 font-black text-xs uppercase tracking-[0.2em] gap-5 shadow-2xl shadow-primary/30"
               >
-                {isGenerating ? <Loader2 className="h-6 w-6 animate-spin" /> : <Zap className="h-6 w-6 text-accent" />}
-                FASİKÜL PLANINI OLUŞTUR VE SENKRONİZE ET
+                {isGenerating ? <Loader2 className="h-7 w-7 animate-spin" /> : <Zap className="h-7 w-7 text-accent" />}
+                FASİKÜL MOTORUNU ÇALIŞTIR
               </Button>
            </div>
         </div>
       </Card>
 
-      <div className="space-y-12">
+      <div className="space-y-16">
         {(studyPlan?.masterPlan || []).slice(0, 14).map((day: any) => (
-          <div key={day.date} className="space-y-6">
-             <div className="flex items-center gap-4 px-4">
-                <h3 className="text-2xl font-black italic text-primary uppercase tracking-tighter">{day.date} — {day.day}</h3>
+          <div key={day.date} className="space-y-10">
+             <div className="flex items-center gap-6 px-6">
+                <h3 className="text-3xl font-black italic text-primary uppercase tracking-tighter">{day.date} — {day.day.toUpperCase()}</h3>
                 <div className="h-px flex-1 bg-slate-200" />
              </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-10">
                 {day.tasks.map((t: any) => (
                   <Card key={t.id} className={cn(
-                    "aspect-square p-8 rounded-[3.5rem] border-2 border-slate-100 flex flex-col justify-between transition-all hover:scale-[1.03] hover:shadow-2xl group relative overflow-hidden bg-white border-t-[6px]",
-                    LESSON_COLORS[t.lesson] || "border-t-slate-400",
-                    t.status === 'done' && "opacity-40 grayscale"
+                    "aspect-square p-10 rounded-[4rem] border-none flex flex-col justify-between transition-all hover:scale-[1.05] hover:shadow-[0_60px_120px_-30px_rgba(0,0,0,0.3)] group relative overflow-hidden",
+                    LESSON_THEMES[t.lesson] || "bg-slate-700 text-white",
+                    t.status === 'done' && "opacity-40 grayscale scale-95"
                   )}>
                      <div className="space-y-6 relative z-10">
                         <div className="flex justify-between items-start">
-                           <span className="text-[10px] font-black uppercase px-4 py-1.5 rounded-full shadow-sm bg-white border border-slate-100 flex items-center gap-2 text-primary">
+                           <span className="text-[10px] font-black uppercase px-5 py-2 rounded-full shadow-lg bg-white/10 backdrop-blur-xl border border-white/10 flex items-center gap-2 text-white">
                              📋 {t.lesson.toUpperCase()}
                            </span>
-                           <span className="text-[14px] font-black text-slate-400">{t.time}</span>
+                           <span className="text-lg font-black text-white/40 italic">{t.time || '10:00'}</span>
                         </div>
 
                         <div className="space-y-2">
-                           <h4 className="text-[1.75rem] font-black italic leading-[1] tracking-tighter uppercase text-primary">
+                           <h4 className="text-[2.25rem] font-black italic leading-[0.9] tracking-tighter uppercase text-white text-shadow-premium">
                               {t.type}
                            </h4>
-                           <p className="text-sm font-bold text-slate-400 italic leading-tight">
+                           <p className="text-sm font-bold text-white/50 italic leading-tight">
                               {t.topic}
                            </p>
                         </div>
 
-                        <div className="space-y-4">
-                           <div className="flex flex-wrap gap-2">
-                              <span className="text-[10px] font-black uppercase bg-slate-100 px-3 py-1.5 rounded-xl text-primary flex items-center gap-1.5">🟡 {t.difficulty}</span>
-                              <span className="text-[10px] font-black uppercase bg-slate-100 px-3 py-1.5 rounded-xl text-primary flex items-center gap-1.5">⏱️ {t.duration}DK</span>
-                              <span className="text-[10px] font-black uppercase bg-slate-100 px-3 py-1.5 rounded-xl text-primary flex items-center gap-1.5">📝 {t.questionTarget} SORU</span>
+                        <div className="space-y-5">
+                           <div className="flex flex-wrap gap-2.5">
+                              <span className="text-[10px] font-black uppercase bg-white/10 px-4 py-2 rounded-xl text-accent flex items-center gap-1.5 shadow-inner">🟡 {t.difficulty}</span>
+                              <span className="text-[10px] font-black uppercase bg-white/10 px-4 py-2 rounded-xl text-white flex items-center gap-1.5 shadow-inner">⏱️ {t.duration}DK</span>
+                              <span className="text-[10px] font-black uppercase bg-white/10 px-4 py-2 rounded-xl text-white flex items-center gap-1.5 shadow-inner">📝 {t.questionTarget} SORU</span>
                            </div>
-                           <div className="flex items-center gap-4 pt-2">
+                           <div className="flex items-center gap-6 pt-2">
                               {t.resources ? (
-                                <div className="flex gap-4">
-                                   <a href={t.resources.youtube} target="_blank" className="hover:scale-110 transition-transform"><Youtube className="h-5 w-5 text-slate-900" /></a>
-                                   <a href={t.resources.ogm} target="_blank" className="hover:scale-110 transition-transform"><Globe className="h-5 w-5 text-slate-900" /></a>
-                                   <a href={t.resources.pdf} target="_blank" className="hover:scale-110 transition-transform"><FileText className="h-5 w-5 text-slate-900" /></a>
+                                <div className="flex gap-6">
+                                   <a href={t.resources.youtube} target="_blank" className="hover:scale-125 transition-transform text-white/60 hover:text-white"><Youtube className="h-6 w-6" /></a>
+                                   <a href={t.resources.ogm} target="_blank" className="hover:scale-125 transition-transform text-white/60 hover:text-white"><Globe className="h-6 w-6" /></a>
+                                   <a href={t.resources.pdf} target="_blank" className="hover:scale-125 transition-transform text-white/60 hover:text-white"><FileText className="h-6 w-6" /></a>
                                 </div>
                               ) : (
-                                <span className="text-[10px] font-bold text-slate-400 italic">Kaynak eklenmedi</span>
+                                <span className="text-[10px] font-bold text-white/30 italic uppercase tracking-widest">Kaynak eklenmedi</span>
                               )}
                            </div>
                         </div>
                      </div>
                      
-                     <div className="grid grid-cols-3 gap-2 pt-6 border-t border-slate-50 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                     <div className="grid grid-cols-3 gap-3 pt-8 border-t border-white/5 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0">
                         <Button 
                           onClick={() => handleTaskAction(day.date, t.id, 'done')}
                           size="icon" 
                           className={cn(
-                            "h-12 w-12 rounded-2xl transition-all shadow-lg",
-                            t.status === 'done' ? "bg-slate-400" : "bg-emerald-500 hover:bg-emerald-600"
+                            "h-14 w-14 rounded-2xl transition-all shadow-2xl",
+                            t.status === 'done' ? "bg-white/20" : "bg-emerald-500 hover:bg-emerald-400"
                           )}
                         >
-                          <CheckCircle2 className="h-6 w-6 text-white" />
+                          <CheckCircle2 className="h-7 w-7 text-white" />
                         </Button>
                         <Button 
                           onClick={() => handleTaskAction(day.date, t.id, 'repeat')}
                           size="icon" 
                           variant="ghost" 
-                          className="h-12 w-12 rounded-2xl bg-white border-2 border-orange-500/20 hover:bg-orange-50 text-orange-500"
+                          className="h-14 w-14 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-orange-500"
                         >
-                          <RotateCcw className="h-6 w-6" />
+                          <RotateCcw className="h-7 w-7" />
                         </Button>
                         <Button 
                           size="icon" 
                           variant="ghost" 
-                          className="h-12 w-12 rounded-2xl bg-white border-2 border-slate-100 hover:bg-slate-50 text-slate-400"
+                          className="h-14 w-14 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/60"
                         >
-                          <FastForward className="h-6 w-6" />
+                          <FastForward className="h-7 w-7" />
                         </Button>
                         <Button 
                           size="icon" 
                           variant="ghost" 
-                          className="h-12 w-12 rounded-2xl bg-white border-2 border-blue-100 hover:bg-blue-50 text-blue-400"
+                          className="h-14 w-14 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-blue-400"
                         >
-                          <Gauge className="h-6 w-6" />
+                          <Gauge className="h-7 w-7" />
                         </Button>
                         <Button 
                           size="icon" 
                           variant="ghost" 
-                          className="h-12 w-12 rounded-2xl bg-white border-2 border-slate-100 hover:bg-slate-50 text-slate-900"
+                          className="h-14 w-14 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white"
                         >
-                          <Edit3 className="h-6 w-6" />
+                          <Edit3 className="h-7 w-7" />
                         </Button>
                         <Button 
                           onClick={() => handleTaskAction(day.date, t.id, 'delete')}
                           size="icon" 
                           variant="ghost" 
-                          className="h-12 w-12 rounded-2xl bg-white border-2 border-rose-100 hover:bg-rose-50 text-rose-500"
+                          className="h-14 w-14 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-rose-500"
                         >
-                          <Trash2 className="h-6 w-6" />
+                          <Trash2 className="h-7 w-7" />
                         </Button>
                      </div>
                   </Card>
@@ -311,11 +321,6 @@ export default function PlanningPage() {
              </div>
           </div>
         ))}
-        {(studyPlan?.masterPlan || []).length > 14 && (
-          <div className="py-10 text-center">
-            <p className="text-slate-400 font-bold italic">Kalan plan verilerini görmek için sayfayı aşağı kaydırın veya filtreleyin.</p>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -176,13 +176,13 @@ export function AuthForm({
         <form onSubmit={handleLogin} className="space-y-5 md:space-y-6">
            <div className="space-y-1.5 md:space-y-2">
               <Label className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground/50 ml-4 italic">E-POSTA</Label>
-              <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-14 md:h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-6" placeholder="ornek@email.com" />
+              <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-14 md:h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-6 text-primary" placeholder="ornek@email.com" />
            </div>
            <div className="space-y-1.5 md:space-y-2">
               <Label className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground/50 ml-4 italic">ŞİFRE</Label>
-              <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-14 md:h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-6" placeholder="••••••••" />
+              <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-14 md:h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-6 text-primary" placeholder="••••••••" />
            </div>
-           <Button type="submit" disabled={loading} className="w-full h-18 md:h-20 rounded-[1.5rem] md:rounded-[2rem] bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-[0.4em] shadow-2xl gap-4">
+           <Button type="submit" disabled={loading} className="w-full h-18 md:h-20 rounded-[1.5rem] md:rounded-[2rem] bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-[0.4em] shadow-2xl gap-4 text-white">
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogIn className="h-5 w-5 text-accent" />} ERİŞİM SAĞLA
            </Button>
            <button type="button" onClick={() => setAuthMode('register')} className="w-full text-center text-[9px] md:text-[10px] font-black uppercase tracking-widest text-primary/40 hover:text-accent transition-colors">YENİ KAYIT OLUŞTUR</button>
@@ -230,7 +230,7 @@ export function AuthForm({
                   required 
                   value={displayName} 
                   onChange={(e) => setDisplayName(e.target.value)} 
-                  className="h-14 md:h-20 rounded-[1.25rem] md:rounded-[2rem] bg-white border-none shadow-[0_20px_40px_-5px_rgba(0,0,0,0.03)] shadow-inner pl-14 md:pl-16 font-bold text-base md:text-lg focus-visible:ring-accent" 
+                  className="h-14 md:h-20 rounded-[1.25rem] md:rounded-[2rem] bg-white border-none shadow-[0_20px_40px_-5px_rgba(0,0,0,0.03)] shadow-inner pl-14 md:pl-16 font-bold text-base md:text-lg focus-visible:ring-accent text-primary" 
                   placeholder="Adınız Soyadınız" 
                 />
              </div>
@@ -246,7 +246,7 @@ export function AuthForm({
                      required 
                      value={email} 
                      onChange={(e) => setEmail(e.target.value)} 
-                     className="h-14 md:h-20 rounded-[1.25rem] md:rounded-[2rem] bg-white border-none shadow-[0_20px_40px_-5px_rgba(0,0,0,0.03)] shadow-inner pl-14 md:pl-16 font-bold text-base md:text-lg focus-visible:ring-accent" 
+                     className="h-14 md:h-20 rounded-[1.25rem] md:rounded-[2rem] bg-white border-none shadow-[0_20px_40px_-5px_rgba(0,0,0,0.03)] shadow-inner pl-14 md:pl-16 font-bold text-base md:text-lg focus-visible:ring-accent text-primary" 
                      placeholder="ornek@eposta.com" 
                    />
                 </div>
@@ -261,7 +261,7 @@ export function AuthForm({
                    <Input 
                      value={teacherCode} 
                      onChange={(e) => setTeacherCode(e.target.value.toUpperCase())} 
-                     className="h-14 md:h-20 rounded-[1.25rem] md:rounded-[2rem] bg-white border-none shadow-[0_30px_60px_-10px_rgba(0,0,0,0.05)] shadow-inner pl-14 md:pl-16 font-black tracking-[0.2em] md:tracking-[0.3em] text-base md:text-lg uppercase focus-visible:ring-accent" 
+                     className="h-14 md:h-20 rounded-[1.25rem] md:rounded-[2rem] bg-white border-none shadow-[0_30px_60px_-10px_rgba(0,0,0,0.05)] shadow-inner pl-14 md:pl-16 font-black tracking-[0.2em] md:tracking-[0.3em] text-base md:text-lg uppercase focus-visible:ring-accent text-primary" 
                      placeholder="DK-XXXX-XXXX" 
                    />
                 </div>
@@ -275,7 +275,7 @@ export function AuthForm({
                     required 
                     value={schoolName} 
                     onChange={(e) => setSchoolName(e.target.value)} 
-                    className="h-14 md:h-20 rounded-[1.25rem] md:rounded-[2rem] bg-white border-none shadow-inner pl-14 md:pl-16 font-bold text-base md:text-lg" 
+                    className="h-14 md:h-20 rounded-[1.25rem] md:rounded-[2rem] bg-white border-none shadow-inner pl-14 md:pl-16 font-bold text-base md:text-lg text-primary" 
                     placeholder="Çalıştığınız Kurum" 
                   />
                </div>
@@ -292,7 +292,7 @@ export function AuthForm({
                     required 
                     value={password} 
                     onChange={(e) => setPassword(e.target.value)} 
-                    className="h-14 md:h-20 rounded-[1.25rem] md:rounded-[2rem] bg-white border-none shadow-inner pl-14 md:pl-16 font-bold text-base md:text-lg" 
+                    className="h-14 md:h-20 rounded-[1.25rem] md:rounded-[2rem] bg-white border-none shadow-inner pl-14 md:pl-16 font-bold text-base md:text-lg text-primary" 
                     placeholder="Min. 6 Karakter" 
                   />
                </div>

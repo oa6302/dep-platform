@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -82,7 +81,7 @@ export default function PlanningPage() {
             reminder: 'DÜNDEN AKTARILDI: ' + (b.reminder || '') 
           })),
           ...currentPlan[todayIdx].blocks
-        ].slice(0, 6); // Max 6 block to avoid overload
+        ].slice(0, 6);
       }
     }
 
@@ -120,14 +119,15 @@ export default function PlanningPage() {
 
       const getLessonPool = (date: Date) => {
         let pool = [...(examConfig?.lessons || ['TYT Matematik', 'TYT Türkçe'])];
+        // 1 ARALIK AYT Otonom Vites
         if (isAfter(date, aytStartDate) || date.getTime() === aytStartDate.getTime()) {
-          if (currentExam === 'YKS_EA') {
-            if (!pool.includes('AYT Matematik')) pool.push('AYT Matematik');
-            if (!pool.includes('Edebiyat')) pool.push('Edebiyat');
-          } else if (currentExam === 'YKS_SAY') {
-            if (!pool.includes('AYT Matematik')) pool.push('AYT Matematik');
-            if (!pool.includes('Fizik')) pool.push('Fizik');
-          }
+           // AYT eklemesi
+           if (currentExam === 'YKS_EA' || currentExam === 'YKS_SAY') {
+              const aytMath = 'AYT Matematik';
+              const aytSpec = currentExam === 'YKS_EA' ? 'Edebiyat' : 'Fizik';
+              if (!pool.includes(aytMath)) pool.push(aytMath);
+              if (!pool.includes(aytSpec)) pool.push(aytSpec);
+           }
         }
         return pool;
       };
@@ -140,7 +140,6 @@ export default function PlanningPage() {
         const dateStr = format(currentDt, 'yyyy-MM-dd');
         const dayName = format(currentDt, 'EEEE', { locale: tr });
         
-        // Skip Sundays or keep existing done blocks
         const existingDay = (studyPlan?.masterPlan || []).find((d: any) => d.date === dateStr);
         if (existingDay && (isBefore(currentDt, startOfToday()) || existingDay.blocks.some((b: any) => b.status === 'done'))) {
           newPlan.push(existingDay);
@@ -150,7 +149,9 @@ export default function PlanningPage() {
         const pool = getLessonPool(currentDt);
         const dailyBlocks = [];
 
-        // Kart 1 & 2: İki Farklı Konu
+        // 4 KART DÖNGÜSÜ: [Konu 1] [Konu 2] [Paragraf] [Tekrar]
+        
+        // 1 & 2: Ana Konular
         for (let j = 0; j < 2; j++) {
           const lesson = pool[(i * 2 + j) % pool.length];
           const topics = YKS_TM_TOPICS[lesson] || ['Genel Tekrar'];
@@ -175,14 +176,14 @@ export default function PlanningPage() {
           lessonPointers[lesson]++;
         }
 
-        // Kart 3: 20 Paragraf (Her Gün)
+        // 3: 20 Paragraf (HERGÜN)
         dailyBlocks.push({
           id: `para_${dateStr}`,
           lesson: 'TÜRKÇE',
           topic: '20 PARAGRAF SORU ÇÖZÜMÜ',
           status: 'planned',
-          phase1: { type: 'ODAKLANMA', time: '12:00' },
-          phase2: { type: 'ANALİZ', time: '12:30' },
+          phase1: { type: 'GÜNLÜK KAMP', time: '11:30' },
+          phase2: { type: 'ANALİZ', time: '12:00' },
           targetQuestions: 20,
           solvedQuestions: 0,
           youtubeUrl: 'https://www.youtube.com/results?search_query=paragraf+çözüm+teknikleri',
@@ -191,14 +192,14 @@ export default function PlanningPage() {
           isTestDone: false
         });
 
-        // Kart 4: Dünün Tekrarı (Her Gün)
+        // 4: Dünün Tekrarı (HERGÜN)
         dailyBlocks.push({
           id: `review_${dateStr}`,
           lesson: 'GENEL',
           topic: 'DÜNÜN ANALİZİ & TEKRARI',
           status: 'planned',
-          phase1: { type: 'DÜNÜN TESCİLİ', time: '12:30' },
-          phase2: { type: 'STRATEJİK TEKRAR', time: '13:00' },
+          phase1: { type: 'TESCİL', time: '12:30' },
+          phase2: { type: 'STRATEJİK', time: '13:00' },
           isReview: true
         });
 
@@ -562,4 +563,3 @@ export default function PlanningPage() {
     </div>
   );
 }
-

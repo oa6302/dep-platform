@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Calendar, Clock, Target, Plus, Zap, Loader2, Sparkles, 
   ChevronRight, Brain, CheckCircle2, History, Trash2, ArrowLeft, 
-  Home, RefreshCcw, FastForward, Gauge, Edit3, ClipboardList, BookOpen,
+  Home, RefreshCcw, RotateCcw, FastForward, Gauge, Edit3, ClipboardList, BookOpen,
   ArrowRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';

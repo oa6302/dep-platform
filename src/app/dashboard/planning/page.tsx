@@ -223,10 +223,12 @@ export default function PlanningPage() {
     const updatedDate = formData.get('date') as string;
 
     const newPlan = studyPlan.masterPlan.map((day: any) => {
+      // Önce mevcut günden sil (eğer tarih değiştiyse)
       if (day.date === editingBlock.date && updatedDate !== editingBlock.date) {
         return { ...day, blocks: (day.blocks || []).filter((b: any) => b.id !== editingBlock.id) };
       }
       
+      // Mevcut gün güncelleniyorsa
       if (day.date === editingBlock.date && updatedDate === editingBlock.date) {
         return {
           ...day,
@@ -253,6 +255,7 @@ export default function PlanningPage() {
         };
       }
 
+      // Yeni tarihe ekle
       if (day.date === updatedDate && updatedDate !== editingBlock.date) {
         const blocks = day.blocks || [];
         return {
@@ -404,6 +407,7 @@ export default function PlanningPage() {
                            </div>
                         </div>
 
+                        {/* Actions Terminal */}
                         <div className="flex justify-center gap-6 pt-10 border-t border-slate-50">
                            <Button 
                              onClick={() => handleTaskAction(day.date, block.id, 'done')}
@@ -413,16 +417,36 @@ export default function PlanningPage() {
                                block.status === 'done' ? "bg-slate-100 text-slate-400" : "bg-emerald-500 text-white hover:scale-110"
                              )}
                            ><CheckCircle2 className="h-7 w-7" /></Button>
+
                            <Button 
                              onClick={() => handleTaskAction(day.date, block.id, 'repeat')}
                              size="icon" variant="outline" 
                              className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-orange-500 text-orange-500 hover:bg-orange-50 transition-all hover:scale-110 shadow-lg"
                            ><RotateCcw className="h-7 w-7" /></Button>
+
+                           <Button 
+                             onClick={() => handleTaskAction(day.date, block.id, 'edit')}
+                             size="icon" variant="outline" 
+                             className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-primary text-primary hover:bg-slate-50 transition-all hover:scale-110 shadow-lg"
+                           ><Edit3 className="h-7 w-7" /></Button>
+
+                           <Button 
+                             onClick={() => handleTaskAction(day.date, block.id, 'level')}
+                             size="icon" variant="outline" 
+                             className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-blue-500 text-blue-500 hover:bg-blue-50 transition-all hover:scale-110 shadow-lg"
+                           ><Gauge className="h-7 w-7" /></Button>
+
                            <Button 
                              onClick={() => handleTaskAction(day.date, block.id, 'skip')}
                              size="icon" variant="outline" 
                              className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-slate-400 text-slate-400 hover:bg-slate-50 transition-all hover:scale-110 shadow-lg"
                            ><FastForward className="h-7 w-7" /></Button>
+
+                           <Button 
+                             onClick={() => handleTaskAction(day.date, block.id, 'delete')}
+                             size="icon" variant="outline" 
+                             className="h-16 w-16 rounded-full bg-white border-2 border-slate-100 hover:border-rose-500 text-rose-500 hover:bg-rose-50 transition-all hover:scale-110 shadow-lg"
+                           ><Trash2 className="h-7 w-7" /></Button>
                         </div>
                      </div>
                   </Card>
@@ -431,6 +455,72 @@ export default function PlanningPage() {
           </div>
         ))}
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="rounded-[4rem] border-none shadow-2xl p-12 bg-white max-w-2xl overflow-hidden">
+           <DialogHeader className="space-y-4">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 text-primary font-black text-[10px] uppercase tracking-widest italic shadow-sm w-fit">
+                <Edit3 className="h-3 w-3 text-accent" /> BLOK EDİTÖRÜ
+              </div>
+              <DialogTitle className="text-4xl font-black italic tracking-tighter text-primary uppercase leading-none">FASİKÜL BLOĞUNU DÜZENLE</DialogTitle>
+              <DialogDescription className="font-medium italic">Seçili bloğun akademik detaylarını saniyeler içinde revize edin.</DialogDescription>
+           </DialogHeader>
+
+           {editingBlock && (
+             <form onSubmit={handleSaveEdit} className="space-y-10 pt-10">
+                <div className="grid grid-cols-2 gap-8">
+                   <div className="space-y-3">
+                      <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-4 italic">KONU ADI</Label>
+                      <Input name="topic" required defaultValue={editingBlock.topic} className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold" />
+                   </div>
+                   <div className="space-y-3">
+                      <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-4 italic">TARİH</Label>
+                      <Input name="date" type="date" required defaultValue={editingBlock.date} className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold" />
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-10">
+                   <div className="p-8 rounded-[2.5rem] bg-slate-50 space-y-6">
+                      <h5 className="font-black text-xs uppercase tracking-widest text-primary/40">1. AŞAMA (KONU)</h5>
+                      <div className="space-y-4">
+                         <div className="relative group">
+                            <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/20" />
+                            <Input name="p1Time" required defaultValue={editingBlock.phase1.time} className="h-12 pl-12 rounded-xl bg-white border-none shadow-sm font-bold" />
+                         </div>
+                         <div className="relative group">
+                            <Youtube className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-500/40" />
+                            <Input name="p1Youtube" defaultValue={editingBlock.phase1.resources?.youtube} placeholder="YouTube Link" className="h-12 pl-12 rounded-xl bg-white border-none shadow-sm font-bold text-xs" />
+                         </div>
+                      </div>
+                   </div>
+                   <div className="p-8 rounded-[2.5rem] bg-orange-50 space-y-6">
+                      <h5 className="font-black text-xs uppercase tracking-widest text-accent">2. AŞAMA (TEST)</h5>
+                      <div className="space-y-4">
+                         <div className="relative group">
+                            <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/20" />
+                            <Input name="p2Time" required defaultValue={editingBlock.phase2.time} className="h-12 pl-12 rounded-xl bg-white border-none shadow-sm font-bold" />
+                         </div>
+                         <div className="relative group">
+                            <Youtube className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-500/40" />
+                            <Input name="p2Youtube" defaultValue={editingBlock.phase2.resources?.youtube} placeholder="YouTube Link" className="h-12 pl-12 rounded-xl bg-white border-none shadow-sm font-bold text-xs" />
+                         </div>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="flex gap-4">
+                   <Button type="submit" className="flex-1 h-20 rounded-[2rem] bg-primary hover:bg-accent transition-all font-black text-sm uppercase tracking-[0.4em] shadow-2xl text-white gap-4">
+                      <Save className="h-6 w-6 text-accent" /> DEĞİŞİKLİKLERİ KAYDET
+                   </Button>
+                   <Button type="button" onClick={() => setIsEditDialogOpen(false)} variant="outline" className="h-20 w-20 rounded-[2rem] border-2 border-slate-100 hover:bg-slate-50">
+                      <X className="h-6 w-6 text-slate-400" />
+                   </Button>
+                </div>
+             </form>
+           )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

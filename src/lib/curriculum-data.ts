@@ -1,23 +1,24 @@
 /**
  * @fileOverview YKS TM Master Müfredat Verisi (ÖSYM 2026 Standartları)
+ * TYT Türkçe alanı saniyeler içinde sadece Anlam Bilgisi ve Paragraf odaklı hale getirildi.
  */
 
 export const YKS_TM_TOPICS: Record<string, string[]> = {
   'TYT Türkçe': [
-    'Sözcükte Anlam', 
-    'Cümlede Anlam', 
-    'Paragraf (Konu-Ana Düşünce)', 
-    'Paragraf (Yapı-Yorum)', 
-    'Ses Bilgisi (Düşme, Yumuşama, Sertleşme, Daralma, Türeme)', 
-    'Sözcükte Yapı (Kök, Ekler, Basit-Türemiş-Birleşik)', 
-    'Sözcük Türleri (İsim, Sıfat, Zamir, Zarf, Edat, Bağlaç, Ünlem)',
-    'Fiiller (Kip, Kişi, Yapı, Ek Fiil)', 
-    'Fiilimsiler (İsim-Sıfat-Zarf Fiil)', 
-    'Fiilde Çatı (Etken, Edilgen, Dönüşlü, İşteş)', 
-    'Cümlenin Ögeleri (Özne, Yüklem, Nesne, Tümleçler)', 
-    'Cümle Türleri (Anlam, Yüklem, Yapı Bakımından)', 
-    'Noktalama İşaretleri (Nokta, Virgül, İki Nokta vb.)',
-    'Anlatım Bozuklukları'
+    'Sözcükte Anlam (Gerçek-Mecaz-Yan Anlam)', 
+    'Söz Öbeklerinde Anlam (Deyimler-Atasözleri)',
+    'Cümlede Anlam (Neden-Sonuç, Amaç-Sonuç, Koşul)', 
+    'Cümle Yorumu (Öznel-Nesnel, Eleştiri, Yakınma)',
+    'Paragrafta Ana Düşünce', 
+    'Paragrafta Yardımcı Düşünceler', 
+    'Paragrafta Yapı (Giriş-Gelişme-Sonuç)', 
+    'Paragraf Bölme ve Akışı Bozan Cümle', 
+    'Paragraf Tamamlama (Boşluk Doldurma)', 
+    'Düşünceyi Geliştirme Yolları (Tanımlama, Örneklendirme vb.)', 
+    'Anlatım Teknikleri (Açıklama, Tartışma vb.)',
+    'Paragrafta Başlık ve Soru-Cevap Uyumu',
+    'Paragrafta Karakter ve Diyalog Analizi',
+    'Metinler Arası Karşılaştırma ve Mantıksal Çıkarım'
   ],
   'TYT Matematik': [
     'Temel Kavramlar', 'Sayı Basamakları', 'Bölme ve Bölünebilme', 'EBOB-EKOK', 

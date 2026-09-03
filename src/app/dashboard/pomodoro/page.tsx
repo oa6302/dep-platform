@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card } from '@/components/ui/card';
@@ -16,10 +17,10 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
 const LOFI_STREAMS = [
-  { id: 'U_5Uv8G_1Xo', title: 'RUHUN ŞİFASI - NEY SESİ', color: 'bg-emerald-600' },
-  { id: '1fU6R_K6W6Y', title: 'ALPHA WAVES - DEEP FOCUS', color: 'bg-indigo-600' },
-  { id: 'sjkrrmBnpGE', title: 'PIANO STUDY - ZEN MODE', color: 'bg-amber-600' },
-  { id: 'jfKfPfyJRdk', title: 'LOFI GIRL - MASTER STUDY', color: 'bg-rose-500' },
+  { id: 'tLqZk2mKz8U', title: 'RUHUN ŞİFASI - NEY SESİ', color: 'bg-emerald-600' },
+  { id: 'WPni755-Krg', title: 'ALPHA WAVES - DEEP FOCUS', color: 'bg-indigo-600' },
+  { id: 'mXndxY57wCI', title: 'PIANO STUDY - ZEN MODE', color: 'bg-amber-600' },
+  { id: '5qap5aO4i9A', title: 'LOFI GIRL - MASTER STUDY', color: 'bg-rose-500' },
 ];
 
 export default function PomodoroPage() {
@@ -260,7 +261,7 @@ export default function PomodoroPage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
                     <div className="absolute bottom-6 left-8 space-y-1">
-                       <p className="text-[9px] font-black uppercase tracking-[0.4em] text-accent italic">ŞU AN ÇALIYOR</p>
+                       <p className="text-[9px] font-black uppercase tracking-widest text-accent italic">ŞU AN ÇALIYOR</p>
                        <p className="text-2xl font-black italic tracking-tighter uppercase line-clamp-1">{selectedStream.title}</p>
                     </div>
                  </div>

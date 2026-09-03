@@ -11,7 +11,7 @@ import {
   CheckCircle2, Trash2, ArrowLeft, 
   Home, RotateCcw, FastForward, Gauge, Edit3,
   Youtube, Globe, Save, X, CalendarDays, FileText, AlertTriangle,
-  BellRing
+  BellRing, Link2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
@@ -30,6 +30,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const LESSON_COLORS: Record<string, string> = {
   'TYT Matematik': '#0f172a',
@@ -69,7 +70,7 @@ export default function PlanningPage() {
       reminder: '',
       phase1: {
         type: 'YENİ KONU ÇALIŞMASI',
-        time: time, // Default 10:00
+        time: time,
         duration: 60,
         questionTarget: 10,
         resources: {
@@ -81,7 +82,7 @@ export default function PlanningPage() {
       },
       phase2: {
         type: 'TEST VE AYRINTI ANALİZİ',
-        time: '11:00', // Always 1 hour after Phase 1 start
+        time: '11:00',
         duration: 60,
         questionTarget: 20,
         resources: {
@@ -104,14 +105,14 @@ export default function PlanningPage() {
       reminder: type === 'MONTHLY' ? 'Tüm ayın eksik analizlerini terminalden indir.' : '',
       phase1: {
         type: `${type === 'DAILY' ? 'DÜNÜN' : type === 'WEEKLY' ? 'HAFTANIN' : 'AYIN'} ANALİZİ`,
-        time: time, // Default 12:00
+        time: time,
         duration: duration,
         questionTarget: type === 'DAILY' ? 15 : type === 'WEEKLY' ? 50 : 100,
         resources: { youtube: '', ogm: '', pdf: '', kamp: '' }
       },
       phase2: {
         type: 'HATA VE EKSİK TAKİBİ',
-        time: '13:00', // Review end
+        time: '13:00',
         duration: 0,
         questionTarget: 0,
         resources: { youtube: '', ogm: '', pdf: '', kamp: '' }
@@ -161,7 +162,6 @@ export default function PlanningPage() {
         const dayName = format(currentDt, 'EEEE', { locale: tr });
         const dayOfMonth = getDate(currentDt);
         
-        // Protect past data
         const existingDay = existingPlan.find((d: any) => d.date === dateStr);
         if (existingDay && (isBefore(currentDt, today))) {
           newPlan.push(existingDay);
@@ -172,14 +172,11 @@ export default function PlanningPage() {
         const isAytActive = !isBefore(currentDt, aytStartDate);
 
         const dailyBlocks = [];
-        
-        // 10:00 - 12:00 Subject Block
         const activePool = otherLessons.filter(l => {
           if (l === 'AYT Matematik' || l === 'Edebiyat') return isAytActive;
           return true;
         });
 
-        // Rotate through one subject per day to fit the 10-13 window
         const poolIndex = i % activePool.length;
         const lesson = activePool[poolIndex];
         const queue = lessonQueues[lesson];
@@ -189,10 +186,8 @@ export default function PlanningPage() {
           lessonPointers[lesson]++;
         }
 
-        // 12:00 - 13:00 Daily Review (Dünün Analizi)
         dailyBlocks.push(createReviewBlockData(dateStr, 'DÜNÜN ANALİZİ VE TEKRARI', '12:00', 60, 'DAILY'));
 
-        // Weekend/Monthly Additions (Optional markers, keeping them compact)
         if (dayName === 'Pazar') {
           dailyBlocks.push(createReviewBlockData(dateStr, 'HAFTALIK MASTER ANALİZ', '13:00', 30, 'WEEKLY'));
         }
@@ -310,8 +305,26 @@ export default function PlanningPage() {
               topic: updatedTopic,
               difficulty: formData.get('difficulty'),
               reminder: updatedReminder,
-              phase1: { ...b.phase1, time: formData.get('p1Time'), resources: { ...b.phase1.resources, youtube: formData.get('p1Youtube'), ogm: formData.get('p1Ogm'), pdf: formData.get('p1Pdf'), kamp: formData.get('p1Kamp') } },
-              phase2: { ...b.phase2, time: formData.get('p2Time'), resources: { ...b.phase2.resources, youtube: formData.get('p2Youtube'), ogm: formData.get('p2Ogm'), pdf: formData.get('p2Pdf'), kamp: formData.get('p2Kamp') } }
+              phase1: { 
+                ...b.phase1, 
+                time: formData.get('p1Time'), 
+                resources: { 
+                  youtube: formData.get('p1Youtube'), 
+                  ogm: formData.get('p1Ogm'), 
+                  pdf: formData.get('p1Pdf'), 
+                  kamp: formData.get('p1Kamp') 
+                } 
+              },
+              phase2: { 
+                ...b.phase2, 
+                time: formData.get('p2Time'), 
+                resources: { 
+                  youtube: formData.get('p2Youtube'), 
+                  ogm: formData.get('p2Ogm'), 
+                  pdf: formData.get('p2Pdf'), 
+                  kamp: formData.get('p2Kamp') 
+                } 
+              }
             } : b)
           };
         }
@@ -323,8 +336,26 @@ export default function PlanningPage() {
               topic: updatedTopic,
               difficulty: formData.get('difficulty'),
               reminder: updatedReminder,
-              phase1: { ...editingBlock.phase1, time: formData.get('p1Time'), resources: { ...editingBlock.phase1.resources, youtube: formData.get('p1Youtube'), ogm: formData.get('p1Ogm'), pdf: formData.get('p1Pdf'), kamp: formData.get('p1Kamp') } },
-              phase2: { ...editingBlock.phase2, time: formData.get('p2Time'), resources: { ...editingBlock.phase2.resources, youtube: formData.get('p2Youtube'), ogm: formData.get('p2Ogm'), pdf: formData.get('p2Pdf'), kamp: formData.get('p2Kamp') } }
+              phase1: { 
+                ...editingBlock.phase1, 
+                time: formData.get('p1Time'), 
+                resources: { 
+                  youtube: formData.get('p1Youtube'), 
+                  ogm: formData.get('p1Ogm'), 
+                  pdf: formData.get('p1Pdf'), 
+                  kamp: formData.get('p1Kamp') 
+                } 
+              },
+              phase2: { 
+                ...editingBlock.phase2, 
+                time: formData.get('p2Time'), 
+                resources: { 
+                  youtube: formData.get('p2Youtube'), 
+                  ogm: formData.get('p2Ogm'), 
+                  pdf: formData.get('p2Pdf'), 
+                  kamp: formData.get('p2Kamp') 
+                } 
+              }
             }]
           };
         }
@@ -334,7 +365,7 @@ export default function PlanningPage() {
 
     try {
       await updateDoc(doc(db, 'studyPlans', user.uid), { masterPlan: newPlan, updatedAt: serverTimestamp() });
-      toast({ title: 'Güncellendi' });
+      toast({ title: 'Güncellendi', className: "bg-primary text-white rounded-2xl" });
       setIsEditDialogOpen(false);
     } catch (error) {
       toast({ variant: 'destructive', title: 'Hata' });
@@ -390,16 +421,16 @@ export default function PlanningPage() {
         </div>
         <div className="flex items-center gap-3 p-6 bg-blue-50 rounded-3xl border border-blue-100">
            <AlertTriangle className="h-5 w-5 text-blue-500" />
-           <p className="text-xs font-bold text-blue-700 italic">Zamanlama saniyeler içinde 10:00 - 13:00 penceresine saniyeler içinde sığdırıldı. Geçmiş verileriniz saniyeler içinde korunmaktadır.</p>
+           <p className="text-xs font-bold text-blue-700 italic">Zamanlama saniyeler içinde 10:00 - 13:00 penceresine sığdırıldı. Geçmiş verileriniz korunmaktadır.</p>
         </div>
       </Card>
 
       <div className="space-y-24">
         {(studyPlan?.masterPlan || []).map((day: any) => {
           const currentDt = parseISO(day.date);
-          const today = startOfToday();
-          const isPast = isBefore(currentDt, today);
-          const isToday = format(currentDt, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+          const todayDt = startOfToday();
+          const isPast = isBefore(currentDt, todayDt);
+          const isToday = format(currentDt, 'yyyy-MM-dd') === format(todayDt, 'yyyy-MM-dd');
           
           return (
             <div key={day.date} className={cn("space-y-12", isPast && "opacity-60")}>
@@ -431,28 +462,33 @@ export default function PlanningPage() {
                           </div>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                             {/* Phase 1 */}
                              <div className="p-10 rounded-[3.5rem] bg-slate-50/50 border border-slate-100 space-y-6 relative group/p1">
                                 <div className="flex justify-between items-center border-b border-slate-200 pb-4">
                                    <span className="text-[10px] font-black text-primary/40 uppercase tracking-[0.2em]">1. AŞAMA</span>
-                                   <span className="text-lg font-black text-primary italic">{block.phase1.time}</span>
+                                   <span className="text-lg font-black text-primary italic">{block.phase1?.time || '10:00'}</span>
                                 </div>
-                                <h5 className="font-black text-2xl italic text-primary leading-tight uppercase group-hover/p1:text-accent transition-colors">{block.phase1.type}</h5>
-                                <div className="flex gap-6 pt-4">
-                                   {block.phase1.resources?.youtube && <a href={block.phase1.resources.youtube} target="_blank" className="hover:scale-125 transition-transform text-rose-500 opacity-60 hover:opacity-100"><Youtube className="h-7 w-7" /></a>}
-                                   {block.phase1.resources?.pdf && <a href={block.phase1.resources.pdf} target="_blank" className="hover:scale-125 transition-transform text-blue-600 opacity-60 hover:opacity-100"><FileText className="h-7 w-7" /></a>}
-                                   {block.phase1.resources?.kamp && <a href={block.phase1.resources.kamp} target="_blank" className="hover:scale-125 transition-transform text-orange-500 opacity-60 hover:opacity-100"><Zap className="h-7 w-7" /></a>}
+                                <h5 className="font-black text-2xl italic text-primary leading-tight uppercase group-hover/p1:text-accent transition-colors">{block.phase1?.type || 'KONU ÇALIŞMASI'}</h5>
+                                <div className="flex gap-4 pt-4">
+                                   {block.phase1?.resources?.youtube && <a href={block.phase1.resources.youtube} target="_blank" className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm hover:scale-110 transition-all text-rose-500"><Youtube className="h-5 w-5" /></a>}
+                                   {block.phase1?.resources?.pdf && <a href={block.phase1.resources.pdf} target="_blank" className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm hover:scale-110 transition-all text-blue-600"><FileText className="h-5 w-5" /></a>}
+                                   {block.phase1?.resources?.kamp && <a href={block.phase1.resources.kamp} target="_blank" className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm hover:scale-110 transition-all text-orange-500"><Zap className="h-5 w-5" /></a>}
+                                   {block.phase1?.resources?.ogm && <a href={block.phase1.resources.ogm} target="_blank" className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm hover:scale-110 transition-all text-emerald-600"><Globe className="h-5 w-5" /></a>}
                                 </div>
                              </div>
 
+                             {/* Phase 2 */}
                              <div className="p-10 rounded-[3.5rem] bg-orange-50/50 border border-orange-100 space-y-6 relative group/p2">
                                 <div className="flex justify-between items-center border-b border-orange-200 pb-4">
                                    <span className="text-[10px] font-black text-accent uppercase tracking-[0.2em]">2. AŞAMA</span>
-                                   <span className="text-lg font-black text-primary italic">{block.phase2.time}</span>
+                                   <span className="text-lg font-black text-primary italic">{block.phase2?.time || '11:00'}</span>
                                 </div>
-                                <h5 className="font-black text-2xl italic text-primary leading-tight uppercase group-hover/p2:text-accent transition-colors">{block.phase2.type}</h5>
-                                <div className="flex gap-6 pt-4">
-                                   {block.phase2.resources?.youtube && <a href={block.phase2.resources.youtube} target="_blank" className="hover:scale-125 transition-transform text-rose-500 opacity-60 hover:opacity-100"><Youtube className="h-7 w-7" /></a>}
-                                   {block.phase2.resources?.ogm && <a href={block.phase2.resources.ogm} target="_blank" className="hover:scale-125 transition-transform text-emerald-600 opacity-60 hover:opacity-100"><Globe className="h-7 w-7" /></a>}
+                                <h5 className="font-black text-2xl italic text-primary leading-tight uppercase group-hover/p2:text-accent transition-colors">{block.phase2?.type || 'TEST ÇALIŞMASI'}</h5>
+                                <div className="flex gap-4 pt-4">
+                                   {block.phase2?.resources?.youtube && <a href={block.phase2.resources.youtube} target="_blank" className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm hover:scale-110 transition-all text-rose-500"><Youtube className="h-5 w-5" /></a>}
+                                   {block.phase2?.resources?.pdf && <a href={block.phase2.resources.pdf} target="_blank" className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm hover:scale-110 transition-all text-blue-600"><FileText className="h-5 w-5" /></a>}
+                                   {block.phase2?.resources?.kamp && <a href={block.phase2.resources.kamp} target="_blank" className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm hover:scale-110 transition-all text-orange-500"><Zap className="h-5 w-5" /></a>}
+                                   {block.phase2?.resources?.ogm && <a href={block.phase2.resources.ogm} target="_blank" className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm hover:scale-110 transition-all text-emerald-600"><Globe className="h-5 w-5" /></a>}
                                 </div>
                              </div>
                           </div>
@@ -481,31 +517,65 @@ export default function PlanningPage() {
       </div>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="rounded-[4rem] border-none shadow-2xl p-12 bg-white max-w-2xl">
-           <DialogHeader className="space-y-4">
-              <DialogTitle className="text-4xl font-black italic tracking-tighter text-primary uppercase">BLOK EDİTÖRÜ</DialogTitle>
-              <DialogDescription className="font-medium italic">Zamanlama penceresini buradan da revize edebilirsiniz.</DialogDescription>
-           </DialogHeader>
-           {editingBlock && (
-             <form onSubmit={handleSaveEdit} className="space-y-8 pt-8">
-                <div className="grid grid-cols-2 gap-8">
-                   <div className="space-y-3"><Label>Konu</Label><Input name="topic" required defaultValue={editingBlock.topic} className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold" /></div>
-                   <div className="space-y-3"><Label>Tarih</Label><Input name="date" type="date" required defaultValue={editingBlock.date} className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold" /></div>
-                </div>
-                <div className="space-y-3"><Label>Hatırlatıcı</Label><Input name="reminder" defaultValue={editingBlock.reminder} className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold" /></div>
-                <div className="grid grid-cols-2 gap-10">
-                   <div className="p-8 rounded-[2.5rem] bg-slate-50 space-y-4">
-                      <Label>1. Aşama (Konu)</Label>
-                      <Input name="p1Time" required defaultValue={editingBlock.phase1.time} className="h-12 rounded-xl" />
-                   </div>
-                   <div className="p-8 rounded-[2.5rem] bg-orange-50 space-y-4">
-                      <Label>2. Aşama (Test)</Label>
-                      <Input name="p2Time" required defaultValue={editingBlock.phase2.time} className="h-12 rounded-xl" />
-                   </div>
-                </div>
-                <Button type="submit" className="w-full h-20 rounded-[2rem] bg-primary text-white font-black uppercase tracking-widest gap-4 shadow-2xl"><Save className="h-6 w-6 text-accent" /> TERMİNALE KAYDET</Button>
-             </form>
-           )}
+        <DialogContent className="rounded-[4rem] border-none shadow-2xl p-0 bg-white max-w-2xl overflow-hidden">
+           <ScrollArea className="max-h-[90vh]">
+             <div className="p-12 space-y-10">
+                <DialogHeader className="space-y-4">
+                   <DialogTitle className="text-4xl font-black italic tracking-tighter text-primary uppercase">BLOK EDİTÖRÜ</DialogTitle>
+                   <DialogDescription className="font-medium italic text-lg opacity-40">Zamanlama ve kaynakları saniyeler içinde revize edin.</DialogDescription>
+                </DialogHeader>
+                {editingBlock && (
+                  <form onSubmit={handleSaveEdit} className="space-y-10">
+                     <div className="grid grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                           <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-4 italic">KONU</Label>
+                           <Input name="topic" required defaultValue={editingBlock.topic} className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold" />
+                        </div>
+                        <div className="space-y-3">
+                           <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-4 italic">TARİH</Label>
+                           <Input name="date" type="date" required defaultValue={editingBlock.date} className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold" />
+                        </div>
+                     </div>
+                     <div className="space-y-3">
+                        <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-4 italic">HATIRLATICI NOTU</Label>
+                        <Input name="reminder" defaultValue={editingBlock.reminder} placeholder="Bu seans için kritik not..." className="h-16 rounded-2xl bg-slate-50 border-none shadow-inner font-bold" />
+                     </div>
+
+                     <div className="space-y-8">
+                        <div className="p-8 rounded-[3rem] bg-slate-50 border border-slate-100 space-y-6">
+                           <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+                              <span className="text-[11px] font-black text-primary uppercase tracking-widest">1. AŞAMA (KONU)</span>
+                              <Input name="p1Time" required defaultValue={editingBlock.phase1?.time || '10:00'} className="h-10 w-24 bg-white border-none shadow-sm font-black text-center" />
+                           </div>
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="relative group"><Youtube className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-500 opacity-40" /><Input name="p1Youtube" defaultValue={editingBlock.phase1?.resources?.youtube} placeholder="YouTube Link" className="h-12 rounded-xl bg-white border-none pl-12 text-xs" /></div>
+                              <div className="relative group"><FileText className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-600 opacity-40" /><Input name="p1Pdf" defaultValue={editingBlock.phase1?.resources?.pdf} placeholder="PDF Link" className="h-12 rounded-xl bg-white border-none pl-12 text-xs" /></div>
+                              <div className="relative group"><Zap className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-orange-500 opacity-40" /><Input name="p1Kamp" defaultValue={editingBlock.phase1?.resources?.kamp} placeholder="Kamp Link" className="h-12 rounded-xl bg-white border-none pl-12 text-xs" /></div>
+                              <div className="relative group"><Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-600 opacity-40" /><Input name="p1Ogm" defaultValue={editingBlock.phase1?.resources?.ogm} placeholder="Resmi Kaynak" className="h-12 rounded-xl bg-white border-none pl-12 text-xs" /></div>
+                           </div>
+                        </div>
+
+                        <div className="p-8 rounded-[3rem] bg-orange-50/50 border border-orange-100 space-y-6">
+                           <div className="flex justify-between items-center border-b border-orange-200 pb-4">
+                              <span className="text-[11px] font-black text-accent uppercase tracking-widest">2. AŞAMA (TEST)</span>
+                              <Input name="p2Time" required defaultValue={editingBlock.phase2?.time || '11:00'} className="h-10 w-24 bg-white border-none shadow-sm font-black text-center" />
+                           </div>
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="relative group"><Youtube className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-500 opacity-40" /><Input name="p2Youtube" defaultValue={editingBlock.phase2?.resources?.youtube} placeholder="YouTube Link" className="h-12 rounded-xl bg-white border-none pl-12 text-xs" /></div>
+                              <div className="relative group"><FileText className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-600 opacity-40" /><Input name="p2Pdf" defaultValue={editingBlock.phase2?.resources?.pdf} placeholder="PDF Link" className="h-12 rounded-xl bg-white border-none pl-12 text-xs" /></div>
+                              <div className="relative group"><Zap className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-orange-500 opacity-40" /><Input name="p2Kamp" defaultValue={editingBlock.phase2?.resources?.kamp} placeholder="Kamp Link" className="h-12 rounded-xl bg-white border-none pl-12 text-xs" /></div>
+                              <div className="relative group"><Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-600 opacity-40" /><Input name="p2Ogm" defaultValue={editingBlock.phase2?.resources?.ogm} placeholder="Resmi Kaynak" className="h-12 rounded-xl bg-white border-none pl-12 text-xs" /></div>
+                           </div>
+                        </div>
+                     </div>
+
+                     <Button type="submit" className="w-full h-20 rounded-[2.5rem] bg-primary hover:bg-accent transition-all duration-500 text-white font-black uppercase tracking-[0.4em] gap-6 shadow-2xl">
+                        <Save className="h-6 w-6 text-accent" /> TERMİNALE KAYDET
+                     </Button>
+                  </form>
+                )}
+             </div>
+           </ScrollArea>
         </DialogContent>
       </Dialog>
     </div>

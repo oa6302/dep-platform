@@ -96,7 +96,7 @@ export default function PlanningPage() {
               questionTarget: 10,
               resources: {
                 youtube: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic)}`,
-                ogm: `https://ogmmateryal.eba.gov.tr/konu-ozeti/${encodeURIComponent(topic)}`,
+                ogm: `https://ogmmateryal.eba.gov.tr/konu-anlatimlari-video?video=1`,
               }
             },
             phase2: {
@@ -117,7 +117,8 @@ export default function PlanningPage() {
         fullPlan.push({ date: dateStr, day: dayName, blocks: dailyBlocks });
       }
 
-      await setDoc(doc(db, 'studyPlans', user.uid), {
+      const planRef = doc(db, 'studyPlans', user.uid);
+      await setDoc(planRef, {
         userId: user.uid,
         masterPlan: fullPlan,
         targetExamDate: endDate,
@@ -232,9 +233,10 @@ export default function PlanningPage() {
 
       // Add block to new date if date changed
       if (day.date === updatedDate && updatedDate !== editingBlock.date) {
+        const blocks = day.blocks || [];
         return {
           ...day,
-          blocks: [...day.blocks, {
+          blocks: [...blocks, {
             ...editingBlock,
             topic: updatedTopic,
             difficulty: formData.get('difficulty'),

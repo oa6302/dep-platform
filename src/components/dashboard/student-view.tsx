@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -222,6 +221,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                            ><Gauge className="h-9 w-9" /></Button>
                            
                            <Button 
+                             onClick={() => router.push('/dashboard/planning')}
                              size="icon" variant="outline" 
                              className="h-20 w-20 rounded-full bg-white border-2 border-slate-100 hover:border-primary text-slate-900 hover:bg-slate-50 transition-all duration-500 hover:scale-110 shadow-xl"
                            ><Edit3 className="h-9 w-9" /></Button>

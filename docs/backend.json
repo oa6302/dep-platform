@@ -36,9 +36,11 @@
         "userId": { "type": "string" },
         "lesson": { "type": "string" },
         "topic": { "type": "string" },
+        "totalQuestions": { "type": "number" },
         "correct": { "type": "number" },
         "wrong": { "type": "number" },
         "net": { "type": "number" },
+        "testDate": { "type": "string", "format": "date" },
         "createdAt": { "type": "string", "format": "date-time" }
       }
     }

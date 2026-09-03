@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -29,7 +30,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -64,25 +64,35 @@ export default function PlanningPage() {
     const yesterdayStr = format(subDays(startOfToday(), 1), 'yyyy-MM-dd');
     
     let hasDelayed = false;
-    const currentPlan = [...studyPlan.masterPlan];
+    const currentPlan = JSON.parse(JSON.stringify(studyPlan.masterPlan));
     
-    const yesterdayIdx = currentPlan.findIndex(d => d.date === yesterdayStr);
-    const todayIdx = currentPlan.findIndex(d => d.date === todayStr);
+    const yesterdayIdx = currentPlan.findIndex((d: any) => d.date === yesterdayStr);
+    const todayIdx = currentPlan.findIndex((d: any) => d.date === todayStr);
 
     if (yesterdayIdx !== -1 && todayIdx !== -1) {
-      const uncompleted = currentPlan[yesterdayIdx].blocks.filter((b: any) => b.status === 'planned');
+      const uncompleted = currentPlan[yesterdayIdx].blocks.filter((b: any) => b.status === 'planned' && !b.isReview);
       if (uncompleted.length > 0) {
         hasDelayed = true;
+        // Dünden tamamlanmayanları çıkar (done olanlar kalsın)
         currentPlan[yesterdayIdx].blocks = currentPlan[yesterdayIdx].blocks.filter((b: any) => b.status === 'done');
+        
+        // Bugüne ekle
         currentPlan[todayIdx].blocks = [
-          ...uncompleted.map((b: any) => ({ ...b, status: 'delayed', reminder: 'DÜNDEN AKTARILDI: ' + (b.reminder || '') })),
+          ...uncompleted.map((b: any) => ({ 
+            ...b, 
+            status: 'delayed', 
+            reminder: 'DÜNDEN AKTARILDI: ' + (b.reminder || '') 
+          })),
           ...currentPlan[todayIdx].blocks
-        ];
+        ].slice(0, 6); // Çok fazla şişmesini önle
       }
     }
 
     if (hasDelayed) {
-      updateDoc(doc(db, 'studyPlans', user.uid), { masterPlan: currentPlan, updatedAt: serverTimestamp() });
+      updateDoc(doc(db, 'studyPlans', user.uid), { 
+        masterPlan: currentPlan, 
+        updatedAt: serverTimestamp() 
+      });
       toast({ title: 'AI PLAN DENGELENDİ', className: "bg-accent text-primary rounded-2xl" });
     }
   }, [studyPlan?.masterPlan, user, db]);
@@ -118,6 +128,7 @@ export default function PlanningPage() {
         const dateStr = format(currentDt, 'yyyy-MM-dd');
         const dayName = format(currentDt, 'EEEE', { locale: tr });
         
+        // Geçmişi koru
         const existingDay = (studyPlan?.masterPlan || []).find((d: any) => d.date === dateStr);
         if (existingDay && (isBefore(currentDt, startOfToday()) || existingDay.blocks.some((b: any) => b.status === 'done'))) {
           newPlan.push(existingDay);
@@ -125,50 +136,40 @@ export default function PlanningPage() {
         }
 
         const dailyBlocks = [];
-        // Slot 1: Ana Ders (Konu & Test) - 10:00 - 12:00
-        const lesson = subjectsPool[i % subjectsPool.length];
-        const topics = lessonQueues[lesson] || [];
-        const topic = topics[lessonPointers[lesson] % (topics.length || 1)] || 'Genel Tekrar';
         
-        dailyBlocks.push({
-          id: `block_${dateStr}_main`,
-          lesson,
-          topic,
-          status: 'planned',
-          phase1: { type: 'KONU ÇALIŞMA', time: '10:00' },
-          phase2: { type: 'TEST ÇÖZME', time: '11:00' },
-          reminder: '',
-          targetQuestions: 40,
-          solvedQuestions: 0,
-          youtubeUrl: '',
-          pdfUrl: '',
-          mebiUrl: '',
-          isKonuDone: false,
-          isTestDone: false
-        });
-        lessonPointers[lesson]++;
+        // 3 Ana Ders Bloğu (10:00 - 13:00 arasına yayılacak şekilde)
+        for (let j = 0; j < 3; j++) {
+          const lesson = subjectsPool[(i + j) % subjectsPool.length];
+          const topics = lessonQueues[lesson] || [];
+          const topic = topics[lessonPointers[lesson] % (topics.length || 1)] || 'Genel Tekrar';
+          
+          dailyBlocks.push({
+            id: `block_${dateStr}_${j}`,
+            lesson,
+            topic,
+            status: 'planned',
+            phase1: { type: 'KONU ÇALIŞMA', time: '10:00' },
+            phase2: { type: 'TEST ÇÖZME', time: '11:00' },
+            reminder: j === 0 ? 'GÜNLÜK 20 PARAGRAF UNUTMA!' : '',
+            targetQuestions: 40,
+            solvedQuestions: 0,
+            youtubeUrl: '',
+            pdfUrl: '',
+            mebiUrl: '',
+            isKonuDone: false,
+            isTestDone: false
+          });
+          lessonPointers[lesson]++;
+        }
 
-        // Slot 2: Paragraf Kampı - 11:00 (Dersle paralel veya ardışık)
-        dailyBlocks.push({
-          id: `block_${dateStr}_paragraf`,
-          lesson: 'Türkçe',
-          topic: '20 PARAGRAF KAMPI',
-          status: 'planned',
-          phase1: { type: 'ODAKLANMA', time: '11:00' },
-          phase2: { type: 'ANALİZ', time: '11:30' },
-          targetQuestions: 20,
-          solvedQuestions: 0,
-          isParagraf: true
-        });
-
-        // Slot 3: Dünün Analizi - 12:00 - 13:00
+        // 4. Kart: Dünkü Tekrar
         dailyBlocks.push({
           id: `review_${dateStr}`,
-          lesson: 'Genel',
-          topic: 'DÜNKÜ ÇALIŞMALARIN TEKRARI',
+          lesson: 'GENEL',
+          topic: 'DÜNÜN ANALİZİ & TEKRARI',
           status: 'planned',
-          phase1: { type: 'DÜNÜN ANALİZİ', time: '12:00' },
-          phase2: { type: 'TESCİL', time: '12:30' },
+          phase1: { type: 'DÜNÜN TESCİLİ', time: '12:00' },
+          phase2: { type: 'STRATEJİK TEKRAR', time: '12:30' },
           isReview: true
         });
 

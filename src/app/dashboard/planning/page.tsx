@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -21,7 +22,7 @@ import { EXAM_CONFIGS } from '@/lib/exam-configs';
 import { doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { format, addDays, isBefore, parseISO, startOfToday, subDays, isSameDay } from 'date-fns';
+import { format, addDays, isBefore, parseISO, startOfToday, subDays, isAfter } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import {
   Dialog,
@@ -69,7 +70,7 @@ export default function PlanningPage() {
     const todayIdx = currentPlan.findIndex((d: any) => d.date === todayStr);
 
     if (yesterdayIdx !== -1 && todayIdx !== -1) {
-      const uncompleted = currentPlan[yesterdayIdx].blocks.filter((b: any) => b.status === 'planned' && !b.isReview);
+      const uncompleted = currentPlan[yesterdayIdx].blocks.filter((b: any) => b.status === 'planned' && !b.isReview && !b.isParagraph);
       if (uncompleted.length > 0) {
         hasDelayed = true;
         currentPlan[yesterdayIdx].blocks = currentPlan[yesterdayIdx].blocks.filter((b: any) => b.status === 'done');
@@ -94,6 +95,15 @@ export default function PlanningPage() {
     }
   }, [studyPlan?.masterPlan, user, db]);
 
+  const generateAutoLinks = (topic: string, lesson: string) => {
+    const encodedTopic = encodeURIComponent(topic);
+    return {
+      youtubeUrl: `https://www.youtube.com/results?search_query=${encodedTopic}+${lesson}+konu+anlatımı`,
+      pdfUrl: `https://ogmmateryal.eba.gov.tr/panel/FasikulGoster.aspx?arama=${encodedTopic}`,
+      mebiUrl: `https://mebi.eba.gov.tr/arama?q=${encodedTopic}`
+    };
+  };
+
   const generateFasikulPlan = async () => {
     if (!db || !user || !endDate || !startDate) return;
     setIsGenerating(true);
@@ -105,21 +115,26 @@ export default function PlanningPage() {
 
       const currentExam = userData?.targetExam || 'YKS_EA';
       const examConfig = EXAM_CONFIGS[currentExam];
-      const subjectsPool = examConfig?.lessons || ['TYT Matematik', 'Edebiyat', 'Tarih', 'Coğrafya'];
+      const aytStartDate = parseISO('2026-12-01');
 
       const completed = userData?.completedTopics || {};
       const lessonQueues: Record<string, string[]> = {};
-      subjectsPool.forEach(lesson => {
-        const allTopics = YKS_TM_TOPICS[lesson] || [];
-        const done = completed[lesson] || [];
-        lessonQueues[lesson] = allTopics.filter(t => !done.includes(t));
-        if (lessonQueues[lesson].length === 0) lessonQueues[lesson] = [...allTopics];
-      });
-
-      const lessonPointers: Record<string, number> = {};
-      Object.keys(lessonQueues).forEach(l => { lessonPointers[l] = 0; });
+      
+      const getAllLessonPool = (date: Date) => {
+        let pool = [...(examConfig?.lessons || ['TYT Matematik', 'TYT Türkçe'])];
+        // AYT Konularını 1 Aralık'ta dahil et
+        if (isAfter(date, aytStartDate) || date.getTime() === aytStartDate.getTime()) {
+          if (currentExam.includes('YKS')) {
+            if (!pool.includes('AYT Matematik')) pool.push('AYT Matematik');
+            if (currentExam === 'YKS_EA' && !pool.includes('Edebiyat')) pool.push('Edebiyat');
+          }
+        }
+        return pool;
+      };
 
       const newPlan = [];
+      const lessonPointers: Record<string, number> = {};
+
       for (let i = 0; i <= diffDays; i++) {
         const currentDt = addDays(start, i);
         const dateStr = format(currentDt, 'yyyy-MM-dd');
@@ -131,39 +146,58 @@ export default function PlanningPage() {
           continue;
         }
 
+        const dailyPool = getAllLessonPool(currentDt);
         const dailyBlocks = [];
         
-        for (let j = 0; j < 3; j++) {
-          const lesson = subjectsPool[(i + j) % subjectsPool.length];
-          const topics = lessonQueues[lesson] || [];
-          const topic = topics[lessonPointers[lesson] % (topics.length || 1)] || 'Genel Tekrar';
+        // 1. ve 2. Kartlar: Ana Dersler
+        for (let j = 0; j < 2; j++) {
+          const lesson = dailyPool[(i + j) % dailyPool.length];
+          const topics = YKS_TM_TOPICS[lesson] || ['Genel Tekrar'];
+          if (!lessonPointers[lesson]) lessonPointers[lesson] = 0;
+          const topic = topics[lessonPointers[lesson] % topics.length];
           
+          const autoLinks = generateAutoLinks(topic, lesson);
+
           dailyBlocks.push({
             id: `block_${dateStr}_${j}`,
             lesson,
             topic,
             status: 'planned',
-            phase1: { type: 'KONU ÇALIŞMA', time: '10:00' },
-            phase2: { type: 'TEST ÇÖZME', time: '11:00' },
-            reminder: j === 0 ? 'GÜNLÜK 20 PARAGRAF UNUTMA!' : '',
+            phase1: { type: 'KONU ÇALIŞMA', time: j === 0 ? '10:00' : '11:00' },
+            phase2: { type: 'TEST ÇÖZME', time: j === 0 ? '10:30' : '11:30' },
             targetQuestions: 40,
             solvedQuestions: 0,
-            youtubeUrl: '',
-            pdfUrl: '',
-            mebiUrl: '',
+            ...autoLinks,
             isKonuDone: false,
             isTestDone: false
           });
           lessonPointers[lesson]++;
         }
 
+        // 3. Kart: Her Gün 20 Paragraf
+        dailyBlocks.push({
+          id: `para_${dateStr}`,
+          lesson: 'TÜRKÇE',
+          topic: '20 PARAGRAF SORU ÇÖZÜMÜ',
+          status: 'planned',
+          phase1: { type: 'ODAKLANMA', time: '12:00' },
+          phase2: { type: 'ANALYTICS', time: '12:30' },
+          targetQuestions: 20,
+          solvedQuestions: 0,
+          youtubeUrl: 'https://www.youtube.com/results?search_query=paragraf+çözüm+teknikleri',
+          pdfUrl: 'https://ogmmateryal.eba.gov.tr/panel/FasikulGoster.aspx?arama=paragraf',
+          isParagraph: true,
+          isTestDone: false
+        });
+
+        // 4. Kart: Dünün Analizi & Tekrarı
         dailyBlocks.push({
           id: `review_${dateStr}`,
           lesson: 'GENEL',
           topic: 'DÜNÜN ANALİZİ & TEKRARI',
           status: 'planned',
-          phase1: { type: 'DÜNÜN TESCİLİ', time: '12:00' },
-          phase2: { type: 'STRATEJİK TEKRAR', time: '12:30' },
+          phase1: { type: 'DÜNÜN TESCİLİ', time: '12:30' },
+          phase2: { type: 'STRATEJİK TEKRAR', time: '13:00' },
           isReview: true
         });
 
@@ -220,16 +254,8 @@ export default function PlanningPage() {
 
   const handleAutoFind = (type: 'youtube' | 'pdf' | 'mebi') => {
     if (!editingBlock?.topic) return;
-    const topic = encodeURIComponent(editingBlock.topic);
-    let url = '';
-    
-    switch(type) {
-      case 'youtube': url = `https://www.youtube.com/results?search_query=${topic}+konu+anlatımı`; break;
-      case 'pdf': url = `https://ogmmateryal.eba.gov.tr/panel/FasikulGoster.aspx?arama=${topic}`; break;
-      case 'mebi': url = `https://mebi.eba.gov.tr/arama?q=${topic}`; break;
-    }
-
-    setEditingBlock({ ...editingBlock, [`${type}Url`]: url });
+    const links = generateAutoLinks(editingBlock.topic, editingBlock.lesson);
+    setEditingBlock({ ...editingBlock, [`${type}Url`]: links[type === 'youtube' ? 'youtubeUrl' : type === 'pdf' ? 'pdfUrl' : 'mebiUrl'] });
     toast({ title: 'KAYNAK BULUNDU', className: "bg-emerald-500 text-white rounded-xl" });
   };
 
@@ -324,17 +350,18 @@ export default function PlanningPage() {
                         <div className="grid grid-cols-1 gap-3 md:gap-4 flex-1">
                            <div className="p-4 md:p-6 rounded-2xl md:rounded-[2.5rem] bg-slate-50/50 border border-slate-100 space-y-2 md:space-y-3 hover:bg-white hover:shadow-xl transition-all">
                               <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                                 <span className="text-[8px] md:text-[9px] font-black text-primary/30 uppercase tracking-[0.2em]">{block.phase1?.time || '10:00'} - KONU</span>
+                                 <span className="text-[8px] md:text-[9px] font-black text-primary/30 uppercase tracking-[0.2em]">{block.phase1?.time || '10:00'} - PHASE 1</span>
                                  <div className="flex gap-3">
                                     {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="text-rose-500 hover:scale-110"><Youtube className="h-4 w-4 md:h-5 md:w-5" /></a>}
                                     {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="text-blue-500 hover:scale-110"><FileText className="h-4 w-4 md:h-5 md:w-5" /></a>}
+                                    {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="text-emerald-500 hover:scale-110"><BookOpen className="h-4 w-4 md:h-5 md:w-5" /></a>}
                                  </div>
                               </div>
                               <p className="text-[9px] md:text-[11px] font-black text-primary opacity-60 line-clamp-1 uppercase italic">{block.phase1?.type || 'AKADEMİK ÇALIŞMA'}</p>
                            </div>
                            <div className="p-4 md:p-6 rounded-2xl md:rounded-[2.5rem] bg-slate-50/50 border border-slate-100 space-y-2 md:space-y-3 hover:bg-white hover:shadow-xl transition-all">
                               <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                                 <span className="text-[8px] md:text-[9px] font-black text-primary/30 uppercase tracking-[0.2em]">{block.phase2?.time || '11:00'} - TEST</span>
+                                 <span className="text-[8px] md:text-[9px] font-black text-primary/30 uppercase tracking-[0.2em]">{block.phase2?.time || '11:00'} - PHASE 2</span>
                                  <div className="flex gap-2">
                                     <span className="text-[8px] md:text-[10px] font-black text-accent uppercase">{block.solvedQuestions || 0}/{block.targetQuestions || 40}</span>
                                  </div>
@@ -517,7 +544,7 @@ export default function PlanningPage() {
                       <Button onClick={() => handleSaveEdit(false)} className="w-full h-20 md:h-24 rounded-[1.75rem] md:rounded-[2.5rem] bg-[#0F172A] hover:bg-accent text-white font-black text-sm uppercase tracking-[0.4em] gap-4 shadow-[0_40px_80px_-20px_rgba(15,23,42,0.45)] transition-all active:scale-95 group">
                          <Save className="h-6 w-6 text-accent group-hover:animate-pulse" /> TERMİNALE KAYDET
                       </Button>
-                      <Button onClick={() => handleSaveEdit(true)} className="w-full h-16 md:h-20 rounded-[1.25rem] md:rounded-[2rem] bg-accent hover:bg-primary text-primary hover:text-white transition-all font-black text-xs uppercase tracking-[0.2em] gap-4 shadow-xl active:scale-95">
+                      <Button onClick={() => handleSaveEdit(true)} className="w-full h-16 md:h-20 rounded-[1.5rem] md:rounded-[2rem] bg-accent hover:bg-primary text-primary hover:text-white transition-all font-black text-xs uppercase tracking-[0.2em] gap-3 md:gap-4 shadow-2xl active:scale-95">
                          SONRAKİ KARTA GEÇ <ArrowRight className="h-5 w-5" />
                       </Button>
                    </div>

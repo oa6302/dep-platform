@@ -33,16 +33,6 @@ const LESSON_THEMES: Record<string, string> = {
   'Genel': 'bg-slate-700 text-white',
 };
 
-const DAY_COLORS: Record<string, string> = {
-  'Pazartesi': 'border-t-rose-500',
-  'Salı': 'border-t-orange-500',
-  'Çarşamba': 'border-t-emerald-500',
-  'Perşembe': 'border-t-blue-500',
-  'Cuma': 'border-t-violet-500',
-  'Cumartesi': 'border-t-indigo-500',
-  'Pazar': 'border-t-pink-500',
-};
-
 export default function PlanningPage() {
   const { user } = useUser();
   const db = useFirestore();
@@ -226,94 +216,96 @@ export default function PlanningPage() {
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-10">
                 {day.tasks.map((t: any) => (
                   <Card key={t.id} className={cn(
-                    "aspect-square p-10 rounded-[4rem] border-none flex flex-col justify-between transition-all hover:scale-[1.05] hover:shadow-[0_60px_120px_-30px_rgba(0,0,0,0.3)] group relative overflow-hidden",
+                    "aspect-square p-7 rounded-[4rem] border-none flex flex-col justify-between transition-all hover:scale-[1.05] shadow-[0_45px_100px_-25px_rgba(15,23,42,0.4)] group relative overflow-hidden",
                     LESSON_THEMES[t.lesson] || "bg-slate-700 text-white",
                     t.status === 'done' && "opacity-40 grayscale scale-95"
                   )}>
-                     <div className="space-y-6 relative z-10">
+                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 blur-3xl rounded-full" />
+                     
+                     <div className="space-y-4 relative z-10">
                         <div className="flex justify-between items-start">
-                           <span className="text-[10px] font-black uppercase px-5 py-2 rounded-full shadow-lg bg-white/10 backdrop-blur-xl border border-white/10 flex items-center gap-2 text-white">
+                           <span className="text-[9px] font-black uppercase px-4 py-1.5 rounded-full shadow-lg bg-white/10 backdrop-blur-xl border border-white/10 flex items-center gap-2 text-white">
                              📋 {t.lesson.toUpperCase()}
                            </span>
-                           <span className="text-lg font-black text-white/40 italic">{t.time || '10:00'}</span>
+                           <span className="text-base font-black text-white/40 italic">{t.time || '10:00'}</span>
                         </div>
 
-                        <div className="space-y-2">
-                           <h4 className="text-[2.25rem] font-black italic leading-[0.9] tracking-tighter uppercase text-white text-shadow-premium">
+                        <div className="space-y-1">
+                           <h4 className="text-[1.75rem] font-black italic leading-[0.95] tracking-tighter uppercase text-white text-shadow-premium">
                               {t.type}
                            </h4>
-                           <p className="text-sm font-bold text-white/50 italic leading-tight">
+                           <p className="text-xs font-bold text-white/50 italic leading-tight">
                               {t.topic}
                            </p>
                         </div>
 
-                        <div className="space-y-5">
-                           <div className="flex flex-wrap gap-2.5">
-                              <span className="text-[10px] font-black uppercase bg-white/10 px-4 py-2 rounded-xl text-accent flex items-center gap-1.5 shadow-inner">🟡 {t.difficulty}</span>
-                              <span className="text-[10px] font-black uppercase bg-white/10 px-4 py-2 rounded-xl text-white flex items-center gap-1.5 shadow-inner">⏱️ {t.duration}DK</span>
-                              <span className="text-[10px] font-black uppercase bg-white/10 px-4 py-2 rounded-xl text-white flex items-center gap-1.5 shadow-inner">📝 {t.questionTarget} SORU</span>
+                        <div className="space-y-3">
+                           <div className="flex flex-wrap gap-2">
+                              <span className="text-[8px] font-black uppercase bg-white/10 px-3 py-1.5 rounded-xl text-accent flex items-center gap-1.5 shadow-inner">🟡 {t.difficulty}</span>
+                              <span className="text-[8px] font-black uppercase bg-white/10 px-3 py-1.5 rounded-xl text-white flex items-center gap-1.5 shadow-inner">⏱️ {t.duration}DK</span>
+                              <span className="text-[8px] font-black uppercase bg-white/10 px-3 py-1.5 rounded-xl text-white flex items-center gap-1.5 shadow-inner">📝 {t.questionTarget} SORU</span>
                            </div>
-                           <div className="flex items-center gap-6 pt-2">
+                           <div className="flex items-center gap-4 pt-1">
                               {t.resources ? (
-                                <div className="flex gap-6">
-                                   <a href={t.resources.youtube} target="_blank" className="hover:scale-125 transition-transform text-white/60 hover:text-white"><Youtube className="h-6 w-6" /></a>
-                                   <a href={t.resources.ogm} target="_blank" className="hover:scale-125 transition-transform text-white/60 hover:text-white"><Globe className="h-6 w-6" /></a>
-                                   <a href={t.resources.pdf} target="_blank" className="hover:scale-125 transition-transform text-white/60 hover:text-white"><FileText className="h-6 w-6" /></a>
+                                <div className="flex gap-4">
+                                   <a href={t.resources.youtube} target="_blank" className="hover:scale-125 transition-transform text-white/60 hover:text-white"><Youtube className="h-5 w-5" /></a>
+                                   <a href={t.resources.ogm} target="_blank" className="hover:scale-125 transition-transform text-white/60 hover:text-white"><Globe className="h-5 w-5" /></a>
+                                   <a href={t.resources.pdf} target="_blank" className="hover:scale-125 transition-transform text-white/60 hover:text-white"><FileText className="h-5 w-5" /></a>
                                 </div>
                               ) : (
-                                <span className="text-[10px] font-bold text-white/30 italic uppercase tracking-widest">Kaynak eklenmedi</span>
+                                <span className="text-[8px] font-bold text-white/30 italic uppercase tracking-widest">Kaynak eklenmedi</span>
                               )}
                            </div>
                         </div>
                      </div>
                      
-                     <div className="grid grid-cols-3 gap-3 pt-8 border-t border-white/5 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0">
+                     <div className="grid grid-cols-3 gap-2 pt-4 border-t border-white/5 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0">
                         <Button 
                           onClick={() => handleTaskAction(day.date, t.id, 'done')}
                           size="icon" 
                           className={cn(
-                            "h-14 w-14 rounded-2xl transition-all shadow-2xl",
+                            "h-11 w-11 rounded-2xl transition-all shadow-2xl",
                             t.status === 'done' ? "bg-white/20" : "bg-emerald-500 hover:bg-emerald-400"
                           )}
                         >
-                          <CheckCircle2 className="h-7 w-7 text-white" />
+                          <CheckCircle2 className="h-5 w-5 text-white" />
                         </Button>
                         <Button 
                           onClick={() => handleTaskAction(day.date, t.id, 'repeat')}
                           size="icon" 
                           variant="ghost" 
-                          className="h-14 w-14 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-orange-500"
+                          className="h-11 w-11 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-orange-500"
                         >
-                          <RotateCcw className="h-7 w-7" />
+                          <RotateCcw className="h-5 w-5" />
                         </Button>
                         <Button 
                           size="icon" 
                           variant="ghost" 
-                          className="h-14 w-14 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/60"
+                          className="h-11 w-11 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/60"
                         >
-                          <FastForward className="h-7 w-7" />
+                          <FastForward className="h-5 w-5" />
                         </Button>
                         <Button 
                           size="icon" 
                           variant="ghost" 
-                          className="h-14 w-14 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-blue-400"
+                          className="h-11 w-11 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-blue-400"
                         >
-                          <Gauge className="h-7 w-7" />
+                          <Gauge className="h-5 w-5" />
                         </Button>
                         <Button 
                           size="icon" 
                           variant="ghost" 
-                          className="h-14 w-14 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white"
+                          className="h-11 w-11 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white"
                         >
-                          <Edit3 className="h-7 w-7" />
+                          <Edit3 className="h-5 w-5" />
                         </Button>
                         <Button 
                           onClick={() => handleTaskAction(day.date, t.id, 'delete')}
                           size="icon" 
                           variant="ghost" 
-                          className="h-14 w-14 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-rose-500"
+                          className="h-11 w-11 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-rose-500"
                         >
-                          <Trash2 className="h-7 w-7" />
+                          <Trash2 className="h-5 w-5" />
                         </Button>
                      </div>
                   </Card>

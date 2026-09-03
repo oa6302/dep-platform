@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -52,7 +53,6 @@ export default function PlanningPage() {
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState('2027-06-15');
 
-  // Edit States
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<any>(null);
 
@@ -65,9 +65,18 @@ export default function PlanningPage() {
       const end = new Date(endDate);
       const diffDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
-      const lessons = Object.keys(YKS_TM_TOPICS);
+      const otherLessons = [
+        'TYT Matematik',
+        'AYT Matematik',
+        'Edebiyat',
+        'Tarih',
+        'Coğrafya',
+        'Felsefe'
+      ];
+
+      // Konu pointer'larını her ders için ayrı tut
       const lessonPointers: Record<string, number> = {};
-      lessons.forEach(l => { lessonPointers[l] = 0; });
+      [...otherLessons, 'TYT Türkçe'].forEach(l => { lessonPointers[l] = 0; });
 
       const fullPlan = [];
 
@@ -76,59 +85,44 @@ export default function PlanningPage() {
         const dateStr = format(currentDt, 'yyyy-MM-dd');
         const dayName = format(currentDt, 'EEEE', { locale: tr });
         
-        // AYT Başlangıç Kontrolü: 1 Aralık (Hedef yılın Aralık 1'i veya en yakın Aralık 1)
-        // Kullanıcının isteği üzerine 1 Aralık'ta AYT başlar.
-        const aytStartDate = new Date(currentDt.getFullYear(), 11, 1); // 11 = Aralık
-        if (currentDt.getMonth() < 11 && currentDt.getDate() < 1) {
-            // Eğer yılın başındaysak bir önceki yılın aralığına bakma, 
-            // ama 1 Aralık kuralını o yıl için işlet.
-        }
+        // 1 Aralık AYT Kontrolü
+        const dec1 = new Date(currentDt.getFullYear(), 11, 1);
+        const aytActive = !isBefore(currentDt, dec1);
 
         const dailyBlocks = [];
         
-        lessons.forEach((lesson) => {
-          // Kural: AYT Matematik ve Edebiyat 1 Aralık'tan önce görünmez.
-          const isAytSubject = lesson === 'AYT Matematik' || lesson === 'Edebiyat';
-          
-          if (isAytSubject) {
-            const currentMonth = currentDt.getMonth(); // 0-11
-            const isBeforeDecember = currentMonth < 11;
-            if (isBeforeDecember) return; // 1 Aralık'tan önceyse AYT dersini plana ekleme
-          }
+        // 1. HER GÜN PARAGRAF (TYT Türkçe)
+        const trTopics = YKS_TM_TOPICS['TYT Türkçe'];
+        const trTopic = trTopics[lessonPointers['TYT Türkçe'] % trTopics.length];
+        
+        dailyBlocks.push(createBlockData(dateStr, 'TYT Türkçe', trTopic, '09:00'));
+        lessonPointers['TYT Türkçe']++;
 
+        // 2. DİĞER DERSLERİN ROTASYONU (2 günde bir devretme mantığı)
+        const activePool = otherLessons.filter(l => {
+          if (l === 'AYT Matematik' || l === 'Edebiyat') return aytActive;
+          return true;
+        });
+
+        // 2 günde tüm dersleri bitirmek için:
+        // Pre-Dec 1 (4 ders var): Günde 2 ders ekle (Toplam 3 olur)
+        // Post-Dec 1 (6 ders var): Günde 3 ders ekle (Toplam 4 olur)
+        const slotsPerDay = aytActive ? 3 : 2;
+        const startHour = 11;
+
+        for (let j = 0; j < slotsPerDay; j++) {
+          // Bu i ve j'ye göre havuzdan ders seç
+          // i * slotsPerDay + j formülü ile global bir sıra oluştururuz
+          const poolIndex = (i * slotsPerDay + j) % activePool.length;
+          const lesson = activePool[poolIndex];
+          
           const topics = YKS_TM_TOPICS[lesson];
           const topic = topics[lessonPointers[lesson] % topics.length];
           
-          dailyBlocks.push({
-            id: `block_${dateStr}_${lesson.replace(/\s+/g, '_')}`,
-            lesson,
-            topic,
-            status: 'planned',
-            difficulty: 'ORTA',
-            phase1: {
-              type: 'YENİ KONU ÇALIŞMASI',
-              time: '10:00',
-              duration: 60,
-              questionTarget: 10,
-              resources: {
-                youtube: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic)}`,
-                ogm: `https://ogmmateryal.eba.gov.tr/konu-anlatimlari-video?video=1`,
-              }
-            },
-            phase2: {
-              type: 'TEST VE AYRINTI ANALİZİ',
-              time: '11:00',
-              duration: 60,
-              questionTarget: 20,
-              resources: {
-                youtube: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic + ' soru çözümü')}`,
-                ogm: `https://ogmmateryal.eba.gov.tr/soru-bankasi/${encodeURIComponent(lesson)}`,
-              }
-            }
-          });
-
+          const time = `${startHour + (j * 2)}:00`;
+          dailyBlocks.push(createBlockData(dateStr, lesson, topic, time));
           lessonPointers[lesson]++;
-        });
+        }
 
         fullPlan.push({ date: dateStr, day: dayName, blocks: dailyBlocks });
       }
@@ -142,8 +136,8 @@ export default function PlanningPage() {
       }, { merge: true });
 
       toast({ 
-        title: 'Plan Senkronize Edildi', 
-        description: 'Fasikül blokları (1 Aralık AYT kuralı dahil) takvime işlendi.',
+        title: 'Akademik Plan Senkronize Edildi', 
+        description: 'Günlük 3-4 ders ve 2 günlük tam döngü sistemi saniyeler içinde aktif edildi.',
         className: "bg-primary text-white rounded-2xl"
       });
     } catch (error) {
@@ -151,6 +145,36 @@ export default function PlanningPage() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const createBlockData = (dateStr: string, lesson: string, topic: string, time: string) => {
+    return {
+      id: `block_${dateStr}_${lesson.replace(/\s+/g, '_')}_${Math.random().toString(36).substr(2, 5)}`,
+      lesson,
+      topic,
+      status: 'planned',
+      difficulty: 'ORTA',
+      phase1: {
+        type: 'YENİ KONU ÇALIŞMASI',
+        time: time,
+        duration: 60,
+        questionTarget: 10,
+        resources: {
+          youtube: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic)}`,
+          ogm: `https://ogmmateryal.eba.gov.tr/konu-anlatimlari-video?video=1`,
+        }
+      },
+      phase2: {
+        type: 'TEST VE AYRINTI ANALİZİ',
+        time: format(addDays(new Date(`2000-01-01 ${time}`), 0).setHours(parseInt(time.split(':')[0]) + 1), 'HH:mm'),
+        duration: 60,
+        questionTarget: 20,
+        resources: {
+          youtube: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic + ' soru çözümü')}`,
+          ogm: `https://ogmmateryal.eba.gov.tr/soru-bankasi/${encodeURIComponent(lesson)}`,
+        }
+      }
+    };
   };
 
   const handleTaskAction = (date: string, blockId: string, action: string) => {
@@ -217,10 +241,7 @@ export default function PlanningPage() {
 
     const newPlan = studyPlan.masterPlan.map((day: any) => {
       if (day.date === editingBlock.date && updatedDate !== editingBlock.date) {
-        return {
-          ...day,
-          blocks: day.blocks.filter((b: any) => b.id !== editingBlock.id)
-        };
+        return { ...day, blocks: day.blocks.filter((b: any) => b.id !== editingBlock.id) };
       }
       
       if (day.date === editingBlock.date && updatedDate === editingBlock.date) {
@@ -341,22 +362,23 @@ export default function PlanningPage() {
                     style={{ borderTopColor: LESSON_COLORS[block.lesson] || '#334155' }}
                   >
                      <div className="space-y-12 relative z-10">
-                        {/* Header */}
                         <div className="flex justify-between items-start">
                            <div className="space-y-1">
-                              <h4 className="text-[3.2rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-deep">
+                              <h4 className="text-[3.2rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-deep line-clamp-2">
                                 {block.topic}
                               </h4>
                               <div className="flex items-center gap-3">
                                 <p className="text-[11px] font-bold text-muted-foreground/40 uppercase tracking-[0.3em] italic">
-                                  GÜNLÜK FASİKÜL MODÜLÜ
+                                  {block.lesson === 'TYT Türkçe' ? 'GÜNLÜK PARAGRAF RUTİNİ' : 'GÜNLÜK FASİKÜL MODÜLÜ'}
                                 </p>
-                                <span className={cn("text-[9px] font-black uppercase px-3 py-1 rounded-full text-white", block.lesson.includes('AYT') ? 'bg-indigo-600' : 'bg-slate-400')}>{block.lesson.includes('AYT') ? 'AYT' : 'TYT'}</span>
+                                <span className={cn("text-[9px] font-black uppercase px-3 py-1 rounded-full text-white", block.lesson.includes('AYT') ? 'bg-indigo-600' : 'bg-slate-400')}>
+                                  {block.lesson.includes('AYT') ? 'AYT' : 'TYT'}
+                                </span>
                               </div>
                            </div>
                            <div className="flex items-center gap-4">
                              {block.status === 'done' ? (
-                               <div className="bg-emerald-500 text-white px-6 py-2.5 rounded-full text-[11px] font-black flex items-center gap-3 shadow-xl animate-in zoom-in-50">
+                               <div className="bg-emerald-500 text-white px-6 py-2.5 rounded-full text-[11px] font-black flex items-center gap-3 shadow-xl">
                                  <CheckCircle2 className="h-5 w-5" /> TAMAMLANDI
                                </div>
                              ) : (
@@ -367,9 +389,7 @@ export default function PlanningPage() {
                            </div>
                         </div>
 
-                        {/* Combined Stages */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                           {/* Phase 1: Konu */}
                            <div className="p-10 rounded-[3.5rem] bg-slate-50/50 border border-slate-100 space-y-6 relative overflow-hidden group/p1">
                               <div className="flex justify-between items-center border-b border-slate-200 pb-4 mb-2">
                                  <span className="text-[10px] font-black text-primary/40 uppercase tracking-[0.2em]">1. AŞAMA: KONU</span>
@@ -386,7 +406,6 @@ export default function PlanningPage() {
                               </div>
                            </div>
 
-                           {/* Phase 2: Test */}
                            <div className="p-10 rounded-[3.5rem] bg-orange-50/50 border border-orange-100 space-y-6 relative overflow-hidden group/p2">
                               <div className="flex justify-between items-center border-b border-orange-200 pb-4 mb-2">
                                  <span className="text-[10px] font-black text-accent uppercase tracking-[0.2em]">2. AŞAMA: TEST</span>
@@ -404,7 +423,6 @@ export default function PlanningPage() {
                            </div>
                         </div>
 
-                        {/* Actions Terminal */}
                         <div className="flex justify-center gap-6 pt-10 border-t border-slate-50">
                            <Button 
                              onClick={() => handleTaskAction(day.date, block.id, 'done')}
@@ -453,7 +471,6 @@ export default function PlanningPage() {
         ))}
       </div>
 
-      {/* Edit Block Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="rounded-[3rem] border-none shadow-2xl p-10 bg-white max-w-2xl">
           <DialogHeader className="space-y-4">

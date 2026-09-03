@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useDoc, useFirestore } from '@/firebase';
@@ -7,13 +8,22 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { 
   BookOpen, CheckCircle2, ChevronRight, Search, 
-  Target, Zap, ArrowLeft, Home, Star, Layout
+  Target, Zap, ArrowLeft, Home, Star, Layout,
+  ListChecks
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
 import { cn } from '@/lib/utils';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function TopicsPage() {
   const { user } = useUser();
@@ -22,7 +32,7 @@ export default function TopicsPage() {
   const { data: userData } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
   
   const [search, setSearch] = useState('');
-  const [selectedLesson, setSelectedLesson] = useState<string | null>(null);
+  const [viewingLesson, setViewingLesson] = useState<string | null>(null);
 
   const completedTopics = userData?.completedTopics || {};
 
@@ -45,6 +55,11 @@ export default function TopicsPage() {
     return { total, done, rate: Math.round((done / total) * 100) };
   }, [completedTopics]);
 
+  const filteredTopics = useMemo(() => {
+    if (!viewingLesson) return [];
+    return YKS_TM_TOPICS[viewingLesson] || [];
+  }, [viewingLesson]);
+
   return (
     <div className="p-8 lg:p-14 space-y-12 max-w-7xl mx-auto w-full animate-in fade-in duration-700 bg-[#F8FAFC]">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
@@ -63,14 +78,14 @@ export default function TopicsPage() {
           </div>
         </div>
 
-        <Card className="p-8 rounded-[3rem] bg-primary text-white border-none shadow-2xl relative overflow-hidden min-w-[300px]">
-           <div className="absolute top-0 right-0 w-32 h-32 bg-accent/20 blur-[60px] rounded-full translate-x-1/2 -translate-y-1/2" />
+        <Card className="p-8 rounded-[3rem] bg-primary text-white border-none shadow-2xl relative overflow-hidden min-w-[300px] group">
+           <div className="absolute top-0 right-0 w-32 h-32 bg-accent/20 blur-[60px] rounded-full translate-x-1/2 -translate-y-1/2 group-hover:scale-125 transition-transform duration-1000" />
            <div className="relative z-10 space-y-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40">GENEL İLERLEME</p>
-              <p className="text-5xl font-black italic tracking-tighter">%{stats.rate}</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40 italic">GENEL İLERLEME</p>
+              <p className="text-5xl font-black italic tracking-tighter text-shadow-deep">%{stats.rate}</p>
               <div className="space-y-2">
                  <Progress value={stats.rate} className="h-2 bg-white/10" />
-                 <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest">{stats.done} / {stats.total} KAZANIM TAMAMLANDI</p>
+                 <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest italic">{stats.done} / {stats.total} KAZANIM TAMAMLANDI</p>
               </div>
            </div>
         </Card>
@@ -82,18 +97,18 @@ export default function TopicsPage() {
           const rate = Math.round((doneCount / topics.length) * 100);
           
           return (
-            <Card key={lesson} className="p-8 rounded-[3.5rem] border-none shadow-xl bg-white hover:-translate-y-2 transition-all group relative overflow-hidden">
+            <Card key={lesson} className="p-8 rounded-[4rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.08)] bg-white hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden border border-primary/5">
                <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 rounded-full translate-x-1/2 -translate-y-1/2 group-hover:bg-accent/5 transition-all" />
-               <div className="space-y-6 relative z-10">
+               <div className="space-y-8 relative z-10">
                   <div className="flex justify-between items-start">
-                     <div className="h-16 w-16 rounded-[1.5rem] bg-slate-50 flex items-center justify-center group-hover:rotate-6 transition-all shadow-inner">
+                     <div className="h-16 w-16 rounded-[1.75rem] bg-slate-50 flex items-center justify-center group-hover:rotate-6 transition-all shadow-inner">
                         <Layout className="h-8 w-8 text-primary" />
                      </div>
-                     <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 font-black text-[10px] uppercase">%{rate}</Badge>
+                     <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 font-black text-[11px] uppercase rounded-full px-4 py-1">%{rate}</Badge>
                   </div>
                   <div>
-                     <h3 className="text-2xl font-black italic tracking-tighter text-primary uppercase leading-none mb-1">{lesson}</h3>
-                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{topics.length} KRİTİK KAZANIM</p>
+                     <h3 className="text-3xl font-black italic tracking-tighter text-primary uppercase leading-[0.8] mb-2 text-shadow-deep">{lesson}</h3>
+                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-40">{topics.length} KRİTİK KAZANIM</p>
                   </div>
                   <div className="space-y-3 pt-4">
                      {topics.slice(0, 3).map((topic) => (
@@ -101,18 +116,28 @@ export default function TopicsPage() {
                           key={topic} 
                           onClick={() => toggleTopic(lesson, topic)}
                           className={cn(
-                            "w-full flex items-center justify-between p-4 rounded-2xl border transition-all text-left",
+                            "w-full flex items-center justify-between p-5 rounded-2xl border transition-all text-left group/btn",
                             (completedTopics[lesson] || []).includes(topic)
-                              ? "bg-emerald-50 border-emerald-100 text-emerald-700"
-                              : "bg-slate-50 border-transparent hover:border-slate-200"
+                              ? "bg-emerald-50 border-emerald-100 text-emerald-700 shadow-sm"
+                              : "bg-slate-50 border-transparent hover:border-slate-200 hover:bg-white"
                           )}
                         >
-                           <span className="text-[11px] font-bold uppercase tracking-tight truncate mr-4">{topic}</span>
-                           {(completedTopics[lesson] || []).includes(topic) && <CheckCircle2 className="h-4 w-4 shrink-0" />}
+                           <span className="text-[11px] font-black uppercase tracking-tight truncate mr-4 italic">{topic}</span>
+                           {(completedTopics[lesson] || []).includes(topic) ? (
+                             <CheckCircle2 className="h-4 w-4 shrink-0 animate-in zoom-in-50" />
+                           ) : (
+                             <div className="h-4 w-4 rounded-full border-2 border-slate-200 shrink-0 group-hover/btn:border-primary transition-colors" />
+                           )}
                         </button>
                      ))}
                      {topics.length > 3 && (
-                        <Button variant="ghost" className="w-full h-12 rounded-2xl font-black text-[10px] uppercase tracking-widest text-accent hover:bg-accent/5">Tümünü Gör ({topics.length})</Button>
+                        <Button 
+                          variant="ghost" 
+                          onClick={() => setViewingLesson(lesson)}
+                          className="w-full h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest text-accent hover:bg-accent/5 gap-2 group/all"
+                        >
+                          TÜMÜNÜ GÖR ({topics.length}) <ChevronRight className="h-4 w-4 group-hover/all:translate-x-1 transition-transform" />
+                        </Button>
                      )}
                   </div>
                </div>
@@ -120,6 +145,67 @@ export default function TopicsPage() {
           );
         })}
       </div>
+
+      {/* Lesson Details Dialog */}
+      <Dialog open={!!viewingLesson} onOpenChange={(open) => !open && setViewingLesson(null)}>
+        <DialogContent className="rounded-[4rem] border-none shadow-2xl p-0 bg-white max-w-3xl overflow-hidden animate-in zoom-in-95 duration-300">
+          <div className="p-12 space-y-10">
+            <DialogHeader className="space-y-4">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary text-white font-black text-[10px] uppercase tracking-widest italic shadow-lg">
+                <ListChecks className="h-3.5 w-3.5 text-accent" /> KAZANIM LİSTESİ v4.8
+              </div>
+              <DialogTitle className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-none">
+                {viewingLesson}
+              </DialogTitle>
+              <DialogDescription className="font-medium italic text-lg opacity-40">
+                Bu ders için belirlenmiş tüm kritik müfredat kazanımları saniyeler içinde aşağıda listelenmiştir.
+              </DialogDescription>
+            </DialogHeader>
+
+            <ScrollArea className="h-[450px] pr-6 -mr-2">
+               <div className="grid gap-3">
+                  {filteredTopics.map((topic) => (
+                    <button 
+                      key={topic} 
+                      onClick={() => toggleTopic(viewingLesson!, topic)}
+                      className={cn(
+                        "w-full flex items-center justify-between p-6 rounded-3xl border transition-all text-left group/modal-btn",
+                        (completedTopics[viewingLesson!] || []).includes(topic)
+                          ? "bg-emerald-50 border-emerald-100 text-emerald-800 shadow-md scale-[1.01]"
+                          : "bg-slate-50 border-transparent hover:border-primary/20 hover:bg-white hover:shadow-xl"
+                      )}
+                    >
+                       <div className="flex items-center gap-6">
+                          <div className={cn(
+                            "h-10 w-10 rounded-xl flex items-center justify-center font-black italic text-[10px] transition-all",
+                            (completedTopics[viewingLesson!] || []).includes(topic) ? "bg-emerald-500 text-white" : "bg-white text-primary shadow-inner"
+                          )}>
+                             {filteredTopics.indexOf(topic) + 1}
+                          </div>
+                          <span className="text-sm font-black uppercase tracking-tight italic">{topic}</span>
+                       </div>
+                       {(completedTopics[viewingLesson!] || []).includes(topic) ? (
+                         <CheckCircle2 className="h-6 w-6 shrink-0 animate-in zoom-in-50" />
+                       ) : (
+                         <div className="h-6 w-6 rounded-full border-2 border-slate-200 shrink-0 group-hover/modal-btn:border-primary transition-colors" />
+                       )}
+                    </button>
+                  ))}
+               </div>
+            </ScrollArea>
+
+            <div className="flex justify-between items-center pt-6 border-t border-slate-100">
+               <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40 italic">DERS İLERLEME</p>
+                  <p className="text-2xl font-black text-primary italic">
+                    {(completedTopics[viewingLesson!] || []).length} / {filteredTopics.length} Tamamlandı
+                  </p>
+               </div>
+               <Button onClick={() => setViewingLesson(null)} className="h-16 px-10 rounded-2xl bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest shadow-2xl">Terminali Kapat</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

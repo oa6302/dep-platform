@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Sparkles, Brain, CheckCircle2, Loader2, Clock, 
   Zap, Plus, Award, RotateCcw, FastForward, Gauge, Edit3, Trash2,
-  Youtube, Globe, BellRing, FileText
+  Youtube, Globe, BellRing, FileText, BookOpen, Target
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -68,7 +68,6 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
     
     toast({ 
       title: 'Terminal Güncellendi', 
-      description: action === 'done' ? 'Başarı saniyeler içinde işlendi.' : 'Durum güncellendi.',
       className: "bg-primary text-white rounded-2xl shadow-2xl"
     });
   };
@@ -82,7 +81,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
 
   return (
     <div className="p-4 md:p-8 lg:p-14 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000 bg-[#F8FAFC]">
-      <section className="bg-primary text-white rounded-[3rem] md:rounded-[4.5rem] p-8 md:p-16 relative overflow-hidden group shadow-[0_60px_120px_-20px_rgba(15,23,42,0.4)] transition-all">
+      <section className="bg-primary text-white rounded-[3rem] md:rounded-[4.5rem] p-8 md:p-16 relative overflow-hidden group shadow-[0_60px_120px_-20px_rgba(15,23,42,0.4)]">
         <div className="absolute top-0 right-0 w-96 h-96 bg-accent/10 blur-[150px] rounded-full" />
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
           <div className="space-y-6 flex-1 text-center md:text-left">
@@ -90,7 +89,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
               <Brain className="h-5 w-5 animate-pulse" /> AOS YAPAY ZEKA MENTORU
             </div>
             <p className="text-3xl md:text-4xl lg:text-5xl font-black italic leading-[0.9] text-shadow-premium uppercase tracking-tighter">
-               "Bugün {currentDayPlan?.blocks?.length || 3} devasa akademik blok seni bekliyor. Saat 13:00'te tüm hedefler tamamlanmış olacak."
+               "Bugün {currentDayPlan?.blocks?.length || 3} devasa akademik blok seni bekliyor. Hedefimiz 13:00'te %100 başarı."
             </p>
           </div>
           <Button onClick={() => router.push('/dashboard/planning')} className="w-full md:w-auto bg-accent hover:bg-white hover:text-primary transition-all duration-500 rounded-[2rem] md:rounded-[2.5rem] h-20 md:h-24 px-12 md:px-16 font-black uppercase text-[12px] md:text-[14px] tracking-[0.3em] shadow-3xl text-primary scale-100 md:scale-105 hover:scale-110 active:scale-95">AKADEMİK TAKVİM</Button>
@@ -118,7 +117,12 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                               <h4 className="text-3xl md:text-[3.5rem] font-black italic leading-[0.85] tracking-tighter uppercase text-primary text-shadow-deep break-words max-w-[280px] md:max-w-none">
                                 {block.topic}
                               </h4>
-                              <div className="h-1 w-16 bg-accent/20 rounded-full mt-2" />
+                              <div className="flex items-center gap-4 mt-4">
+                                 <div className="h-1 w-16 bg-accent/20 rounded-full" />
+                                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent italic">
+                                    HEDEF: {block.solvedQuestions || 0} / {block.targetQuestions || 40} SORU
+                                 </span>
+                              </div>
                            </div>
                            <div className="flex flex-col items-end gap-3">
                              {block.status === 'done' ? (
@@ -138,26 +142,31 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                            <div className="p-8 md:p-10 rounded-[2.5rem] md:rounded-[4rem] bg-slate-50/50 border border-slate-100 space-y-6 relative overflow-hidden group/p1 transition-all hover:bg-white hover:shadow-2xl">
                               <div className="flex justify-between items-center border-b border-slate-200 pb-4">
                                  <span className="text-[10px] font-black text-primary/30 uppercase tracking-[0.3em]">1. AŞAMA</span>
-                                 <span className="text-lg md:text-xl font-black text-primary italic">{block.phase1?.time || '10:00'}</span>
+                                 <div className="flex items-center gap-2">
+                                    <span className="text-lg md:text-xl font-black text-primary italic">{block.phase1?.time || '10:00'}</span>
+                                    {block.isKonuDone && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                                 </div>
                               </div>
                               <h5 className="font-black text-xl md:text-[1.8rem] italic text-primary leading-tight uppercase group-hover/p1:text-accent transition-all">{block.phase1?.type || 'KONU ÇALIŞMASI'}</h5>
-                              <div className="flex gap-6 pt-2">
-                                 {block.phase1?.resources?.youtube && <a href={block.phase1.resources.youtube} target="_blank" className="hover:scale-125 transition-all text-rose-500 opacity-40 hover:opacity-100"><Youtube className="h-6 md:h-8 w-6 md:w-8" /></a>}
-                                 {block.phase1?.resources?.pdf && <a href={block.phase1.resources.pdf} target="_blank" className="hover:scale-125 transition-all text-blue-500 opacity-40 hover:opacity-100"><FileText className="h-6 md:h-8 w-6 md:w-8" /></a>}
-                                 {block.phase1?.resources?.ogm && <a href={block.phase1.resources.ogm} target="_blank" className="hover:scale-125 transition-all text-emerald-500 opacity-40 hover:opacity-100"><Globe className="h-6 md:h-8 w-6 md:w-8" /></a>}
+                              <div className="flex gap-4 pt-2">
+                                 {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="hover:scale-125 transition-all text-rose-500 opacity-40 hover:opacity-100"><Youtube className="h-6 md:h-8 w-6 md:w-8" /></a>}
+                                 {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="hover:scale-125 transition-all text-blue-500 opacity-40 hover:opacity-100"><FileText className="h-6 md:h-8 w-6 md:w-8" /></a>}
+                                 {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="hover:scale-125 transition-all text-emerald-500 opacity-40 hover:opacity-100"><BookOpen className="h-6 md:h-8 w-6 md:w-8" /></a>}
                               </div>
                            </div>
 
                            <div className="p-8 md:p-10 rounded-[2.5rem] md:rounded-[4rem] bg-slate-50/50 border border-slate-100 space-y-6 relative overflow-hidden group/p2 transition-all hover:bg-white hover:shadow-2xl">
                               <div className="flex justify-between items-center border-b border-slate-200 pb-4">
                                  <span className="text-[10px] font-black text-primary/30 uppercase tracking-[0.3em]">2. AŞAMA</span>
-                                 <span className="text-lg md:text-xl font-black text-primary italic">{block.phase2?.time || '11:00'}</span>
+                                 <div className="flex items-center gap-2">
+                                    <span className="text-lg md:text-xl font-black text-primary italic">{block.phase2?.time || '11:00'}</span>
+                                    {block.isTestDone && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                                 </div>
                               </div>
                               <h5 className="font-black text-xl md:text-[1.8rem] italic text-primary leading-tight uppercase group-hover/p2:text-accent transition-all">{block.phase2?.type || 'TEST ÇALIŞMASI'}</h5>
-                              <div className="flex gap-6 pt-2">
-                                 {block.phase2?.resources?.youtube && <a href={block.phase2.resources.youtube} target="_blank" className="hover:scale-125 transition-all text-rose-500 opacity-40 hover:opacity-100"><Youtube className="h-6 md:h-8 w-6 md:w-8" /></a>}
-                                 {block.phase2?.resources?.pdf && <a href={block.phase2.resources.pdf} target="_blank" className="hover:scale-125 transition-all text-blue-500 opacity-40 hover:opacity-100"><FileText className="h-6 md:h-8 w-6 md:w-8" /></a>}
-                                 {block.phase2?.resources?.ogm && <a href={block.phase2.resources.ogm} target="_blank" className="hover:scale-125 transition-all text-emerald-500 opacity-40 hover:opacity-100"><Globe className="h-6 md:h-8 w-6 md:w-8" /></a>}
+                              <div className="flex items-center gap-4 pt-2">
+                                 <Target className="h-6 w-6 text-accent opacity-40" />
+                                 <span className="text-xl font-black text-primary">%{Math.round(((block.solvedQuestions || 0) / (block.targetQuestions || 1)) * 100)} İLERLEME</span>
                               </div>
                            </div>
                         </div>
@@ -183,7 +192,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                       <Zap className="h-12 md:h-16 w-12 md:w-16 text-accent opacity-40" />
                    </div>
                    <p className="text-xl md:text-3xl font-black uppercase tracking-[0.4em] text-primary/20 italic">AKADEMİK BLOKLAR BEKLENİYOR</p>
-                   <Button className="h-16 md:h-24 px-10 md:px-16 rounded-[1.5rem] md:rounded-[2.5rem] bg-primary font-black uppercase text-[11px] md:text-[14px] tracking-[0.4em] text-white shadow-3xl hover:bg-accent transition-all">TAKVMİMİ OLUŞTUR</Button>
+                   <Button className="h-16 md:h-24 px-10 md:px-16 rounded-[1.5rem] md:rounded-[2.5rem] bg-primary font-black uppercase text-[11px] md:text-[14px] tracking-[0.4em] text-white shadow-3xl hover:bg-accent transition-all">TAKVİMİ OLUŞTUR</Button>
                 </Card>
              )}
         </div>
@@ -191,4 +200,3 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
     </div>
   );
 }
-

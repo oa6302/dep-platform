@@ -12,7 +12,9 @@ import {
   CheckCircle2, Trash2, ArrowLeft, 
   Home, RotateCcw, FastForward, Edit3,
   Youtube, Globe, Save, FileText, AlertTriangle,
-  BellRing, ChevronRight
+  BellRing, ChevronRight, BookOpen, Search, 
+  Plus, Check, X, GraduationCap, Target, ListChecks,
+  ChevronDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
@@ -28,9 +30,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 export default function PlanningPage() {
   const { user } = useUser();
@@ -46,6 +55,7 @@ export default function PlanningPage() {
   const [endDate, setEndDate] = useState('2027-06-15');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<any>(null);
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   // Otonom Öteleme Mantığı
   useEffect(() => {
@@ -57,7 +67,6 @@ export default function PlanningPage() {
     let hasDelayed = false;
     const currentPlan = [...studyPlan.masterPlan];
     
-    // Dünden kalanları kontrol et
     const yesterdayIdx = currentPlan.findIndex(d => d.date === yesterdayStr);
     const todayIdx = currentPlan.findIndex(d => d.date === todayStr);
 
@@ -65,9 +74,7 @@ export default function PlanningPage() {
       const uncompleted = currentPlan[yesterdayIdx].blocks.filter((b: any) => b.status === 'planned');
       if (uncompleted.length > 0) {
         hasDelayed = true;
-        // Dünü temizle
         currentPlan[yesterdayIdx].blocks = currentPlan[yesterdayIdx].blocks.filter((b: any) => b.status === 'done');
-        // Bugüne aktar
         currentPlan[todayIdx].blocks = [
           ...uncompleted.map((b: any) => ({ ...b, status: 'delayed', reminder: 'DÜNDEN AKTARILDI: ' + (b.reminder || '') })),
           ...currentPlan[todayIdx].blocks
@@ -77,11 +84,7 @@ export default function PlanningPage() {
 
     if (hasDelayed) {
       updateDoc(doc(db, 'studyPlans', user.uid), { masterPlan: currentPlan, updatedAt: serverTimestamp() });
-      toast({ 
-        title: 'AI PLAN DENGELENDİ', 
-        description: 'Tamamlanmayan görevler saniyeler içinde bugüne aktarıldı.',
-        className: "bg-accent text-primary rounded-2xl"
-      });
+      toast({ title: 'AI PLAN DENGELENDİ', className: "bg-accent text-primary rounded-2xl" });
     }
   }, [studyPlan?.masterPlan, user, db]);
 
@@ -111,23 +114,18 @@ export default function PlanningPage() {
       Object.keys(lessonQueues).forEach(l => { lessonPointers[l] = 0; });
 
       const newPlan = [];
-      const today = startOfToday();
-
       for (let i = 0; i <= diffDays; i++) {
         const currentDt = addDays(start, i);
         const dateStr = format(currentDt, 'yyyy-MM-dd');
         const dayName = format(currentDt, 'EEEE', { locale: tr });
         
-        // Geçmiş koruma
         const existingDay = (studyPlan?.masterPlan || []).find((d: any) => d.date === dateStr);
-        if (existingDay && (isBefore(currentDt, today) || existingDay.blocks.some((b: any) => b.status === 'done'))) {
+        if (existingDay && (isBefore(currentDt, startOfToday()) || existingDay.blocks.some((b: any) => b.status === 'done'))) {
           newPlan.push(existingDay);
           continue;
         }
 
         const dailyBlocks = [];
-        
-        // 3 DERS
         for (let j = 0; j < 3; j++) {
           const lesson = subjectsPool[(i * 3 + j) % subjectsPool.length];
           const topics = lessonQueues[lesson] || [];
@@ -140,12 +138,18 @@ export default function PlanningPage() {
             status: 'planned',
             phase1: { type: 'KONU ÇALIŞMA', time: '10:00' },
             phase2: { type: 'TEST ÇÖZME', time: '11:00' },
-            reminder: j === 0 ? 'Bugün mutlaka 20 paragraf çöz.' : ''
+            reminder: '',
+            targetQuestions: 40,
+            solvedQuestions: 0,
+            youtubeUrl: '',
+            pdfUrl: '',
+            mebiUrl: '',
+            isKonuDone: false,
+            isTestDone: false
           });
           lessonPointers[lesson]++;
         }
 
-        // 4. KART: TEKRAR (12:00 - 13:00)
         dailyBlocks.push({
           id: `review_${dateStr}`,
           lesson: 'Genel',
@@ -207,28 +211,51 @@ export default function PlanningPage() {
     updateDoc(doc(db, 'studyPlans', user.uid), { masterPlan: newPlan, updatedAt: serverTimestamp() });
   };
 
-  const handleSaveEdit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleAutoFind = (type: 'youtube' | 'pdf' | 'mebi') => {
+    if (!editingBlock?.topic) return;
+    const topic = encodeURIComponent(editingBlock.topic);
+    let url = '';
+    
+    switch(type) {
+      case 'youtube': url = `https://www.youtube.com/results?search_query=${topic}+konu+anlatımı`; break;
+      case 'pdf': url = `https://ogmmateryal.eba.gov.tr/panel/FasikulGoster.aspx?arama=${topic}`; break;
+      case 'mebi': url = `https://mebi.eba.gov.tr/arama?q=${topic}`; break;
+    }
+
+    setEditingBlock({ ...editingBlock, [`${type}Url`]: url });
+    toast({ title: 'KAYNAK BULUNDU', className: "bg-emerald-500 text-white rounded-xl" });
+  };
+
+  const handleSaveEdit = async (saveAndNext = false) => {
     if (!db || !user || !studyPlan || !editingBlock) return;
 
-    const formData = new FormData(e.currentTarget);
     const newPlan = studyPlan.masterPlan.map((day: any) => {
       if (day.date === editingBlock.date) {
         return {
           ...day,
-          blocks: day.blocks.map((b: any) => b.id === editingBlock.id ? {
-            ...b,
-            topic: formData.get('topic'),
-            reminder: formData.get('reminder')
-          } : b)
+          blocks: day.blocks.map((b: any) => b.id === editingBlock.id ? { ...editingBlock } : b)
         };
       }
       return day;
     });
 
     await updateDoc(doc(db, 'studyPlans', user.uid), { masterPlan: newPlan, updatedAt: serverTimestamp() });
-    setIsEditDialogOpen(false);
-    toast({ title: 'BAŞARIYLA KAYDEDİLDİ', className: "bg-primary text-white rounded-2xl" });
+    
+    if (saveAndNext) {
+      const currentDay = studyPlan.masterPlan.find((d: any) => d.date === editingBlock.date);
+      const currentIndex = currentDay.blocks.findIndex((b: any) => b.id === editingBlock.id);
+      const nextBlock = currentDay.blocks[currentIndex + 1];
+
+      if (nextBlock) {
+        setEditingBlock({ ...nextBlock, date: editingBlock.date });
+      } else {
+        setIsEditDialogOpen(false);
+      }
+    } else {
+      setIsEditDialogOpen(false);
+    }
+    
+    toast({ title: 'TERMİNALE İŞLENDİ', className: "bg-primary text-white rounded-2xl" });
   };
 
   return (
@@ -272,7 +299,6 @@ export default function PlanningPage() {
                 <h3 className="text-2xl md:text-3xl font-black italic text-primary uppercase tracking-tighter">{format(parseISO(day.date), 'd MMMM yyyy', { locale: tr })}</h3>
                 <div className="h-px flex-1 bg-slate-200 hidden md:block" />
              </div>
-             {/* QUAD GRID - Desktop 4 per row */}
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {day.blocks?.map((block: any) => (
                   <Card key={block.id} className={cn("p-8 rounded-[3.5rem] border-none shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] group relative overflow-hidden bg-white hover:scale-[1.02] transition-all duration-500", block.status === 'done' && "opacity-60")}>
@@ -288,22 +314,21 @@ export default function PlanningPage() {
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 flex-1">
-                           <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100 space-y-2 group/p1 hover:bg-white hover:shadow-xl transition-all">
+                           <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100 space-y-2 hover:bg-white transition-all">
                               <div className="flex justify-between items-center border-b border-slate-200 pb-1.5">
                                  <span className="text-[8px] font-black text-primary/30 uppercase">10:00 - KONU</span>
                                  <div className="flex gap-2">
-                                    <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(block.lesson + ' ' + block.topic + ' konu anlatımı')}`} target="_blank" className="text-rose-500 hover:scale-110 transition-all"><Youtube className="h-4 w-4" /></a>
-                                    <a href={`https://ogmmateryal.eba.gov.tr/panel/FasikulGoster.aspx?alan=${block.lesson}`} target="_blank" className="text-blue-500 hover:scale-110 transition-all"><FileText className="h-4 w-4" /></a>
+                                    {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="text-rose-500 hover:scale-110"><Youtube className="h-4 w-4" /></a>}
+                                    {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="text-blue-500 hover:scale-110"><FileText className="h-4 w-4" /></a>}
                                  </div>
                               </div>
                               <p className="text-[10px] font-bold text-primary opacity-60">Kazanım tescili ve akademik okuma.</p>
                            </div>
-                           <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100 space-y-2 group/p2 hover:bg-white hover:shadow-xl transition-all">
+                           <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100 space-y-2 hover:bg-white transition-all">
                               <div className="flex justify-between items-center border-b border-slate-200 pb-1.5">
                                  <span className="text-[8px] font-black text-primary/30 uppercase">11:00 - TEST</span>
                                  <div className="flex gap-2">
-                                    <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(block.lesson + ' ' + block.topic + ' soru çözümü')}`} target="_blank" className="text-rose-500 hover:scale-110 transition-all"><Youtube className="h-4 w-4" /></a>
-                                    <a href={`https://ogmmateryal.eba.gov.tr/soru-bankasi/${block.lesson}`} target="_blank" className="text-blue-500 hover:scale-110 transition-all"><FileText className="h-4 w-4" /></a>
+                                    <span className="text-[8px] font-black text-accent uppercase">{block.solvedQuestions || 0}/{block.targetQuestions || 40} SORU</span>
                                  </div>
                               </div>
                               <p className="text-[10px] font-bold text-primary opacity-60">Fasikül testleri ve saniyeler içinde analiz.</p>
@@ -333,16 +358,168 @@ export default function PlanningPage() {
       </div>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="rounded-[3rem] border-none shadow-2xl p-10 bg-white max-w-lg">
-           <DialogHeader><DialogTitle className="text-3xl font-black italic tracking-tighter text-primary uppercase">BLOK EDİTÖRÜ</DialogTitle></DialogHeader>
+        <DialogContent className="rounded-[4rem] border-none shadow-2xl p-0 bg-white max-w-2xl overflow-hidden">
+           <DialogHeader className="p-10 pb-0">
+              <div className="inline-flex items-center gap-2 text-accent font-black text-[9px] uppercase tracking-widest italic">
+                <Sparkles className="h-3 w-3" /> BLOK EDİTÖRÜ v4.8
+              </div>
+              <DialogTitle className="text-4xl font-black italic tracking-tighter text-primary uppercase leading-tight">GÖREV <span className="text-accent text-shadow-accent">TERMİNALİ</span></DialogTitle>
+           </DialogHeader>
+
            {editingBlock && (
-             <form onSubmit={handleSaveEdit} className="space-y-6 pt-6">
-                <div className="space-y-2"><Label className="text-[9px] font-black uppercase ml-2">KONU ADI</Label><Input name="topic" required defaultValue={editingBlock.topic} className="h-14 rounded-2xl bg-slate-50 border-none font-bold" /></div>
-                <div className="space-y-2"><Label className="text-[9px] font-black uppercase ml-2">HATIRLATICI NOTU</Label><Input name="reminder" defaultValue={editingBlock.reminder} className="h-14 rounded-2xl bg-slate-50 border-none font-bold" /></div>
-                <Button type="submit" className="w-full h-16 rounded-2xl bg-primary hover:bg-accent transition-all font-black text-[10px] uppercase tracking-widest shadow-2xl text-white gap-3">
-                   <Save className="h-5 w-5 text-accent" /> TERMİNALE KAYDET
-                </Button>
-             </form>
+             <ScrollArea className="max-h-[70vh] p-10 pt-6">
+                <div className="space-y-10">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-2">
+                         <Label className="text-[10px] font-black uppercase ml-2 opacity-40">KONU ADI</Label>
+                         <Input 
+                            value={editingBlock.topic} 
+                            onChange={(e) => setEditingBlock({...editingBlock, topic: e.target.value})}
+                            className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-lg px-6" 
+                         />
+                      </div>
+                      <div className="space-y-2">
+                         <Label className="text-[10px] font-black uppercase ml-2 opacity-40">HATIRLATICI NOTU</Label>
+                         <Input 
+                            value={editingBlock.reminder || ''} 
+                            onChange={(e) => setEditingBlock({...editingBlock, reminder: e.target.value})}
+                            className="h-14 rounded-2xl bg-slate-50 border-none font-bold px-6" 
+                            placeholder="Örn: 2. testi çözmeyi unutma"
+                         />
+                      </div>
+                   </div>
+
+                   <div className="space-y-6">
+                      <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 block ml-2">AKADEMİK KAYNAKLAR</Label>
+                      <div className="grid gap-4">
+                         {[
+                           { key: 'youtubeUrl', label: 'YOUTUBE LİNKİ', icon: Youtube, color: 'text-rose-500', type: 'youtube' as const },
+                           { key: 'pdfUrl', label: 'PDF / OGM MATERYAL', icon: FileText, color: 'text-blue-500', type: 'pdf' as const },
+                           { key: 'mebiUrl', label: 'MEBİ LİNKİ', icon: BookOpen, color: 'text-emerald-500', type: 'mebi' as const }
+                         ].map((item) => (
+                            <div key={item.key} className="flex gap-2">
+                               <div className="relative flex-1 group">
+                                  <item.icon className={cn("absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 opacity-40 transition-all group-focus-within:opacity-100", item.color)} />
+                                  <Input 
+                                    value={editingBlock[item.key] || ''} 
+                                    onChange={(e) => setEditingBlock({...editingBlock, [item.key]: e.target.value})}
+                                    className="h-14 rounded-2xl bg-slate-50 border-none pl-14 font-bold text-sm" 
+                                    placeholder={item.label}
+                                  />
+                               </div>
+                               <Button 
+                                  onClick={() => handleAutoFind(item.type)}
+                                  variant="outline" 
+                                  className="h-14 w-14 rounded-2xl border-2 border-slate-50 bg-white hover:bg-slate-50 shadow-sm"
+                               >
+                                  <Search className="h-5 w-5 text-primary opacity-40" />
+                               </Button>
+                            </div>
+                         ))}
+                      </div>
+                   </div>
+
+                   <div className="grid grid-cols-2 gap-8">
+                      <div className="space-y-4">
+                         <Label className="text-[10px] font-black uppercase ml-2 opacity-40">SORU TAKİBİ</Label>
+                         <div className="flex gap-4">
+                            <div className="flex-1 space-y-1">
+                               <span className="text-[8px] font-black uppercase ml-2 text-muted-foreground">HEDEF</span>
+                               <Input 
+                                  type="number" 
+                                  value={editingBlock.targetQuestions || 40} 
+                                  onChange={(e) => setEditingBlock({...editingBlock, targetQuestions: parseInt(e.target.value)})}
+                                  className="h-12 rounded-xl bg-slate-50 border-none text-center font-black" 
+                               />
+                            </div>
+                            <div className="flex-1 space-y-1">
+                               <span className="text-[8px] font-black uppercase ml-2 text-accent">ÇÖZÜLEN</span>
+                               <Input 
+                                  type="number" 
+                                  value={editingBlock.solvedQuestions || 0} 
+                                  onChange={(e) => setEditingBlock({...editingBlock, solvedQuestions: parseInt(e.target.value)})}
+                                  className="h-12 rounded-xl bg-slate-50 border-none text-center font-black" 
+                               />
+                            </div>
+                         </div>
+                      </div>
+                      <div className="space-y-4">
+                         <Label className="text-[10px] font-black uppercase ml-2 opacity-40">DURUM TESCİLİ</Label>
+                         <div className="grid grid-cols-2 gap-4">
+                            <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
+                               <Checkbox 
+                                  checked={editingBlock.isKonuDone} 
+                                  onCheckedChange={(val) => setEditingBlock({...editingBlock, isKonuDone: !!val})} 
+                                  className="rounded-lg h-6 w-6"
+                               />
+                               <span className="text-[9px] font-black uppercase">KONU</span>
+                            </div>
+                            <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
+                               <Checkbox 
+                                  checked={editingBlock.isTestDone} 
+                                  onCheckedChange={(val) => setEditingBlock({...editingBlock, isTestDone: !!val})} 
+                                  className="rounded-lg h-6 w-6"
+                               />
+                               <span className="text-[9px] font-black uppercase">TEST</span>
+                            </div>
+                         </div>
+                      </div>
+                   </div>
+
+                   <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
+                      <CollapsibleTrigger asChild>
+                         <Button variant="ghost" className="w-full h-12 rounded-2xl font-black text-[10px] uppercase tracking-widest text-primary/40 gap-2">
+                            {isAdvancedOpen ? 'GEREKSİZ ALANLARI GİZLE' : '+ GELİŞMİŞ BİLGİLER'}
+                            <ChevronDown className={cn("h-4 w-4 transition-transform", isAdvancedOpen && "rotate-180")} />
+                         </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-6 pt-6">
+                         <div className="grid grid-cols-2 gap-8">
+                            <div className="space-y-2">
+                               <Label className="text-[10px] font-black uppercase ml-2 opacity-40">ÇALIŞMA SÜRESİ</Label>
+                               <Input 
+                                  value={editingBlock.duration || '45 dk'} 
+                                  onChange={(e) => setEditingBlock({...editingBlock, duration: e.target.value})}
+                                  className="h-12 rounded-xl bg-slate-50 border-none px-6 font-bold" 
+                               />
+                            </div>
+                            <div className="space-y-2">
+                               <Label className="text-[10px] font-black uppercase ml-2 opacity-40">TEKRAR TARİHİ</Label>
+                               <Input 
+                                  type="date" 
+                                  value={editingBlock.nextReviewDate || ''} 
+                                  onChange={(e) => setEditingBlock({...editingBlock, nextReviewDate: e.target.value})}
+                                  className="h-12 rounded-xl bg-slate-50 border-none px-6 font-bold" 
+                               />
+                            </div>
+                         </div>
+                         <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase ml-2 opacity-40">EK KAYNAK LİNKİ</Label>
+                            <Input 
+                               value={editingBlock.extraUrl || ''} 
+                               onChange={(e) => setEditingBlock({...editingBlock, extraUrl: e.target.value})}
+                               className="h-12 rounded-xl bg-slate-50 border-none px-6 font-bold" 
+                               placeholder="https://..."
+                            />
+                         </div>
+                      </CollapsibleContent>
+                   </Collapsible>
+
+                   <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-100">
+                      <Button onClick={() => handleSaveEdit(false)} className="flex-1 h-20 rounded-[2rem] bg-[#0F172A] hover:bg-accent text-white font-black text-xs uppercase tracking-[0.3em] gap-4 shadow-2xl">
+                         <Save className="h-6 w-6 text-accent" /> KAYDET
+                      </Button>
+                      <Button onClick={() => handleSaveEdit(true)} className="flex-1 h-20 rounded-[2rem] bg-accent hover:bg-primary text-primary hover:text-white transition-all font-black text-xs uppercase tracking-[0.2em] gap-4 shadow-2xl">
+                         SONRAKİ KARTA GEÇ <ArrowRight className="h-6 w-6" />
+                      </Button>
+                   </div>
+                   
+                   <div className="flex gap-4">
+                      <Button onClick={() => setIsEditDialogOpen(false)} variant="outline" className="flex-1 h-14 rounded-2xl border-2 font-black text-[10px] uppercase text-primary/40">VAZGEÇ</Button>
+                      <Button onClick={() => handleTaskAction(editingBlock.date, editingBlock.id, 'delete')} variant="outline" className="h-14 w-14 rounded-2xl border-2 border-rose-50 text-rose-500 hover:bg-rose-50"><Trash2 className="h-6 w-6" /></Button>
+                   </div>
+                </div>
+             </ScrollArea>
            )}
         </DialogContent>
       </Dialog>

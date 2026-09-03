@@ -18,6 +18,10 @@ export const YKS_TM_TOPICS: Record<string, string[]> = {
     'Kümeler', 'Mantık', 'Fonksiyonlar', 'Veri ve İstatistik', 'Permütasyon-Kombinasyon', 
     'Olasılık'
   ],
+  'AYT Matematik': [
+    'Polinomlar', 'İkinci Dereceden Denklemler', 'Karmaşık Sayılar', 'Eşitsizlikler',
+    'Parabol', 'Trigonometri', 'Logaritma', 'Diziler', 'Limit', 'Türev', 'İntegral'
+  ],
   'Felsefe': [
     'Felsefe ile Tanışma', 'Bilgi Felsefesi (Epistemoloji)', 'Varlık Felsefesi (Ontoloji)', 
     'Ahlak Felsefesi (Etik)', 'Din Felsefesi', 'Siyaset Felsefesi', 

@@ -17,7 +17,7 @@ import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
 import { doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { format, addDays } from 'date-fns';
+import { format, addDays, isBefore } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -75,10 +75,27 @@ export default function PlanningPage() {
         const currentDt = addDays(start, i);
         const dateStr = format(currentDt, 'yyyy-MM-dd');
         const dayName = format(currentDt, 'EEEE', { locale: tr });
+        
+        // AYT Başlangıç Kontrolü: 1 Aralık (Hedef yılın Aralık 1'i veya en yakın Aralık 1)
+        // Kullanıcının isteği üzerine 1 Aralık'ta AYT başlar.
+        const aytStartDate = new Date(currentDt.getFullYear(), 11, 1); // 11 = Aralık
+        if (currentDt.getMonth() < 11 && currentDt.getDate() < 1) {
+            // Eğer yılın başındaysak bir önceki yılın aralığına bakma, 
+            // ama 1 Aralık kuralını o yıl için işlet.
+        }
 
         const dailyBlocks = [];
         
         lessons.forEach((lesson) => {
+          // Kural: AYT Matematik ve Edebiyat 1 Aralık'tan önce görünmez.
+          const isAytSubject = lesson === 'AYT Matematik' || lesson === 'Edebiyat';
+          
+          if (isAytSubject) {
+            const currentMonth = currentDt.getMonth(); // 0-11
+            const isBeforeDecember = currentMonth < 11;
+            if (isBeforeDecember) return; // 1 Aralık'tan önceyse AYT dersini plana ekleme
+          }
+
           const topics = YKS_TM_TOPICS[lesson];
           const topic = topics[lessonPointers[lesson] % topics.length];
           
@@ -124,7 +141,11 @@ export default function PlanningPage() {
         updatedAt: serverTimestamp()
       }, { merge: true });
 
-      toast({ title: 'Plan Senkronize Edildi', description: 'Fasikül blokları (Konu + Test) takvime işlendi.' });
+      toast({ 
+        title: 'Plan Senkronize Edildi', 
+        description: 'Fasikül blokları (1 Aralık AYT kuralı dahil) takvime işlendi.',
+        className: "bg-primary text-white rounded-2xl"
+      });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Hata', description: 'Plan oluşturulamadı.' });
     } finally {
@@ -195,7 +216,6 @@ export default function PlanningPage() {
     const updatedDate = formData.get('date') as string;
 
     const newPlan = studyPlan.masterPlan.map((day: any) => {
-      // Remove block from current date if date changed
       if (day.date === editingBlock.date && updatedDate !== editingBlock.date) {
         return {
           ...day,
@@ -203,7 +223,6 @@ export default function PlanningPage() {
         };
       }
       
-      // Update block if date is same
       if (day.date === editingBlock.date && updatedDate === editingBlock.date) {
         return {
           ...day,
@@ -230,7 +249,6 @@ export default function PlanningPage() {
         };
       }
 
-      // Add block to new date if date changed
       if (day.date === updatedDate && updatedDate !== editingBlock.date) {
         const blocks = day.blocks || [];
         return {
@@ -259,7 +277,7 @@ export default function PlanningPage() {
     const planRef = doc(db, 'studyPlans', user.uid);
     try {
       await updateDoc(planRef, { masterPlan: newPlan, updatedAt: serverTimestamp() });
-      toast({ title: 'Güncellendi', description: 'Fasikül bloğu saniyeler içinde revize edildi.' });
+      toast({ title: 'Güncellendi', description: 'Fasikül bloğu saniyeler içinde revize edildi.', className: "bg-primary text-white rounded-2xl" });
       setIsEditDialogOpen(false);
     } catch (error) {
       toast({ variant: 'destructive', title: 'Hata', description: 'Güncelleme yapılamadı.' });
@@ -287,9 +305,10 @@ export default function PlanningPage() {
 
       <Card className="rounded-[4rem] border-none shadow-[0_50px_100px_-20px_rgba(15,23,42,0.1)] bg-white p-12 space-y-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-           <div className="space-y-3">
+           <div className="space-y-3 text-center md:text-left">
               <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-6 italic">HEDEF SINAV TARİHİ</Label>
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-20 rounded-[2rem] bg-slate-50 border-none shadow-inner font-black text-2xl px-8" />
+              <p className="text-[9px] font-black text-accent uppercase tracking-widest mt-2 ml-6 italic">AYT DERSLERİ 1 ARALIK'TA OTOMATİK BAŞLAR</p>
            </div>
            <div className="space-y-3 flex items-end">
               <Button 
@@ -328,9 +347,12 @@ export default function PlanningPage() {
                               <h4 className="text-[3.2rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-deep">
                                 {block.topic}
                               </h4>
-                              <p className="text-[11px] font-bold text-muted-foreground/40 uppercase tracking-[0.3em] italic">
-                                GÜNLÜK FASİKÜL MODÜLÜ
-                              </p>
+                              <div className="flex items-center gap-3">
+                                <p className="text-[11px] font-bold text-muted-foreground/40 uppercase tracking-[0.3em] italic">
+                                  GÜNLÜK FASİKÜL MODÜLÜ
+                                </p>
+                                <span className={cn("text-[9px] font-black uppercase px-3 py-1 rounded-full text-white", block.lesson.includes('AYT') ? 'bg-indigo-600' : 'bg-slate-400')}>{block.lesson.includes('AYT') ? 'AYT' : 'TYT'}</span>
+                              </div>
                            </div>
                            <div className="flex items-center gap-4">
                              {block.status === 'done' ? (

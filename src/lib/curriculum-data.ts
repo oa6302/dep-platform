@@ -4,10 +4,20 @@
 
 export const YKS_TM_TOPICS: Record<string, string[]> = {
   'TYT Türkçe': [
-    'Sözcükte Anlam', 'Cümlede Anlam', 'Paragraf (Konu-Ana Düşünce)', 'Paragraf (Yapı-Yorum)', 
-    'Ses Bilgisi', 'Yazım Kuralları', 'Noktalama İşaretleri', 'Sözcükte Yapı', 
-    'Sözcük Türleri (İsim-Sıfat)', 'Sözcük Türleri (Zamir-Zarf)', 'Sözcük Türleri (Edat-Bağlaç)',
-    'Fiiller ve Fiilimsiler', 'Cümlenin Ögeleri', 'Cümle Türleri', 'Anlatım Bozuklukları'
+    'Sözcükte Anlam', 
+    'Cümlede Anlam', 
+    'Paragraf (Konu-Ana Düşünce)', 
+    'Paragraf (Yapı-Yorum)', 
+    'Ses Bilgisi (Düşme, Yumuşama, Sertleşme, Daralma, Türeme)', 
+    'Sözcükte Yapı (Kök, Ekler, Basit-Türemiş-Birleşik)', 
+    'Sözcük Türleri (İsim, Sıfat, Zamir, Zarf, Edat, Bağlaç, Ünlem)',
+    'Fiiller (Kip, Kişi, Yapı, Ek Fiil)', 
+    'Fiilimsiler (İsim-Sıfat-Zarf Fiil)', 
+    'Fiilde Çatı (Etken, Edilgen, Dönüşlü, İşteş)', 
+    'Cümlenin Ögeleri (Özne, Yüklem, Nesne, Tümleçler)', 
+    'Cümle Türleri (Anlam, Yüklem, Yapı Bakımından)', 
+    'Noktalama İşaretleri (Nokta, Virgül, İki Nokta vb.)',
+    'Anlatım Bozuklukları'
   ],
   'TYT Matematik': [
     'Temel Kavramlar', 'Sayı Basamakları', 'Bölme ve Bölünebilme', 'EBOB-EKOK', 

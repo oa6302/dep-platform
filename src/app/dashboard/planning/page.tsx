@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
   Calendar, Clock, Zap, Loader2, Sparkles, 
-  CheckCircle2, Trash2, ArrowLeft, 
+  CheckCircle2, Trash2, ArrowLeft, ArrowRight,
   Home, RotateCcw, FastForward, Edit3,
   Youtube, Globe, Save, FileText, AlertTriangle,
   BellRing, ChevronRight, BookOpen, Search, 

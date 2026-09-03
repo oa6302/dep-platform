@@ -10,7 +10,7 @@ import {
   Trophy, TrendingUp, Star, Plus, 
   Loader2, ArrowLeft, Home, Zap, Target, BookOpenCheck, ChevronDown, Calendar
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { collection, addDoc, serverTimestamp, query, where, orderBy, Timestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -28,9 +28,12 @@ export default function DenemeAnalysisPage() {
   const [examType, setExamType] = useState('TYT');
   const [selectedLesson, setSelectedLesson] = useState('');
 
-  const { data: results = [] } = useCollection<any>(
-    user?.uid ? query(collection(db!, 'denemeResults'), where('userId', '==', user.uid), orderBy('examDate', 'desc')) : null
-  );
+  const denemeResultsQuery = useMemo(() => {
+    if (!db || !user?.uid) return null;
+    return query(collection(db, 'denemeResults'), where('userId', '==', user.uid), orderBy('examDate', 'desc'));
+  }, [db, user?.uid]);
+
+  const { data: results = [] } = useCollection<any>(denemeResultsQuery);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

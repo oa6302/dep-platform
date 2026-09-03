@@ -47,10 +47,13 @@ export default function LinksPage() {
   const [editingLink, setEditingLink] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  // Firestore'dan canlı verileri çek
-  const { data: links = [], loading: linksLoading } = useCollection<any>(
-    db ? query(collection(db, 'academicLinks'), orderBy('createdAt', 'desc')) : null
-  );
+  // Firestore sorgusunu sonsuz döngüyü önlemek için memoize ediyoruz
+  const linksQuery = useMemo(() => {
+    if (!db) return null;
+    return query(collection(db, 'academicLinks'), orderBy('createdAt', 'desc'));
+  }, [db]);
+
+  const { data: links = [], loading: linksLoading } = useCollection<any>(linksQuery);
 
   const filtered = useMemo(() => {
     return links.filter(l => 

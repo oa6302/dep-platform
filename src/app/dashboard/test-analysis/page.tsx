@@ -10,7 +10,7 @@ import {
   BarChart3, TrendingUp, Target, Plus, 
   Loader2, Trash2, ArrowLeft, Home, Zap, Award
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { collection, addDoc, serverTimestamp, query, where, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -37,9 +37,12 @@ export default function TestAnalysisPage() {
   const [selectedLesson, setSelectedLesson] = useState<string>('');
   const [selectedTopic, setSelectedTopic] = useState<string>('');
 
-  const { data: results = [] } = useCollection<any>(
-    user?.uid ? query(collection(db!, 'testResults'), where('userId', '==', user.uid), orderBy('createdAt', 'desc')) : null
-  );
+  const testResultsQuery = useMemo(() => {
+    if (!db || !user?.uid) return null;
+    return query(collection(db, 'testResults'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
+  }, [db, user?.uid]);
+
+  const { data: results = [] } = useCollection<any>(testResultsQuery);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -75,10 +78,12 @@ export default function TestAnalysisPage() {
     }
   };
 
-  const chartData = [...results].slice(0, 7).reverse().map((r: any) => ({
-    name: r.lesson.substring(0, 3).toUpperCase(),
-    net: r.net
-  }));
+  const chartData = useMemo(() => {
+    return [...results].slice(0, 7).reverse().map((r: any) => ({
+      name: r.lesson.substring(0, 3).toUpperCase(),
+      net: r.net
+    }));
+  }, [results]);
 
   const lessonsList = Object.keys(YKS_TM_TOPICS);
   const topicsList = selectedLesson ? YKS_TM_TOPICS[selectedLesson] : [];

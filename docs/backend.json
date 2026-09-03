@@ -3,53 +3,43 @@
   "entities": {
     "UserProfile": {
       "title": "Kullanıcı Profili",
-      "description": "Öğrenci, Öğretmen ve Yönetici bilgilerini, rollerini ve akademik profilini saklar.",
+      "description": "Öğrenci, Öğretmen ve Yönetici bilgilerini saklar.",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "displayName": { "type": "string" },
-        "role": { "type": "string", "enum": ["student", "teacher", "school_admin", "admin"] },
+        "role": { "type": "string", "enum": ["student", "teacher", "admin"] },
         "targetExam": { "type": "string" },
-        "studentProfile": {
-          "type": "object",
-          "properties": {
-            "levels": { "type": "object" },
-            "dailyCapacity": { "type": "number" },
-            "questionCapacity": { "type": "number" },
-            "weakSubjects": { "type": "array", "items": { "type": "string" } },
-            "restDay": { "type": "string" }
-          }
-        },
+        "points": { "type": "number" },
+        "badges": { "type": "object" },
+        "completedTopics": { "type": "object" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "email", "role"]
     },
     "StudyPlan": {
       "title": "Çalışma Planı",
-      "description": "Adaptif 364 günlük program ve konu başarı takibi.",
+      "description": "Fasikül planı ve günlük görevler.",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
-        "startDate": { "type": "string" },
         "masterPlan": { "type": "array" },
-        "topicProgress": { "type": "object" },
         "updatedAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["userId", "masterPlan"]
+      }
     },
-    "StudyEntry": {
-      "title": "Tamamlanan Çalışma Kaydı",
-      "description": "Öğrencinin tamamladığı her bir seansın logu.",
+    "TestResult": {
+      "title": "Test Sonucu",
+      "description": "Öğrencinin çözdüğü testlerin detayları.",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
-        "subject": { "type": "string" },
+        "lesson": { "type": "string" },
         "topic": { "type": "string" },
-        "xp": { "type": "number" },
-        "questionCount": { "type": "number" },
-        "accuracy": { "type": "number" },
-        "completedAt": { "type": "string", "format": "date-time" }
+        "correct": { "type": "number" },
+        "wrong": { "type": "number" },
+        "net": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
       }
     }
   },
@@ -63,11 +53,11 @@
     },
     "/studyPlans/{userId}": {
       "schema": "StudyPlan",
-      "description": "Adaptif akademik programlar."
+      "description": "Kullanıcı çalışma planları."
     },
-    "/studies/{studyId}": {
-      "schema": "StudyEntry",
-      "description": "Çalışma logları."
+    "/testResults/{resultId}": {
+      "schema": "TestResult",
+      "description": "Test ve deneme sonuçları."
     }
   }
 }

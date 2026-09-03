@@ -8,36 +8,35 @@ import {
   Play, Sparkles, ChevronRight, Target, Activity, 
   Brain, CheckCircle2, Calendar, Loader2, Clock, 
   Zap, Plus, TrendingUp, BookOpen, BarChart3, Star,
-  Award, RefreshCcw, FastForward, Gauge, Edit3, Trash2, RotateCcw
+  Award, RefreshCcw, FastForward, Gauge, Edit3, Trash2, RotateCcw,
+  Youtube, FileText, Globe
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
-import { AcademicSessionDialog } from '@/components/academic-session-dialog';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+
+const LESSON_COLORS: Record<string, string> = {
+  'TYT Matematik': 'bg-slate-900 border-slate-200 text-slate-50',
+  'AYT Matematik': 'bg-slate-800 border-slate-200 text-slate-50',
+  'Geometri': 'bg-emerald-900 border-emerald-200 text-emerald-50',
+  'Edebiyat': 'bg-rose-900 border-rose-200 text-rose-50',
+  'Tarih': 'bg-orange-900 border-orange-200 text-orange-50',
+  'Coğrafya': 'bg-green-900 border-green-200 text-green-50',
+  'Felsefe': 'bg-purple-900 border-purple-200 text-purple-50',
+  'Din Kültürü': 'bg-indigo-900 border-indigo-200 text-indigo-50',
+  'Genel': 'bg-slate-100 border-slate-200 text-slate-900',
+};
 
 export function StudentView({ user, userData }: { user: any, userData: any }) {
   const db = useFirestore();
   const router = useRouter();
   
   const today = format(new Date(), 'yyyy-MM-dd');
-  const dayName = format(new Date(), 'EEEE', { locale: tr });
   const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   
-  const [isAddingTask, setIsAddingTask] = useState(false);
-
-  const dayStyles: Record<string, string> = {
-    'Pazartesi': 'bg-rose-50/50 border-rose-200 text-rose-900',
-    'Salı': 'bg-orange-50/50 border-orange-200 text-orange-900',
-    'Çarşamba': 'bg-emerald-50/50 border-emerald-200 text-emerald-900',
-    'Perşembe': 'bg-blue-50/50 border-blue-200 text-blue-900',
-    'Cuma': 'bg-purple-50/50 border-purple-200 text-purple-900',
-    'Cumartesi': 'bg-teal-50/50 border-teal-200 text-teal-900',
-    'Pazar': 'bg-pink-50/50 border-pink-200 text-pink-900',
-  };
-
   const currentDayPlan = useMemo(() => {
     if (!studyPlan?.masterPlan) return null;
     return studyPlan.masterPlan.find((p: any) => p.date === today);
@@ -101,37 +100,73 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
              {currentDayPlan?.tasks?.map((t: any) => (
                 <Card key={t.id} className={cn(
-                  "aspect-square p-10 rounded-[3.5rem] border-2 flex flex-col justify-between transition-all hover:shadow-[0_40px_80px_-20px_rgba(15,23,42,0.15)] hover:-translate-y-4 group",
-                  dayStyles[dayName] || "bg-white",
+                  "aspect-square p-10 rounded-[3.5rem] border-2 flex flex-col justify-between transition-all hover:shadow-[0_40px_80px_-20px_rgba(15,23,42,0.15)] hover:-translate-y-4 group relative overflow-hidden",
+                  LESSON_COLORS[t.lesson] || "bg-white border-slate-200",
                   t.status === 'done' && "opacity-50 grayscale"
                 )}>
-                   <div className="space-y-6">
+                   <div className="space-y-6 relative z-10">
                       <div className="flex justify-between items-start">
-                         <span className="text-[11px] font-black uppercase bg-primary text-white px-3 py-1 rounded-full">📋 {t.lesson}</span>
-                         <span className="text-[12px] font-black text-primary/60 italic">{t.time}</span>
+                         <span className={cn(
+                           "text-[10px] font-black uppercase px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2",
+                           t.lesson === 'Genel' ? "bg-primary text-white" : "bg-white text-slate-900"
+                         )}>
+                           📋 {t.lesson.toUpperCase()}
+                         </span>
+                         <span className="text-[12px] font-black opacity-60 italic">{t.time}</span>
                       </div>
+
                       <div className="space-y-2">
-                         <h4 className="text-2xl font-black text-primary leading-[1.1] uppercase tracking-tighter italic">{t.type}</h4>
-                         <p className="text-[11px] font-bold text-muted-foreground italic opacity-60 leading-relaxed">{t.topic}</p>
+                         <h4 className="text-3xl font-black italic leading-[1] tracking-tighter uppercase">
+                            {t.type}
+                         </h4>
+                         <p className="text-sm font-bold opacity-60 italic leading-tight">
+                            {t.topic}
+                         </p>
                       </div>
-                      <div className="space-y-2">
+
+                      <div className="space-y-4">
                         <div className="flex flex-wrap gap-2">
-                           <span className="badge bg-white/50 text-[10px] font-black px-3 py-1.5 rounded-xl border border-primary/5">🟡 {t.difficulty || 'Orta'}</span>
-                           <span className="badge bg-white/50 text-[10px] font-black px-3 py-1.5 rounded-xl border border-primary/5">⏱️ {t.duration || '60'}DK</span>
-                           <span className="badge bg-white/50 text-[10px] font-black px-3 py-1.5 rounded-xl border border-primary/5">📝 {t.questionTarget || '20'} SORU</span>
+                           <span className="text-[10px] font-black uppercase bg-black/10 px-2 py-1 rounded-lg">🟡 {t.difficulty || 'ORTA'}</span>
+                           <span className="text-[10px] font-black uppercase bg-black/10 px-2 py-1 rounded-lg">⏱️ {t.duration || '60'}DK</span>
+                           <span className="text-[10px] font-black uppercase bg-black/10 px-2 py-1 rounded-lg">📝 {t.questionTarget || '20'} SORU</span>
                         </div>
-                        <p className="text-[9px] font-bold text-primary/30 uppercase italic">Kaynak eklenmedi</p>
+                        <div className="flex items-center gap-3">
+                           {t.resources ? (
+                             <div className="flex gap-2">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/10 hover:bg-rose-500" asChild><a href={t.resources.youtube} target="_blank"><Youtube className="h-4 w-4" /></a></Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/10 hover:bg-emerald-500" asChild><a href={t.resources.ogm} target="_blank"><Globe className="h-4 w-4" /></a></Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/10 hover:bg-blue-500" asChild><a href={t.resources.pdf} target="_blank"><FileText className="h-4 w-4" /></a></Button>
+                             </div>
+                           ) : (
+                             <span className="text-[9px] font-black uppercase opacity-40 tracking-widest italic">KAYNAK EKLENMEDİ</span>
+                           )}
+                        </div>
                       </div>
                    </div>
-                   <div className="grid grid-cols-3 gap-3 pt-6 border-t border-primary/5">
-                      <Button size="icon" onClick={() => handleTaskAction(t.id, 'done')} className={cn("h-12 w-12 rounded-2xl shadow-xl", t.status === 'done' ? "bg-emerald-500" : "bg-primary")}>
-                         <CheckCircle2 className="h-5 w-5" />
+
+                   <div className="grid grid-cols-3 gap-3 pt-6 border-t border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                      <Button 
+                        size="icon" 
+                        onClick={() => handleTaskAction(t.id, 'done')} 
+                        className={cn(
+                          "h-12 w-12 rounded-2xl transition-all shadow-xl", 
+                          t.status === 'done' ? "bg-slate-400" : "bg-emerald-500 hover:bg-emerald-600"
+                        )}
+                      >
+                         <CheckCircle2 className="h-5 w-5 text-white" />
                       </Button>
-                      <Button size="icon" onClick={() => handleTaskAction(t.id, 'repeat')} variant="outline" className="h-12 w-12 rounded-2xl bg-white hover:bg-slate-50 border-2"><RotateCcw className="h-5 w-5 text-accent" /></Button>
-                      <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl bg-white hover:bg-slate-50 border-2"><FastForward className="h-5 w-5 text-muted-foreground" /></Button>
-                      <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl bg-white hover:bg-slate-50 border-2"><Gauge className="h-5 w-5 text-primary" /></Button>
-                      <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl bg-white hover:bg-slate-50 border-2"><Edit3 className="h-5 w-5 text-primary" /></Button>
-                      <Button size="icon" variant="outline" className="h-12 w-12 rounded-2xl text-destructive border-2 bg-white hover:bg-destructive/5"><Trash2 className="h-5 w-5" /></Button>
+                      <Button 
+                        size="icon" 
+                        onClick={() => handleTaskAction(t.id, 'repeat')} 
+                        variant="ghost" 
+                        className="h-12 w-12 rounded-2xl bg-white/10 hover:bg-white/20 border-2 border-orange-500/50"
+                      >
+                        <RotateCcw className="h-5 w-5 text-orange-400" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-12 w-12 rounded-2xl bg-white/10 hover:bg-white/20 border-2 border-white/20"><FastForward className="h-5 w-5 text-white/60" /></Button>
+                      <Button size="icon" variant="ghost" className="h-12 w-12 rounded-2xl bg-white/10 hover:bg-white/20 border-2 border-blue-400/50"><Gauge className="h-5 w-5 text-blue-300" /></Button>
+                      <Button size="icon" variant="ghost" className="h-12 w-12 rounded-2xl bg-white/10 hover:bg-white/20 border-2 border-white/20"><Edit3 className="h-5 w-5 text-white" /></Button>
+                      <Button size="icon" variant="ghost" className="h-12 w-12 rounded-2xl bg-white/10 hover:bg-rose-500/30 border-2 border-rose-500/50 text-rose-500"><Trash2 className="h-5 w-5" /></Button>
                    </div>
                 </Card>
              ))}
@@ -189,13 +224,6 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
           </Card>
         </div>
       </div>
-
-      <AcademicSessionDialog 
-        isOpen={isAddingTask}
-        onOpenChange={setIsAddingTask}
-        onSave={(data) => console.log('Saving task:', data)}
-        selectedDay={dayName}
-      />
     </div>
   );
 }

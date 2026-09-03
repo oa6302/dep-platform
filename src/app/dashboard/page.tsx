@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   LayoutDashboard, Calendar, BookOpen, BarChart3, 
   Trophy, Link as LinkIcon, Award, Clock, Users, 
   Brain, Settings, LogOut, Sparkles, ChevronRight, Zap,
   Play, RotateCcw, CheckCircle2, AlertTriangle, TrendingUp,
-  FastForward, History, Menu, X
+  FastForward, History, Menu, X, Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useMemo, useEffect } from 'react';
@@ -126,10 +127,10 @@ export default function DashboardPage() {
                 }}
                 className={cn(
                   "w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all font-black text-[11px] uppercase tracking-widest group",
-                  item.path === '/dashboard' ? "bg-primary text-white shadow-xl shadow-primary/20" : "text-muted-foreground hover:bg-slate-50 hover:text-primary"
+                  router.pathname === item.path ? "bg-primary text-white shadow-xl shadow-primary/20" : "text-muted-foreground hover:bg-slate-50 hover:text-primary"
                 )}
               >
-                <item.icon className={cn("h-5 w-5", item.path === '/dashboard' ? "text-accent" : "text-slate-300 group-hover:text-primary")} />
+                <item.icon className={cn("h-5 w-5", router.pathname === item.path ? "text-accent" : "text-slate-300 group-hover:text-primary")} />
                 {item.label}
               </button>
             ))}
@@ -154,24 +155,5 @@ export default function DashboardPage() {
         {renderView()}
       </main>
     </div>
-  );
-}
-
-function Loader2(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-    </svg>
   );
 }

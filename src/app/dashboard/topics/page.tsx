@@ -1,10 +1,10 @@
-
 'use client';
 
 import { useUser, useDoc, useFirestore } from '@/firebase';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import { 
   BookOpen, CheckCircle2, ChevronRight, Search, 
   Target, Zap, ArrowLeft, Home, Star, Layout

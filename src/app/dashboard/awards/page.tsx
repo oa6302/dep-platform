@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useDoc } from '@/firebase';
@@ -9,6 +8,7 @@ import {
   Target, Brain, Flame, ArrowLeft, Home, Sparkles
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 export default function AwardsPage() {
   const { user } = useUser();

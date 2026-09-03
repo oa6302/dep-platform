@@ -1,8 +1,8 @@
-
 'use client';
 
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { 
   Link as LinkIcon, Youtube, Globe, FileText, 
   Search, ArrowRight, ArrowLeft, Home, Zap, ExternalLink

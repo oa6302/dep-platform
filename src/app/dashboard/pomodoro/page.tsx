@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card } from '@/components/ui/card';
@@ -122,7 +121,7 @@ export default function PomodoroPage() {
                     <p className="text-3xl font-black italic">6</p>
                  </div>
                  <div className="bg-white/5 rounded-3xl p-6 border border-white/10 text-center">
-                    <p className="text-[9px] font-black uppercase tracking-widest opacity-40">KAZANILAN XP</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest opacity-40">KAZANIMLAN XP</p>
                     <p className="text-3xl font-black italic text-accent">+150</p>
                  </div>
               </div>

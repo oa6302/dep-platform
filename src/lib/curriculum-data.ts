@@ -1,11 +1,9 @@
 /**
- * @fileOverview YKS TM Master Müfredat Verisi (ÖSYM 2026 Standartları)
- * - TYT Türkçe: Sadece Anlam Bilgisi ve Paragraf.
- * - Felsefe: Geometri yerine entegre edildi.
- * - AYT Matematik: Tam kapsamlı.
+ * @fileOverview Omni-Curriculum Verisi (ÖSYM, MEB ve YÖK Standartları)
  */
 
 export const YKS_TM_TOPICS: Record<string, string[]> = {
+  // YKS - Ortak & TM
   'TYT Türkçe': [
     'Sözcükte Anlam (Gerçek-Mecaz-Yan Anlam)', 
     'Söz Öbeklerinde Anlam (Deyimler-Atasözleri)',
@@ -35,11 +33,6 @@ export const YKS_TM_TOPICS: Record<string, string[]> = {
     'Polinomlar', 'İkinci Dereceden Denklemler', 'Karmaşık Sayılar', 'Eşitsizlikler',
     'Parabol', 'Trigonometri', 'Logaritma', 'Diziler', 'Limit', 'Türev', 'İntegral'
   ],
-  'Felsefe': [
-    'Felsefe ile Tanışma', 'Bilgi Felsefesi (Epistemoloji)', 'Varlık Felsefesi (Ontoloji)', 
-    'Ahlak Felsefesi (Etik)', 'Din Felsefesi', 'Siyaset Felsefesi', 
-    'Bilim Felsefesi', 'Felsefi Okuma ve Yazma'
-  ],
   'Edebiyat': [
     'Söz Sanatları', 'Şiir Bilgisi', 'İslamiyet Öncesi Türk Edebiyatı', 'Halk Edebiyatı', 
     'Divan Edebiyatı', 'Tanzimat Edebiyatı', 'Servet-i Fünun', 'Milli Edebiyat', 
@@ -54,5 +47,32 @@ export const YKS_TM_TOPICS: Record<string, string[]> = {
     'Doğa ve İnsan', 'Dünya\'nın Şekli ve Hareketleri', 'Harita Bilgisi', 'Atmosfer ve İklim', 
     'İç ve Dış Kuvvetler', 'Nüfus ve Yerleşme', 'Ekonomik Faaliyetler', 'Bölgeler',
     'Türkiye\'nin Yer Şekilleri', 'Doğal Afetler'
-  ]
+  ],
+  'Felsefe': [
+    'Felsefe ile Tanışma', 'Bilgi Felsefesi (Epistemoloji)', 'Varlık Felsefesi (Ontoloji)', 
+    'Ahlak Felsefesi (Etik)', 'Din Felsefesi', 'Siyaset Felsefesi', 'Bilim Felsefesi'
+  ],
+
+  // YKS - Sayısal Ek
+  'Fizik': ['Vektörler', 'Kuvvet ve Hareket', 'Enerji', 'Elektrik ve Manyetizma', 'Optik', 'Modern Fizik'],
+  'Kimya': ['Atom ve Periyodik Sistem', 'Kimyasal Türler', 'Sıvı Çözeltiler', 'Enerji', 'Hız', 'Organik Kimya'],
+  'Biyoloji': ['Hücre', 'Kalıtım', 'Ekoloji', 'Sistemler', 'Bitki Biyolojisi'],
+
+  // LGS Ek
+  'Fen Bilimleri': ['Mevsimler ve İklim', 'DNA ve Genetik Kod', 'Basınç', 'Madde ve Endüstri', 'Işığın Kırılması'],
+  'İnkılap Tarihi': ['Bir Kahraman Doğuyor', 'Milli Uyanış', 'Ya İstiklal Ya Ölüm', 'Atatürkçülük'],
+  'İngilizce': ['Friendship', 'Teen Life', 'In The Kitchen', 'On The Phone', 'The Internet'],
+
+  // KPSS & ALES Ek
+  'Vatandaşlık': ['Hukukun Temel Kavramları', 'Devlet ve Hükümet', '1982 Anayasası', 'İdare Hukuku'],
+  'Güncel Bilgiler': ['Kültürel Gelişmeler', 'Uluslararası Örgütler', 'Ekonomik Veriler', 'Spor ve Sanat'],
+  'Matematik': ['Sayılar', 'Problemler', 'Mantıksal Akıl Yürütme', 'Tablo ve Grafik Yorumlama'],
+  'Türkçe': ['Sözcük ve Cümle Anlamı', 'Paragraf Analizi', 'Sözel Mantık'],
+  'Sayısal Mantık': ['Diziler', 'Şekil Yeteneği', 'Veri Analizi', 'Karmaşık Mantık Problemleri'],
+  'Sözel Mantık': ['Kesin Çıkarım', 'Yerleştirme Problemleri', 'Mantıksal Çerçeveleme'],
+
+  // Yabancı Dil
+  'Gramer': ['Tenses', 'Modals', 'Passive Voice', 'Conjunctions', 'Relative Clauses'],
+  'Kelime Bilgisi': ['Phrasal Verbs', 'Academic Vocabulary', 'Synonyms & Antonyms'],
+  'Okuma Anlama': ['Sentence Completion', 'Paragraph Completion', 'Restatement']
 };

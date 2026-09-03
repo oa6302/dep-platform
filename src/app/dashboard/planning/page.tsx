@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
+import { EXAM_CONFIGS } from '@/lib/exam-configs';
 import { doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -115,7 +116,10 @@ export default function PlanningPage() {
       const today = startOfToday();
       const diffDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
-      const subjectsPool = [
+      // Dinamik Ders Havuzu
+      const currentExam = userData?.targetExam || 'YKS_EA';
+      const examConfig = EXAM_CONFIGS[currentExam];
+      const subjectsPool = examConfig?.lessons || [
         'TYT Matematik',
         'AYT Matematik',
         'Edebiyat',
@@ -147,38 +151,40 @@ export default function PlanningPage() {
         const isPast = isBefore(currentDt, today);
 
         const existingDay = existingPlan.find((d: any) => d.date === dateStr);
-        if (existingDay && isPast) {
+        if (existingDay && (isPast || existingDay.blocks.some((b: any) => b.status === 'done'))) {
           newPlan.push(existingDay);
           continue;
         }
 
+        // AYT 1 Aralık Kuralları (Sadece YKS ise)
         const aytActive = !isBefore(currentDt, parseISO('2026-12-01'));
         const activeLessons = subjectsPool.filter(l => {
-          if (l === 'AYT Matematik' || l === 'Edebiyat') return aytActive;
+          if ((l === 'AYT Matematik' || l === 'Edebiyat') && currentExam.startsWith('YKS')) return aytActive;
           return true;
         });
 
         const dailyBlocks = [];
         
-        // 1. DERS: Rotasyondan gelen ana ders
+        // 1. DERS: Rotasyon
         const mainLesson = activeLessons[i % activeLessons.length];
-        const topic = lessonQueues[mainLesson][lessonPointers[mainLesson] % lessonQueues[mainLesson].length];
+        const topics = lessonQueues[mainLesson] || [];
+        const topic = topics[lessonPointers[mainLesson] % (topics.length || 1)] || 'Genel Tekrar';
         dailyBlocks.push(createBlockData(dateStr, mainLesson, topic));
         lessonPointers[mainLesson]++;
 
-        // 2. DERS: Paragraf (Her gün)
-        const paragrafTopic = YKS_TM_TOPICS['TYT Türkçe'][(i % YKS_TM_TOPICS['TYT Türkçe'].length)];
-        const paragrafBlock = createBlockData(dateStr, 'Paragraf', paragrafTopic);
+        // 2. DERS: Paragraf / Türkçe (Günlük Sabit)
+        const trLesson = currentExam.startsWith('YKS') ? 'TYT Türkçe' : 'Türkçe';
+        const trTopics = YKS_TM_TOPICS[trLesson] || [];
+        const trTopic = trTopics[i % (trTopics.length || 1)] || 'Hızlı Okuma';
+        const paragrafBlock = createBlockData(dateStr, currentExam.startsWith('YKS') ? 'Paragraf' : trLesson, trTopic);
         paragrafBlock.phase1.time = '11:00';
-        paragrafBlock.phase1.type = 'PARAGRAF ÇÖZÜMÜ';
         paragrafBlock.phase2.time = '11:30';
-        paragrafBlock.phase2.type = 'HATA ANALİZİ';
         dailyBlocks.push(paragrafBlock);
 
-        // 3. DERS: Tekrar Bloğu
+        // 3. DERS: Tekrar
         dailyBlocks.push(createReviewBlockData(dateStr));
 
-        // Özel Tekrarlar
+        // Özel Gün Tekrarları
         if (dayName === 'Pazar') {
           dailyBlocks.push({
             ...createReviewBlockData(dateStr),
@@ -208,7 +214,7 @@ export default function PlanningPage() {
 
       toast({ 
         title: 'Akademik Plan Senkronize Edildi', 
-        description: 'Her gün 3 ders ve paragraf kampı saniyeler içinde tescillendi.',
+        description: `${currentExam} hedefine göre saniyeler içinde yeni plan oluşturuldu. Geçmiş çalışmalarınız korundu.`,
         className: "bg-primary text-white rounded-2xl shadow-2xl"
       });
     } catch (error) {
@@ -313,7 +319,7 @@ export default function PlanningPage() {
         </div>
         <div className="p-6 bg-blue-50 rounded-3xl border border-blue-100 flex items-center gap-4">
            <AlertTriangle className="h-6 w-6 text-blue-500 shrink-0" />
-           <p className="text-sm font-bold text-blue-800 italic">Sistem saniyeler içinde 10:00 - 13:00 saatlerini baz alarak 3 ana çalışma bloğu oluşturur. Geçmiş verileriniz saniyeler içinde korunur.</p>
+           <p className="text-sm font-bold text-blue-800 italic">Sistem saniyeler içinde 10:00 - 13:00 saatlerini baz alarak 3 ana çalışma bloğu oluşturur. Geçmiş çalışmalarınız ve tescillediğiniz günler saniyeler içinde korunur.</p>
         </div>
       </Card>
 

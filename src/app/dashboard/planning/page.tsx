@@ -21,10 +21,10 @@ import { format, addDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
 const LESSON_COLORS: Record<string, string> = {
-  'TYT Matematik': '#1e293b',
-  'AYT Matematik': '#0f172a',
+  'TYT Matematik': '#0f172a',
+  'AYT Matematik': '#1e293b',
   'Geometri': '#064e3b',
-  'TYT Türkçe': '#1a3a5f',
+  'TYT Türkçe': '#1e40af',
   'Edebiyat': '#881337',
   'Tarih': '#7c2d12',
   'Coğrafya': '#14532d',
@@ -66,11 +66,11 @@ export default function PlanningPage() {
 
         const dailyTasks = [];
         
-        // 1. SAAT: YENİ KONU
         lessons.forEach((lesson, lIdx) => {
           const topics = YKS_TM_TOPICS[lesson];
           const topic = topics[lessonPointers[lesson] % topics.length];
           
+          // 1. SAAT: YENİ KONU
           dailyTasks.push({
             id: `task_${dateStr}_${lesson}_new_${lIdx}`,
             lesson,
@@ -111,15 +111,13 @@ export default function PlanningPage() {
 
         // 3. SAAT: DÜNÜN TEKRARI
         if (i > 0) {
-          const yesterdayDt = addDays(start, i - 1);
-          const yesterdayStr = format(yesterdayDt, 'yyyy-MM-dd');
           dailyTasks.push({
             id: `task_${dateStr}_review_${i}`,
             lesson: 'Genel',
-            topic: `${yesterdayStr} Tarihli Kritik Kazanımlar`,
+            topic: `Dünün Kritik Kazanımları`,
             type: 'GÜNLÜK TEKRAR DÖNGÜSÜ',
             time: '12:00',
-            duration: 60,
+            duration: 40,
             difficulty: 'ORTA',
             questionTarget: 15,
             status: 'planned'
@@ -154,6 +152,11 @@ export default function PlanningPage() {
             if (t.id === taskId) {
               if (action === 'done') return { ...t, status: t.status === 'done' ? 'planned' : 'done' };
               if (action === 'repeat') return { ...t, status: 'repeat' };
+              if (action === 'skip') return { ...t, status: 'skipped' };
+              if (action === 'level') {
+                const nextDiff = t.difficulty === 'KOLAY' ? 'ORTA' : t.difficulty === 'ORTA' ? 'ZOR' : 'KOLAY';
+                return { ...t, difficulty: nextDiff };
+              }
               if (action === 'delete') return null;
               return t;
             }
@@ -165,6 +168,8 @@ export default function PlanningPage() {
     });
 
     await updateDoc(doc(db, 'studyPlans', user.uid), { masterPlan: newPlan, updatedAt: serverTimestamp() });
+    
+    if (action === 'done') toast({ title: 'Görev Güncellendi', description: 'İlerleme veritabanına işlendi.' });
   };
 
   return (
@@ -196,7 +201,7 @@ export default function PlanningPage() {
               <Button 
                 onClick={generateFasikulPlan}
                 disabled={isGenerating || !endDate}
-                className="w-full h-20 rounded-[2rem] bg-primary hover:bg-accent transition-all duration-500 font-black text-xs uppercase tracking-[0.2em] gap-5 shadow-2xl shadow-primary/30"
+                className="w-full h-20 rounded-[2rem] bg-primary hover:bg-accent transition-all duration-500 font-black text-xs uppercase tracking-[0.2em] gap-5 shadow-2xl shadow-primary/30 text-white"
               >
                 {isGenerating ? <Loader2 className="h-7 w-7 animate-spin" /> : <Zap className="h-7 w-7 text-accent" />}
                 FASİKÜL MOTORUNU ÇALIŞTIR
@@ -217,8 +222,8 @@ export default function PlanningPage() {
                   <Card 
                     key={t.id} 
                     className={cn(
-                      "aspect-square p-5 rounded-[4rem] border-none flex flex-col justify-between transition-all hover:scale-[1.05] shadow-[0_45px_100px_-25px_rgba(15,23,42,0.12)] group relative overflow-hidden bg-white border-t-[8px]",
-                      t.status === 'done' && "opacity-60 grayscale scale-95"
+                      "aspect-square p-6 rounded-[4.5rem] border-none flex flex-col justify-between transition-all hover:scale-[1.05] shadow-[0_45px_100px_-25px_rgba(0,0,0,0.12)] group relative overflow-hidden bg-white border-t-[8px]",
+                      t.status === 'done' && "opacity-60 scale-95"
                     )}
                     style={{ borderTopColor: LESSON_COLORS[t.lesson] || '#334155' }}
                   >
@@ -229,12 +234,12 @@ export default function PlanningPage() {
                            </span>
                            <div className="flex items-center gap-2">
                              {t.status === 'done' ? (
-                               <div className="bg-emerald-500 text-white px-2 py-0.5 rounded-full text-[8px] font-black flex items-center gap-1 shadow-lg">
-                                 <CheckCircle2 className="h-2.5 w-2.5" /> TAMAMLANDI
+                               <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-[8px] font-black flex items-center gap-1 shadow-lg shadow-emerald-500/20">
+                                 <CheckCircle2 className="h-3 w-3" /> TAMAMLANDI
                                </div>
                              ) : (
-                               <div className="bg-rose-500 text-white px-2 py-0.5 rounded-full text-[8px] font-black flex items-center gap-1 shadow-lg">
-                                 <Clock className="h-2.5 w-2.5" /> BEKLİYOR
+                               <div className="bg-rose-500 text-white px-3 py-1 rounded-full text-[8px] font-black flex items-center gap-1 shadow-lg shadow-rose-500/20">
+                                 <Clock className="h-3 w-3" /> BEKLİYOR
                                </div>
                              )}
                              <span className="text-base font-black text-slate-300 italic">{t.time || '10:00'}</span>
@@ -250,11 +255,11 @@ export default function PlanningPage() {
                            </p>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                            <div className="flex flex-wrap gap-1.5">
-                              <span className="text-[8px] font-black uppercase bg-slate-50 px-2.5 py-1.5 rounded-xl text-accent flex items-center gap-1 shadow-inner border border-slate-100">🟡 {t.difficulty}</span>
-                              <span className="text-[8px] font-black uppercase bg-slate-50 px-2.5 py-1.5 rounded-xl text-primary flex items-center gap-1 shadow-inner border border-slate-100">⏱️ {t.duration}DK</span>
-                              <span className="text-[8px] font-black uppercase bg-slate-50 px-2.5 py-1.5 rounded-xl text-primary flex items-center gap-1 shadow-inner border border-slate-100">📝 {t.questionTarget} SORU</span>
+                              <span className="text-[8px] font-black uppercase bg-slate-50 px-2.5 py-1.5 rounded-xl text-accent flex items-center gap-1 shadow-inner border border-slate-100">🟡 {t.difficulty || 'ORTA'}</span>
+                              <span className="text-[8px] font-black uppercase bg-slate-50 px-2.5 py-1.5 rounded-xl text-primary flex items-center gap-1 shadow-inner border border-slate-100">⏱️ {t.duration || '60'}DK</span>
+                              <span className="text-[8px] font-black uppercase bg-slate-50 px-2.5 py-1.5 rounded-xl text-primary flex items-center gap-1 shadow-inner border border-slate-100">📝 {t.questionTarget || '20'} SORU</span>
                            </div>
                            <div className="flex items-center gap-4 pt-0.5">
                               {t.resources ? (
@@ -270,53 +275,56 @@ export default function PlanningPage() {
                         </div>
                      </div>
                      
-                     <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-50 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-1 group-hover:translate-y-0">
+                     <div className="grid grid-cols-3 gap-2.5 pt-4 border-t border-slate-50 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-1 group-hover:translate-y-0">
                         <Button 
                           onClick={() => handleTaskAction(day.date, t.id, 'done')}
                           size="icon" 
+                          variant="ghost"
                           className={cn(
-                            "h-10 w-10 rounded-2xl transition-all shadow-xl",
+                            "h-11 w-11 rounded-2xl transition-all shadow-xl",
                             t.status === 'done' ? "bg-slate-100 text-slate-400" : "bg-emerald-500 hover:bg-emerald-400 text-white"
                           )}
                         >
-                          <CheckCircle2 className="h-4 w-4" />
+                          <CheckCircle2 className="h-5 w-5" />
                         </Button>
                         <Button 
                           onClick={() => handleTaskAction(day.date, t.id, 'repeat')}
                           size="icon" 
                           variant="outline" 
-                          className="h-10 w-10 rounded-2xl bg-white hover:bg-orange-50 border-slate-100 text-orange-500"
+                          className="h-11 w-11 rounded-2xl bg-white hover:bg-orange-50 border-slate-100 text-orange-500"
                         >
-                          <RotateCcw className="h-4 w-4" />
+                          <RotateCcw className="h-5 w-5" />
+                        </Button>
+                        <Button 
+                          onClick={() => handleTaskAction(day.date, t.id, 'skip')}
+                          size="icon" 
+                          variant="outline" 
+                          className="h-11 w-11 rounded-2xl bg-white hover:bg-slate-50 border-slate-100 text-slate-400"
+                        >
+                          <FastForward className="h-5 w-5" />
+                        </Button>
+                        <Button 
+                          onClick={() => handleTaskAction(day.date, t.id, 'level')}
+                          size="icon" 
+                          variant="outline" 
+                          className="h-11 w-11 rounded-2xl bg-white hover:bg-blue-50 border-slate-100 text-blue-500"
+                        >
+                          <Gauge className="h-5 w-5" />
                         </Button>
                         <Button 
                           size="icon" 
                           variant="outline" 
-                          className="h-10 w-10 rounded-2xl bg-white hover:bg-slate-50 border-slate-100 text-slate-400"
+                          className="h-11 w-11 rounded-2xl bg-white hover:bg-slate-50 border-slate-100 text-slate-900"
                         >
-                          <FastForward className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          size="icon" 
-                          variant="outline" 
-                          className="h-10 w-10 rounded-2xl bg-white hover:bg-blue-50 border-slate-100 text-blue-500"
-                        >
-                          <Gauge className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          size="icon" 
-                          variant="outline" 
-                          className="h-10 w-10 rounded-2xl bg-white hover:bg-slate-50 border-slate-100 text-slate-900"
-                        >
-                          <Edit3 className="h-4 w-4" />
+                          <Edit3 className="h-5 w-5" />
                         </Button>
                         <Button 
                           onClick={() => handleTaskAction(day.date, t.id, 'delete')}
                           size="icon" 
                           variant="outline" 
-                          className="h-10 w-10 rounded-2xl bg-white hover:bg-rose-50 border-slate-100 text-rose-500"
+                          className="h-11 w-11 rounded-2xl bg-white hover:bg-rose-50 border-slate-100 text-rose-500"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-5 w-5" />
                         </Button>
                      </div>
                   </Card>

@@ -15,12 +15,13 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 const LESSON_COLORS: Record<string, string> = {
-  'TYT Matematik': '#1e293b',
-  'AYT Matematik': '#0f172a',
+  'TYT Matematik': '#0f172a',
+  'AYT Matematik': '#1e293b',
   'Geometri': '#064e3b',
-  'TYT Türkçe': '#1a3a5f',
+  'TYT Türkçe': '#1e40af',
   'Edebiyat': '#881337',
   'Tarih': '#7c2d12',
   'Coğrafya': '#14532d',
@@ -32,6 +33,7 @@ const LESSON_COLORS: Record<string, string> = {
 export function StudentView({ user, userData }: { user: any, userData: any }) {
   const db = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
   
   const today = format(new Date(), 'yyyy-MM-dd');
   const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
@@ -51,6 +53,11 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
             if (t.id === taskId) {
               if (action === 'done') return { ...t, status: t.status === 'done' ? 'planned' : 'done' };
               if (action === 'repeat') return { ...t, status: 'repeat' };
+              if (action === 'skip') return { ...t, status: 'skipped' };
+              if (action === 'level') {
+                const nextDiff = t.difficulty === 'KOLAY' ? 'ORTA' : t.difficulty === 'ORTA' ? 'ZOR' : 'KOLAY';
+                return { ...t, difficulty: nextDiff };
+              }
               if (action === 'delete') return null;
               return t;
             }
@@ -64,12 +71,14 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
       masterPlan: newPlan,
       updatedAt: serverTimestamp()
     });
+    
+    if (action === 'done') toast({ title: 'İlerleme Kaydedildi', description: 'Fasikül akışı saniyeler içinde güncellendi.' });
   };
 
   if (planLoading) return (
     <div className="p-20 flex flex-col items-center justify-center gap-6 min-h-[60vh]">
       <Loader2 className="h-12 w-12 animate-spin text-accent" />
-      <p className="text-xs font-black uppercase tracking-[0.4em] text-primary/40 italic">Senkronizasyon Başlatılıyor...</p>
+      <p className="text-xs font-black uppercase tracking-[0.4em] text-primary/40 italic">Terminal Senkronize Ediliyor...</p>
     </div>
   );
 
@@ -86,7 +95,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                "Bugün 15 Haziran 2027 hedefine giden yolda saniyeler içinde {currentDayPlan?.tasks?.length || 0} kritik görev planlandı."
             </p>
           </div>
-          <Button onClick={() => router.push('/dashboard/planning')} className="bg-accent hover:bg-white hover:text-primary transition-all rounded-[2rem] h-20 px-12 font-black uppercase text-[12px] tracking-[0.2em] shadow-2xl">AKADEMİK TAKVİM</Button>
+          <Button onClick={() => router.push('/dashboard/planning')} className="bg-accent hover:bg-white hover:text-primary transition-all rounded-[2rem] h-20 px-12 font-black uppercase text-[12px] tracking-[0.2em] shadow-2xl text-primary">AKADEMİK TAKVİM</Button>
         </div>
       </section>
 
@@ -102,8 +111,8 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                 <Card 
                   key={t.id} 
                   className={cn(
-                    "aspect-square p-5 rounded-[4.5rem] border-none flex flex-col justify-between transition-all hover:scale-[1.03] shadow-[0_45px_100px_-25px_rgba(15,23,42,0.12)] group relative overflow-hidden bg-white border-t-[8px]",
-                    t.status === 'done' && "opacity-60 grayscale scale-95"
+                    "aspect-square p-6 rounded-[4.5rem] border-none flex flex-col justify-between transition-all hover:scale-[1.03] shadow-[0_45px_100px_-25px_rgba(0,0,0,0.12)] group relative overflow-hidden bg-white border-t-[8px]",
+                    t.status === 'done' && "opacity-60 scale-95"
                   )}
                   style={{ borderTopColor: LESSON_COLORS[t.lesson] || '#334155' }}
                 >
@@ -114,12 +123,12 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                          </span>
                          <div className="flex items-center gap-2">
                              {t.status === 'done' ? (
-                               <div className="bg-emerald-500 text-white px-2 py-0.5 rounded-full text-[8px] font-black flex items-center gap-1 shadow-lg">
-                                 <CheckCircle2 className="h-2.5 w-2.5" /> TAMAMLANDI
+                               <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-[8px] font-black flex items-center gap-1 shadow-lg">
+                                 <CheckCircle2 className="h-3 w-3" /> TAMAMLANDI
                                </div>
                              ) : (
-                               <div className="bg-rose-500 text-white px-2 py-0.5 rounded-full text-[8px] font-black flex items-center gap-1 shadow-lg">
-                                 <Clock className="h-2.5 w-2.5" /> BEKLİYOR
+                               <div className="bg-rose-500 text-white px-3 py-1 rounded-full text-[8px] font-black flex items-center gap-1 shadow-lg">
+                                 <Clock className="h-3 w-3" /> BEKLİYOR
                                </div>
                              )}
                              <span className="text-base font-black text-slate-300 italic">{t.time || '10:00'}</span>
@@ -135,7 +144,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                          </p>
                       </div>
 
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         <div className="flex flex-wrap gap-1.5">
                            <span className="text-[8px] font-black uppercase bg-slate-50 px-2.5 py-1.5 rounded-xl text-accent flex items-center gap-1 shadow-inner border border-slate-100">🟡 {t.difficulty || 'ORTA'}</span>
                            <span className="text-[8px] font-black uppercase bg-slate-50 px-2.5 py-1.5 rounded-xl text-primary flex items-center gap-1 shadow-inner border border-slate-100">⏱️ {t.duration || '60'}DK</span>
@@ -155,44 +164,59 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                       </div>
                    </div>
 
-                   <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-50 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-1 group-hover:translate-y-0">
+                   <div className="grid grid-cols-3 gap-2.5 pt-4 border-t border-slate-50 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-1 group-hover:translate-y-0">
                       <Button 
                         size="icon" 
                         onClick={() => handleTaskAction(t.id, 'done')} 
+                        variant="ghost"
                         className={cn(
-                          "h-10 w-10 rounded-2xl transition-all shadow-xl", 
+                          "h-11 w-11 rounded-2xl transition-all shadow-xl", 
                           t.status === 'done' ? "bg-slate-100 text-slate-400" : "bg-emerald-500 hover:bg-emerald-400 text-white"
                         )}
                       >
-                         <CheckCircle2 className="h-4 w-4" />
+                         <CheckCircle2 className="h-5 w-5" />
                       </Button>
                       <Button 
                         size="icon" 
                         onClick={() => handleTaskAction(t.id, 'repeat')} 
                         variant="outline" 
-                        className="h-10 w-10 rounded-2xl bg-white hover:bg-orange-50 border-slate-100 text-orange-500"
+                        className="h-11 w-11 rounded-2xl bg-white hover:bg-orange-50 border-slate-100 text-orange-500"
                       >
-                        <RotateCcw className="h-4 w-4" />
+                        <RotateCcw className="h-5 w-5" />
                       </Button>
-                      <Button size="icon" variant="outline" className="h-10 w-10 rounded-2xl bg-white hover:bg-slate-50 border-slate-100 text-slate-400"><FastForward className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="outline" className="h-10 w-10 rounded-2xl bg-white hover:bg-blue-50 border-slate-100 text-blue-500"><Gauge className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="outline" className="h-10 w-10 rounded-2xl bg-white hover:bg-slate-50 border-slate-100 text-slate-900"><Edit3 className="h-4 w-4" /></Button>
+                      <Button 
+                        size="icon" 
+                        onClick={() => handleTaskAction(t.id, 'skip')}
+                        variant="outline" 
+                        className="h-11 w-11 rounded-2xl bg-white hover:bg-slate-50 border-slate-100 text-slate-400"
+                      >
+                        <FastForward className="h-5 w-5" />
+                      </Button>
+                      <Button 
+                        size="icon" 
+                        onClick={() => handleTaskAction(t.id, 'level')}
+                        variant="outline" 
+                        className="h-11 w-11 rounded-2xl bg-white hover:bg-blue-50 border-slate-100 text-blue-500"
+                      >
+                        <Gauge className="h-5 w-5" />
+                      </Button>
+                      <Button size="icon" variant="outline" className="h-11 w-11 rounded-2xl bg-white hover:bg-slate-50 border-slate-100 text-slate-900"><Edit3 className="h-5 w-5" /></Button>
                       <Button 
                         size="icon" 
                         variant="outline" 
                         onClick={() => handleTaskAction(t.id, 'delete')}
-                        className="h-10 w-10 rounded-2xl bg-white hover:bg-rose-50 border-slate-100 text-rose-500"
+                        className="h-11 w-11 rounded-2xl bg-white hover:bg-rose-50 border-slate-100 text-rose-500"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-5 w-5" />
                       </Button>
                    </div>
                 </Card>
              ))}
              {!currentDayPlan && (
-                <Card onClick={() => router.push('/dashboard/planning')} className="aspect-square p-14 text-center bg-white rounded-[4rem] border-4 border-dashed border-slate-200 flex flex-col items-center justify-center gap-8 cursor-pointer hover:bg-white hover:border-accent/20 transition-all group shadow-inner">
+                <Card onClick={() => router.push('/dashboard/planning')} className="aspect-square p-14 text-center bg-white rounded-[4.5rem] border-4 border-dashed border-slate-200 flex flex-col items-center justify-center gap-8 cursor-pointer hover:bg-white hover:border-accent/20 transition-all group shadow-inner">
                    <Zap className="h-20 w-20 text-accent opacity-20 group-hover:scale-110 transition-transform animate-pulse" />
                    <p className="text-2xl font-black uppercase tracking-[0.3em] text-primary/20 italic">FASİKÜL PLANI BEKLENİYOR</p>
-                   <Button className="h-16 px-12 rounded-[1.75rem] bg-primary font-black text-[11px] uppercase tracking-widest gap-4 shadow-[0_30px_60px_-10px_rgba(15,23,42,0.3)]">PLANI OLUŞTUR VE BAŞLA</Button>
+                   <Button className="h-16 px-12 rounded-[1.75rem] bg-primary font-black text-[11px] uppercase tracking-widest gap-4 shadow-[0_30px_60px_-10px_rgba(15,23,42,0.3)] text-white">PLANI OLUŞTUR VE BAŞLA</Button>
                 </Card>
              )}
           </div>
@@ -213,7 +237,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                    BAŞLAT
                 </Button>
                 <Button variant="ghost" size="icon" className="h-20 w-20 rounded-[2rem] border-2 border-white/10 hover:bg-white/5">
-                   <Plus className="h-8 w-8" />
+                   <Plus className="h-8 w-8 text-white" />
                 </Button>
              </div>
            </Card>

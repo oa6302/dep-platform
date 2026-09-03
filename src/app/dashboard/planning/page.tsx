@@ -73,7 +73,7 @@ export default function PlanningPage() {
       const uncompleted = currentPlan[yesterdayIdx].blocks.filter((b: any) => b.status === 'planned' && !b.isReview && !b.isParagraph);
       if (uncompleted.length > 0) {
         hasDelayed = true;
-        currentPlan[yesterdayIdx].blocks = currentPlan[yesterdayIdx].blocks.filter((b: any) => b.status === 'done');
+        currentPlan[yesterdayIdx].blocks = currentPlan[yesterdayIdx].blocks.filter((b: any) => b.status === 'done' || b.isReview || b.isParagraph);
         
         currentPlan[todayIdx].blocks = [
           ...uncompleted.map((b: any) => ({ 
@@ -82,7 +82,7 @@ export default function PlanningPage() {
             reminder: 'DÜNDEN AKTARILDI: ' + (b.reminder || '') 
           })),
           ...currentPlan[todayIdx].blocks
-        ].slice(0, 6);
+        ].slice(0, 6); // Max 6 block to avoid overload
       }
     }
 
@@ -97,8 +97,9 @@ export default function PlanningPage() {
 
   const generateAutoLinks = (topic: string, lesson: string) => {
     const encodedTopic = encodeURIComponent(topic);
+    const encodedLesson = encodeURIComponent(lesson);
     return {
-      youtubeUrl: `https://www.youtube.com/results?search_query=${encodedTopic}+${lesson}+konu+anlatımı`,
+      youtubeUrl: `https://www.youtube.com/results?search_query=${encodedTopic}+${encodedLesson}+konu+anlatımı`,
       pdfUrl: `https://ogmmateryal.eba.gov.tr/panel/FasikulGoster.aspx?arama=${encodedTopic}`,
       mebiUrl: `https://mebi.eba.gov.tr/arama?q=${encodedTopic}`
     };
@@ -117,16 +118,15 @@ export default function PlanningPage() {
       const examConfig = EXAM_CONFIGS[currentExam];
       const aytStartDate = parseISO('2026-12-01');
 
-      const completed = userData?.completedTopics || {};
-      const lessonQueues: Record<string, string[]> = {};
-      
-      const getAllLessonPool = (date: Date) => {
+      const getLessonPool = (date: Date) => {
         let pool = [...(examConfig?.lessons || ['TYT Matematik', 'TYT Türkçe'])];
-        // AYT Konularını 1 Aralık'ta dahil et
         if (isAfter(date, aytStartDate) || date.getTime() === aytStartDate.getTime()) {
-          if (currentExam.includes('YKS')) {
+          if (currentExam === 'YKS_EA') {
             if (!pool.includes('AYT Matematik')) pool.push('AYT Matematik');
-            if (currentExam === 'YKS_EA' && !pool.includes('Edebiyat')) pool.push('Edebiyat');
+            if (!pool.includes('Edebiyat')) pool.push('Edebiyat');
+          } else if (currentExam === 'YKS_SAY') {
+            if (!pool.includes('AYT Matematik')) pool.push('AYT Matematik');
+            if (!pool.includes('Fizik')) pool.push('Fizik');
           }
         }
         return pool;
@@ -140,23 +140,24 @@ export default function PlanningPage() {
         const dateStr = format(currentDt, 'yyyy-MM-dd');
         const dayName = format(currentDt, 'EEEE', { locale: tr });
         
+        // Skip Sundays or keep existing done blocks
         const existingDay = (studyPlan?.masterPlan || []).find((d: any) => d.date === dateStr);
         if (existingDay && (isBefore(currentDt, startOfToday()) || existingDay.blocks.some((b: any) => b.status === 'done'))) {
           newPlan.push(existingDay);
           continue;
         }
 
-        const dailyPool = getAllLessonPool(currentDt);
+        const pool = getLessonPool(currentDt);
         const dailyBlocks = [];
-        
-        // 1. ve 2. Kartlar: Ana Dersler
+
+        // Kart 1 & 2: İki Farklı Konu
         for (let j = 0; j < 2; j++) {
-          const lesson = dailyPool[(i + j) % dailyPool.length];
+          const lesson = pool[(i * 2 + j) % pool.length];
           const topics = YKS_TM_TOPICS[lesson] || ['Genel Tekrar'];
           if (!lessonPointers[lesson]) lessonPointers[lesson] = 0;
           const topic = topics[lessonPointers[lesson] % topics.length];
           
-          const autoLinks = generateAutoLinks(topic, lesson);
+          const links = generateAutoLinks(topic, lesson);
 
           dailyBlocks.push({
             id: `block_${dateStr}_${j}`,
@@ -167,21 +168,21 @@ export default function PlanningPage() {
             phase2: { type: 'TEST ÇÖZME', time: j === 0 ? '10:30' : '11:30' },
             targetQuestions: 40,
             solvedQuestions: 0,
-            ...autoLinks,
+            ...links,
             isKonuDone: false,
             isTestDone: false
           });
           lessonPointers[lesson]++;
         }
 
-        // 3. Kart: Her Gün 20 Paragraf
+        // Kart 3: 20 Paragraf (Her Gün)
         dailyBlocks.push({
           id: `para_${dateStr}`,
           lesson: 'TÜRKÇE',
           topic: '20 PARAGRAF SORU ÇÖZÜMÜ',
           status: 'planned',
           phase1: { type: 'ODAKLANMA', time: '12:00' },
-          phase2: { type: 'ANALYTICS', time: '12:30' },
+          phase2: { type: 'ANALİZ', time: '12:30' },
           targetQuestions: 20,
           solvedQuestions: 0,
           youtubeUrl: 'https://www.youtube.com/results?search_query=paragraf+çözüm+teknikleri',
@@ -190,7 +191,7 @@ export default function PlanningPage() {
           isTestDone: false
         });
 
-        // 4. Kart: Dünün Analizi & Tekrarı
+        // Kart 4: Dünün Tekrarı (Her Gün)
         dailyBlocks.push({
           id: `review_${dateStr}`,
           lesson: 'GENEL',
@@ -561,3 +562,4 @@ export default function PlanningPage() {
     </div>
   );
 }
+

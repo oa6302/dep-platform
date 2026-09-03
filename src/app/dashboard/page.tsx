@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useDoc, useFirestore } from '@/firebase';
@@ -48,7 +49,7 @@ export default function DashboardPage() {
   }, [userData, studyPlan]);
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+    { id: 'dashboard', label: 'Anasayfa', icon: LayoutDashboard, path: '/dashboard' },
     { id: 'planning', label: 'Planlama', icon: Calendar, path: '/dashboard/planning' },
     { id: 'topics', label: 'Konu Takibi', icon: BookOpen, path: '/dashboard/topics' },
     { id: 'test-analysis', label: 'Test Analizi', icon: BarChart3, path: '/dashboard/test-analysis' },
@@ -155,7 +156,7 @@ export default function DashboardPage() {
                  <BookOpen className="h-8 w-8 text-emerald-500" />
               </div>
               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground italic mb-1">Konu İlerleme</p>
-              <p className="text-4xl font-black text-primary tracking-tighter italic">%{stats.completionRate}</p>
+              <p className="text-4xl font-black text-primary italic">%{stats.completionRate}</p>
            </Card>
            <Card className="p-10 rounded-[3rem] border-none shadow-xl bg-white flex flex-col items-center justify-center text-center group hover:-translate-y-2 transition-all">
               <div className="h-16 w-16 rounded-[1.75rem] bg-slate-50 flex items-center justify-center mb-6 shadow-inner group-hover:rotate-6 transition-all">

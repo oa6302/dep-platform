@@ -7,13 +7,13 @@ import { Loader2 } from 'lucide-react';
 
 /**
  * Giriş ve Kayıt süreci artık merkezi olarak /dashboard sayfasında yönetilmektedir.
- * Bu sayfa geriye dönük uyumluluk için Dashboard'a yönlendirme yapar.
+ * Bu sayfa geriye dönük uyumluluk için Anasayfa'ya yönlendirme yapar.
  */
 export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Tüm auth süreçleri artık dashboard terminalinde birleştiği için yönlendiriyoruz.
+    // Tüm auth süreçleri artık anasayfa terminalinde birleştiği için yönlendiriyoruz.
     router.replace('/dashboard');
   }, [router]);
 

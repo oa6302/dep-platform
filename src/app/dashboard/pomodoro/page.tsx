@@ -16,9 +16,9 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
 const LOFI_STREAMS = [
-  { id: '6pE54YidgN0', title: 'RUHUN ŞİFASI - NEY SESİ', color: 'bg-emerald-600' },
-  { id: '5U1pC6p6S8k', title: 'ALPHA WAVES - DEEP FOCUS', color: 'bg-indigo-600' },
-  { id: 'WJ_m6NfP8OQ', title: 'PIANO STUDY - ZEN MODE', color: 'bg-amber-600' },
+  { id: 'U_5Uv8G_1Xo', title: 'RUHUN ŞİFASI - NEY SESİ', color: 'bg-emerald-600' },
+  { id: '1fU6R_K6W6Y', title: 'ALPHA WAVES - DEEP FOCUS', color: 'bg-indigo-600' },
+  { id: 'sjkrrmBnpGE', title: 'PIANO STUDY - ZEN MODE', color: 'bg-amber-600' },
   { id: 'jfKfPfyJRdk', title: 'LOFI GIRL - MASTER STUDY', color: 'bg-rose-500' },
 ];
 
@@ -252,7 +252,7 @@ export default function PomodoroPage() {
                     <iframe 
                       width="100%" 
                       height="100%" 
-                      src={`https://www.youtube.com/embed/${selectedStream.id}?autoplay=1&mute=0&controls=0&modestbranding=1&rel=0`}
+                      src={`https://www.youtube.com/embed/${selectedStream.id}?autoplay=1&mute=0&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3`}
                       title="Lofi Radio"
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -271,14 +271,14 @@ export default function PomodoroPage() {
                          key={stream.id}
                          onClick={() => setSelectedStream(stream)}
                          className={cn(
-                           "flex items-center gap-3 p-4 rounded-2xl border transition-all text-left group",
+                           "flex items-center gap-3 p-4 rounded-2xl border transition-all text-left group h-full",
                            selectedStream.id === stream.id ? "bg-white text-primary border-white shadow-2xl scale-105" : "bg-white/5 border-white/5 hover:bg-white/10"
                          )}
                        >
                           <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center text-white shadow-xl group-hover:rotate-12 transition-transform shrink-0", stream.color)}>
                              <Youtube className="h-5 w-5" />
                           </div>
-                          <span className="text-[9px] font-black uppercase tracking-widest line-clamp-1 italic">{stream.title}</span>
+                          <span className="text-[9px] font-black uppercase tracking-widest line-clamp-2 italic">{stream.title}</span>
                        </button>
                     ))}
                  </div>

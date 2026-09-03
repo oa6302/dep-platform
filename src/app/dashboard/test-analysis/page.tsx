@@ -18,6 +18,14 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, Cell 
 } from 'recharts';
+import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function TestAnalysisPage() {
   const { user } = useUser();
@@ -26,25 +34,31 @@ export default function TestAnalysisPage() {
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(false);
+  const [selectedLesson, setSelectedLesson] = useState<string>('');
+  const [selectedTopic, setSelectedTopic] = useState<string>('');
+
   const { data: results = [] } = useCollection<any>(
     user?.uid ? query(collection(db!, 'testResults'), where('userId', '==', user.uid), orderBy('createdAt', 'desc')) : null
   );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!db || !user) return;
+    if (!db || !user || !selectedLesson || !selectedTopic) {
+      toast({ variant: 'destructive', title: 'Hata', description: 'Lütfen ders ve konu seçimini tamamlayın.' });
+      return;
+    }
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const correct = parseInt(formData.get('correct') as string);
-    const wrong = parseInt(formData.get('wrong') as string);
+    const correct = parseInt(formData.get('correct') as string) || 0;
+    const wrong = parseInt(formData.get('wrong') as string) || 0;
     const net = correct - (wrong * 0.25);
 
     try {
       await addDoc(collection(db, 'testResults'), {
         userId: user.uid,
-        lesson: formData.get('lesson'),
-        topic: formData.get('topic'),
+        lesson: selectedLesson,
+        topic: selectedTopic,
         correct,
         wrong,
         net,
@@ -52,6 +66,8 @@ export default function TestAnalysisPage() {
       });
       toast({ title: 'Veri İşlendi', description: 'Test sonucu analitik merkeze saniyeler içinde aktarıldı.' });
       (e.target as HTMLFormElement).reset();
+      setSelectedLesson('');
+      setSelectedTopic('');
     } catch (error) {
       toast({ variant: 'destructive', title: 'Hata', description: 'Kayıt yapılamadı.' });
     } finally {
@@ -59,10 +75,13 @@ export default function TestAnalysisPage() {
     }
   };
 
-  const chartData = results.slice(0, 7).reverse().map((r: any) => ({
+  const chartData = [...results].slice(0, 7).reverse().map((r: any) => ({
     name: r.lesson.substring(0, 3).toUpperCase(),
     net: r.net
   }));
+
+  const lessonsList = Object.keys(YKS_TM_TOPICS);
+  const topicsList = selectedLesson ? YKS_TM_TOPICS[selectedLesson] : [];
 
   return (
     <div className="p-8 lg:p-14 space-y-12 max-w-7xl mx-auto w-full animate-in fade-in duration-700 bg-[#F8FAFC]">
@@ -93,20 +112,34 @@ export default function TestAnalysisPage() {
            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                  <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-4">DERS SEÇİMİ</Label>
-                 <Input name="lesson" required placeholder="Örn: TYT Matematik" className="h-14 rounded-2xl bg-slate-50 border-none font-bold" />
+                 <Select value={selectedLesson} onValueChange={(val) => { setSelectedLesson(val); setSelectedTopic(''); }}>
+                    <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-sm shadow-inner focus:ring-accent">
+                       <SelectValue placeholder="Bir Ders Seçin" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl border-none shadow-2xl">
+                       {lessonsList.map(l => <SelectItem key={l} value={l} className="font-bold">{l}</SelectItem>)}
+                    </SelectContent>
+                 </Select>
               </div>
               <div className="space-y-2">
                  <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-4">KONU ADI</Label>
-                 <Input name="topic" required placeholder="Örn: Üslü Sayılar" className="h-14 rounded-2xl bg-slate-50 border-none font-bold" />
+                 <Select value={selectedTopic} onValueChange={setSelectedTopic} disabled={!selectedLesson}>
+                    <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-sm shadow-inner focus:ring-accent">
+                       <SelectValue placeholder={selectedLesson ? "Bir Konu Seçin" : "Önce Ders Seçin"} />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl border-none shadow-2xl max-h-[300px]">
+                       {topicsList.map(t => <SelectItem key={t} value={t} className="font-bold text-xs uppercase tracking-tight">{t}</SelectItem>)}
+                    </SelectContent>
+                 </Select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-4">DOĞRU</Label>
-                    <Input name="correct" type="number" required placeholder="0" className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-center" />
+                    <Input name="correct" type="number" required defaultValue="0" placeholder="0" className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-center shadow-inner" />
                  </div>
                  <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-4">YANLIŞ</Label>
-                    <Input name="wrong" type="number" required placeholder="0" className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-center" />
+                    <Input name="wrong" type="number" required defaultValue="0" placeholder="0" className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-center shadow-inner" />
                  </div>
               </div>
               <Button type="submit" disabled={loading} className="w-full h-20 rounded-[2rem] bg-primary hover:bg-accent text-white font-black text-xs uppercase tracking-widest gap-4 shadow-2xl transition-all">

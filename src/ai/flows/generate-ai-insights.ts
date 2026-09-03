@@ -20,11 +20,12 @@ const GenerateAiInsightsInputSchema = z.object({
   userName: z.string(),
   targetExam: z.string().optional(),
   contextData: z.any().optional(),
+  userQuery: z.string().optional().describe('Kullanıcının AI Koç\'a sorduğu özel soru.'),
 });
 export type GenerateAiInsightsInput = z.infer<typeof GenerateAiInsightsInputSchema>;
 
 const GenerateAiInsightsOutputSchema = z.object({
-  summary: z.string().describe('Profesyonel durum özeti.'),
+  summary: z.string().describe('Profesyonel durum özeti veya sorunun cevabı.'),
   insights: z.array(InsightSchema).describe('Veri odaklı analizler.'),
   nextSteps: z.array(z.string()).describe('Somut ve uygulanabilir adımlar.'),
 });
@@ -43,6 +44,11 @@ const prompt = ai.definePrompt({
 
   Sen DEK AI isimli profesyonel akademik analiz ve strateji motorusun.
   Görevin, öğrencinin hazırlandığı {{{targetExam}}} sınavına yönelik verileri analiz edip profesyonel bir yol haritası sunmaktır.
+
+  {{#if userQuery}}
+  KULLANICI SORUSU: "{{{userQuery}}}"
+  Bu soruya akademik bir koç ciddiyetiyle, verilere dayanarak cevap ver.
+  {{/if}}
 
   TEMEL PRENSİPLERİN:
   • Bilimsel çalışma teknikleri kullan.

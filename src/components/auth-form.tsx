@@ -55,13 +55,6 @@ interface AuthFormProps {
 type AuthMode = 'login' | 'register';
 type UserRole = 'student' | 'teacher' | 'school_admin';
 
-interface ExamItem {
-  id: string;
-  title: string;
-  category?: string;
-  targetGroup?: string;
-}
-
 export function AuthForm({
   mode: initialMode,
   isProfileCompletion = false,
@@ -72,7 +65,6 @@ export function AuthForm({
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [targetExam, setTargetExam] = useState('');
-  const [schoolName, setSchoolName] = useState('');
   const [loading, setLoading] = useState(false);
 
   const auth = useAuth();
@@ -82,69 +74,51 @@ export function AuthForm({
   const { toast } = useToast();
 
   const categorizedExams = useMemo(() => {
-    const categories = ['ORTAOKUL', 'ÜNİVERSİTE', 'KAMU SINAVLARI', 'AKADEMİK', 'YABANCI DİL'];
-    const grouped: Record<string, ExamItem[]> = {};
-    categories.forEach((category) => { grouped[category] = []; });
-
+    const grouped: Record<string, any[]> = {};
     Object.values(EXAM_CONFIGS).forEach((exam: any) => {
       const category = exam.category || 'ÜNİVERSİTE';
       if (!grouped[category]) grouped[category] = [];
       grouped[category].push(exam);
     });
-
     return grouped;
   }, []);
 
-  const handleAction = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!db || !auth) return;
 
-    if (authMode === 'register' && !isProfileCompletion) {
-      if (!email || !password || !displayName) {
-        toast({ variant: 'destructive', title: 'Hata', description: 'Lütfen tüm alanları doldurun.' });
-        return;
-      }
+    if (!email || !password || !displayName || (role === 'student' && !targetExam)) {
+      toast({ variant: 'destructive', title: 'Hata', description: 'Lütfen tüm alanları (isim, e-posta, şifre, hedef) doldurun.' });
+      return;
     }
 
     setLoading(true);
     try {
-      let finalUser = currentUser;
-      
-      if (!isProfileCompletion && authMode === 'register') {
-        const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
-        finalUser = credential.user;
-      }
-
-      if (!finalUser) throw new Error('Oturum başlatılamadı.');
+      const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      const finalUser = credential.user;
 
       await updateProfile(finalUser, { displayName: displayName.trim() });
 
       const userData: any = {
         uid: finalUser.uid,
-        email: finalUser.email || email.trim().toLowerCase(),
+        email: email.trim().toLowerCase(),
         displayName: displayName.trim(),
         role,
-        targetExam,
+        targetExam: role === 'student' ? targetExam : null,
+        createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
 
-      if (!isProfileCompletion) {
-        userData.createdAt = serverTimestamp();
-        if (role === 'teacher') {
-          userData.activationCode = `DK-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-        }
+      if (role === 'teacher') {
+        userData.activationCode = `DK-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       }
 
-      if (role !== 'student' && schoolName) {
-        userData.school = schoolName.trim();
-      }
-
-      await setDoc(doc(db, 'users', finalUser.uid), userData, { merge: true });
+      await setDoc(doc(db, 'users', finalUser.uid), userData);
       
       toast({ 
-        title: 'Kurulum Başarılı', 
+        title: 'Akademik Kayıt Tamamlandı', 
         description: 'Profiliniz saniyeler içinde tescillendi.',
-        className: "bg-primary text-white rounded-[2rem]"
+        className: "bg-primary text-white rounded-[2rem] shadow-2xl"
       });
       
       router.replace('/dashboard');
@@ -161,6 +135,7 @@ export function AuthForm({
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
+      toast({ title: 'Giriş Başarılı', description: 'Terminal saniyeler içinde senkronize ediliyor.' });
       router.replace('/dashboard');
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Hata', description: 'E-posta veya şifre hatalı.' });
@@ -169,19 +144,19 @@ export function AuthForm({
     }
   };
 
-  if (authMode === 'login' && !isProfileCompletion) {
+  if (authMode === 'login') {
     return (
       <div className="max-w-md mx-auto space-y-12 px-4 w-full animate-in fade-in duration-700">
         <div className="text-center space-y-3">
            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 text-primary font-black text-[10px] uppercase tracking-widest italic border border-primary/5">
-              <Key className="h-3 w-3 text-accent" /> Secure Access
+              <Key className="h-3 w-3 text-accent" /> SECURE ACCESS
            </div>
            <h2 className="text-5xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep">SİSTEME GİRİŞ</h2>
            <p className="text-[10px] font-black text-primary/40 uppercase tracking-[0.4em] italic">Terminal v4.8</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-6">
            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-primary/60 ml-4 italic">E-POSTA TERMİNALİ</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-primary/60 ml-4 italic">E-POSTA</Label>
               <div className="relative group">
                 <Mail className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/20 group-focus-within:text-accent transition-colors" />
                 <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-14 focus-visible:ring-accent" placeholder="ornek@email.com" />
@@ -212,7 +187,7 @@ export function AuthForm({
          <h2 className="text-5xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep">ÜYE OL / <span className="text-accent">KURULUM</span></h2>
          <p className="text-[10px] font-black text-primary/40 uppercase tracking-[0.4em] italic">Master Engine v4.8</p>
       </div>
-      <form onSubmit={handleAction} className="space-y-10">
+      <form onSubmit={handleRegister} className="space-y-10">
         <div className="grid grid-cols-3 gap-4">
           {[
             { id: 'student', label: 'ÖĞRENCİ', icon: UserRound },
@@ -242,24 +217,20 @@ export function AuthForm({
                 <Input required value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-14 focus-visible:ring-accent" placeholder="Adınız Soyadınız" />
              </div>
           </div>
-          {!isProfileCompletion && (
-             <>
-               <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary/60 ml-4 italic">E-POSTA ADRESİ</Label>
-                  <div className="relative group">
-                    <Mail className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/20 group-focus-within:text-accent transition-colors" />
-                    <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-14 focus-visible:ring-accent" placeholder="ornek@email.com" />
-                  </div>
-               </div>
-               <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-primary/60 ml-4 italic">GÜVENLİ ŞİFRE</Label>
-                  <div className="relative group">
-                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/20 group-focus-within:text-accent transition-colors" />
-                    <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-14 focus-visible:ring-accent" placeholder="Min. 6 Karakter" />
-                  </div>
-               </div>
-             </>
-          )}
+          <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase text-primary/60 ml-4 italic">E-POSTA ADRESİ</Label>
+              <div className="relative group">
+                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/20 group-focus-within:text-accent transition-colors" />
+                <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-14 focus-visible:ring-accent" placeholder="ornek@email.com" />
+              </div>
+           </div>
+           <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase text-primary/60 ml-4 italic">GÜVENLİ ŞİFRE</Label>
+              <div className="relative group">
+                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/20 group-focus-within:text-accent transition-colors" />
+                <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-14 focus-visible:ring-accent" placeholder="Min. 6 Karakter" />
+              </div>
+           </div>
         </div>
 
         {role === 'student' && (

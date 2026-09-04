@@ -11,7 +11,7 @@ import {
   Calendar, Zap, Loader2, Sparkles, 
   CheckCircle2, Trash2, ArrowLeft, ArrowRight,
   Home, Edit3, Youtube, Save, FileText, 
-  BookOpen, Plus
+  BookOpen, Plus, Target
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
@@ -56,51 +56,6 @@ export default function PlanningPage() {
     };
   };
 
-  useEffect(() => {
-    if (!studyPlan?.masterPlan || !user || !db) return;
-
-    const todayStr = format(startOfToday(), 'yyyy-MM-dd');
-    const yesterdayStr = format(subDays(startOfToday(), 1), 'yyyy-MM-dd');
-    
-    let hasDelayed = false;
-    const currentPlan = JSON.parse(JSON.stringify(studyPlan.masterPlan));
-    
-    const yesterdayIdx = currentPlan.findIndex((d: any) => d.date === yesterdayStr);
-    const todayIdx = currentPlan.findIndex((d: any) => d.date === todayStr);
-
-    if (yesterdayIdx !== -1 && todayIdx !== -1) {
-      const uncompleted = currentPlan[yesterdayIdx].blocks?.filter((b: any) => b.status === 'planned' && !b.isReview && !b.isParagraph);
-      if (uncompleted && uncompleted.length > 0) {
-        hasDelayed = true;
-        currentPlan[yesterdayIdx].blocks = currentPlan[yesterdayIdx].blocks.filter((b: any) => b.status === 'done' || b.isReview || b.isParagraph);
-        
-        currentPlan[todayIdx].blocks = [
-          ...uncompleted.map((b: any) => ({ 
-            ...b, 
-            status: 'delayed', 
-            reminder: 'DÜNDEN AKTARILDI: ' + (b.reminder || '') 
-          })),
-          ...(currentPlan[todayIdx].blocks || [])
-        ].slice(0, 4); 
-      }
-    }
-
-    if (hasDelayed) {
-      const planRef = doc(db, 'studyPlans', user.uid);
-      updateDoc(planRef, { 
-        masterPlan: currentPlan, 
-        updatedAt: serverTimestamp() 
-      }).catch(async (err) => {
-        const permissionError = new FirestorePermissionError({
-          path: planRef.path,
-          operation: 'update',
-          requestResourceData: { masterPlan: 'auto_postpone' },
-        } satisfies SecurityRuleContext);
-        errorEmitter.emit('permission-error', permissionError);
-      });
-    }
-  }, [studyPlan?.masterPlan, user, db]);
-
   const generateFasikulPlan = async () => {
     if (!db || !user || !endDate || !startDate) return;
     setIsGenerating(true);
@@ -122,18 +77,17 @@ export default function PlanningPage() {
         const dateStr = format(currentDt, 'yyyy-MM-dd');
         const dayName = format(currentDt, 'EEEE', { locale: tr });
         
-        // STRICT 1 DEC LOGIC
+        // 1 DEC AYT LOGIC
         const isAytAllowed = isAfter(currentDt, aytCutoffDate) || currentDt.getTime() === aytCutoffDate.getTime();
         
         let pool = [...(examConfig?.lessons || ['TYT Matematik', 'TYT Türkçe'])];
         if (!isAytAllowed) {
-          // Filter out any AYT specific lessons before Dec 1st
           pool = pool.filter(l => !l.toUpperCase().includes('AYT') && !['Edebiyat'].includes(l));
         }
 
         const dailyBlocks = [];
 
-        // BLOCK 1 & 2: Main Academic Lessons
+        // BLOCK 1 & 2: Main Academic
         for (let j = 0; j < 2; j++) {
           const lesson = pool[(i * 2 + j) % pool.length];
           const topics = YKS_TM_TOPICS[lesson] || ['Genel Tekrar'];
@@ -153,7 +107,7 @@ export default function PlanningPage() {
           lessonPointers[lesson]++;
         }
 
-        // BLOCK 3: Fixed Paragraph Block
+        // BLOCK 3: Paragraph
         dailyBlocks.push({
           id: `para_${dateStr}`,
           lesson: 'TÜRKÇE',
@@ -164,7 +118,7 @@ export default function PlanningPage() {
           ...generateAutoLinks('Paragraf', 'Türkçe'),
         });
 
-        // BLOCK 4: Fixed Review Block
+        // BLOCK 4: Review
         dailyBlocks.push({
           id: `review_${dateStr}`,
           lesson: 'GENEL',
@@ -187,7 +141,7 @@ export default function PlanningPage() {
         updatedAt: serverTimestamp()
       }, { merge: true });
 
-      toast({ title: 'Akademik Plan Senkronize Edildi', className: "bg-primary text-white rounded-2xl" });
+      toast({ title: 'Akademik Plan Senkronize Edildi', className: "bg-primary text-white rounded-2xl shadow-2xl" });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Hata', description: 'Plan güncellenemedi.' });
     } finally {

@@ -1,24 +1,18 @@
+
 'use client';
 
 import { useUser, useDoc, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   LayoutDashboard, Calendar, BookOpen, BarChart3, 
   Trophy, Link as LinkIcon, Award, Clock, Users, 
   Brain, Settings, LogOut, Sparkles, ChevronRight, Zap,
-  Play, RotateCcw, CheckCircle2, AlertTriangle, TrendingUp,
-  FastForward, History, Menu, X, Loader2
+  Menu, X, Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState, useMemo, useEffect } from 'react';
-import { format } from 'date-fns';
-import { tr } from 'date-fns/locale';
-import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { useState } from 'react';
 import { StudentView } from '@/components/dashboard/student-view';
 import { TeacherView } from '@/components/dashboard/teacher-view';
 import { SchoolAdminView } from '@/components/dashboard/school-admin-view';
@@ -47,7 +41,7 @@ export default function DashboardPage() {
     { id: 'settings', label: 'Ayarlar', icon: Settings, path: '/dashboard/settings' },
   ];
 
-  if (authLoading || docLoading) {
+  if (authLoading || (user && docLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
         <div className="flex flex-col items-center gap-6">
@@ -60,15 +54,16 @@ export default function DashboardPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] py-20 px-6">
+      <div className="min-h-screen bg-[#F8FAFC] py-20 px-6 flex items-center justify-center">
         <AuthForm mode="login" />
       </div>
     );
   }
 
+  // If user is logged in but has no profile data (shouldn't happen with our new form, but for safety)
   if (!userData) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] py-20 px-6">
+      <div className="min-h-screen bg-[#F8FAFC] py-20 px-6 flex items-center justify-center">
         <AuthForm mode="register" isProfileCompletion />
       </div>
     );
@@ -127,10 +122,10 @@ export default function DashboardPage() {
                 }}
                 className={cn(
                   "w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all font-black text-[11px] uppercase tracking-widest group",
-                  router.pathname === item.path ? "bg-primary text-white shadow-xl shadow-primary/20" : "text-muted-foreground hover:bg-slate-50 hover:text-primary"
+                  item.path === '/dashboard' ? "bg-primary text-white shadow-xl shadow-primary/20" : "text-muted-foreground hover:bg-slate-50 hover:text-primary"
                 )}
               >
-                <item.icon className={cn("h-5 w-5", router.pathname === item.path ? "text-accent" : "text-slate-300 group-hover:text-primary")} />
+                <item.icon className={cn("h-5 w-5", item.path === '/dashboard' ? "text-accent" : "text-slate-300 group-hover:text-primary")} />
                 {item.label}
               </button>
             ))}
@@ -144,7 +139,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex-1 overflow-hidden">
               <p className="font-black text-[11px] uppercase truncate">{userData?.displayName || 'Kullanıcı'}</p>
-              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{userData.role.toUpperCase()}</p>
+              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{userData.role?.toUpperCase() || 'ÖĞRENCİ'}</p>
             </div>
           </div>
         </div>

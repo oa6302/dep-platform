@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useUser, useDoc, useFirestore } from '@/firebase';
+import { useUser, useDoc, useAuth } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -8,7 +9,7 @@ import {
   LayoutDashboard, Calendar, BookOpen, BarChart3, 
   Trophy, Link as LinkIcon, Award, Clock, Users, 
   Brain, Settings, LogOut, Sparkles, ChevronRight, Zap,
-  Menu, X, Loader2
+  Menu, X, Loader2, UserCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
@@ -17,16 +18,16 @@ import { TeacherView } from '@/components/dashboard/teacher-view';
 import { SchoolAdminView } from '@/components/dashboard/school-admin-view';
 import { AdminView } from '@/components/dashboard/admin-view';
 import { AuthForm } from '@/components/auth-form';
+import { signOut } from 'firebase/auth';
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useUser();
-  const db = useFirestore();
+  const auth = useAuth();
   const router = useRouter();
   const { data: userData, loading: docLoading } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // REDIRECT LOGIC: Eğer student ise ve targetExam yoksa saniyeler içinde seçime gönder
   useEffect(() => {
     if (!docLoading && userData && userData.role === 'student' && !userData.targetExam) {
       router.replace('/dashboard/select-exam');
@@ -66,6 +67,27 @@ export default function DashboardPage() {
     );
   }
 
+  if (!userData && !docLoading) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] py-20 px-6 flex items-center justify-center">
+        <div className="max-w-md w-full text-center space-y-10">
+           <div className="relative mx-auto h-24 w-24">
+              <div className="absolute inset-0 bg-accent/20 rounded-full animate-ping" />
+              <UserCircle className="h-24 w-24 text-accent relative z-10" />
+           </div>
+           <div className="space-y-4">
+              <h2 className="text-2xl font-black text-primary uppercase italic">PROFİL BULUNAMADI</h2>
+              <p className="text-muted-foreground font-medium italic">Sistemde size ait bir profil kaydı bulunamadı veya senkronizasyon hatası oluştu.</p>
+           </div>
+           <div className="flex flex-col gap-4">
+              <Button onClick={() => router.push('/')} className="h-16 rounded-2xl bg-primary font-black uppercase tracking-widest text-xs">KAYIT EKRANINA DÖN</Button>
+              <Button variant="ghost" onClick={() => auth && signOut(auth)} className="text-xs font-black uppercase tracking-widest text-destructive">OTURUMU KAPAT</Button>
+           </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!userData) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] py-20 px-6 flex items-center justify-center">
@@ -92,7 +114,7 @@ export default function DashboardPage() {
       {/* Mobile Header */}
       <header className="md:hidden h-20 bg-white border-b border-slate-100 flex items-center justify-between px-6 sticky top-0 z-[60]">
         <div className="text-xl font-black italic tracking-tighter text-primary uppercase leading-none">
-          YKS TM <span className="text-accent">PRO</span>
+          DEK <span className="text-accent">AI</span>
         </div>
         <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="rounded-xl h-12 w-12 bg-slate-50">
           {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -114,7 +136,7 @@ export default function DashboardPage() {
       )}>
         <div className="p-8 border-b border-slate-50 hidden md:block">
           <div className="text-2xl font-black italic tracking-tighter text-primary uppercase leading-none">
-            YKS TM <span className="text-accent">PRO</span>
+            DEK <span className="text-accent">AI</span>
             <span className="block text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em] mt-1 italic not-italic">Premium Terminal</span>
           </div>
         </div>
@@ -153,7 +175,6 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 min-w-0">
         {renderView()}
       </main>

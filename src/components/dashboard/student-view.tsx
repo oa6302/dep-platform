@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -11,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { format, isBefore, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
@@ -75,7 +76,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
           <div className="space-y-6 flex-1 text-center md:text-left">
             <div className="inline-flex items-center gap-4 text-accent font-black text-[10px] uppercase tracking-[0.3em] italic bg-white/5 px-6 py-2 rounded-full border border-white/10">
-              <Brain className="h-5 w-5 animate-pulse" /> AOS YAPAY ZEKA MENTORU
+              <Brain className="h-5 w-5 animate-pulse" /> DEK YAPAY ZEKA MENTORU
             </div>
             <p className="text-3xl md:text-5xl font-black italic leading-[0.95] text-shadow-premium uppercase tracking-tighter text-white">
                "Bugün {currentDayPlan?.blocks?.length || 0} devasa akademik blok saniyeler içinde seni bekliyor."

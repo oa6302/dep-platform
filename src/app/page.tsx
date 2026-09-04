@@ -11,6 +11,8 @@ import {
   Clock,
   TrendingUp,
   ShieldCheck,
+  Menu,
+  X
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -31,7 +33,6 @@ export default function LandingPage() {
   const { user } = useUser();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
-  // Zaten giriş yapmışsa saniyeler içinde dashboard'a fırlat
   useEffect(() => {
     if (user) {
       router.replace('/dashboard');

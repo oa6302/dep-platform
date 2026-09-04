@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -62,9 +63,7 @@ export default function PlanningPage() {
       const end = parseISO(endDate);
       const diffDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
       
-      // AYT VİTES TARİHİ: 1 ARALIK 2026
       const aytCutoffDate = parseISO(`2026-12-01`);
-
       const currentExam = userData?.targetExam || 'YKS_EA';
       const examConfig = EXAM_CONFIGS[currentExam];
 
@@ -74,8 +73,6 @@ export default function PlanningPage() {
       for (let i = 0; i <= diffDays; i++) {
         const currentDt = addDays(start, i);
         const dateStr = format(currentDt, 'yyyy-MM-dd');
-        
-        // 1 ARALIK ÖNCESİ KESİN TYT KONTROLÜ
         const isStrictTYT = isBefore(currentDt, aytCutoffDate);
         
         let lessonPool = [...(examConfig?.lessons || ['TYT Matematik', 'TYT Türkçe'])];
@@ -84,8 +81,6 @@ export default function PlanningPage() {
         }
 
         const dailyBlocks = [];
-
-        // 1 & 2. BLOK: ANA DERSLER
         for (let j = 0; j < 2; j++) {
           const lesson = lessonPool[(i * 2 + j) % lessonPool.length];
           const topics = YKS_TM_TOPICS[lesson] || ['Genel Tekrar'];
@@ -104,7 +99,6 @@ export default function PlanningPage() {
           lessonPointers[lesson]++;
         }
 
-        // 3. BLOK: SABİT PARAGRAF KAMPİ (HER GÜN)
         dailyBlocks.push({
           id: `para_${dateStr}`,
           lesson: 'TYT Türkçe',
@@ -115,7 +109,6 @@ export default function PlanningPage() {
           ...generateAutoLinks('Paragraf', 'Türkçe'),
         });
 
-        // 4. BLOK: STRATEJİK TEKRAR (HER GÜN)
         dailyBlocks.push({
           id: `review_${dateStr}`,
           lesson: 'GENEL',
@@ -257,12 +250,6 @@ export default function PlanningPage() {
              </div>
           </div>
         ))}
-        {(!studyPlan?.masterPlan || studyPlan?.masterPlan?.length === 0) && (
-           <div className="py-40 text-center space-y-8 animate-in zoom-in-95 duration-700">
-              <Zap className="h-20 w-20 text-accent mx-auto opacity-20" />
-              <p className="text-2xl font-black uppercase tracking-[0.4em] text-primary/20 italic">Akademik Motor Bekleniyor...</p>
-           </div>
-        )}
       </div>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

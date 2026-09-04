@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useUser, useDoc, useFirestore } from '@/firebase';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -187,7 +187,7 @@ export default function PlanningPage() {
     
     await updateDoc(doc(db, 'studyPlans', user.uid), { masterPlan: newPlan, updatedAt: serverTimestamp() });
     setIsEditDialogOpen(false);
-    toast({ title: 'Terminal Güncellendi' });
+    toast({ title: 'Terminal Güncellendi', className: "bg-primary text-white rounded-2xl" });
   };
 
   return (
@@ -490,9 +490,8 @@ export default function PlanningPage() {
                 </div>
              </ScrollArea>
            )}
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

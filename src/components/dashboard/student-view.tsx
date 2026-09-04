@@ -32,10 +32,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
   const dailyPlans = useMemo(() => {
     if (!studyPlan?.masterPlan || !today) return [];
     
-    // Bugünün planı
     const todayPlan = studyPlan.masterPlan.find((d: any) => d.date === today);
-    
-    // Geçmişte kalmış ama tamamlanmamış görevleri de göster (Adaptive Mode)
     const pendingPast = studyPlan.masterPlan.filter((d: any) => 
       d.date < today && d.blocks.some((b: any) => b.status !== 'done')
     );

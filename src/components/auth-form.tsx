@@ -1,9 +1,12 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
 import {
   useAuth,
   useFirestore,
@@ -38,10 +41,11 @@ import {
   Zap,
   Target,
   Sparkles,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 
 interface AuthFormProps {
@@ -49,235 +53,1012 @@ interface AuthFormProps {
 }
 
 type AuthMode = 'login' | 'register';
-type UserRole = 'student' | 'teacher' | 'school_admin';
+
+type UserRole =
+  | 'student'
+  | 'teacher'
+  | 'school_admin';
 
 export function AuthForm({
   mode: initialMode,
 }: AuthFormProps) {
-  const [authMode, setAuthMode] = useState<AuthMode>(initialMode);
-  const [role, setRole] = useState<UserRole>('student');
+  const [authMode, setAuthMode] =
+    useState<AuthMode>(initialMode);
+
+  const [role, setRole] =
+    useState<UserRole>('student');
+
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [targetExam, setTargetExam] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [password, setPassword] =
+    useState('');
+
+  const [displayName, setDisplayName] =
+    useState('');
+
+  const [targetExam, setTargetExam] =
+    useState('');
+
+  const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [loading, setLoading] =
+    useState(false);
 
   const auth = useAuth();
   const db = useFirestore();
+
   const router = useRouter();
   const { toast } = useToast();
 
+  /*
+   * =========================================================
+   * SINAV KATEGORİLERİ
+   * =========================================================
+   */
+
   const categorizedExams = useMemo(() => {
-    const grouped: Record<string, any[]> = {};
-    Object.values(EXAM_CONFIGS).forEach((exam: any) => {
-      const category = exam.category || 'ÜNİVERSİTE';
-      if (!grouped[category]) grouped[category] = [];
-      grouped[category].push(exam);
-    });
+    const grouped: Record<
+      string,
+      any[]
+    > = {};
+
+    Object.values(EXAM_CONFIGS).forEach(
+      (exam: any) => {
+        const category =
+          exam.category || 'ÜNİVERSİTE';
+
+        if (!grouped[category]) {
+          grouped[category] = [];
+        }
+
+        grouped[category].push(exam);
+      }
+    );
+
     return grouped;
   }, []);
 
-  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!db || !auth) return;
+  /*
+   * =========================================================
+   * ROL DEĞİŞTİRME
+   * =========================================================
+   */
 
-    if (!email || !password || !displayName || (role === 'student' && !targetExam)) {
-      toast({ variant: 'destructive', title: 'Eksik Bilgi', description: 'Lütfen tüm alanları doldurun.' });
+  const handleRoleChange = (
+    newRole: UserRole
+  ) => {
+    setRole(newRole);
+
+    /*
+     * Öğrenci değilse sınav hedefini
+     * temizliyoruz.
+     */
+    if (newRole !== 'student') {
+      setTargetExam('');
+    }
+  };
+
+  /*
+   * =========================================================
+   * REGISTER
+   * =========================================================
+   */
+
+  const handleRegister = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
+    e.preventDefault();
+
+    if (!auth || !db) {
+      toast({
+        variant: 'destructive',
+        title: 'Bağlantı Hatası',
+        description:
+          'Firebase bağlantısı hazır değil.',
+      });
+
+      return;
+    }
+
+    const cleanEmail =
+      email.trim().toLowerCase();
+
+    const cleanName =
+      displayName.trim();
+
+    /*
+     * Temel validasyon
+     */
+
+    if (!cleanName) {
+      toast({
+        variant: 'destructive',
+        title: 'Ad Soyad Eksik',
+        description:
+          'Lütfen adınızı ve soyadınızı giriniz.',
+      });
+
+      return;
+    }
+
+    if (!cleanEmail) {
+      toast({
+        variant: 'destructive',
+        title: 'E-posta Eksik',
+        description:
+          'Lütfen geçerli bir e-posta adresi giriniz.',
+      });
+
+      return;
+    }
+
+    if (!password) {
+      toast({
+        variant: 'destructive',
+        title: 'Şifre Eksik',
+        description:
+          'Lütfen bir şifre oluşturunuz.',
+      });
+
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        variant: 'destructive',
+        title: 'Şifre Çok Kısa',
+        description:
+          'Şifreniz en az 6 karakter olmalıdır.',
+      });
+
+      return;
+    }
+
+    /*
+     * Öğrenci için hedef sınav zorunlu
+     */
+
+    if (
+      role === 'student' &&
+      !targetExam
+    ) {
+      toast({
+        variant: 'destructive',
+        title: 'Akademik Hedef Eksik',
+        description:
+          'Lütfen hazırlanacağınız sınavı seçiniz.',
+      });
+
       return;
     }
 
     setLoading(true);
-    try {
-      const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
-      const finalUser = credential.user;
 
-      await updateProfile(finalUser, { displayName: displayName.trim() });
+    try {
+      /*
+       * Firebase Authentication hesabı
+       */
+
+      const credential =
+        await createUserWithEmailAndPassword(
+          auth,
+          cleanEmail,
+          password
+        );
+
+      const finalUser =
+        credential.user;
+
+      /*
+       * Firebase profil adı
+       */
+
+      await updateProfile(
+        finalUser,
+        {
+          displayName: cleanName,
+        }
+      );
+
+      /*
+       * Kullanıcı Firestore profili
+       */
 
       const userData: any = {
         uid: finalUser.uid,
-        email: email.trim().toLowerCase(),
-        displayName: displayName.trim(),
+
+        email: cleanEmail,
+
+        displayName: cleanName,
+
         role,
-        targetExam: role === 'student' ? targetExam : null,
+
+        targetExam:
+          role === 'student'
+            ? targetExam
+            : null,
+
         points: 0,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+
+        level: 1,
+
+        totalSolvedQuestions: 0,
+
+        totalCompletedTasks: 0,
+
+        createdAt:
+          serverTimestamp(),
+
+        updatedAt:
+          serverTimestamp(),
+
+        profileCompleted: true,
       };
 
+      /*
+       * Öğretmen aktivasyon kodu
+       */
+
       if (role === 'teacher') {
-        userData.activationCode = `DK-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        userData.activationCode =
+          `DK-${Math.random()
+            .toString(36)
+            .substring(2, 6)
+            .toUpperCase()}-${Math.random()
+            .toString(36)
+            .substring(2, 6)
+            .toUpperCase()}`;
+
+        userData.isActivated = false;
       }
 
-      await setDoc(doc(db, 'users', finalUser.uid), userData);
-      
-      toast({ 
-        title: 'Kayıt Başarılı', 
-        description: 'Akademik profiliniz saniyeler içinde tescillendi.',
-        className: "bg-primary text-white rounded-[2rem] shadow-2xl"
-      });
-      
-      router.replace('/dashboard');
-    } catch (error: any) {
-      console.error(error);
-      let msg = 'Kayıt sırasında bir hata oluştu.';
-      if (error.code === 'auth/email-already-in-use') {
-        msg = 'Bu e-posta adresi zaten kullanımda. Giriş yapmayı deneyin.';
-        setAuthMode('login');
-      } else if (error.code === 'auth/weak-password') {
-        msg = 'Şifre çok zayıf. En az 6 karakter kullanın.';
+      /*
+       * Kurum yöneticisi
+       */
+
+      if (role === 'school_admin') {
+        userData.isApproved = false;
       }
-      
-      toast({ variant: 'destructive', title: 'Hata', description: msg });
+
+      /*
+       * Firestore kullanıcı kaydı
+       */
+
+      await setDoc(
+        doc(
+          db,
+          'users',
+          finalUser.uid
+        ),
+        userData
+      );
+
+      /*
+       * Başarılı
+       */
+
+      toast({
+        title: 'Kayıt Başarılı',
+        description:
+          'Akademik profiliniz oluşturuldu. Dashboard hazırlanıyor.',
+        className:
+          'bg-primary text-white rounded-[2rem] shadow-2xl',
+      });
+
+      /*
+       * Dashboard
+       */
+
+      router.replace('/dashboard');
+
+    } catch (error: any) {
+      console.error(
+        'Register Error:',
+        error
+      );
+
+      let title =
+        'Kayıt Başarısız';
+
+      let message =
+        'Kayıt sırasında beklenmeyen bir hata oluştu.';
+
+      switch (error?.code) {
+        case 'auth/email-already-in-use':
+          title =
+            'E-posta Kullanımda';
+          message =
+            'Bu e-posta adresiyle zaten bir hesap bulunuyor.';
+          setAuthMode('login');
+          break;
+
+        case 'auth/invalid-email':
+          title =
+            'Geçersiz E-posta';
+          message =
+            'Lütfen geçerli bir e-posta adresi giriniz.';
+          break;
+
+        case 'auth/weak-password':
+          title =
+            'Zayıf Şifre';
+          message =
+            'Şifreniz en az 6 karakter olmalıdır.';
+          break;
+
+        case 'auth/network-request-failed':
+          title =
+            'Bağlantı Hatası';
+          message =
+            'İnternet bağlantınızı kontrol edip tekrar deneyiniz.';
+          break;
+
+        case 'auth/operation-not-allowed':
+          title =
+            'Kayıt Kullanılamıyor';
+          message =
+            'E-posta ile kayıt Firebase tarafında etkin değil.';
+          break;
+
+        default:
+          break;
+      }
+
+      toast({
+        variant: 'destructive',
+        title,
+        description: message,
+      });
+
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+  /*
+   * =========================================================
+   * LOGIN
+   * =========================================================
+   */
+
+  const handleLogin = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
-    if (!auth) return;
-    
-    if (!email || !password) {
-      toast({ variant: 'destructive', title: 'Eksik Bilgi', description: 'E-posta ve şifre giriniz.' });
+
+    if (!auth) {
+      toast({
+        variant: 'destructive',
+        title: 'Bağlantı Hatası',
+        description:
+          'Firebase bağlantısı hazır değil.',
+      });
+
+      return;
+    }
+
+    const cleanEmail =
+      email.trim().toLowerCase();
+
+    if (!cleanEmail || !password) {
+      toast({
+        variant: 'destructive',
+        title: 'Eksik Bilgi',
+        description:
+          'E-posta ve şifre alanlarını doldurunuz.',
+      });
+
       return;
     }
 
     setLoading(true);
+
     try {
-      await signInWithEmailAndPassword(auth, email.trim(), password);
-      toast({ title: 'Giriş Yapıldı', description: 'Terminal senkronize ediliyor.', className: "bg-primary text-white rounded-xl" });
+      await signInWithEmailAndPassword(
+        auth,
+        cleanEmail,
+        password
+      );
+
+      toast({
+        title: 'Giriş Başarılı',
+        description:
+          'Akademik terminal senkronize ediliyor.',
+        className:
+          'bg-primary text-white rounded-2xl',
+      });
+
       router.replace('/dashboard');
+
     } catch (error: any) {
-      console.error(error);
-      toast({ variant: 'destructive', title: 'Giriş Hatası', description: 'E-posta veya şifre geçersiz.' });
+      console.error(
+        'Login Error:',
+        error
+      );
+
+      let message =
+        'E-posta veya şifre hatalı.';
+
+      switch (error?.code) {
+        case 'auth/user-not-found':
+          message =
+            'Bu e-posta ile kayıtlı bir hesap bulunamadı.';
+          break;
+
+        case 'auth/wrong-password':
+          message =
+            'Şifre hatalı. Lütfen tekrar deneyiniz.';
+          break;
+
+        case 'auth/invalid-credential':
+          message =
+            'E-posta veya şifre hatalı.';
+          break;
+
+        case 'auth/too-many-requests':
+          message =
+            'Çok fazla başarısız giriş denemesi yapıldı. Lütfen daha sonra tekrar deneyiniz.';
+          break;
+
+        case 'auth/network-request-failed':
+          message =
+            'İnternet bağlantınızı kontrol ediniz.';
+          break;
+
+        default:
+          break;
+      }
+
+      toast({
+        variant: 'destructive',
+        title: 'Giriş Hatası',
+        description: message,
+      });
+
     } finally {
       setLoading(false);
     }
   };
 
+  /*
+   * =========================================================
+   * LOGIN SCREEN
+   * =========================================================
+   */
+
   if (authMode === 'login') {
     return (
-      <div className="max-w-md mx-auto space-y-12 px-6 w-full animate-in fade-in duration-700 py-10">
-        <div className="text-center space-y-3">
-           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 text-primary font-black text-[10px] uppercase tracking-widest italic border border-primary/5">
-              <Key className="h-3 w-3 text-accent" /> SECURE LOGIN
-           </div>
-           <h2 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-none">GİRİŞ YAP</h2>
+      <div className="mx-auto w-full max-w-md animate-in fade-in duration-700 px-6 py-10">
+
+        <div className="mb-10 space-y-4 text-center">
+
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/5 bg-primary/5 px-4 py-1.5 text-[9px] font-black uppercase italic tracking-widest text-primary">
+            <Key className="h-3 w-3 text-accent" />
+            SECURE LOGIN
+          </div>
+
+          <h2 className="text-5xl font-black uppercase italic leading-none tracking-tighter text-primary">
+            GİRİŞ YAP
+          </h2>
+
+          <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">
+            Akademik takip sistemine giriş yap
+          </p>
+
         </div>
-        <form onSubmit={handleLogin} className="space-y-6">
-           <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-primary/80 ml-4 italic">E-POSTA</Label>
-              <div className="relative group">
-                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/40 group-focus-within:text-accent transition-colors" />
-                <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-14 focus-visible:ring-accent text-primary" placeholder="E-posta adresiniz" />
-              </div>
-           </div>
-           <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-primary/80 ml-4 italic">ŞİFRE</Label>
-              <div className="relative group">
-                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/40 group-focus-within:text-accent transition-colors" />
-                <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-14 focus-visible:ring-accent text-primary" placeholder="••••••••" />
-              </div>
-           </div>
-           <Button type="submit" disabled={loading} className="w-full h-20 rounded-[2.5rem] bg-primary hover:bg-accent text-white font-black text-sm uppercase tracking-[0.4em] shadow-2xl gap-4 border-none transition-all active:scale-95">
-              {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <LogIn className="h-6 w-6 text-accent" />} TERMİNALE GİR
-           </Button>
-           <button type="button" onClick={() => setAuthMode('register')} className="w-full text-center text-[11px] font-black uppercase tracking-widest text-primary/60 hover:text-accent transition-colors italic">YENİ HESAP OLUŞTUR →</button>
+
+        <form
+          onSubmit={handleLogin}
+          className="space-y-6"
+        >
+
+          {/* E-POSTA */}
+
+          <div className="space-y-2">
+
+            <Label className="ml-4 text-[10px] font-black uppercase italic text-primary/80">
+              E-POSTA
+            </Label>
+
+            <div className="group relative">
+
+              <Mail className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-primary/30 transition-colors group-focus-within:text-accent" />
+
+              <Input
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) =>
+                  setEmail(e.target.value)
+                }
+                className="h-16 rounded-2xl border-none bg-white px-14 font-bold text-primary shadow-xl focus-visible:ring-accent"
+                placeholder="E-posta adresiniz"
+              />
+
+            </div>
+          </div>
+
+          {/* ŞİFRE */}
+
+          <div className="space-y-2">
+
+            <Label className="ml-4 text-[10px] font-black uppercase italic text-primary/80">
+              ŞİFRE
+            </Label>
+
+            <div className="group relative">
+
+              <Lock className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-primary/30 transition-colors group-focus-within:text-accent" />
+
+              <Input
+                type={
+                  showPassword
+                    ? 'text'
+                    : 'password'
+                }
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) =>
+                  setPassword(e.target.value)
+                }
+                className="h-16 rounded-2xl border-none bg-white px-14 pr-14 font-bold text-primary shadow-xl focus-visible:ring-accent"
+                placeholder="••••••••"
+              />
+
+              <button
+                type="button"
+                onClick={() =>
+                  setShowPassword(
+                    (value) => !value
+                  )
+                }
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/30 transition-colors hover:text-accent"
+                aria-label={
+                  showPassword
+                    ? 'Şifreyi gizle'
+                    : 'Şifreyi göster'
+                }
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
+
+            </div>
+          </div>
+
+          {/* GİRİŞ */}
+
+          <Button
+            type="submit"
+            disabled={loading}
+            className="h-20 w-full gap-4 rounded-[2.5rem] border-none bg-primary text-sm font-black uppercase tracking-[0.35em] text-white shadow-2xl transition-all hover:bg-accent active:scale-95"
+          >
+
+            {loading ? (
+              <Loader2 className="h-6 w-6 animate-spin" />
+            ) : (
+              <LogIn className="h-6 w-6 text-accent" />
+            )}
+
+            {loading
+              ? 'GİRİŞ YAPILIYOR'
+              : 'TERMİNALE GİR'}
+
+          </Button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setAuthMode('register')
+            }
+            className="w-full text-center text-[10px] font-black uppercase italic tracking-widest text-primary/50 transition-colors hover:text-accent"
+          >
+            YENİ HESAP OLUŞTUR →
+          </button>
+
         </form>
       </div>
     );
   }
 
+  /*
+   * =========================================================
+   * REGISTER SCREEN
+   * =========================================================
+   */
+
   return (
-    <div className="max-w-2xl mx-auto space-y-12 px-6 w-full animate-in fade-in duration-1000 py-10">
-      <div className="text-center space-y-3">
-         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/10 text-accent font-black text-[10px] uppercase tracking-widest italic border border-accent/10">
-            <Sparkles className="h-3 w-3" /> Digital Academy Setup
-         </div>
-         <h2 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-none">ÜYE OL</h2>
-      </div>
-      <form onSubmit={handleRegister} className="space-y-10">
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { id: 'student', label: 'ÖĞRENCİ', icon: UserRound },
-            { id: 'teacher', label: 'EĞİTMEN', icon: Brain },
-            { id: 'school_admin', label: 'KURUM', icon: Building },
-          ].map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => setRole(r.id as UserRole)}
-              className={cn(
-                'p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center gap-3',
-                role === r.id ? 'border-accent bg-white shadow-2xl scale-105' : 'border-primary/5 bg-slate-50 opacity-40 hover:opacity-100'
-              )}
-            >
-              <r.icon className={cn('h-8 w-8', role === r.id ? 'text-accent' : 'text-primary')} />
-              <span className="font-black text-[10px] tracking-widest uppercase italic">{r.label}</span>
-            </button>
-          ))}
+    <div className="mx-auto w-full max-w-2xl animate-in fade-in duration-700 px-6 py-10">
+
+      {/* HEADER */}
+
+      <div className="mb-10 space-y-4 text-center">
+
+        <div className="inline-flex items-center gap-2 rounded-full border border-accent/10 bg-accent/10 px-4 py-1.5 text-[9px] font-black uppercase italic tracking-widest text-accent">
+          <Sparkles className="h-3 w-3" />
+          DIGITAL ACADEMY
         </div>
+
+        <h2 className="text-5xl font-black uppercase italic leading-none tracking-tighter text-primary">
+          ÜYE OL
+        </h2>
+
+        <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">
+          Akademik profilini birkaç adımda oluştur
+        </p>
+
+      </div>
+
+      <form
+        onSubmit={handleRegister}
+        className="space-y-10"
+      >
+
+        {/* =================================================
+            ROLE
+        ================================================= */}
+
+        <div className="grid grid-cols-3 gap-3 md:gap-4">
+
+          {[
+            {
+              id: 'student',
+              label: 'ÖĞRENCİ',
+              icon: UserRound,
+              description:
+                'YKS / LGS hazırlık',
+            },
+            {
+              id: 'teacher',
+              label: 'EĞİTMEN',
+              icon: Brain,
+              description:
+                'Öğrenci takibi',
+            },
+            {
+              id: 'school_admin',
+              label: 'KURUM',
+              icon: Building,
+              description:
+                'Kurum yönetimi',
+            },
+          ].map((item) => {
+
+            const Icon =
+              item.icon;
+
+            const active =
+              role === item.id;
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() =>
+                  handleRoleChange(
+                    item.id as UserRole
+                  )
+                }
+                className={cn(
+                  'flex min-h-[125px] flex-col items-center justify-center gap-2 rounded-[1.7rem] border-2 p-4 transition-all',
+                  active
+                    ? 'scale-[1.03] border-accent bg-white shadow-xl'
+                    : 'border-primary/5 bg-slate-50 opacity-50 hover:opacity-100'
+                )}
+              >
+
+                <Icon
+                  className={cn(
+                    'h-7 w-7',
+                    active
+                      ? 'text-accent'
+                      : 'text-primary'
+                  )}
+                />
+
+                <span className="text-[9px] font-black uppercase italic tracking-widest text-primary">
+                  {item.label}
+                </span>
+
+                <span className="text-center text-[7px] font-bold uppercase tracking-wide text-slate-400">
+                  {item.description}
+                </span>
+
+              </button>
+            );
+          })}
+
+        </div>
+
+        {/* =================================================
+            PERSONAL INFORMATION
+        ================================================= */}
 
         <div className="grid gap-6">
+
+          {/* NAME */}
+
           <div className="space-y-2">
-             <Label className="text-[10px] font-black uppercase text-primary/80 ml-4 italic">AD SOYAD</Label>
-             <div className="relative group">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/40" />
-                <Input required value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-14 focus-visible:ring-accent text-primary" placeholder="Adınız Soyadınız" />
-             </div>
+
+            <Label className="ml-4 text-[10px] font-black uppercase italic text-primary/80">
+              AD SOYAD
+            </Label>
+
+            <div className="relative">
+
+              <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-primary/30" />
+
+              <Input
+                required
+                autoComplete="name"
+                value={displayName}
+                onChange={(e) =>
+                  setDisplayName(
+                    e.target.value
+                  )
+                }
+                className="h-16 rounded-2xl border-none bg-white px-14 font-bold text-primary shadow-xl focus-visible:ring-accent"
+                placeholder="Adınız Soyadınız"
+              />
+
+            </div>
+
           </div>
-          <div className="grid md:grid-cols-2 gap-6">
+
+          {/* EMAIL + PASSWORD */}
+
+          <div className="grid gap-6 md:grid-cols-2">
+
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-primary/80 ml-4 italic">E-POSTA</Label>
-              <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-6 focus-visible:ring-accent text-primary" placeholder="ornek@email.com" />
+
+              <Label className="ml-4 text-[10px] font-black uppercase italic text-primary/80">
+                E-POSTA
+              </Label>
+
+              <div className="relative">
+
+                <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-primary/30" />
+
+                <Input
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) =>
+                    setEmail(
+                      e.target.value
+                    )
+                  }
+                  className="h-16 rounded-2xl border-none bg-white px-14 font-bold text-primary shadow-xl focus-visible:ring-accent"
+                  placeholder="ornek@email.com"
+                />
+
+              </div>
+
             </div>
+
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-primary/80 ml-4 italic">ŞİFRE</Label>
-              <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-6 focus-visible:ring-accent text-primary" placeholder="Min. 6 Karakter" />
+
+              <Label className="ml-4 text-[10px] font-black uppercase italic text-primary/80">
+                ŞİFRE
+              </Label>
+
+              <div className="relative">
+
+                <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-primary/30" />
+
+                <Input
+                  type={
+                    showPassword
+                      ? 'text'
+                      : 'password'
+                  }
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) =>
+                    setPassword(
+                      e.target.value
+                    )
+                  }
+                  className="h-16 rounded-2xl border-none bg-white px-14 pr-12 font-bold text-primary shadow-xl focus-visible:ring-accent"
+                  placeholder="Min. 6 karakter"
+                />
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPassword(
+                      (value) => !value
+                    )
+                  }
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/30 hover:text-accent"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+
+              </div>
+
             </div>
+
           </div>
         </div>
 
+        {/* =================================================
+            STUDENT TARGET
+        ================================================= */}
+
         {role === 'student' && (
-           <div className="space-y-6">
-              <Label className="text-[11px] font-black uppercase tracking-[0.5em] text-primary/80 block text-center italic">AKADEMİK HEDEF SEÇİMİ</Label>
-              <div className="bg-slate-50/50 rounded-[3rem] p-6 border border-primary/5 shadow-inner">
-                 <ScrollArea className="h-[250px] pr-4">
-                    <div className="space-y-8">
-                       {Object.entries(categorizedExams).map(([cat, exams]) => exams.length > 0 && (
-                          <div key={cat} className="space-y-4">
-                             <h4 className="text-[10px] font-black uppercase text-primary/40 ml-2 italic tracking-widest">{cat}</h4>
-                             <div className="grid gap-3">
-                                {exams.map((exam) => (
-                                   <button
-                                     key={exam.id}
-                                     type="button"
-                                     onClick={() => setTargetExam(exam.id)}
-                                     className={cn(
-                                       "flex items-center justify-between p-5 rounded-2xl border-2 transition-all text-left",
-                                       targetExam === exam.id ? "bg-white border-accent shadow-xl scale-[1.02]" : "bg-white/40 border-transparent hover:bg-white"
-                                     )}
-                                   >
-                                      <div className="flex items-center gap-4">
-                                         <Target className={cn("h-5 w-5", targetExam === exam.id ? "text-accent" : "text-primary/20")} />
-                                         <span className="font-black text-xs uppercase text-primary">{exam.title}</span>
+          <div className="space-y-6">
+
+            <div className="text-center">
+
+              <Label className="text-[11px] font-black uppercase italic tracking-[0.35em] text-primary/80">
+                AKADEMİK HEDEFİN
+              </Label>
+
+              <p className="mt-2 text-[8px] font-bold uppercase tracking-widest text-slate-400">
+                Sana özel çalışma planının oluşturulması için sınavını seç
+              </p>
+
+            </div>
+
+            <div className="rounded-[2.5rem] border border-primary/5 bg-slate-50/70 p-5 shadow-inner md:p-6">
+
+              <ScrollArea className="h-[280px] pr-3">
+
+                <div className="space-y-8">
+
+                  {Object.entries(
+                    categorizedExams
+                  ).map(
+                    ([category, exams]) => {
+
+                      if (
+                        !exams?.length
+                      ) {
+                        return null;
+                      }
+
+                      return (
+                        <div
+                          key={category}
+                          className="space-y-3"
+                        >
+
+                          <h4 className="ml-2 text-[9px] font-black uppercase italic tracking-[0.2em] text-primary/40">
+                            {category}
+                          </h4>
+
+                          <div className="grid gap-2">
+
+                            {exams.map(
+                              (
+                                exam
+                              ) => {
+
+                                const selected =
+                                  targetExam ===
+                                  exam.id;
+
+                                return (
+                                  <button
+                                    key={
+                                      exam.id
+                                    }
+                                    type="button"
+                                    onClick={() =>
+                                      setTargetExam(
+                                        exam.id
+                                      )
+                                    }
+                                    className={cn(
+                                      'flex items-center justify-between rounded-2xl border-2 p-4 text-left transition-all',
+                                      selected
+                                        ? 'scale-[1.01] border-accent bg-white shadow-lg'
+                                        : 'border-transparent bg-white/50 hover:bg-white'
+                                    )}
+                                  >
+
+                                    <div className="flex min-w-0 items-center gap-3">
+
+                                      <Target
+                                        className={cn(
+                                          'h-5 w-5 shrink-0',
+                                          selected
+                                            ? 'text-accent'
+                                            : 'text-primary/20'
+                                        )}
+                                      />
+
+                                      <div className="min-w-0">
+
+                                        <p className="truncate text-[10px] font-black uppercase text-primary">
+                                          {exam.title}
+                                        </p>
+
+                                        {exam.description && (
+                                          <p className="mt-1 line-clamp-1 text-[7px] font-bold uppercase tracking-wide text-slate-400">
+                                            {
+                                              exam.description
+                                            }
+                                          </p>
+                                        )}
+
                                       </div>
-                                      {targetExam === exam.id && <CheckCircle className="h-5 w-5 text-accent" />}
-                                   </button>
-                                ))}
-                             </div>
+
+                                    </div>
+
+                                    {selected && (
+                                      <CheckCircle className="h-5 w-5 shrink-0 text-accent" />
+                                    )}
+
+                                  </button>
+                                );
+                              }
+                            )}
+
                           </div>
-                       ))}
-                    </div>
-                 </ScrollArea>
-              </div>
-           </div>
+                        </div>
+                      );
+                    }
+                  )}
+
+                </div>
+
+              </ScrollArea>
+
+            </div>
+
+          </div>
         )}
 
-        <Button type="submit" disabled={loading} className="w-full h-24 rounded-[3rem] bg-[#0F172A] hover:bg-accent text-white font-black text-xl uppercase tracking-[0.4em] shadow-2xl transition-all border-none active:scale-95">
-           {loading ? <Loader2 className="h-8 w-8 animate-spin" /> : <Zap className="h-8 w-8 text-accent" />} KAYDI TAMAMLA
+        {/* =================================================
+            REGISTER BUTTON
+        ================================================= */}
+
+        <Button
+          type="submit"
+          disabled={loading}
+          className="h-20 w-full gap-4 rounded-[2.5rem] border-none bg-primary text-base font-black uppercase tracking-[0.25em] text-white shadow-2xl transition-all hover:bg-accent active:scale-[0.98] md:h-24 md:text-xl"
+        >
+
+          {loading ? (
+            <Loader2 className="h-7 w-7 animate-spin" />
+          ) : (
+            <Zap className="h-7 w-7 text-accent" />
+          )}
+
+          {loading
+            ? 'PROFİL OLUŞTURULUYOR'
+            : 'KAYDI TAMAMLA'}
+
         </Button>
-        <button type="button" onClick={() => setAuthMode('login')} className="w-full text-center text-[10px] font-black uppercase tracking-[0.3em] text-primary/60 hover:text-primary italic transition-colors">ZATEN BİR HESABIM VAR → GİRİŞ YAP</button>
+
+        {/* =================================================
+            LOGIN
+        ================================================= */}
+
+        <button
+          type="button"
+          onClick={() =>
+            setAuthMode('login')
+          }
+          className="w-full text-center text-[9px] font-black uppercase italic tracking-[0.25em] text-primary/50 transition-colors hover:text-accent"
+        >
+          ZATEN BİR HESABIM VAR → GİRİŞ YAP
+        </button>
+
       </form>
     </div>
   );

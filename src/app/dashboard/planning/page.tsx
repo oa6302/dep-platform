@@ -48,9 +48,12 @@ export default function PlanningPage() {
   useEffect(() => {
     if (studyPlan?.startDate) {
       setStartDate(studyPlan.startDate);
-      if (viewMode === 'daily') setEndDate(format(addDays(parseISO(studyPlan.startDate), 13), 'yyyy-MM-dd'));
+      // Sadece ilk yüklemede eğer endDate daha erkense güncelle
+      if (isBefore(parseISO(endDate), parseISO(studyPlan.startDate))) {
+        setEndDate(format(addDays(parseISO(studyPlan.startDate), 13), 'yyyy-MM-dd'));
+      }
     }
-  }, [studyPlan, viewMode]);
+  }, [studyPlan]);
 
   const academicMonths = useMemo(() => [
     { label: 'AĞU', date: new Date(2026, 7, 1) }, { label: 'EYL', date: new Date(2026, 8, 1) },
@@ -64,7 +67,10 @@ export default function PlanningPage() {
   const filteredPlan = useMemo(() => {
     if (!studyPlan?.masterPlan) return [];
     if (viewMode === 'daily') {
-      return studyPlan.masterPlan.filter((d: any) => !isBefore(parseISO(d.date), parseISO(startDate)) && !isBefore(parseISO(endDate), parseISO(d.date)));
+      return studyPlan.masterPlan.filter((d: any) => 
+        !isBefore(parseISO(d.date), parseISO(startDate)) && 
+        !isBefore(parseISO(endDate), parseISO(d.date))
+      );
     }
     const mStr = format(selectedMonth, 'yyyy-MM');
     return studyPlan.masterPlan.filter((d: any) => d.date.startsWith(mStr));
@@ -81,15 +87,21 @@ export default function PlanningPage() {
         updatedAt: serverTimestamp()
       });
       toast({ title: "TERMİNAL MÜHÜRLENDİ", className: "bg-accent text-primary rounded-2xl font-black shadow-2xl" });
-    } catch (e) { toast({ variant: 'destructive', title: 'Hata' }); }
-    finally { setIsRegenerating(false); }
+    } catch (e) { 
+      toast({ variant: 'destructive', title: 'Hata' }); 
+    } finally { 
+      setIsRegenerating(false); 
+    }
   };
 
   const handleSaveEdit = async () => {
     if (!db || !user || !editingBlock || !studyPlan) return;
     const newPlan = studyPlan.masterPlan.map((day: any) => {
       if (day.date === editingBlock.date) {
-        return { ...day, blocks: day.blocks.map((b: any) => b.id === editingBlock.id ? { ...editingBlock } : b) };
+        return { 
+          ...day, 
+          blocks: day.blocks.map((b: any) => b.id === editingBlock.id ? { ...editingBlock } : b) 
+        };
       }
       return day;
     });
@@ -107,7 +119,7 @@ export default function PlanningPage() {
              <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><Home className="h-5 w-5" /></Button>
           </div>
           <div className="space-y-2">
-             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v17.0</div>
+             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v18.0</div>
              <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-premium">Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span></h2>
           </div>
         </div>
@@ -116,7 +128,27 @@ export default function PlanningPage() {
           <Card className="p-8 rounded-[3rem] border-none shadow-[0_40px_100px_-25px_rgba(15,23,42,0.15)] bg-white flex flex-wrap gap-8 items-end justify-center md:justify-start">
              <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase opacity-40 ml-4 italic text-primary">BAŞLAMA TARİHİ</Label>
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xs px-6 shadow-inner" />
+                <Input 
+                  type="date" 
+                  value={startDate} 
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setViewMode('daily');
+                  }} 
+                  className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xs px-6 shadow-inner" 
+                />
+             </div>
+             <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase opacity-40 ml-4 italic text-primary">BİTİŞ TARİHİ</Label>
+                <Input 
+                  type="date" 
+                  value={endDate} 
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setViewMode('daily');
+                  }} 
+                  className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xs px-6 shadow-inner" 
+                />
              </div>
              <Button onClick={handleRegeneratePlan} disabled={isRegenerating} className="h-16 px-10 rounded-2xl bg-accent hover:bg-primary text-primary hover:text-white font-black text-[10px] uppercase tracking-[0.2em] gap-4 shadow-2xl transition-all">
                 {isRegenerating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />} PLANI YENİDEN KURGULA
@@ -150,6 +182,7 @@ export default function PlanningPage() {
                  </div>
               </Card>
             ))}
+            {filteredPlan.length === 0 && <div className="col-span-full py-40 text-center opacity-10 font-black uppercase text-2xl tracking-[0.5em] italic">Bu ay için veri bulunamadı</div>}
           </div>
         ) : filteredPlan.map((day: any) => (
           <div key={day.date} className="space-y-16">
@@ -181,6 +214,7 @@ export default function PlanningPage() {
              </div>
           </div>
         ))}
+        {viewMode === 'daily' && filteredPlan.length === 0 && <div className="py-60 text-center opacity-10 font-black uppercase text-4xl tracking-[0.8em] italic">Seçilen aralıkta veri girişi bekleniyor</div>}
       </div>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

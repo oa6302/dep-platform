@@ -28,18 +28,25 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    // Auth yüklemesi bittiyse ve kullanıcı yoksa ana sayfaya gönder
     if (!authLoading && !user) {
       router.replace('/');
     }
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    // Sınav türü seçilmemiş öğrenciyi ilgili sayfaya yönlendir
-    if (!docLoading && userData && userData.role === 'student' && !userData.targetExam) {
+    if (!docLoading && user && userData && userData.role === 'student' && !userData.targetExam) {
       router.replace('/dashboard/select-exam');
     }
-  }, [userData, docLoading, router]);
+  }, [userData, docLoading, user, router]);
+
+  // Eğer profil tamamen eksikse ve loading bittiyse otonom yönlendir
+  useEffect(() => {
+    if (!docLoading && user && !userData) {
+       // Bu durumda kullanıcı auth olmuş ama Firestore kaydı yok
+       // Normalde kayıt akışında oluşmalıydı, ama hata varsa select-exam'e yönlendirebiliriz
+       // router.replace('/dashboard/select-exam');
+    }
+  }, [userData, docLoading, user, router]);
 
   const navItems = [
     { id: 'dashboard', label: 'Anasayfa', icon: LayoutDashboard, path: '/dashboard' },

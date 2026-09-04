@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -75,7 +76,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
           <div className="space-y-6 flex-1 text-center md:text-left">
             <div className="inline-flex items-center gap-4 text-accent font-black text-[10px] uppercase tracking-[0.3em] italic bg-white/5 px-6 py-2 rounded-full border border-white/10">
-              <Brain className="h-5 w-5 animate-pulse" /> AOS YAPAY ZEKA MENTORU
+              <Brain className="h-5 w-5 animate-pulse" /> DEK YAPAY ZEKA MENTORU
             </div>
             <p className="text-3xl md:text-5xl font-black italic leading-[0.95] text-shadow-premium uppercase tracking-tighter text-white">
                "Bugün {currentDayPlan?.blocks?.length || 0} devasa akademik blok saniyeler içinde seni bekliyor."
@@ -124,13 +125,6 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                               <p className="text-[10px] font-bold text-primary opacity-60 uppercase italic leading-tight">{block.phase1?.type || (block.isReview ? 'STRATEJİK TEKRAR' : 'DERS ÇALIŞMASI')}</p>
                            </div>
                         </div>
-
-                        {block.reminder && (
-                          <div className="p-3 bg-accent/5 border border-accent/10 rounded-2xl flex items-center gap-3">
-                             <BellRing className="h-3 w-3 text-accent shrink-0" />
-                             <p className="text-[9px] font-black text-primary italic leading-tight truncate">{block.reminder}</p>
-                          </div>
-                        )}
 
                         <div className="flex justify-between gap-2 pt-6 border-t border-slate-50">
                            <Button onClick={() => handleTaskAction(block.id, 'done')} size="icon" className={cn("h-12 w-12 rounded-full shadow-xl transition-all", block.status === 'done' ? "bg-slate-100 text-slate-400" : "bg-emerald-500 text-white")}><CheckCircle2 className="h-5 w-5" /></Button>

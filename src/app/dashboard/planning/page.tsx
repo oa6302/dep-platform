@@ -11,7 +11,7 @@ import {
   Calendar, Zap, Loader2, Sparkles, 
   CheckCircle2, Trash2, ArrowLeft,
   Home, Edit3, Youtube, Save, FileText, 
-  BookOpen, Target, BookOpenCheck
+  BookOpen, Target, BookOpenCheck, ArrowRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
@@ -83,7 +83,7 @@ export default function PlanningPage() {
         }
 
         const dailyBlocks = [];
-        // BLOK 1 & 2: ANA DERSLER
+        // BLOK 1 & 2: ANA DERSLER (ROTASYON)
         for (let j = 0; j < 2; j++) {
           const lesson = lessonPool[(i * 2 + j) % lessonPool.length];
           const topics = YKS_TM_TOPICS[lesson] || ['Genel Tekrar'];

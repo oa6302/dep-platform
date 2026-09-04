@@ -39,15 +39,6 @@ export default function DashboardPage() {
     }
   }, [userData, docLoading, user, router]);
 
-  // Eğer profil tamamen eksikse ve loading bittiyse otonom yönlendir
-  useEffect(() => {
-    if (!docLoading && user && !userData) {
-       // Bu durumda kullanıcı auth olmuş ama Firestore kaydı yok
-       // Normalde kayıt akışında oluşmalıydı, ama hata varsa select-exam'e yönlendirebiliriz
-       // router.replace('/dashboard/select-exam');
-    }
-  }, [userData, docLoading, user, router]);
-
   const navItems = [
     { id: 'dashboard', label: 'Anasayfa', icon: LayoutDashboard, path: '/dashboard' },
     { id: 'planning', label: 'Planlama', icon: Calendar, path: '/dashboard/planning' },

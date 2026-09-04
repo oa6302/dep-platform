@@ -126,7 +126,7 @@ export default function PlanningPage() {
              <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><Home className="h-5 w-5" /></Button>
           </div>
           <div className="space-y-2">
-             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v22.0</div>
+             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v23.0</div>
              <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-premium">Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span></h2>
           </div>
         </div>
@@ -214,10 +214,31 @@ export default function PlanningPage() {
                            <Badge className={cn("px-8 py-3 rounded-2xl text-[11px] font-black shadow-xl", block.status === 'done' ? "bg-emerald-50 text-white" : "bg-[#FF4D6D] text-white")}>{block.status === 'done' ? 'TAMAM' : 'BEK'}</Badge>
                         </div>
                         <h4 className="text-[5rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-premium text-center break-words">{block.topic.length > 8 ? block.topic.substring(0, 7) + ".." : block.topic}</h4>
-                        <div className="bg-[#F8FAFC]/50 rounded-[4rem] p-10 space-y-10 border border-slate-50 shadow-inner flex-1 flex flex-col justify-center">
-                           <div className="flex items-center justify-between"><span className="text-[11px] font-bold text-primary/30 uppercase italic">KONU ÇALIŞMA</span><div className="flex gap-4">{block.youtubeUrl && <Youtube className="h-6 w-6 text-rose-500 opacity-60" />}</div></div>
+                        <div className="bg-[#F8FAFC]/50 rounded-[4.5rem] p-12 space-y-12 border border-slate-50 shadow-inner">
+                           <div className="space-y-5">
+                              <div className="flex items-center justify-between">
+                                 <span className="text-[12px] font-black text-primary/20 uppercase tracking-[0.3em] italic">KONU ÇALIŞMA</span>
+                                 <div className="flex gap-5 items-center">
+                                    {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank"><Youtube className="h-6 w-6 text-rose-500 opacity-60" /></a>}
+                                    {block.pdfUrl && <a href={block.pdfUrl} target="_blank"><FileText className="h-6 w-6 text-blue-500 opacity-60" /></a>}
+                                    {block.mebiUrl && <a href={block.mebiUrl} target="_blank"><BookOpen className="h-6 w-6 text-emerald-500 opacity-60" /></a>}
+                                 </div>
+                              </div>
+                           </div>
                            <div className="h-px w-full bg-slate-200/40" />
-                           <div className="flex items-center justify-between"><div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-accent animate-pulse" /><span className="text-[12px] font-black text-accent uppercase italic">TEST ÇÖZME</span></div><div className="flex gap-4">{block.testYoutubeUrl && <Youtube className="h-6 w-6 text-rose-500" />}</div></div>
+                           <div className="space-y-5">
+                              <div className="flex items-center justify-between">
+                                 <div className="flex items-center gap-3">
+                                    <div className="h-2.5 w-2.5 rounded-full bg-accent shadow-[0_0_15px_rgba(245,158,11,0.6)]" />
+                                    <span className="text-[13px] font-black text-accent uppercase tracking-[0.3em] italic">TEST ÇÖZME</span>
+                                 </div>
+                                 <div className="flex gap-5 items-center">
+                                    {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank"><Youtube className="h-6 w-6 text-rose-500 opacity-80" /></a>}
+                                    {block.testUrl && <a href={block.testUrl} target="_blank"><BookOpen className="h-6 w-6 text-emerald-500 opacity-80" /></a>}
+                                    {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank"><FileText className="h-6 w-6 text-blue-500 opacity-80" /></a>}
+                                 </div>
+                              </div>
+                           </div>
                         </div>
                         <div className="flex gap-4 pt-4 mt-auto">
                            <Button onClick={() => { setEditingBlock({...block, date: day.date}); setIsEditDialogOpen(true); }} className="flex-1 h-18 rounded-3xl bg-primary text-white font-black uppercase text-[12px] tracking-widest gap-4 shadow-2xl">DÜZENLE <Edit3 className="h-5 w-5 text-accent" /></Button>

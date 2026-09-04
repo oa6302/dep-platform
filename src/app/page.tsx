@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -12,8 +13,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { useState, useEffect } from 'react';
 import { AuthForm } from '@/components/auth-form';
 import {
   Dialog,
@@ -24,11 +24,19 @@ import {
 } from "@/components/ui/dialog";
 import { useUser } from '@/firebase';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 export default function LandingPage() {
   const router = useRouter();
   const { user } = useUser();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+
+  // Zaten giriş yapmışsa saniyeler içinde dashboard'a fırlat
+  useEffect(() => {
+    if (user) {
+      router.replace('/dashboard');
+    }
+  }, [user, router]);
 
   const handleStartClick = () => {
     if (user) {
@@ -75,7 +83,7 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row items-center gap-6 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500 w-full sm:w-auto px-4">
               <Dialog open={isAuthOpen} onOpenChange={setIsAuthOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={handleStartClick} size="lg" className="w-full sm:w-auto h-20 px-12 md:px-16 rounded-[2rem] bg-primary hover:bg-accent text-white font-black text-xl uppercase tracking-widest shadow-[0_40px_80px_-20px_rgba(15,23,42,0.45)] hover:scale-105 transition-all group border-none">
+                  <Button size="lg" className="w-full sm:w-auto h-20 px-12 md:px-16 rounded-[2rem] bg-primary hover:bg-accent text-white font-black text-xl uppercase tracking-widest shadow-[0_40px_80px_-20px_rgba(15,23,42,0.45)] hover:scale-105 transition-all group border-none">
                     HEMEN BAŞLA <ChevronRight className="ml-4 h-6 w-6 group-hover:translate-x-2 transition-transform" />
                   </Button>
                 </DialogTrigger>
@@ -102,7 +110,7 @@ export default function LandingPage() {
             <div className="container mx-auto grid lg:grid-cols-2 gap-16 items-center relative z-10 px-6 md:px-12">
               <div className="space-y-8 text-white text-center lg:text-left">
                  <h2 className="text-5xl md:text-7xl lg:text-8xl font-black italic tracking-tighter leading-[0.85] uppercase text-white text-shadow-premium">Maksimum <br /><span className="text-accent text-shadow-accent">Odaklanma</span></h2>
-                 <p className="text-lg md:text-2xl text-white/95 font-medium leading-relaxed italic max-w-xl">
+                 <p className="text-lg md:text-2xl text-white font-medium leading-relaxed italic max-w-xl opacity-90">
                    Apple tasarım standartlarında optimize edilmiş Pomodoro terminali ile ders çalışma seanslarınızın verimini anında %40 artırın.
                  </p>
                  <div className="grid grid-cols-2 gap-8 md:gap-12 pt-10 border-t border-white/10">
@@ -141,7 +149,7 @@ export default function LandingPage() {
               ].map((f, i) => (
                 <div key={i} className="p-8 md:p-12 bg-white rounded-[2.5rem] md:rounded-[3.5rem] border border-primary/5 shadow-xl hover:shadow-2xl transition-all duration-500 group text-center md:text-left hover:-translate-y-3 w-full">
                    <div className="h-16 w-16 md:h-20 md:w-20 rounded-[1.25rem] md:rounded-[1.75rem] bg-slate-50 flex items-center justify-center mb-8 md:mb-10 shadow-inner group-hover:scale-110 group-hover:rotate-6 transition-all mx-auto md:ml-0">
-                      <f.icon className={cn("h-8 w-8 md:h-10 md:w-10", f.iconColor || "text-primary")} />
+                      <f.icon className={cn("h-8 w-8 md:h-10 w-10", f.iconColor || "text-primary")} />
                    </div>
                    <h3 className="text-xl md:text-3xl font-black italic tracking-tighter text-primary uppercase mb-4 leading-tight">{f.title}</h3>
                    <p className="text-base md:text-lg font-medium text-muted-foreground italic leading-relaxed opacity-80">{f.desc}</p>

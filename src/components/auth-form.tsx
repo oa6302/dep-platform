@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -162,14 +163,14 @@ export function AuthForm({
         </div>
         <form onSubmit={handleLogin} className="space-y-6">
            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-primary/60 ml-4 italic">E-POSTA</Label>
+              <Label className="text-[10px] font-black uppercase text-primary/80 ml-4 italic">E-POSTA</Label>
               <div className="relative group">
                 <Mail className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/40 group-focus-within:text-accent transition-colors" />
                 <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-14 focus-visible:ring-accent text-primary" placeholder="E-posta adresiniz" />
               </div>
            </div>
            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-primary/60 ml-4 italic">ŞİFRE</Label>
+              <Label className="text-[10px] font-black uppercase text-primary/80 ml-4 italic">ŞİFRE</Label>
               <div className="relative group">
                 <Lock className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/40 group-focus-within:text-accent transition-colors" />
                 <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-14 focus-visible:ring-accent text-primary" placeholder="••••••••" />
@@ -178,7 +179,7 @@ export function AuthForm({
            <Button type="submit" disabled={loading} className="w-full h-20 rounded-[2.5rem] bg-primary hover:bg-accent text-white font-black text-sm uppercase tracking-[0.4em] shadow-2xl gap-4 border-none transition-all active:scale-95">
               {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <LogIn className="h-6 w-6 text-accent" />} TERMİNALE GİR
            </Button>
-           <button type="button" onClick={() => setAuthMode('register')} className="w-full text-center text-[11px] font-black uppercase tracking-widest text-primary/40 hover:text-accent transition-colors italic">YENİ HESAP OLUŞTUR →</button>
+           <button type="button" onClick={() => setAuthMode('register')} className="w-full text-center text-[11px] font-black uppercase tracking-widest text-primary/60 hover:text-accent transition-colors italic">YENİ HESAP OLUŞTUR →</button>
         </form>
       </div>
     );
@@ -216,7 +217,7 @@ export function AuthForm({
 
         <div className="grid gap-6">
           <div className="space-y-2">
-             <Label className="text-[10px] font-black uppercase text-primary/60 ml-4 italic">AD SOYAD</Label>
+             <Label className="text-[10px] font-black uppercase text-primary/80 ml-4 italic">AD SOYAD</Label>
              <div className="relative group">
                 <User className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/40" />
                 <Input required value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-14 focus-visible:ring-accent text-primary" placeholder="Adınız Soyadınız" />
@@ -224,11 +225,11 @@ export function AuthForm({
           </div>
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-primary/60 ml-4 italic">E-POSTA</Label>
+              <Label className="text-[10px] font-black uppercase text-primary/80 ml-4 italic">E-POSTA</Label>
               <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-6 focus-visible:ring-accent text-primary" placeholder="ornek@email.com" />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-primary/60 ml-4 italic">ŞİFRE</Label>
+              <Label className="text-[10px] font-black uppercase text-primary/80 ml-4 italic">ŞİFRE</Label>
               <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-6 focus-visible:ring-accent text-primary" placeholder="Min. 6 Karakter" />
             </div>
           </div>
@@ -236,7 +237,7 @@ export function AuthForm({
 
         {role === 'student' && (
            <div className="space-y-6">
-              <Label className="text-[11px] font-black uppercase tracking-[0.5em] text-primary/60 block text-center italic">AKADEMİK HEDEF SEÇİMİ</Label>
+              <Label className="text-[11px] font-black uppercase tracking-[0.5em] text-primary/80 block text-center italic">AKADEMİK HEDEF SEÇİMİ</Label>
               <div className="bg-slate-50/50 rounded-[3rem] p-6 border border-primary/5 shadow-inner">
                  <ScrollArea className="h-[250px] pr-4">
                     <div className="space-y-8">
@@ -273,7 +274,7 @@ export function AuthForm({
         <Button type="submit" disabled={loading} className="w-full h-24 rounded-[3rem] bg-[#0F172A] hover:bg-accent text-white font-black text-xl uppercase tracking-[0.4em] shadow-2xl transition-all border-none active:scale-95">
            {loading ? <Loader2 className="h-8 w-8 animate-spin" /> : <Zap className="h-8 w-8 text-accent" />} KAYDI TAMAMLA
         </Button>
-        <button type="button" onClick={() => setAuthMode('login')} className="w-full text-center text-[10px] font-black uppercase tracking-[0.3em] text-primary/40 hover:text-primary italic transition-colors">ZATEN BİR HESABIM VAR → GİRİŞ YAP</button>
+        <button type="button" onClick={() => setAuthMode('login')} className="w-full text-center text-[10px] font-black uppercase tracking-[0.3em] text-primary/60 hover:text-primary italic transition-colors">ZATEN BİR HESABIM VAR → GİRİŞ YAP</button>
       </form>
     </div>
   );

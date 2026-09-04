@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useDoc, useFirestore } from '@/firebase';
@@ -12,7 +11,7 @@ import {
   Menu, X, Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { StudentView } from '@/components/dashboard/student-view';
 import { TeacherView } from '@/components/dashboard/teacher-view';
 import { SchoolAdminView } from '@/components/dashboard/school-admin-view';
@@ -26,6 +25,13 @@ export default function DashboardPage() {
   const { data: userData, loading: docLoading } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // REDIRECT LOGIC: Eğer student ise ve targetExam yoksa saniyeler içinde seçime gönder
+  useEffect(() => {
+    if (!docLoading && userData && userData.role === 'student' && !userData.targetExam) {
+      router.replace('/dashboard/select-exam');
+    }
+  }, [userData, docLoading, router]);
 
   const navItems = [
     { id: 'dashboard', label: 'Anasayfa', icon: LayoutDashboard, path: '/dashboard' },
@@ -60,11 +66,13 @@ export default function DashboardPage() {
     );
   }
 
-  // If user is logged in but has no profile data (shouldn't happen with our new form, but for safety)
   if (!userData) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] py-20 px-6 flex items-center justify-center">
-        <AuthForm mode="register" isProfileCompletion />
+        <div className="max-w-md w-full text-center space-y-6">
+           <Loader2 className="h-12 w-12 animate-spin mx-auto text-accent" />
+           <p className="font-black italic uppercase text-primary">Terminal Senkronize Ediliyor...</p>
+        </div>
       </div>
     );
   }
@@ -122,10 +130,10 @@ export default function DashboardPage() {
                 }}
                 className={cn(
                   "w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all font-black text-[11px] uppercase tracking-widest group",
-                  item.path === '/dashboard' ? "bg-primary text-white shadow-xl shadow-primary/20" : "text-muted-foreground hover:bg-slate-50 hover:text-primary"
+                  router.pathname === item.path ? "bg-primary text-white shadow-xl shadow-primary/20" : "text-muted-foreground hover:bg-slate-50 hover:text-primary"
                 )}
               >
-                <item.icon className={cn("h-5 w-5", item.path === '/dashboard' ? "text-accent" : "text-slate-300 group-hover:text-primary")} />
+                <item.icon className={cn("h-5 w-5", router.pathname === item.path ? "text-accent" : "text-slate-300 group-hover:text-primary")} />
                 {item.label}
               </button>
             ))}

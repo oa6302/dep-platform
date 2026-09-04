@@ -80,7 +80,6 @@ export default function PlanningPage() {
         
         let lessonPool = [...(examConfig?.lessons || ['TYT Matematik', 'TYT Türkçe'])];
         if (isStrictTYT) {
-          // AYT içeren veya Edebiyat gibi AYT odaklı dersleri ele
           lessonPool = lessonPool.filter(l => !l.toLowerCase().includes('ayt') && !l.toLowerCase().includes('edebiyat'));
         }
 

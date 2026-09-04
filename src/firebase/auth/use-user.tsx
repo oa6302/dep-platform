@@ -1,23 +1,16 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { User, onAuthStateChanged } from 'firebase/auth';
-import { useAuth } from '../provider';
-
+/**
+ * @fileOverview Auth Bypass: Üyelik sistemi kaldırıldı, sistem herkese açık "Misafir" moduna alındı.
+ */
 export function useUser() {
-  const auth = useAuth();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!auth) return;
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, [auth]);
-
-  return { user, loading };
+  return { 
+    user: { 
+      uid: 'guest_yks_tm_user', 
+      displayName: 'Misafir Öğrenci', 
+      email: 'misafir@dek.com' 
+    }, 
+    loading: false 
+  };
 }

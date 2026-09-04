@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -63,6 +62,7 @@ export default function PlanningPage() {
       const end = parseISO(endDate);
       const diffDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
       
+      // RADİKAL AYT KİLİDİ: 1 ARALIK 2025 (Öğrenci 12. sınıfsa 1 yıl öncesi)
       const aytCutoffDate = parseISO(`2026-12-01`);
       const currentExam = userData?.targetExam || 'YKS_EA';
       const examConfig = EXAM_CONFIGS[currentExam];
@@ -74,12 +74,17 @@ export default function PlanningPage() {
         const currentDt = addDays(start, i);
         const dateStr = format(currentDt, 'yyyy-MM-dd');
         
-        // 1 ARALIK AYT KURALI
+        // 1 ARALIK AYT KURALI KONTROLÜ
         const isStrictTYT = isBefore(currentDt, aytCutoffDate);
         
         let lessonPool = [...(examConfig?.lessons || ['TYT Matematik', 'TYT Türkçe'])];
+        
+        // Eğer 1 Aralık öncesindeyse AYT Matematik ve Edebiyatı havuzdan otonom ele
         if (isStrictTYT) {
-          lessonPool = lessonPool.filter(l => !l.toLowerCase().includes('ayt') && !l.toLowerCase().includes('edebiyat'));
+          lessonPool = lessonPool.filter(l => 
+            !l.toLowerCase().includes('ayt') && 
+            !l.toLowerCase().includes('edebiyat')
+          );
         }
 
         const dailyBlocks = [];
@@ -123,7 +128,11 @@ export default function PlanningPage() {
           phase1: { type: 'STRATEJİK', time: '15:00' }
         });
 
-        newPlan.push({ date: dateStr, day: format(currentDt, 'EEEE', { locale: tr }), blocks: dailyBlocks });
+        newPlan.push({
+          date: dateStr,
+          day: format(currentDt, 'EEEE', { locale: tr }),
+          blocks: dailyBlocks
+        });
       }
 
       await setDoc(doc(db, 'studyPlans', user.uid), {
@@ -133,8 +142,13 @@ export default function PlanningPage() {
         updatedAt: serverTimestamp()
       }, { merge: true });
 
-      toast({ title: 'Plan Senkronize Edildi', description: 'AYT vitesi 1 Aralık için hazırlandı.', className: "bg-primary text-white rounded-2xl" });
+      toast({ 
+        title: 'Plan Senkronize Edildi', 
+        description: 'AYT vitesi 1 Aralık için otonom olarak hazırlandı.',
+        className: "bg-primary text-white rounded-2xl"
+      });
     } catch (error) {
+      console.error(error);
       toast({ variant: 'destructive', title: 'Hata', description: 'Plan üretilemedi.' });
     } finally {
       setIsGenerating(false);
@@ -170,7 +184,10 @@ export default function PlanningPage() {
       return day;
     });
 
-    await updateDoc(doc(db, 'studyPlans', user.uid), { masterPlan: newPlan, updatedAt: serverTimestamp() });
+    await updateDoc(doc(db, 'studyPlans', user.uid), { 
+      masterPlan: newPlan,
+      updatedAt: serverTimestamp()
+    });
   };
 
   return (

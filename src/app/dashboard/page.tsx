@@ -27,12 +27,14 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
+    // Auth yüklemesi bittiyse ve kullanıcı yoksa ana sayfaya at
     if (!authLoading && !user) {
       router.replace('/');
     }
   }, [user, authLoading, router]);
 
   useEffect(() => {
+    // Belge yüklemesi bittiyse ve öğrenci olup sınav seçmemişse seçime at
     if (!docLoading && user && userData && userData.role === 'student' && !userData.targetExam) {
       router.replace('/dashboard/select-exam');
     }
@@ -52,6 +54,7 @@ export default function DashboardPage() {
     { id: 'settings', label: 'Ayarlar', icon: Settings, path: '/dashboard/settings' },
   ];
 
+  // RADİKAL ÇÖZÜM: Yükleme ekranındayken veya yönlendirme beklenirken render'ı kilitle
   if (authLoading || (user && docLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
@@ -65,6 +68,7 @@ export default function DashboardPage() {
 
   if (!user) return null;
 
+  // Profil belgesi Firestore'da hiç yoksa (Setup aşaması)
   if (!userData && !docLoading) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] py-20 px-6 flex items-center justify-center">
@@ -75,11 +79,11 @@ export default function DashboardPage() {
            </div>
            <div className="space-y-4">
               <h2 className="text-2xl font-black text-primary uppercase italic">PROFİL EKSİK</h2>
-              <p className="text-muted-foreground font-medium italic">Sistemde size ait akademik profil kaydı bulunamadı. Lütfen kurulumu tamamlamak için sınav türü seçin.</p>
+              <p className="text-muted-foreground font-medium italic">Sistemde size ait akademik profil kaydı bulunamadı. Lütfen kurulumu tamamlamak için sınav türü seçin veya çıkış yapın.</p>
            </div>
            <div className="flex flex-col gap-4">
               <Button onClick={() => router.push('/dashboard/select-exam')} className="h-16 rounded-2xl bg-accent hover:bg-primary transition-all text-white font-black uppercase tracking-widest text-xs shadow-2xl">PROFİL KURULUMUNU TAMAMLA</Button>
-              <Button variant="ghost" onClick={() => auth && signOut(auth)} className="text-xs font-black uppercase tracking-widest text-destructive">GÜVENLİ ÇIKIŞ</Button>
+              <Button variant="ghost" onClick={() => auth && signOut(auth)} className="text-xs font-black uppercase tracking-widest text-destructive">GÜVENLİ ÇIKIŞ YAP</Button>
            </div>
         </div>
       </div>
@@ -98,6 +102,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row relative">
+      {/* Mobile Header */}
       <header className="md:hidden h-20 bg-white border-b border-slate-100 flex items-center justify-between px-6 sticky top-0 z-[60]">
         <div className="text-xl font-black italic tracking-tighter text-primary uppercase leading-none">
           DEK <span className="text-accent">AI</span>
@@ -107,6 +112,7 @@ export default function DashboardPage() {
         </Button>
       </header>
 
+      {/* Overlay */}
       {sidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] md:hidden transition-all animate-in fade-in"
@@ -114,6 +120,7 @@ export default function DashboardPage() {
         />
       )}
 
+      {/* Sidebar */}
       <aside className={cn(
         "w-[280px] bg-white border-r border-slate-100 flex flex-col fixed md:sticky inset-y-0 left-0 z-[58] transition-transform duration-500 ease-spring md:translate-x-0 h-screen",
         sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
@@ -135,7 +142,7 @@ export default function DashboardPage() {
                   setSidebarOpen(false);
                 }}
                 className={cn(
-                  "w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all font-black text-[11px] uppercase tracking-widest group",
+                  "w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all font-black text-[11px] uppercase tracking-widest group text-left",
                   router.pathname === item.path ? "bg-primary text-white shadow-xl shadow-primary/20" : "text-muted-foreground hover:bg-slate-50 hover:text-primary"
                 )}
               >
@@ -146,16 +153,19 @@ export default function DashboardPage() {
           </nav>
         </ScrollArea>
 
-        <div className="p-8 border-t border-slate-50">
-          <div className="flex items-center gap-4 px-4 py-3 bg-slate-50 rounded-2xl">
-            <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-white font-black italic">
+        <div className="p-8 border-t border-slate-50 space-y-4">
+          <div className="flex items-center gap-4 px-4 py-3 bg-slate-50 rounded-2xl overflow-hidden">
+            <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-white font-black italic shrink-0">
               {userData?.displayName?.charAt(0) || 'U'}
             </div>
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 min-w-0">
               <p className="font-black text-[11px] uppercase truncate">{userData?.displayName || 'Kullanıcı'}</p>
               <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{userData?.role?.toUpperCase() || 'ÖĞRENCİ'}</p>
             </div>
           </div>
+          <Button variant="ghost" onClick={() => auth && signOut(auth)} className="w-full justify-start gap-4 px-6 h-12 rounded-xl text-destructive font-black text-[10px] uppercase tracking-widest hover:bg-destructive/5">
+             <LogOut className="h-4 w-4" /> Çıkış Yap
+          </Button>
         </div>
       </aside>
 

@@ -61,11 +61,15 @@ export default function DashboardPage() {
     );
   }
 
-  // Oturum yoksa giriş ekranına yönlendir
+  // Oturum yoksa giriş ekranına yönlendir (Dönüşüm modalı tetiklensin diye root'a da gönderilebilir)
   if (!user) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] py-20 px-6 flex items-center justify-center">
-        <AuthForm mode="login" />
+        <div className="max-w-md w-full text-center space-y-10">
+           <Zap className="h-16 w-16 text-accent mx-auto animate-pulse" />
+           <h2 className="text-3xl font-black italic tracking-tighter uppercase">OTURUM BEKLENİYOR</h2>
+           <Button onClick={() => router.push('/')} className="h-16 w-full rounded-2xl bg-primary font-black uppercase tracking-widest text-xs">ANA SAYFAYA DÖN</Button>
+        </div>
       </div>
     );
   }

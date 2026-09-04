@@ -56,11 +56,9 @@ export default function PlanningPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<any>(null);
 
-  // Firestore'daki plan yüklendiğinde yerel state'i güncelle ve başlama tarihini sabitle
   useEffect(() => {
     if (studyPlan?.startDate) {
       setStartDate(studyPlan.startDate);
-      // Eğer aylık moddaysak ve henüz ay seçilmemişse, başlangıç tarihinin ayına odaklan
       if (viewMode === 'daily') {
          setEndDate(format(addDays(parseISO(studyPlan.startDate), 13), 'yyyy-MM-dd'));
       }
@@ -71,7 +69,6 @@ export default function PlanningPage() {
     }
   }, [studyPlan, viewMode]);
 
-  // Tüm Akademik Aylar (Ağustos 2026 - Temmuz 2027)
   const academicMonths = useMemo(() => [
     { label: 'AĞU', date: new Date(2026, 7, 1) },
     { label: 'EYL', date: new Date(2026, 8, 1) },
@@ -106,11 +103,7 @@ export default function PlanningPage() {
     setIsReporting(true);
     setTimeout(() => {
       setIsReporting(false);
-      toast({
-        title: "Analiz Tamamlandı",
-        description: "Seçilen periyottaki akademik veriler süzüldü.",
-        className: "bg-primary text-white rounded-2xl shadow-2xl"
-      });
+      toast({ title: "Analiz Tamamlandı", className: "bg-primary text-white rounded-2xl shadow-2xl" });
     }, 800);
   };
 
@@ -120,13 +113,13 @@ export default function PlanningPage() {
     try {
       const newPlan = generateAdaptivePlan(startDate, userData.completedTopics || {});
       await updateDoc(doc(db, 'studyPlans', user.uid), {
-        startDate: startDate, // Seçilen tarihi buluta kalıcı olarak kaydet
+        startDate: startDate,
         masterPlan: newPlan,
         updatedAt: serverTimestamp()
       });
       toast({
-        title: "AKADEMİK TERMİNAL MÜHÜRLENDİ",
-        description: `Başlama tarihiniz ${format(parseISO(startDate), 'd MMMM yyyy', { locale: tr })} olarak sisteme kaydedildi.`,
+        title: "TERMİNAL MÜHÜRLENDİ",
+        description: `Başlama tarihiniz ${format(parseISO(startDate), 'd MMMM yyyy', { locale: tr })} olarak tescillendi.`,
         className: "bg-accent text-primary rounded-2xl font-black shadow-2xl"
       });
       setViewMode('daily');
@@ -141,10 +134,6 @@ export default function PlanningPage() {
     const td = format(new Date(), 'yyyy-MM-dd');
     if (type === 'today') { setStartDate(td); setEndDate(td); }
     else if (type === 'week') { setStartDate(td); setEndDate(format(addDays(new Date(), 7), 'yyyy-MM-dd')); }
-    else if (type === 'month') { 
-      setStartDate(format(startOfMonth(selectedMonth), 'yyyy-MM-dd')); 
-      setEndDate(format(endOfMonth(selectedMonth), 'yyyy-MM-dd')); 
-    }
     else if (type === 'year') { setStartDate('2026-09-01'); setEndDate('2027-06-15'); }
     setViewMode('daily');
     handleRunReport();
@@ -224,7 +213,7 @@ export default function PlanningPage() {
           </div>
           <div className="space-y-2">
              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20">
-                <Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v12.0
+                <Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v13.0
              </div>
              <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-premium">
                 Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span>
@@ -236,14 +225,12 @@ export default function PlanningPage() {
           <Card className="p-8 rounded-[3rem] border-none shadow-[0_40px_100px_-25px_rgba(15,23,42,0.15)] bg-white flex flex-wrap gap-8 items-end">
              <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40 ml-4 italic text-primary">BAŞLAMA TARİHİ</Label>
-                <div className="relative group">
-                  <Input 
-                    type="date" 
-                    value={startDate} 
-                    onChange={(e) => setStartDate(e.target.value)} 
-                    className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xs px-6 shadow-inner focus-visible:ring-accent transition-all" 
-                  />
-                </div>
+                <Input 
+                  type="date" 
+                  value={startDate} 
+                  onChange={(e) => setStartDate(e.target.value)} 
+                  className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xs px-6 shadow-inner focus-visible:ring-accent transition-all" 
+                />
              </div>
              <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40 ml-4 italic text-primary">SINAV HEDEFİ</Label>
@@ -279,11 +266,6 @@ export default function PlanningPage() {
                   </button>
                 ))}
              </div>
-             <div className="flex gap-2 bg-white p-2 rounded-2xl border-2 border-primary/5 shadow-lg shrink-0">
-                <button onClick={() => applyQuickFilter('today')} className="h-10 px-4 rounded-xl font-black text-[9px] uppercase hover:bg-slate-50 transition-all">Bugün</button>
-                <button onClick={() => applyQuickFilter('week')} className="h-10 px-4 rounded-xl font-black text-[9px] uppercase hover:bg-slate-50 transition-all">Hafta</button>
-                <button onClick={() => applyQuickFilter('year')} className="h-10 px-4 rounded-xl font-black text-[9px] uppercase hover:bg-slate-50 transition-all">2027 Hedef</button>
-             </div>
           </div>
         </div>
       </header>
@@ -291,121 +273,105 @@ export default function PlanningPage() {
       <ScrollArea className="h-full">
         <div className="space-y-24 pb-20">
           {viewMode === 'monthly' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 px-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-8 px-6">
                {filteredPlan.map((day: any) => (
                 <Card 
                   key={day.date} 
                   onClick={() => { setStartDate(day.date); setEndDate(day.date); setViewMode('daily'); }} 
                   className={cn(
-                    "p-8 rounded-[3.5rem] border-none shadow-[0_20px_50px_-10px_rgba(0,0,0,0.05)] bg-white hover:scale-[1.03] transition-all cursor-pointer relative overflow-hidden group min-h-[300px]",
+                    "p-10 rounded-[4.5rem] border-none shadow-[0_30px_70px_-15px_rgba(0,0,0,0.06)] bg-white hover:scale-[1.03] transition-all cursor-pointer relative overflow-hidden group min-h-[350px]",
                     day.isAytDay && "border-2 border-accent/40 shadow-accent/20"
                   )}
                 >
                    <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full translate-x-1/2 -translate-y-1/2 group-hover:bg-accent/5 transition-all" />
-                   <div className="space-y-6 relative z-10">
+                   <div className="space-y-8 relative z-10">
                       <div className="flex justify-between items-start">
                          <div className="flex flex-col">
-                           <span className="text-[10px] font-black text-primary/30 uppercase tracking-widest leading-none mb-1">{day.day}</span>
-                           <span className="text-4xl font-black text-primary italic leading-none tracking-tighter">{format(parseISO(day.date), 'd')}</span>
+                           <span className="text-[11px] font-black text-primary/30 uppercase tracking-widest leading-none mb-1.5">{day.day}</span>
+                           <span className="text-5xl font-black text-primary italic leading-none tracking-tighter">{format(parseISO(day.date), 'd')}</span>
                          </div>
-                         {day.isAytDay && <Badge className="bg-accent text-primary font-black text-[8px] animate-pulse">🎯 AYT START</Badge>}
+                         {day.isAytDay && <Badge className="bg-accent text-primary font-black text-[9px] animate-pulse">🎯 AYT START</Badge>}
                       </div>
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                          {day.blocks?.map((b: any, bi: number) => (
-                           <div key={bi} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/50 group-hover:bg-white group-hover:shadow-md transition-all">
-                              <div className="flex items-center gap-2 mb-1.5">
-                                 <div className={cn("h-2 w-2 rounded-full", b.status === 'done' ? "bg-emerald-500" : "bg-slate-200")} />
-                                 <span className="text-[9px] font-black uppercase text-primary/40 italic">{b.phase1?.time || '10:00'}</span>
+                           <div key={bi} className="p-4 rounded-3xl bg-[#F8FAFC] border border-slate-100 group-hover:bg-white group-hover:shadow-lg transition-all">
+                              <div className="flex items-center gap-3 mb-2">
+                                 <div className={cn("h-2.5 w-2.5 rounded-full", b.status === 'done' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-slate-200")} />
+                                 <span className="text-[10px] font-black uppercase text-primary/40 italic">{b.phase1?.time || '10:00'}</span>
                               </div>
-                              <p className="text-[11px] font-black text-primary leading-tight uppercase line-clamp-1 italic">{b.topic}</p>
+                              <p className="text-[12px] font-black text-primary leading-[0.9] uppercase line-clamp-2 italic">{b.topic}</p>
                            </div>
                          ))}
                       </div>
                    </div>
                 </Card>
               ))}
-              {filteredPlan.length === 0 && (
-                <div className="col-span-full py-40 text-center space-y-4">
-                   <p className="text-xl font-black uppercase tracking-widest text-primary/20 italic">Seçilen ay için akademik veri bulunamadı.</p>
-                   <Button variant="link" onClick={() => setViewMode('daily')} className="font-black text-accent text-xs uppercase tracking-widest">Günlük Görünüme Dön</Button>
-                </div>
-              )}
             </div>
           )}
 
           {viewMode === 'daily' && filteredPlan.map((day: any) => (
-            <div key={day.date} className="space-y-12 px-6">
-               {day.isAytDay && (
-                 <div className="p-10 rounded-[4rem] bg-accent text-primary flex items-center justify-between shadow-2xl animate-in zoom-in-95 duration-700">
-                    <div className="flex items-center gap-10">
-                       <div className="h-24 w-24 rounded-[2.5rem] bg-white flex items-center justify-center shadow-2xl"><Target className="h-14 w-14 text-accent" /></div>
-                       <div>
-                          <h3 className="text-5xl font-black italic tracking-tighter uppercase leading-none">AYT PROGRAMI BAŞLADI</h3>
-                          <p className="text-lg font-bold opacity-60 italic mt-2">TYT çalışmalarına devam ederken AYT konu programı otonom olarak aktif hale geldi.</p>
-                       </div>
-                    </div>
-                    <Badge className="bg-primary text-white h-16 px-10 rounded-3xl font-black text-xl uppercase tracking-widest shadow-2xl">01 ARALIK</Badge>
-                 </div>
-               )}
+            <div key={day.date} className="space-y-16 px-6">
                <div className="flex items-center gap-10">
-                  <h3 className="text-4xl font-black italic text-primary uppercase tracking-tighter">{format(parseISO(day.date), 'd MMMM yyyy', { locale: tr })}</h3>
+                  <h3 className="text-5xl font-black italic text-primary uppercase tracking-tighter">{format(parseISO(day.date), 'd MMMM yyyy', { locale: tr })}</h3>
                   <div className="h-px flex-1 bg-slate-200" />
-                  <Badge variant="outline" className="h-12 px-6 rounded-2xl font-black uppercase tracking-widest border-2 border-slate-100 text-primary">{day.day}</Badge>
+                  <Badge variant="outline" className="h-14 px-8 rounded-3xl font-black uppercase tracking-[0.2em] border-2 border-slate-100 text-primary text-[12px] shadow-lg">{day.day}</Badge>
                </div>
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full">
                   {day.blocks?.map((block: any) => (
-                    <Card key={block.id} className={cn("p-10 rounded-[4.5rem] border-none shadow-xl transition-all hover:scale-[1.02] bg-white h-full flex flex-col group relative overflow-hidden", block.status === 'done' && "opacity-60")}>
-                       <div className="space-y-8 h-full flex flex-col flex-1 relative z-10">
-                          <div className="flex justify-between items-start gap-4">
-                             <div className="space-y-1 flex-1">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <div className="px-3 py-1 rounded-lg bg-accent/10 text-accent flex items-center gap-1.5 border border-accent/20">
-                                    <Clock className="h-3.5 w-3.5" />
-                                    <span className="text-[10px] font-black">{block.phase1?.time || '10:00'}</span>
-                                  </div>
-                                  <p className="text-[8px] font-bold text-muted-foreground/40 uppercase tracking-[0.3em] italic">#{String(block.lesson || 'GENEL').substring(0, 4).toUpperCase()}</p>
+                    <Card key={block.id} className={cn("p-12 rounded-[5.5rem] border-none shadow-[0_50px_100px_-25px_rgba(0,0,0,0.12)] transition-all hover:scale-[1.03] bg-white h-full flex flex-col group relative overflow-hidden", block.status === 'done' && "opacity-60")}>
+                       <div className="space-y-12 h-full flex flex-col flex-1 relative z-10">
+                          <div className="flex justify-between items-center gap-4">
+                             <div className="flex items-center gap-4">
+                                <div className="px-6 py-2.5 rounded-2xl bg-[#FFF8E7] text-[#B45309] flex items-center gap-2 border border-[#FEF3C7] shadow-sm">
+                                  <Clock className="h-4 w-4" />
+                                  <span className="text-[14px] font-black">{block.phase1?.time || '10:00'}</span>
                                 </div>
-                                <h4 className="text-3xl font-black italic leading-[0.9] tracking-tighter uppercase text-primary line-clamp-3 mb-2">{block.topic}</h4>
+                                <p className="text-[11px] font-black text-primary/20 uppercase tracking-[0.3em] italic">#TYT</p>
                              </div>
-                             <Badge className={cn("px-5 py-2.5 rounded-2xl text-[10px] font-black shrink-0 shadow-lg", block.status === 'done' ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-[#FF4D6D] text-white")}>
+                             <Badge className={cn("px-8 py-3 rounded-2xl text-[11px] font-black shrink-0 shadow-xl", block.status === 'done' ? "bg-emerald-500 text-white" : "bg-[#FF4D6D] text-white")}>
                                 {block.status === 'done' ? 'TAMAM' : 'BEK'}
                              </Badge>
                           </div>
 
-                          <div className="p-8 rounded-[3rem] bg-slate-50 border border-slate-100 space-y-8 shadow-inner flex-1 flex flex-col justify-center">
-                             <div className="space-y-4">
-                                <div className="flex justify-between items-center border-b border-slate-200/60 pb-3">
-                                   <span className="text-[10px] font-black text-primary/30 uppercase tracking-[0.2em] italic">KONU ÇALIŞMA</span>
-                                   <div className="flex gap-3">
-                                      {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="text-rose-500 hover:scale-125 transition-all"><Youtube className="h-5 w-5" /></a>}
-                                      {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="text-emerald-500 hover:scale-125 transition-all"><BookOpen className="h-5 w-5" /></a>}
-                                      {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="text-blue-500 hover:scale-125 transition-all"><FileText className="h-5 w-5" /></a>}
-                                      {block.konuExtraUrl && <a href={block.konuExtraUrl} target="_blank" className="text-amber-500 hover:scale-125 transition-all"><LinkIcon className="h-5 w-5" /></a>}
+                          <div className="space-y-1">
+                             <h4 className="text-5xl md:text-[4rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-premium line-clamp-3">{block.topic}</h4>
+                          </div>
+
+                          <div className="bg-[#F8FAFC]/50 rounded-[4rem] p-10 space-y-10 shadow-inner flex-1 flex flex-col justify-center border border-slate-50">
+                             <div className="space-y-2">
+                                <div className="flex items-center gap-4">
+                                   <span className="text-[11px] font-bold text-primary/30 uppercase tracking-[0.2em] italic">KONU ÇALIŞMA</span>
+                                   <div className="flex gap-4">
+                                      {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="text-rose-500 hover:scale-125 transition-all"><Youtube className="h-6 w-6" /></a>}
+                                      {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="text-emerald-500 hover:scale-125 transition-all"><BookOpen className="h-6 w-6" /></a>}
+                                      {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="text-blue-500 hover:scale-125 transition-all"><FileText className="h-6 w-6" /></a>}
                                    </div>
                                 </div>
                              </div>
-                             <div className="space-y-4">
-                                <div className="flex justify-between items-center">
-                                   <p className="text-[11px] font-black text-accent uppercase tracking-[0.2em] italic flex items-center gap-2.5">
-                                      <span className="h-2 w-2 rounded-full bg-accent animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.5)]" /> TEST ÇÖZME
-                                   </p>
-                                   <div className="flex gap-3">
-                                      {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank" className="text-rose-500 hover:scale-125 transition-all"><Youtube className="h-5 w-5" /></a>}
-                                      {block.testUrl && <a href={block.testUrl} target="_blank" className="text-emerald-500 hover:scale-125 transition-all"><BookOpen className="h-5 w-5" /></a>}
-                                      {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank" className="text-blue-500 hover:scale-125 transition-all"><FileText className="h-5 w-5" /></a>}
-                                      {block.extraUrl && <a href={block.extraUrl} target="_blank" className="text-amber-500 hover:scale-125 transition-all"><LinkIcon className="h-5 w-5" /></a>}
+                             
+                             <div className="h-px w-full bg-slate-200/40" />
+                             
+                             <div className="space-y-2">
+                                <div className="flex items-center gap-4">
+                                   <div className="flex items-center gap-2">
+                                      <div className="h-2.5 w-2.5 rounded-full bg-accent animate-pulse shadow-[0_0_15px_rgba(245,158,11,0.6)]" />
+                                      <span className="text-[12px] font-black text-accent uppercase tracking-[0.2em] italic">TEST ÇÖZME</span>
+                                   </div>
+                                   <div className="flex gap-4">
+                                      {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank" className="text-rose-500 hover:scale-125 transition-all"><Youtube className="h-6 w-6" /></a>}
+                                      {block.testUrl && <a href={block.testUrl} target="_blank" className="text-emerald-500 hover:scale-125 transition-all"><BookOpen className="h-6 w-6" /></a>}
+                                      {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank" className="text-blue-500 hover:scale-125 transition-all"><FileText className="h-6 w-6" /></a>}
                                    </div>
                                 </div>
                              </div>
                           </div>
 
-                          <div className="flex justify-between gap-3 pt-8 border-t border-slate-50 mt-auto">
-                             <Button onClick={() => handleTaskAction(day.date, block.id, 'done')} className={cn("flex-1 h-14 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all", block.status === 'done' ? "bg-slate-100 text-slate-400 shadow-inner" : "bg-emerald-500 text-white shadow-xl shadow-emerald-500/20")}>
+                          <div className="flex justify-between gap-4 pt-4 mt-auto">
+                             <Button onClick={() => handleTaskAction(day.date, block.id, 'done')} className={cn("flex-1 h-18 rounded-3xl text-[12px] font-black uppercase tracking-widest transition-all shadow-2xl", block.status === 'done' ? "bg-slate-100 text-slate-400" : "bg-emerald-500 text-white")}>
                                 <CheckCircle2 className="h-5 w-5 mr-3" /> {block.status === 'done' ? 'GERİ AL' : 'TAMAMLA'}
                              </Button>
-                             <div className="flex gap-3">
-                                <button onClick={() => handleTaskAction(day.date, block.id, 'edit')} className="h-14 w-14 rounded-2xl border-2 border-slate-100 bg-white text-primary flex items-center justify-center hover:border-primary transition-all shadow-md"><Edit3 className="h-5 w-5" /></button>
-                                <button onClick={() => handleTaskAction(day.date, block.id, 'delete')} className="h-14 w-14 rounded-2xl border-2 border-slate-100 bg-white text-rose-500 flex items-center justify-center hover:border-rose-500 transition-all shadow-md"><Trash2 className="h-5 w-5" /></button>
+                             <div className="flex gap-4">
+                                <button onClick={() => handleTaskAction(day.date, block.id, 'edit')} className="h-18 w-18 rounded-3xl border-2 border-slate-100 bg-white text-primary flex items-center justify-center hover:border-primary transition-all shadow-xl"><Edit3 className="h-6 w-6" /></button>
                              </div>
                           </div>
                        </div>
@@ -434,91 +400,31 @@ export default function PlanningPage() {
                    <div className="grid grid-cols-2 gap-8">
                       <div className="space-y-3">
                          <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">SAAT</Label>
-                         <div className="relative group">
-                            <Input type="time" value={editingBlock.phase1?.time || '10:00'} onChange={(e) => setEditingBlock({...editingBlock, phase1: { ...editingBlock.phase1, time: e.target.value }})} className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xl px-10 shadow-inner focus-visible:ring-accent" />
-                            <Clock className="absolute right-6 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/20 group-focus-within:text-accent" />
-                         </div>
+                         <Input type="time" value={editingBlock.phase1?.time || '10:00'} onChange={(e) => setEditingBlock({...editingBlock, phase1: { ...editingBlock.phase1, time: e.target.value }})} className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xl px-10 shadow-inner focus-visible:ring-accent" />
                       </div>
                       <div className="space-y-3">
                          <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">TARİH</Label>
-                         <div className="relative group">
-                            <Input type="date" value={editingBlock.date} onChange={(e) => setEditingBlock({...editingBlock, date: e.target.value})} className="h-16 rounded-2xl bg-slate-50 border-none font-black text-sm px-10 shadow-inner focus-visible:ring-accent" />
-                            <Calendar className="absolute right-6 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/20 group-focus-within:text-accent" />
-                         </div>
+                         <Input type="date" value={editingBlock.date} onChange={(e) => setEditingBlock({...editingBlock, date: e.target.value})} className="h-16 rounded-2xl bg-slate-50 border-none font-black text-sm px-10 shadow-inner focus-visible:ring-accent" />
                       </div>
                    </div>
 
                    <div className="space-y-8">
-                      <div className="flex items-center gap-4 ml-6">
-                         <span className="h-3 w-3 rounded-full bg-primary" />
-                         <h4 className="text-sm font-black uppercase tracking-widest text-primary italic">KONU ÇALIŞMA KAYNAKLARI</h4>
-                      </div>
+                      <h4 className="text-sm font-black uppercase tracking-widest text-primary italic ml-6">KONU ÇALIŞMA KAYNAKLARI</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                         <div className="space-y-2">
-                            <Label className="text-[9px] font-black uppercase opacity-30 ml-6 italic">YOUTUBE (KONU)</Label>
-                            <div className="relative group">
-                               <Youtube className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-500 opacity-40 group-focus-within:opacity-100" />
-                               <Input value={editingBlock.youtubeUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, youtubeUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner pl-14 text-xs" placeholder="Video Linki" />
-                            </div>
-                         </div>
-                         <div className="space-y-2">
-                            <Label className="text-[9px] font-black uppercase opacity-30 ml-6 italic">MEBİ / EBA (KONU)</Label>
-                            <div className="relative group">
-                               <BookOpen className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500 opacity-40 group-focus-within:opacity-100" />
-                               <Input value={editingBlock.mebiUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, mebiUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner pl-14 text-xs" placeholder="Konu Anlatım" />
-                            </div>
-                         </div>
-                         <div className="space-y-2">
-                            <Label className="text-[9px] font-black uppercase opacity-30 ml-6 italic">PDF (KONU)</Label>
-                            <div className="relative group">
-                               <FileText className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-500 opacity-40 group-focus-within:opacity-100" />
-                               <Input value={editingBlock.pdfUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, pdfUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner pl-14 text-xs" placeholder="Ders Notu PDF" />
-                            </div>
-                         </div>
-                         <div className="space-y-2">
-                            <Label className="text-[9px] font-black uppercase opacity-30 ml-6 italic">KONU EXTRA</Label>
-                            <div className="relative group">
-                               <LinkIcon className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500 opacity-40 group-focus-within:opacity-100" />
-                               <Input value={editingBlock.konuExtraUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, konuExtraUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner pl-14 text-xs" placeholder="Extra Kaynak" />
-                            </div>
-                         </div>
+                         <Input value={editingBlock.youtubeUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, youtubeUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" placeholder="YouTube Link" />
+                         <Input value={editingBlock.mebiUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, mebiUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" placeholder="MEBİ / EBA Link" />
+                         <Input value={editingBlock.pdfUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, pdfUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" placeholder="PDF Ders Notu" />
+                         <Input value={editingBlock.konuExtraUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, konuExtraUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" placeholder="Extra Kaynak" />
                       </div>
                    </div>
 
                    <div className="space-y-8">
-                      <div className="flex items-center gap-4 ml-6">
-                         <span className="h-3 w-3 rounded-full bg-accent" />
-                         <h4 className="text-sm font-black uppercase tracking-widest text-accent italic">TEST ÇÖZME KAYNAKLARI</h4>
-                      </div>
+                      <h4 className="text-sm font-black uppercase tracking-widest text-accent italic ml-6">TEST ÇÖZME KAYNAKLARI</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                         <div className="space-y-2">
-                            <Label className="text-[9px] font-black uppercase opacity-30 ml-6 italic">YOUTUBE (ÇÖZÜM)</Label>
-                            <div className="relative group">
-                               <Youtube className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-500 opacity-40 group-focus-within:opacity-100" />
-                               <Input value={editingBlock.testYoutubeUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, testYoutubeUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner pl-14 text-xs" placeholder="Soru Çözüm Videosu" />
-                            </div>
-                         </div>
-                         <div className="space-y-2">
-                            <Label className="text-[9px] font-black uppercase opacity-30 ml-6 italic">MEBİ / EBA (SORU)</Label>
-                            <div className="relative group">
-                               <BookOpen className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500 opacity-40 group-focus-within:opacity-100" />
-                               <Input value={editingBlock.testUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, testUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner pl-14 text-xs" placeholder="EBA Test Linki" />
-                            </div>
-                         </div>
-                         <div className="space-y-2">
-                            <Label className="text-[9px] font-black uppercase opacity-30 ml-6 italic">PDF (TEST)</Label>
-                            <div className="relative group">
-                               <FileText className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-500 opacity-40 group-focus-within:opacity-100" />
-                               <Input value={editingBlock.testPdfUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, testPdfUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner pl-14 text-xs" placeholder="Yaprak Test PDF" />
-                            </div>
-                         </div>
-                         <div className="space-y-2">
-                            <Label className="text-[9px] font-black uppercase opacity-30 ml-6 italic">TEST EXTRA</Label>
-                            <div className="relative group">
-                               <LinkIcon className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500 opacity-40 group-focus-within:opacity-100" />
-                               <Input value={editingBlock.extraUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, extraUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner pl-14 text-xs" placeholder="Extra Link" />
-                            </div>
-                         </div>
+                         <Input value={editingBlock.testYoutubeUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, testYoutubeUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" placeholder="YouTube Soru Çözümü" />
+                         <Input value={editingBlock.testUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, testUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" placeholder="EBA Test Link" />
+                         <Input value={editingBlock.testPdfUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, testPdfUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" placeholder="PDF Yaprak Test" />
+                         <Input value={editingBlock.extraUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, extraUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" placeholder="Extra Test Link" />
                       </div>
                    </div>
 

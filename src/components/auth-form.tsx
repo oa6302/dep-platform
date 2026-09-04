@@ -10,7 +10,11 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfi
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, UserRound, Brain, Key, LogIn, Building, CheckCircle, Zap, Target, Sparkles, Eye, EyeOff } from 'lucide-react';
+import { 
+  Loader2, Mail, Lock, User, UserRound, Brain, 
+  Key, LogIn, Building, CheckCircle, Zap, Target, 
+  Sparkles, Eye, EyeOff 
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 
@@ -59,7 +63,7 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
     const cleanName = displayName.trim();
 
     if (!cleanName || !cleanEmail || password.length < 6) {
-      toast({ variant: 'destructive', title: 'Hata', description: 'Lütfen bilgileri eksiksiz doldurun (Şifre min 6 karakter).' });
+      toast({ variant: 'destructive', title: 'Hata', description: 'Lütfen bilgileri eksiksiz doldurun (Min 6 karakter).' });
       return;
     }
 
@@ -98,15 +102,16 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
       }
 
       await setDoc(doc(db, 'users', credential.user.uid), userData);
-      toast({ title: 'Kayıt Başarılı', description: 'Profiliniz otonom olarak oluşturuldu.', className: 'bg-primary text-white rounded-2xl' });
+      toast({ title: 'Kayıt Başarılı', description: 'Akademik profiliniz oluşturuldu.', className: 'bg-primary text-white rounded-2xl shadow-2xl' });
       router.replace('/dashboard');
     } catch (error: any) {
-      if (error.code === 'auth/email-already-in-use') {
-        toast({ title: 'Hesap Bulundu', description: 'Bu e-posta ile zaten bir hesap var. Giriş terminaline yönlendiriliyorsunuz.', className: 'bg-accent text-primary' });
+      console.error('Register Error:', error);
+      let message = 'Kayıt sırasında beklenmeyen bir hata oluştu.';
+      if (error?.code === 'auth/email-already-in-use') {
+        message = 'Bu e-posta adresiyle zaten bir hesap bulunuyor.';
         setAuthMode('login');
-      } else {
-        toast({ variant: 'destructive', title: 'Hata', description: 'Kayıt işlemi saniyeler içinde başarısız oldu.' });
       }
+      toast({ variant: 'destructive', title: 'Hata', description: message });
     } finally {
       setLoading(false);
     }
@@ -116,13 +121,16 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
     e.preventDefault();
     if (!auth) return;
     const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !password) return;
+
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, cleanEmail, password);
-      toast({ title: 'Giriş Başarılı', className: 'bg-primary text-white rounded-2xl shadow-2xl' });
+      toast({ title: 'Giriş Başarılı', description: 'Akademik terminal senkronize ediliyor.', className: 'bg-primary text-white rounded-2xl shadow-2xl' });
       router.replace('/dashboard');
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Hata', description: 'E-posta veya şifre terminale saniyeler içinde uymuyor.' });
+      console.error('Login Error:', error);
+      toast({ variant: 'destructive', title: 'Giriş Hatası', description: 'E-posta veya şifre hatalı.' });
     } finally {
       setLoading(false);
     }
@@ -135,8 +143,8 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/5 bg-primary/5 px-4 py-1.5 text-[9px] font-black uppercase italic tracking-widest text-primary">
             <Key className="h-3 w-3 text-accent" /> SECURE LOGIN
           </div>
-          <h2 className="text-5xl font-black uppercase italic leading-none tracking-tighter text-primary">GİRİŞ YAP</h2>
-          <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Akademik takip terminaline bağlan</p>
+          <h2 className="text-5xl font-black uppercase italic leading-none tracking-tighter text-primary text-shadow-premium">GİRİŞ YAP</h2>
+          <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Akademik takip sistemine bağlan</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
@@ -144,24 +152,24 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
             <Label className="ml-4 text-[10px] font-black uppercase italic text-primary/80">E-POSTA</Label>
             <div className="group relative">
               <Mail className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-primary/30 transition-colors group-focus-within:text-accent" />
-              <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-16 rounded-2xl border-none bg-white px-14 font-bold shadow-xl" placeholder="ornek@email.com" />
+              <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-16 rounded-2xl border-none bg-white px-14 font-bold text-primary shadow-xl focus-visible:ring-accent" placeholder="ornek@email.com" />
             </div>
           </div>
           <div className="space-y-2">
             <Label className="ml-4 text-[10px] font-black uppercase italic text-primary/80">ŞİFRE</Label>
             <div className="group relative">
               <Lock className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-primary/30 transition-colors group-focus-within:text-accent" />
-              <Input type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} className="h-16 rounded-2xl border-none bg-white px-14 pr-14 font-bold shadow-xl" placeholder="••••••••" />
+              <Input type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} className="h-16 rounded-2xl border-none bg-white px-14 pr-14 font-bold text-primary shadow-xl focus-visible:ring-accent" placeholder="••••••••" />
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/30 hover:text-accent">
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
           </div>
-          <Button type="submit" disabled={loading} className="h-20 w-full gap-4 rounded-[2.5rem] bg-primary text-sm font-black uppercase tracking-[0.35em] text-white shadow-2xl hover:bg-accent transition-all active:scale-95">
+          <Button type="submit" disabled={loading} className="h-20 w-full gap-4 rounded-[2.5rem] border-none bg-primary text-sm font-black uppercase tracking-[0.35em] text-white shadow-2xl transition-all hover:bg-accent active:scale-95">
             {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <LogIn className="h-6 w-6 text-accent" />}
-            {loading ? 'TERMİNAL BAĞLANIYOR' : 'TERMİNALE GİR'}
+            {loading ? 'GİRİŞ YAPILIYOR' : 'TERMİNALE GİR'}
           </Button>
-          <button type="button" onClick={() => setAuthMode('register')} className="w-full text-center text-[10px] font-black uppercase italic tracking-widest text-primary/50 hover:text-accent">YENİ HESAP OLUŞTUR →</button>
+          <button type="button" onClick={() => setAuthMode('register')} className="w-full text-center text-[10px] font-black uppercase italic tracking-widest text-primary/50 transition-colors hover:text-accent">YENİ HESAP OLUŞTUR →</button>
         </form>
       </div>
     );
@@ -173,20 +181,20 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
         <div className="inline-flex items-center gap-2 rounded-full border border-accent/10 bg-accent/10 px-4 py-1.5 text-[9px] font-black uppercase italic tracking-widest text-accent">
           <Sparkles className="h-3 w-3" /> DIGITAL ACADEMY
         </div>
-        <h2 className="text-5xl font-black uppercase italic leading-none tracking-tighter text-primary">ÜYE OL</h2>
+        <h2 className="text-5xl font-black uppercase italic leading-none tracking-tighter text-primary text-shadow-premium">ÜYE OL</h2>
         <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Akademik profilini otonom oluştur</p>
       </div>
 
       <form onSubmit={handleRegister} className="space-y-10">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-3 md:gap-4">
           {[
             { id: 'student', label: 'ÖĞRENCİ', icon: UserRound, desc: 'YKS / LGS' },
             { id: 'teacher', label: 'EĞİTMEN', icon: Brain, desc: 'Koçluk' },
             { id: 'school_admin', label: 'KURUM', icon: Building, desc: 'Yönetim' },
           ].map((item) => (
-            <button key={item.id} type="button" onClick={() => handleRoleChange(item.id as UserRole)} className={cn('flex min-h-[125px] flex-col items-center justify-center gap-2 rounded-[1.7rem] border-2 p-4 transition-all', role === item.id ? 'scale-[1.03] border-accent bg-white shadow-xl' : 'border-primary/5 bg-slate-50 opacity-50')}>
+            <button key={item.id} type="button" onClick={() => handleRoleChange(item.id as UserRole)} className={cn('flex min-h-[125px] flex-col items-center justify-center gap-2 rounded-[1.7rem] border-2 p-4 transition-all', role === item.id ? 'scale-[1.03] border-accent bg-white shadow-xl' : 'border-primary/5 bg-slate-50 opacity-50 hover:opacity-100')}>
               <item.icon className={cn('h-7 w-7', role === item.id ? 'text-accent' : 'text-primary')} />
-              <span className="text-[9px] font-black uppercase tracking-widest text-primary">{item.label}</span>
+              <span className="text-[9px] font-black uppercase italic tracking-widest text-primary">{item.label}</span>
               <span className="text-center text-[7px] font-bold uppercase text-slate-400">{item.desc}</span>
             </button>
           ))}
@@ -195,25 +203,25 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
         <div className="grid gap-6">
           <div className="space-y-2">
             <Label className="ml-4 text-[10px] font-black uppercase italic text-primary/80">AD SOYAD</Label>
-            <div className="relative">
+            <div className="relative group">
               <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-primary/30" />
-              <Input required value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="h-16 rounded-2xl border-none bg-white px-14 font-bold shadow-xl" placeholder="Adınız Soyadınız" />
+              <Input required value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="h-16 rounded-2xl border-none bg-white px-14 font-bold text-primary shadow-xl focus-visible:ring-accent" placeholder="Adınız Soyadınız" />
             </div>
           </div>
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <Label className="ml-4 text-[10px] font-black uppercase italic text-primary/80">E-POSTA</Label>
-              <div className="relative">
+              <div className="relative group">
                 <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-primary/30" />
-                <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-16 rounded-2xl border-none bg-white px-14 font-bold shadow-xl" placeholder="ornek@email.com" />
+                <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-16 rounded-2xl border-none bg-white px-14 font-bold text-primary shadow-xl focus-visible:ring-accent" placeholder="ornek@email.com" />
               </div>
             </div>
             <div className="space-y-2">
               <Label className="ml-4 text-[10px] font-black uppercase italic text-primary/80">ŞİFRE</Label>
-              <div className="relative">
+              <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-primary/30 transition-colors group-focus-within:text-accent" />
-                <Input type={showPassword ? 'text' : 'password'} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="h-16 rounded-2xl border-none bg-white px-14 pr-12 font-bold shadow-xl" placeholder="Min. 6 Karakter" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/30">
+                <Input type={showPassword ? 'text' : 'password'} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="h-16 rounded-2xl border-none bg-white px-14 pr-12 font-bold text-primary shadow-xl focus-visible:ring-accent" placeholder="Min. 6 Karakter" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/30 hover:text-accent">
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
@@ -225,25 +233,25 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
           <div className="space-y-6">
             <div className="text-center">
               <Label className="text-[11px] font-black uppercase italic tracking-[0.35em] text-primary/80">AKADEMİK HEDEFİN</Label>
-              <p className="mt-2 text-[8px] font-bold uppercase tracking-widest text-slate-400">Plana göre sınavını seç</p>
+              <p className="mt-2 text-[8px] font-bold uppercase tracking-widest text-slate-400">Sana özel çalışma planı için sınavını seç</p>
             </div>
             <div className="rounded-[2.5rem] border border-primary/5 bg-slate-50/70 p-5 shadow-inner">
               <ScrollArea className="h-[280px] pr-3">
                 <div className="space-y-8">
                   {Object.entries(categorizedExams).map(([category, exams]) => (
                     <div key={category} className="space-y-3">
-                      <h4 className="ml-2 text-[9px] font-black uppercase text-primary/40 italic">{category}</h4>
+                      <h4 className="ml-2 text-[9px] font-black uppercase italic tracking-[0.2em] text-primary/40">{category}</h4>
                       <div className="grid gap-2">
                         {exams.map((exam) => (
                           <button key={exam.id} type="button" onClick={() => setTargetExam(exam.id)} className={cn('flex items-center justify-between rounded-2xl border-2 p-4 text-left transition-all', targetExam === exam.id ? 'scale-[1.01] border-accent bg-white shadow-lg' : 'border-transparent bg-white/50 hover:bg-white')}>
                             <div className="flex items-center gap-3">
-                              <Target className={cn('h-5 w-5', targetExam === exam.id ? 'text-accent' : 'text-primary/20')} />
-                              <div>
-                                <p className="text-[10px] font-black uppercase text-primary">{exam.title}</p>
-                                <p className="mt-1 text-[7px] font-bold uppercase text-slate-400">{exam.description}</p>
+                              <Target className={cn('h-5 w-5 shrink-0', targetExam === exam.id ? 'text-accent' : 'text-primary/20')} />
+                              <div className="min-w-0">
+                                <p className="truncate text-[10px] font-black uppercase text-primary">{exam.title}</p>
+                                <p className="mt-1 line-clamp-1 text-[7px] font-bold uppercase text-slate-400">{exam.description}</p>
                               </div>
                             </div>
-                            {targetExam === exam.id && <CheckCircle className="h-5 w-5 text-accent" />}
+                            {targetExam === exam.id && <CheckCircle className="h-5 w-5 text-accent shrink-0" />}
                           </button>
                         ))}
                       </div>
@@ -255,7 +263,7 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
           </div>
         )}
 
-        <Button type="submit" disabled={loading} className="h-20 w-full gap-4 rounded-[2.5rem] bg-primary text-base font-black uppercase tracking-[0.25em] text-white shadow-2xl hover:bg-accent md:h-24 md:text-xl active:scale-95 transition-all">
+        <Button type="submit" disabled={loading} className="h-20 w-full gap-4 rounded-[2.5rem] border-none bg-primary text-base font-black uppercase tracking-[0.25em] text-white shadow-2xl hover:bg-accent active:scale-95 transition-all md:h-24 md:text-xl">
           {loading ? <Loader2 className="h-7 w-7 animate-spin" /> : <Zap className="h-7 w-7 text-accent" />}
           {loading ? 'PROFİL OLUŞTURULUYOR' : 'KAYDI TAMAMLA'}
         </Button>

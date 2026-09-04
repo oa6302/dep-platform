@@ -25,7 +25,6 @@ import {
   Zap,
   CalendarDays,
   Clock3,
-  ArrowRight
 } from 'lucide-react';
 
 export function StudentView({ user, userData }: { user: any, userData: any }) {
@@ -46,13 +45,13 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
   const activeBlocks = useMemo(() => {
     if (!studyPlan?.masterPlan?.length || !today) return [];
     
-    // OTONOM GÖREV DEVRİ MANTIĞI
+    // OTONOM GÖREV DEVRİ MANTIĞI: Geçmiş günlerde yapılmayanları bugüne ekle
     const todayPlan = studyPlan.masterPlan.find((day: any) => day.date === today);
     const pastUnfinished: any[] = [];
     
     studyPlan.masterPlan.forEach((day: any) => {
       if (isBefore(parseISO(day.date), parseISO(today))) {
-        const unfinished = (day.blocks || []).filter((b: any) => b.status !== 'done' && !b.carriedForward);
+        const unfinished = (day.blocks || []).filter((b: any) => b.status !== 'done');
         pastUnfinished.push(...unfinished.map((b: any) => ({
           ...b,
           isDelayed: true,
@@ -188,7 +187,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
           )}
 
           {activeBlocks.length === 0 && (
-            <Card onClick={() => router.push('/dashboard/planning')} className="col-span-1 flex min-h-[320px] cursor-pointer flex-col items-center justify-center gap-6 rounded-[4rem] border-4 border-dashed border-slate-200 bg-white text-center transition-all hover:border-accent group w-full">
+            <Card onClick={() => router.push('/dashboard/planning')} className="col-span-1 flex min-h-[320px] cursor-pointer flex-col items-center justify-center gap-6 rounded-[4rem] border-4 border-dashed border-slate-200 bg-white text-center transition-all hover:border-accent group w-full xl:col-span-4 md:col-span-2">
               <Zap className="h-10 w-10 text-accent animate-pulse" />
               <h3 className="text-xl font-black uppercase italic text-primary">AKADEMİK TAKVİM BEKLENİYOR</h3>
               <Button className="h-14 px-8 rounded-2xl bg-primary text-white font-black text-[10px] uppercase tracking-widest shadow-2xl">AKADEMİK PLANI OLUŞTUR</Button>

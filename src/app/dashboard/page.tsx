@@ -7,17 +7,17 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   LayoutDashboard, Calendar, BookOpen, BarChart3, 
   Trophy, Link as LinkIcon, Award, Clock, Users, 
-  Brain, Settings, LogOut, Menu, X, Loader2, UserCircle
+  Brain, Settings, LogOut, Menu, X, Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { StudentView } from '@/components/dashboard/student-view';
 import { TeacherView } from '@/components/dashboard/teacher-view';
 import { SchoolAdminView } from '@/components/dashboard/school-admin-view';
 import { AdminView } from '@/components/dashboard/admin-view';
 import { signOut } from 'firebase/auth';
 
-export default function DashboardPage() {
+function DashboardContent() {
   const { user, loading: authLoading } = useUser();
   const auth = useAuth();
   const router = useRouter();
@@ -128,5 +128,13 @@ export default function DashboardPage() {
 
       <main className="flex-1 min-w-0">{renderView()}</main>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]"><Loader2 className="h-10 w-10 animate-spin text-accent" /></div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }

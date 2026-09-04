@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -11,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, parseISO, isBefore } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
@@ -30,16 +31,36 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
 
   const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   
-  const currentDayPlan = useMemo(() => {
-    if (!studyPlan?.masterPlan || !today) return null;
-    return studyPlan.masterPlan.find((p: any) => p.date === today);
+  // Akıllı Plan Filtreleme: Bugünün görevleri + Geçmişte "planned" kalan tüm görevler (Carry-Forward)
+  const activeTasks = useMemo(() => {
+    if (!studyPlan?.masterPlan || !today) return [];
+    
+    let tasks: any[] = [];
+    studyPlan.masterPlan.forEach((day: any) => {
+      // Bugünün görevleri
+      if (day.date === today) {
+        tasks = [...tasks, ...day.blocks];
+      }
+      // Geçmişte unutulan görevler (Sadece 3 güne kadar devret)
+      else if (isBefore(parseISO(day.date), parseISO(today))) {
+        const unfinished = day.blocks.filter((b: any) => b.status === 'planned');
+        if (unfinished.length > 0) {
+          tasks = [...tasks, ...unfinished.map((b: any) => ({ ...b, originalDate: day.date, isOverdue: true }))];
+        }
+      }
+    });
+
+    // Saate göre sırala
+    return tasks.sort((a, b) => (a.phase1?.time || '00:00').localeCompare(b.phase1?.time || '00:00'));
   }, [studyPlan, today]);
 
-  const handleTaskAction = async (blockId: string, action: string) => {
+  const handleTaskAction = async (blockId: string, action: string, originalDate?: string) => {
     if (!db || !user || !studyPlan || !today) return;
     
+    const targetDate = originalDate || today;
+    
     const newPlan = studyPlan.masterPlan.map((day: any) => {
-      if (day.date === today) {
+      if (day.date === targetDate) {
         return {
           ...day,
           blocks: day.blocks.map((b: any) => {
@@ -60,7 +81,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
     });
     
     toast({ 
-      title: 'Terminal Güncellendi', 
+      title: 'Terminal Senkronize', 
       className: "bg-primary text-white rounded-2xl shadow-2xl"
     });
   };
@@ -68,7 +89,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
   if (planLoading) return (
     <div className="p-20 flex flex-col items-center justify-center gap-6 min-h-[60vh]">
       <Loader2 className="h-10 w-10 animate-spin text-accent" />
-      <p className="text-[10px] font-black uppercase italic tracking-[0.4em] text-primary/40 italic">Terminal Senkronize Ediliyor...</p>
+      <p className="text-[10px] font-black uppercase italic tracking-[0.4em] text-primary/40 italic">Otonom Sistem Senkronize Ediliyor...</p>
     </div>
   );
 
@@ -79,10 +100,10 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
           <div className="space-y-6 flex-1 text-center md:text-left">
             <div className="inline-flex items-center gap-4 text-accent font-black text-[10px] uppercase tracking-[0.3em] italic bg-white/5 px-6 py-2 rounded-full border border-white/10">
-              <Brain className="h-5 w-5 animate-pulse" /> YKS TM MENTORU
+              <Brain className="h-5 w-5 animate-pulse" /> YKS TM MASTER v5.0
             </div>
             <h1 className="text-3xl md:text-5xl font-black italic leading-[0.95] tracking-tighter uppercase text-white">
-               Bugün {currentDayPlan?.blocks?.length || 0} devasa akademik blok saniyeler içinde seni bekliyor.
+               Bugün {activeTasks.length} kritik akademik blok saniyeler içinde seni bekliyor.
             </h1>
           </div>
           <Button onClick={() => router.push('/dashboard/planning')} className="w-full md:w-auto bg-accent hover:bg-white text-primary transition-all rounded-[2rem] h-20 px-12 font-black uppercase text-[12px] tracking-[0.3em] shadow-3xl border-none">AKADEMİK TAKVİM</Button>
@@ -98,17 +119,17 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-             {currentDayPlan?.blocks?.map((block: any) => (
+             {activeTasks.map((block: any) => (
                 <Card 
-                  key={block.id} 
+                  key={`${block.id}_${block.originalDate || today}`}
                   className={cn(
                     "p-8 rounded-[3.5rem] border-none transition-all hover:scale-[1.02] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] group relative overflow-hidden bg-white h-full flex flex-col",
                     block.status === 'done' && "opacity-60"
                   )}
                 >
                    <div className="space-y-6 relative z-10 flex-1 flex flex-col">
-                        <div className="flex justify-between items-start">
-                           <div className="space-y-1 flex-1">
+                        <div className="flex justify-between items-start gap-2">
+                           <div className="space-y-1 flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2">
                                 <div className="px-3 py-1 rounded-lg bg-accent/10 text-accent flex items-center gap-1.5 border border-accent/20">
                                   <Clock className="h-3.5 w-3.5" />
@@ -117,6 +138,9 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                                 <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest italic">#{String(block.lesson || 'DERS').substring(0, 4).toUpperCase()}</p>
                               </div>
                               <h4 className="text-2xl font-black italic leading-tight tracking-tighter uppercase text-primary text-shadow-deep line-clamp-2">{block.topic}</h4>
+                              {block.isOverdue && (
+                                <p className="text-[7px] font-black text-rose-500 uppercase tracking-widest mt-1 italic">ERTELENEN GÖREV: {block.originalDate}</p>
+                              )}
                            </div>
                            <Badge className={cn("px-4 py-1.5 rounded-full text-[8px] font-black shrink-0", block.status === 'done' ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : "bg-rose-500 text-white shadow-lg")}>
                               {block.status === 'done' ? 'TAMAM' : 'BEK'}
@@ -133,12 +157,12 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                                     {block.mebiUrl && <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm"><BookOpen className="h-4 w-4" /></a>}
                                  </div>
                               </div>
-                              <p className="text-[10px] font-bold text-primary opacity-60 uppercase italic">{block.phase1?.type || 'DERS ÇALIŞMASI'}</p>
+                              <p className="text-[10px] font-bold text-primary opacity-60 uppercase italic">{block.phase1?.type || (block.isOverdue ? 'ERTELENEN GÖREV' : 'DERS ÇALIŞMASI')}</p>
                            </div>
                         </div>
 
                         <div className="flex justify-between gap-2 pt-6 border-t border-slate-50 mt-auto">
-                           <Button onClick={() => handleTaskAction(block.id, 'done')} className={cn("flex-1 h-12 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all", block.status === 'done' ? "bg-slate-100 text-slate-400 shadow-inner" : "bg-emerald-500 text-white shadow-xl shadow-emerald-500/20")}>
+                           <Button onClick={() => handleTaskAction(block.id, 'done', block.originalDate)} className={cn("flex-1 h-12 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all", block.status === 'done' ? "bg-slate-100 text-slate-400 shadow-inner" : "bg-emerald-500 text-white shadow-xl shadow-emerald-500/20")}>
                               <CheckCircle2 className="h-4 w-4 mr-2" /> {block.status === 'done' ? 'GERİ AL' : 'TAMAMLA'}
                            </Button>
                            <Button onClick={() => router.push('/dashboard/planning')} variant="outline" size="icon" className="h-12 w-12 rounded-xl border-slate-100 hover:border-primary text-primary transition-all shadow-md"><Edit3 className="h-4 w-4" /></Button>
@@ -146,7 +170,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                    </div>
                 </Card>
              ))}
-             {(!currentDayPlan || currentDayPlan?.blocks?.length === 0) && (
+             {activeTasks.length === 0 && (
                 <Card onClick={() => router.push('/dashboard/planning')} className="lg:col-span-4 h-[300px] text-center bg-white rounded-[4rem] border-4 border-dashed border-slate-200 flex flex-col items-center justify-center gap-6 cursor-pointer hover:border-accent/20 transition-all group w-full">
                    <Zap className="h-10 w-10 text-accent opacity-20 group-hover:scale-110 transition-transform" />
                    <p className="text-xl font-black uppercase tracking-[0.4em] text-primary/20 italic">AKADEMİK TAKVİM BEKLENİYOR</p>

@@ -11,7 +11,8 @@ import {
   Calendar, Zap, Loader2, Sparkles, 
   CheckCircle2, Trash2, ArrowLeft,
   Home, Edit3, Youtube, Save, FileText, 
-  BookOpen, Target, Clock, AlertCircle
+  BookOpen, Target, Clock, AlertCircle,
+  ChevronRight, CalendarDays, Hash, Layers
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
@@ -29,6 +30,13 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function PlanningPage() {
   const { user } = useUser();
@@ -47,9 +55,8 @@ export default function PlanningPage() {
 
   const generateAutoLinks = (topic: string, lesson: string) => {
     const topicQuery = encodeURIComponent(topic);
-    const lessonQuery = encodeURIComponent(lesson);
     return {
-      youtubeUrl: `https://www.youtube.com/results?search_query=${lessonQuery}+${topicQuery}+konu+anlatımı`,
+      youtubeUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic)}`,
       pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}`,
       mebiUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}`
     };
@@ -109,48 +116,55 @@ export default function PlanningPage() {
         const existingDay = existingPlan.find((day: any) => day.date === dateStr);
         const dailyBlocks = [];
 
-        for (let j = 0; j < 2; j++) {
-          const lesson = lessonPool[(i * 2 + j) % lessonPool.length];
-          const topics = getTopics(lesson);
-          if (lessonPointers[lesson] === undefined) lessonPointers[lesson] = 0;
-          const topic = topics[lessonPointers[lesson] % topics.length];
-          const links = generateAutoLinks(topic, lesson);
-
-          const oldBlock = existingDay?.blocks?.find((b: any) => b.id === `block_${dateStr}_${j}`);
-
-          dailyBlocks.push({
-            id: `block_${dateStr}_${j}`,
-            lesson,
-            topic,
-            status: oldBlock?.status || 'planned',
-            // 12:00 -> 11:00 yapıldı
-            phase1: { type: 'KONU ÇALIŞMA', time: j === 0 ? '10:00' : '11:00' },
-            ...links
-          });
-          lessonPointers[lesson]++;
-        }
-
-        const oldPara = existingDay?.blocks?.find((b: any) => b.id === `para_${dateStr}`);
+        // Blok 1 - 10:00
+        const l1 = lessonPool[(i * 2) % lessonPool.length];
+        const t1 = getTopics(l1)[lessonPointers[l1] % getTopics(l1).length || 0];
+        if (!lessonPointers[l1]) lessonPointers[l1] = 0;
+        lessonPointers[l1]++;
+        
         dailyBlocks.push({
-          id: `para_${dateStr}`,
-          lesson: 'TYT Türkçe',
-          topic: '20 PARAGRAF SORU ÇÖZÜMÜ',
-          status: oldPara?.status || 'planned',
-          isParagraph: true,
-          // 14:00 -> 15:00 yapıldı
-          phase1: { type: 'GÜNLÜK KAMP', time: '15:00' },
-          ...generateAutoLinks('Paragraf', 'Türkçe'),
+          id: `block_${dateStr}_0`,
+          lesson: l1,
+          topic: t1,
+          status: existingDay?.blocks?.find((b: any) => b.id === `block_${dateStr}_0`)?.status || 'planned',
+          phase1: { type: 'KONU ÇALIŞMA', time: '10:00' },
+          ...generateAutoLinks(t1, l1)
         });
 
-        const oldReview = existingDay?.blocks?.find((b: any) => b.id === `review_${dateStr}`);
+        // Blok 2 - 11:00 (Eski 12:00)
+        const l2 = lessonPool[(i * 2 + 1) % lessonPool.length];
+        const t2 = getTopics(l2)[lessonPointers[l2] % getTopics(l2).length || 0];
+        if (!lessonPointers[l2]) lessonPointers[l2] = 0;
+        lessonPointers[l2]++;
+        
+        dailyBlocks.push({
+          id: `block_${dateStr}_1`,
+          lesson: l2,
+          topic: t2,
+          status: existingDay?.blocks?.find((b: any) => b.id === `block_${dateStr}_1`)?.status || 'planned',
+          phase1: { type: 'KONU ÇALIŞMA', time: '11:00' },
+          ...generateAutoLinks(t2, l2)
+        });
+
+        // Blok 3 - 12:00 (Tekrar - Eski 15:00)
         dailyBlocks.push({
           id: `review_${dateStr}`,
           lesson: 'GENEL',
           topic: 'DÜNÜN ANALİZİ & STRATEJİK TEKRAR',
-          status: oldReview?.status || 'planned',
+          status: existingDay?.blocks?.find((b: any) => b.id === `review_${dateStr}`)?.status || 'planned',
           isReview: true,
-          // 15:00 -> 12:00 yapıldı
           phase1: { type: 'STRATEJİK', time: '12:00' }
+        });
+
+        // Blok 4 - 15:00 (Paragraf - Eski 14:00)
+        dailyBlocks.push({
+          id: `para_${dateStr}`,
+          lesson: 'TYT Türkçe',
+          topic: '20 PARAGRAF SORU ÇÖZÜMÜ',
+          status: existingDay?.blocks?.find((b: any) => b.id === `para_${dateStr}`)?.status || 'planned',
+          isParagraph: true,
+          phase1: { type: 'GÜNLÜK KAMP', time: '15:00' },
+          ...generateAutoLinks('Paragraf', 'Türkçe'),
         });
 
         newPlan.push({
@@ -186,7 +200,7 @@ export default function PlanningPage() {
     if (action === 'edit') {
       const block = studyPlan.masterPlan.find((d: any) => d.date === date)?.blocks.find((b: any) => b.id === blockId);
       if (block) {
-        setEditingBlock({ ...block, date });
+        setEditingBlock({ ...block, originalDate: date });
         setIsEditDialogOpen(true);
       }
       return;
@@ -215,6 +229,49 @@ export default function PlanningPage() {
     });
   };
 
+  const handleSaveEdit = async () => {
+    if (!db || !user || !editingBlock) return;
+
+    let newPlan = [...studyPlan.masterPlan];
+
+    // Eğer tarih değiştiyse eski tarihten sil
+    if (editingBlock.date && editingBlock.date !== editingBlock.originalDate) {
+      newPlan = newPlan.map(day => {
+        if (day.date === editingBlock.originalDate) {
+          return { ...day, blocks: day.blocks.filter((b: any) => b.id !== editingBlock.id) };
+        }
+        return day;
+      });
+
+      // Yeni tarihe ekle
+      newPlan = newPlan.map(day => {
+        if (day.date === editingBlock.date) {
+          return { ...day, blocks: [...day.blocks, { ...editingBlock }] };
+        }
+        return day;
+      });
+    } else {
+      // Sadece içerik güncellendi
+      newPlan = newPlan.map(day => {
+        if (day.date === editingBlock.originalDate) {
+          return {
+            ...day,
+            blocks: day.blocks.map((b: any) => b.id === editingBlock.id ? { ...editingBlock } : b)
+          };
+        }
+        return day;
+      });
+    }
+
+    await updateDoc(doc(db, 'studyPlans', user.uid), { 
+      masterPlan: newPlan, 
+      updatedAt: serverTimestamp() 
+    });
+
+    setIsEditDialogOpen(false);
+    toast({ title: 'Terminal Güncellendi', className: "bg-primary text-white rounded-xl shadow-2xl" });
+  };
+
   return (
     <div className="p-4 md:p-14 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000 bg-[#F8FAFC]">
       <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-10">
@@ -231,8 +288,8 @@ export default function PlanningPage() {
              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20">
                 <Calendar className="h-3.5 w-3.5" /> MASTER ACADEMIC ENGINE v5.0
              </div>
-             <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none">
-                Akademik <br /><span className="text-accent">Terminal</span>
+             <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-premium">
+                Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span>
              </h2>
           </div>
         </div>
@@ -273,7 +330,7 @@ export default function PlanningPage() {
                                   <Clock className="h-3.5 w-3.5" />
                                   <span className="text-[10px] font-black">{block.phase1?.time || '10:00'}</span>
                                 </div>
-                                <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-[0.3em] italic">#{String(block.lesson || 'GENEL').substring(0, 3).toUpperCase()}</p>
+                                <p className="text-[8px] font-bold text-muted-foreground/40 uppercase tracking-[0.3em] italic">#{String(block.lesson || 'GENEL').substring(0, 3).toUpperCase()}</p>
                               </div>
                               <h4 className="text-2xl font-black italic leading-[0.9] tracking-tighter uppercase text-primary line-clamp-3">{block.topic || 'GENEL TEKRAR'}</h4>
                            </div>
@@ -282,7 +339,7 @@ export default function PlanningPage() {
                                "px-5 py-2 rounded-full text-[10px] font-black shrink-0", 
                                block.status === 'done' 
                                  ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" 
-                                 : "bg-rose-500 text-white shadow-lg"
+                                 : "bg-[#FF4D6D] text-white shadow-lg"
                              )}
                            >
                               {block.status === 'done' ? 'TAMAM' : 'BEK'}
@@ -317,55 +374,104 @@ export default function PlanningPage() {
       </div>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="rounded-[4rem] border-none shadow-2xl p-0 bg-white max-w-2xl overflow-hidden">
+        <DialogContent className="rounded-[4rem] border-none shadow-[0_60px_120px_-30px_rgba(15,23,42,0.3)] p-0 bg-white max-w-2xl overflow-hidden">
            <DialogHeader className="p-12 pb-0">
-              <DialogTitle className="text-4xl font-black italic tracking-tighter text-primary uppercase">GÖREV <span className="text-accent">DÜZENLE</span></DialogTitle>
+              <DialogTitle className="text-5xl font-black italic tracking-tighter text-primary uppercase">GÖREV <span className="text-accent">DÜZENLE</span></DialogTitle>
            </DialogHeader>
 
            {editingBlock && (
-             <ScrollArea className="max-h-[70vh] p-12 pt-8">
+             <ScrollArea className="max-h-[75vh] p-12 pt-8">
                 <div className="space-y-12">
-                   <div className="space-y-8">
-                      <div className="space-y-3">
-                         <Label className="text-[11px] font-black uppercase opacity-40 ml-6">KONU ADI</Label>
-                         <Input value={editingBlock.topic} onChange={(e) => setEditingBlock({...editingBlock, topic: e.target.value})} className="h-20 rounded-3xl bg-slate-50 border-none font-black text-2xl px-8 shadow-inner text-primary" />
-                      </div>
-                      <div className="space-y-3">
-                         <Label className="text-[11px] font-black uppercase opacity-40 ml-6">SEANS SAATİ</Label>
-                         <Input type="time" value={editingBlock.phase1?.time || '10:00'} onChange={(e) => setEditingBlock({...editingBlock, phase1: { ...editingBlock.phase1, time: e.target.value }})} className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xl px-8 shadow-inner text-primary" />
+                   {/* Konu Adı - Modern Giriş */}
+                   <div className="space-y-3">
+                      <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">KONU ADI</Label>
+                      <div className="relative group">
+                        <Input 
+                          value={editingBlock.topic} 
+                          onChange={(e) => setEditingBlock({...editingBlock, topic: e.target.value})} 
+                          className="h-24 rounded-[2.5rem] bg-slate-50 border-[4px] border-transparent focus-visible:border-accent focus-visible:bg-white font-black text-3xl px-10 shadow-inner text-primary transition-all duration-500 italic" 
+                        />
+                        <Edit3 className="absolute right-8 top-1/2 -translate-y-1/2 h-8 w-8 text-accent opacity-20 group-focus-within:opacity-100 transition-opacity" />
                       </div>
                    </div>
 
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                      {/* Seans Saati */}
+                      <div className="space-y-3">
+                         <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">SEANS SAATİ</Label>
+                         <div className="relative group">
+                            <Clock className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-primary opacity-20 group-focus-within:text-accent transition-colors" />
+                            <Input 
+                              type="time" 
+                              value={editingBlock.phase1?.time || '10:00'} 
+                              onChange={(e) => setEditingBlock({...editingBlock, phase1: { ...editingBlock.phase1, time: e.target.value }})} 
+                              className="h-20 rounded-3xl bg-slate-50 border-none font-black text-2xl pl-16 shadow-inner text-primary focus-visible:ring-2 focus-visible:ring-accent transition-all" 
+                            />
+                         </div>
+                      </div>
+
+                      {/* Görev Tarihi */}
+                      <div className="space-y-3">
+                         <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">GÖREV TARİHİ</Label>
+                         <div className="relative group">
+                            <CalendarDays className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-primary opacity-20 group-focus-within:text-accent transition-colors" />
+                            <Input 
+                              type="date" 
+                              value={editingBlock.date || editingBlock.originalDate} 
+                              onChange={(e) => setEditingBlock({...editingBlock, date: e.target.value})} 
+                              className="h-20 rounded-3xl bg-slate-50 border-none font-black text-xl pl-16 shadow-inner text-primary focus-visible:ring-2 focus-visible:ring-accent transition-all" 
+                            />
+                         </div>
+                      </div>
+                   </div>
+
+                   {/* Ders Seçimi */}
+                   <div className="space-y-3">
+                      <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">BRANŞ / DERS</Label>
+                      <Select 
+                        value={editingBlock.lesson} 
+                        onValueChange={(val) => setEditingBlock({...editingBlock, lesson: val})}
+                      >
+                         <SelectTrigger className="h-20 rounded-3xl bg-slate-50 border-none shadow-inner font-black text-xl px-8 text-primary focus:ring-accent">
+                            <Layers className="h-6 w-6 mr-4 text-accent" />
+                            <SelectValue placeholder="Ders Seçin" />
+                         </SelectTrigger>
+                         <SelectContent className="rounded-3xl border-none shadow-3xl max-h-[300px]">
+                            {Object.keys(YKS_TM_TOPICS).map(lesson => (
+                               <SelectItem key={lesson} value={lesson} className="font-bold py-4 italic">{lesson.toUpperCase()}</SelectItem>
+                            ))}
+                            <SelectItem value="GENEL" className="font-bold py-4 italic text-accent">GENEL TEKRAR / ANALİZ</SelectItem>
+                         </SelectContent>
+                      </Select>
+                   </div>
+
                    <div className="grid gap-6">
-                      <Label className="text-[11px] font-black uppercase opacity-40 ml-6">KAYNAKLAR</Label>
+                      <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">DİJİTAL KAYNAKLAR</Label>
                       {[
-                        { key: 'youtubeUrl', label: 'Youtube', icon: Youtube, color: 'text-rose-500' },
-                        { key: 'pdfUrl', label: 'OGM Materyal', icon: FileText, color: 'text-blue-500' },
-                        { key: 'mebiUrl', label: 'MEBİ/EBA', icon: BookOpen, color: 'text-emerald-500' }
+                        { key: 'youtubeUrl', label: 'YouTube Playlist', icon: Youtube, color: 'text-rose-500', bg: 'bg-rose-50' },
+                        { key: 'pdfUrl', label: 'OGM Materyal / PDF', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50' },
+                        { key: 'mebiUrl', label: 'MEBİ / EBA Terminal', icon: BookOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' }
                       ].map((item) => (
-                         <div key={item.key} className="flex gap-4 items-center">
-                            <item.icon className={cn("h-6 w-6 shrink-0", item.color)} />
-                            <Input value={editingBlock[item.key] || ''} onChange={(e) => setEditingBlock({...editingBlock, [item.key]: e.target.value})} className="h-14 rounded-xl bg-slate-50 border-none px-6 shadow-inner flex-1 text-primary" placeholder={item.label} />
+                         <div key={item.key} className="flex gap-4 items-center group">
+                            <div className={cn("h-16 w-16 rounded-2xl flex items-center justify-center shrink-0 shadow-lg transition-transform group-hover:rotate-6", item.bg)}>
+                               <item.icon className={cn("h-8 w-8", item.color)} />
+                            </div>
+                            <Input 
+                              value={editingBlock[item.key] || ''} 
+                              onChange={(e) => setEditingBlock({...editingBlock, [item.key]: e.target.value})} 
+                              className="h-16 rounded-2xl bg-slate-50 border-none px-8 shadow-inner flex-1 text-primary font-bold text-xs focus-visible:ring-accent" 
+                              placeholder={item.label} 
+                            />
                          </div>
                       ))}
                    </div>
 
-                   <div className="pt-6">
-                      <Button onClick={async () => {
-                        const newPlan = studyPlan.masterPlan.map((day: any) => {
-                          if (day.date === editingBlock.date) {
-                            return {
-                              ...day,
-                              blocks: day.blocks.map((b: any) => b.id === editingBlock.id ? { ...editingBlock } : b)
-                            };
-                          }
-                          return day;
-                        });
-                        await updateDoc(doc(db!, 'studyPlans', user!.uid), { masterPlan: newPlan, updatedAt: serverTimestamp() });
-                        setIsEditDialogOpen(false);
-                        toast({ title: 'Görev Güncellendi', className: "bg-primary text-white rounded-xl shadow-2xl" });
-                      }} className="w-full h-20 rounded-[2.5rem] bg-[#0F172A] hover:bg-accent text-white font-black text-lg uppercase tracking-[0.4em] gap-6 shadow-2xl transition-all border-none">
-                         <Save className="h-8 w-8 text-accent" /> DEĞİŞİKLİKLERİ KAYDET
+                   <div className="pt-10">
+                      <Button 
+                        onClick={handleSaveEdit}
+                        className="w-full h-24 rounded-[2.75rem] bg-[#0F172A] hover:bg-accent text-white font-black text-xl uppercase tracking-[0.5em] gap-8 shadow-[0_40px_80px_-20px_rgba(15,23,42,0.4)] transition-all active:scale-95 border-none group/save"
+                      >
+                         <Save className="h-10 w-10 text-accent group-hover/save:animate-pulse" /> TERMİNALE KAYDET
                       </Button>
                    </div>
                 </div>

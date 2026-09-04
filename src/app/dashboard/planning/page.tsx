@@ -11,18 +11,13 @@ import {
   Calendar, Zap, Loader2, Sparkles, 
   CheckCircle2, Trash2, ArrowLeft,
   Home, Edit3, Youtube, Save, FileText, 
-  BookOpen, Target, Clock,
-  ChevronRight, List, X, Link as LinkIcon,
-  FileQuestion
+  BookOpen, Target, Clock, X, Link as LinkIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { 
-  format, parseISO, isBefore, 
-  startOfMonth, endOfMonth, isSameMonth, addDays
-} from 'date-fns';
+import { format, parseISO, isBefore, isSameMonth, addDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import {
   Dialog,
@@ -34,8 +29,6 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { generateAdaptivePlan } from '@/app/dashboard/page';
 
-type ViewMode = 'monthly' | 'daily';
-
 export default function PlanningPage() {
   const { user } = useUser();
   const db = useFirestore();
@@ -45,13 +38,10 @@ export default function PlanningPage() {
   const { data: userData } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
   const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   
-  const [viewMode, setViewMode] = useState<ViewMode>('daily');
+  const [viewMode, setViewMode] = useState<'monthly' | 'daily'>('daily');
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date(2026, 8, 1));
-  
   const [startDate, setStartDate] = useState('2026-09-01');
   const [endDate, setEndDate] = useState('2026-09-14');
-  
-  const [isReporting, setIsReporting] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<any>(null);
@@ -59,53 +49,27 @@ export default function PlanningPage() {
   useEffect(() => {
     if (studyPlan?.startDate) {
       setStartDate(studyPlan.startDate);
-      if (viewMode === 'daily') {
-         setEndDate(format(addDays(parseISO(studyPlan.startDate), 13), 'yyyy-MM-dd'));
-      }
-    } else if (studyPlan?.masterPlan && studyPlan.masterPlan.length > 0) {
-      const firstDate = studyPlan.masterPlan[0].date;
-      setStartDate(firstDate);
-      setEndDate(format(addDays(parseISO(firstDate), 13), 'yyyy-MM-dd'));
+      if (viewMode === 'daily') setEndDate(format(addDays(parseISO(studyPlan.startDate), 13), 'yyyy-MM-dd'));
     }
   }, [studyPlan, viewMode]);
 
   const academicMonths = useMemo(() => [
-    { label: 'AĞU', date: new Date(2026, 7, 1) },
-    { label: 'EYL', date: new Date(2026, 8, 1) },
-    { label: 'EKİ', date: new Date(2026, 9, 1) },
-    { label: 'KAS', date: new Date(2026, 10, 1) },
-    { label: 'ARA', date: new Date(2026, 11, 1) },
-    { label: 'OCA', date: new Date(2027, 0, 1) },
-    { label: 'ŞUB', date: new Date(2027, 1, 1) },
-    { label: 'MAR', date: new Date(2027, 2, 1) },
-    { label: 'NİS', date: new Date(2027, 3, 1) },
-    { label: 'MAY', date: new Date(2027, 4, 1) },
-    { label: 'HAZ', date: new Date(2027, 5, 1) },
-    { label: 'TEM', date: new Date(2027, 6, 1) }
+    { label: 'AĞU', date: new Date(2026, 7, 1) }, { label: 'EYL', date: new Date(2026, 8, 1) },
+    { label: 'EKİ', date: new Date(2026, 9, 1) }, { label: 'KAS', date: new Date(2026, 10, 1) },
+    { label: 'ARA', date: new Date(2026, 11, 1) }, { label: 'OCA', date: new Date(2027, 0, 1) },
+    { label: 'ŞUB', date: new Date(2027, 1, 1) }, { label: 'MAR', date: new Date(2027, 2, 1) },
+    { label: 'NİS', date: new Date(2027, 3, 1) }, { label: 'MAY', date: new Date(2027, 4, 1) },
+    { label: 'HAZ', date: new Date(2027, 5, 1) }, { label: 'TEM', date: new Date(2027, 6, 1) }
   ], []);
 
   const filteredPlan = useMemo(() => {
     if (!studyPlan?.masterPlan) return [];
     if (viewMode === 'daily') {
-      return studyPlan.masterPlan.filter((d: any) => 
-        !isBefore(parseISO(d.date), parseISO(startDate)) && 
-        !isBefore(parseISO(endDate), parseISO(d.date))
-      );
+      return studyPlan.masterPlan.filter((d: any) => !isBefore(parseISO(d.date), parseISO(startDate)) && !isBefore(parseISO(endDate), parseISO(d.date)));
     }
-    if (viewMode === 'monthly') {
-      const mStr = format(selectedMonth, 'yyyy-MM');
-      return studyPlan.masterPlan.filter((d: any) => d.date.startsWith(mStr));
-    }
-    return [];
+    const mStr = format(selectedMonth, 'yyyy-MM');
+    return studyPlan.masterPlan.filter((d: any) => d.date.startsWith(mStr));
   }, [studyPlan, viewMode, startDate, endDate, selectedMonth]);
-
-  const handleRunReport = () => {
-    setIsReporting(true);
-    setTimeout(() => {
-      setIsReporting(false);
-      toast({ title: "Analiz Tamamlandı", className: "bg-primary text-white rounded-2xl shadow-2xl" });
-    }, 800);
-  };
 
   const handleRegeneratePlan = async () => {
     if (!db || !user || !userData) return;
@@ -117,86 +81,22 @@ export default function PlanningPage() {
         masterPlan: newPlan,
         updatedAt: serverTimestamp()
       });
-      toast({
-        title: "TERMİNAL MÜHÜRLENDİ",
-        description: `Başlama tarihiniz ${format(parseISO(startDate), 'd MMMM yyyy', { locale: tr })} olarak tescillendi.`,
-        className: "bg-accent text-primary rounded-2xl font-black shadow-2xl"
-      });
-      setViewMode('daily');
-    } catch (e) {
-      toast({ variant: 'destructive', title: 'Hata', description: 'Plan kurgulanamadı.' });
-    } finally {
-      setIsRegenerating(false);
-    }
-  };
-
-  const applyQuickFilter = (type: 'today' | 'week' | 'month' | 'year') => {
-    const td = format(new Date(), 'yyyy-MM-dd');
-    if (type === 'today') { setStartDate(td); setEndDate(td); }
-    else if (type === 'week') { setStartDate(td); setEndDate(format(addDays(new Date(), 7), 'yyyy-MM-dd')); }
-    else if (type === 'year') { setStartDate('2026-09-01'); setEndDate('2027-06-15'); }
-    setViewMode('daily');
-    handleRunReport();
-  };
-
-  const handleTaskAction = async (date: string, blockId: string, action: string) => {
-    if (!db || !user || !studyPlan) return;
-    
-    if (action === 'edit') {
-      const block = studyPlan.masterPlan.find((d: any) => d.date === date)?.blocks.find((b: any) => b.id === blockId);
-      if (block) {
-        setEditingBlock({ ...block, originalDate: date, date: date });
-        setIsEditDialogOpen(true);
-      }
-      return;
-    }
-
-    const newPlan = studyPlan.masterPlan.map((day: any) => {
-      if (day.date === date) {
-        return {
-          ...day,
-          blocks: day.blocks.map((b: any) => {
-            if (b.id === blockId) {
-              if (action === 'done') return { ...b, status: b.status === 'done' ? 'planned' : 'done' };
-              if (action === 'delete') return null;
-              return b;
-            }
-            return b;
-          }).filter(Boolean)
-        };
-      }
-      return day;
-    });
-
-    await updateDoc(doc(db, 'studyPlans', user.uid), { 
-      masterPlan: newPlan,
-      updatedAt: serverTimestamp()
-    });
+      toast({ title: "TERMİNAL MÜHÜRLENDİ", className: "bg-accent text-primary rounded-2xl font-black shadow-2xl" });
+    } catch (e) { toast({ variant: 'destructive', title: 'Hata' }); }
+    finally { setIsRegenerating(false); }
   };
 
   const handleSaveEdit = async () => {
-    if (!db || !user || !editingBlock) return;
-    let newPlan = [...studyPlan.masterPlan];
-    
-    if (editingBlock.date && editingBlock.date !== editingBlock.originalDate) {
-      newPlan = newPlan.map(day => day.date === editingBlock.originalDate 
-        ? { ...day, blocks: day.blocks.filter((b: any) => b.id !== editingBlock.id) } 
-        : day
-      );
-      newPlan = newPlan.map(day => day.date === editingBlock.date 
-        ? { ...day, blocks: [...(day.blocks || []), { ...editingBlock, originalDate: editingBlock.date }] } 
-        : day
-      );
-    } else {
-      newPlan = newPlan.map(day => day.date === editingBlock.originalDate 
-        ? { ...day, blocks: day.blocks.map((b: any) => b.id === editingBlock.id ? { ...editingBlock } : b) } 
-        : day
-      );
-    }
-    
+    if (!db || !user || !editingBlock || !studyPlan) return;
+    const newPlan = studyPlan.masterPlan.map((day: any) => {
+      if (day.date === editingBlock.date) {
+        return { ...day, blocks: day.blocks.map((b: any) => b.id === editingBlock.id ? { ...editingBlock } : b) };
+      }
+      return day;
+    });
     await updateDoc(doc(db, 'studyPlans', user.uid), { masterPlan: newPlan, updatedAt: serverTimestamp() });
     setIsEditDialogOpen(false);
-    toast({ title: 'Terminal Güncellendi', className: "bg-primary text-white rounded-2xl" });
+    toast({ title: 'Terminal Güncellendi', className: "bg-primary text-white rounded-2xl shadow-2xl" });
   };
 
   return (
@@ -204,235 +104,102 @@ export default function PlanningPage() {
       <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-10">
         <div className="flex flex-col gap-6">
           <div className="flex items-center gap-4">
-             <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all group">
-                <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
-             </Button>
-             <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all">
-                <Home className="h-5 w-5" />
-             </Button>
+             <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><ArrowLeft className="h-5 w-5" /></Button>
+             <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><Home className="h-5 w-5" /></Button>
           </div>
           <div className="space-y-2">
-             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20">
-                <Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v13.0
-             </div>
-             <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-premium">
-                Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span>
-             </h2>
+             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v14.0</div>
+             <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-premium">Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span></h2>
           </div>
         </div>
 
         <div className="flex flex-col gap-6 w-full xl:w-auto">
-          <Card className="p-8 rounded-[3rem] border-none shadow-[0_40px_100px_-25px_rgba(15,23,42,0.15)] bg-white flex flex-wrap gap-8 items-end">
+          <Card className="p-8 rounded-[3rem] border-none shadow-[0_40px_100px_-25px_rgba(15,23,42,0.15)] bg-white flex flex-wrap gap-8 items-end justify-center md:justify-start">
              <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40 ml-4 italic text-primary">BAŞLAMA TARİHİ</Label>
-                <Input 
-                  type="date" 
-                  value={startDate} 
-                  onChange={(e) => setStartDate(e.target.value)} 
-                  className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xs px-6 shadow-inner focus-visible:ring-accent transition-all" 
-                />
+                <Label className="text-[10px] font-black uppercase opacity-40 ml-4 italic text-primary">BAŞLAMA TARİHİ</Label>
+                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xs px-6 shadow-inner" />
              </div>
-             <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40 ml-4 italic text-primary">SINAV HEDEFİ</Label>
-                <Input disabled value="15.06.2027" className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xs px-6 opacity-60 shadow-inner" />
-             </div>
-             <Button 
-               onClick={handleRegeneratePlan} 
-               disabled={isRegenerating}
-               className="h-16 px-10 rounded-2xl bg-accent hover:bg-primary text-primary hover:text-white font-black text-[10px] uppercase tracking-[0.2em] gap-4 shadow-[0_20px_50px_-10px_rgba(245,158,11,0.4)] transition-all active:scale-95"
-             >
-                {isRegenerating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
-                PLANI YENİDEN KURGULA
+             <Button onClick={handleRegeneratePlan} disabled={isRegenerating} className="h-16 px-10 rounded-2xl bg-accent hover:bg-primary text-primary hover:text-white font-black text-[10px] uppercase tracking-[0.2em] gap-4 shadow-2xl transition-all">
+                {isRegenerating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />} PLANI YENİDEN KURGULA
              </Button>
           </Card>
           
-          <div className="flex flex-col lg:flex-row gap-6 items-center">
-             <Button onClick={handleRunReport} disabled={isReporting} className="h-16 px-10 rounded-2xl bg-[#0F172A] hover:bg-accent text-white font-black text-[10px] uppercase tracking-[0.4em] gap-4 shadow-2xl w-full lg:w-auto shrink-0">
-                {isReporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5 text-accent" />}
-                RAPORU ÇALIŞTIR
-             </Button>
-
-             <div className="flex-1 flex gap-2 bg-white/50 p-2 rounded-2xl border-2 border-primary/5 shadow-sm overflow-x-auto scrollbar-hide max-w-full">
-                {academicMonths.map((m, i) => (
-                  <button 
-                    key={i} 
-                    onClick={() => { setSelectedMonth(m.date); setViewMode('monthly'); }} 
-                    className={cn(
-                      "h-12 px-6 rounded-xl font-black text-[10px] uppercase transition-all whitespace-nowrap", 
-                      isSameMonth(m.date, selectedMonth) && viewMode === 'monthly' ? "bg-primary text-white shadow-xl scale-105" : "bg-white text-muted-foreground hover:bg-slate-50 border border-primary/5"
-                    )}
-                  >
-                    {m.label}
-                  </button>
-                ))}
-             </div>
+          <div className="flex gap-2 bg-white/50 p-2 rounded-2xl border-2 border-primary/5 shadow-sm overflow-x-auto scrollbar-hide">
+             {academicMonths.map((m, i) => (
+               <button key={i} onClick={() => { setSelectedMonth(m.date); setViewMode('monthly'); }} className={cn("h-12 px-6 rounded-xl font-black text-[10px] uppercase transition-all whitespace-nowrap", isSameMonth(m.date, selectedMonth) && viewMode === 'monthly' ? "bg-primary text-white shadow-xl" : "bg-white text-muted-foreground hover:bg-slate-50 border border-primary/5")}>{m.label}</button>
+             ))}
           </div>
         </div>
       </header>
 
-      <ScrollArea className="h-full">
-        <div className="space-y-24 pb-20">
-          {viewMode === 'monthly' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-8 px-6">
-               {filteredPlan.map((day: any) => (
-                <Card 
-                  key={day.date} 
-                  onClick={() => { setStartDate(day.date); setEndDate(day.date); setViewMode('daily'); }} 
-                  className={cn(
-                    "p-10 rounded-[4.5rem] border-none shadow-[0_30px_70px_-15px_rgba(0,0,0,0.06)] bg-white hover:scale-[1.03] transition-all cursor-pointer relative overflow-hidden group min-h-[350px]",
-                    day.isAytDay && "border-2 border-accent/40 shadow-accent/20"
-                  )}
-                >
-                   <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full translate-x-1/2 -translate-y-1/2 group-hover:bg-accent/5 transition-all" />
-                   <div className="space-y-8 relative z-10">
-                      <div className="flex justify-between items-start">
-                         <div className="flex flex-col">
-                           <span className="text-[11px] font-black text-primary/30 uppercase tracking-widest leading-none mb-1.5">{day.day}</span>
-                           <span className="text-5xl font-black text-primary italic leading-none tracking-tighter">{format(parseISO(day.date), 'd')}</span>
+      <div className="space-y-24 pb-20">
+        {viewMode === 'monthly' ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-8">
+             {filteredPlan.map((day: any) => (
+              <Card key={day.date} onClick={() => { setStartDate(day.date); setEndDate(day.date); setViewMode('daily'); }} className={cn("p-10 rounded-[4rem] border-none shadow-xl bg-white hover:scale-[1.03] transition-all cursor-pointer group min-h-[300px]", day.isAytDay && "border-2 border-accent/40")}>
+                 <div className="space-y-8">
+                    <div className="flex justify-between">
+                       <span className="text-5xl font-black text-primary italic tracking-tighter">{format(parseISO(day.date), 'd')}</span>
+                       {day.isAytDay && <Badge className="bg-accent text-primary font-black text-[9px]">AYT START</Badge>}
+                    </div>
+                    <div className="space-y-3">
+                       {day.blocks?.map((b: any, bi: number) => (
+                         <div key={bi} className="p-3 rounded-2xl bg-[#F8FAFC] border border-slate-100 group-hover:bg-white transition-all">
+                            <p className="text-[10px] font-black text-primary uppercase line-clamp-1 italic">{b.topic}</p>
                          </div>
-                         {day.isAytDay && <Badge className="bg-accent text-primary font-black text-[9px] animate-pulse">🎯 AYT START</Badge>}
-                      </div>
-                      <div className="space-y-4">
-                         {day.blocks?.map((b: any, bi: number) => (
-                           <div key={bi} className="p-4 rounded-3xl bg-[#F8FAFC] border border-slate-100 group-hover:bg-white group-hover:shadow-lg transition-all">
-                              <div className="flex items-center gap-3 mb-2">
-                                 <div className={cn("h-2.5 w-2.5 rounded-full", b.status === 'done' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-slate-200")} />
-                                 <span className="text-[10px] font-black uppercase text-primary/40 italic">{b.phase1?.time || '10:00'}</span>
-                              </div>
-                              <p className="text-[12px] font-black text-primary leading-[0.9] uppercase line-clamp-2 italic">{b.topic}</p>
-                           </div>
-                         ))}
-                      </div>
-                   </div>
-                </Card>
-              ))}
-            </div>
-          )}
-
-          {viewMode === 'daily' && filteredPlan.map((day: any) => (
-            <div key={day.date} className="space-y-16 px-6">
-               <div className="flex items-center gap-10">
-                  <h3 className="text-5xl font-black italic text-primary uppercase tracking-tighter">{format(parseISO(day.date), 'd MMMM yyyy', { locale: tr })}</h3>
-                  <div className="h-px flex-1 bg-slate-200" />
-                  <Badge variant="outline" className="h-14 px-8 rounded-3xl font-black uppercase tracking-[0.2em] border-2 border-slate-100 text-primary text-[12px] shadow-lg">{day.day}</Badge>
-               </div>
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full">
-                  {day.blocks?.map((block: any) => (
-                    <Card key={block.id} className={cn("p-12 rounded-[5.5rem] border-none shadow-[0_50px_100px_-25px_rgba(0,0,0,0.12)] transition-all hover:scale-[1.03] bg-white h-full flex flex-col group relative overflow-hidden", block.status === 'done' && "opacity-60")}>
-                       <div className="space-y-12 h-full flex flex-col flex-1 relative z-10">
-                          <div className="flex justify-between items-center gap-4">
-                             <div className="flex items-center gap-4">
-                                <div className="px-6 py-2.5 rounded-2xl bg-[#FFF8E7] text-[#B45309] flex items-center gap-2 border border-[#FEF3C7] shadow-sm">
-                                  <Clock className="h-4 w-4" />
-                                  <span className="text-[14px] font-black">{block.phase1?.time || '10:00'}</span>
-                                </div>
-                                <p className="text-[11px] font-black text-primary/20 uppercase tracking-[0.3em] italic">#TYT</p>
-                             </div>
-                             <Badge className={cn("px-8 py-3 rounded-2xl text-[11px] font-black shrink-0 shadow-xl", block.status === 'done' ? "bg-emerald-500 text-white" : "bg-[#FF4D6D] text-white")}>
-                                {block.status === 'done' ? 'TAMAM' : 'BEK'}
-                             </Badge>
-                          </div>
-
-                          <div className="space-y-1">
-                             <h4 className="text-5xl md:text-[4rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-premium line-clamp-3">{block.topic}</h4>
-                          </div>
-
-                          <div className="bg-[#F8FAFC]/50 rounded-[4rem] p-10 space-y-10 shadow-inner flex-1 flex flex-col justify-center border border-slate-50">
-                             <div className="space-y-2">
-                                <div className="flex items-center gap-4">
-                                   <span className="text-[11px] font-bold text-primary/30 uppercase tracking-[0.2em] italic">KONU ÇALIŞMA</span>
-                                   <div className="flex gap-4">
-                                      {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="text-rose-500 hover:scale-125 transition-all"><Youtube className="h-6 w-6" /></a>}
-                                      {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="text-emerald-500 hover:scale-125 transition-all"><BookOpen className="h-6 w-6" /></a>}
-                                      {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="text-blue-500 hover:scale-125 transition-all"><FileText className="h-6 w-6" /></a>}
-                                   </div>
-                                </div>
-                             </div>
-                             
-                             <div className="h-px w-full bg-slate-200/40" />
-                             
-                             <div className="space-y-2">
-                                <div className="flex items-center gap-4">
-                                   <div className="flex items-center gap-2">
-                                      <div className="h-2.5 w-2.5 rounded-full bg-accent animate-pulse shadow-[0_0_15px_rgba(245,158,11,0.6)]" />
-                                      <span className="text-[12px] font-black text-accent uppercase tracking-[0.2em] italic">TEST ÇÖZME</span>
-                                   </div>
-                                   <div className="flex gap-4">
-                                      {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank" className="text-rose-500 hover:scale-125 transition-all"><Youtube className="h-6 w-6" /></a>}
-                                      {block.testUrl && <a href={block.testUrl} target="_blank" className="text-emerald-500 hover:scale-125 transition-all"><BookOpen className="h-6 w-6" /></a>}
-                                      {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank" className="text-blue-500 hover:scale-125 transition-all"><FileText className="h-6 w-6" /></a>}
-                                   </div>
-                                </div>
-                             </div>
-                          </div>
-
-                          <div className="flex justify-between gap-4 pt-4 mt-auto">
-                             <Button onClick={() => handleTaskAction(day.date, block.id, 'done')} className={cn("flex-1 h-18 rounded-3xl text-[12px] font-black uppercase tracking-widest transition-all shadow-2xl", block.status === 'done' ? "bg-slate-100 text-slate-400" : "bg-emerald-500 text-white")}>
-                                <CheckCircle2 className="h-5 w-5 mr-3" /> {block.status === 'done' ? 'GERİ AL' : 'TAMAMLA'}
-                             </Button>
-                             <div className="flex gap-4">
-                                <button onClick={() => handleTaskAction(day.date, block.id, 'edit')} className="h-18 w-18 rounded-3xl border-2 border-slate-100 bg-white text-primary flex items-center justify-center hover:border-primary transition-all shadow-xl"><Edit3 className="h-6 w-6" /></button>
-                             </div>
-                          </div>
-                       </div>
-                    </Card>
-                  ))}
-               </div>
-            </div>
-          ))}
-        </div>
-      </ScrollArea>
+                       ))}
+                    </div>
+                 </div>
+              </Card>
+            ))}
+          </div>
+        ) : filteredPlan.map((day: any) => (
+          <div key={day.date} className="space-y-16">
+             <div className="flex items-center gap-10">
+                <h3 className="text-5xl font-black italic text-primary uppercase tracking-tighter">{format(parseISO(day.date), 'd MMMM yyyy', { locale: tr })}</h3>
+                <div className="h-px flex-1 bg-slate-200" />
+                <Badge variant="outline" className="h-14 px-8 rounded-3xl font-black uppercase border-2 border-slate-100 text-primary text-[12px]">{day.day}</Badge>
+             </div>
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {day.blocks?.map((block: any) => (
+                  <Card key={block.id} className={cn("p-12 rounded-[5.5rem] border-none shadow-[0_50px_100px_-25px_rgba(0,0,0,0.12)] transition-all hover:scale-[1.03] bg-white h-full flex flex-col group relative overflow-hidden", block.status === 'done' && "opacity-60")}>
+                     <div className="space-y-12 relative z-10 flex-1 flex flex-col">
+                        <div className="flex justify-between items-center">
+                           <div className="px-6 py-2.5 rounded-2xl bg-[#FFF8E7] text-[#B45309] font-black text-[14px] border border-[#FEF3C7] shadow-sm">{block.phase1?.time || '10:00'}</div>
+                           <Badge className={cn("px-8 py-3 rounded-2xl text-[11px] font-black shadow-xl", block.status === 'done' ? "bg-emerald-500 text-white" : "bg-[#FF4D6D] text-white")}>{block.status === 'done' ? 'TAMAM' : 'BEK'}</Badge>
+                        </div>
+                        <h4 className="text-5xl md:text-[4rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-premium">{block.topic}</h4>
+                        <div className="bg-[#F8FAFC]/50 rounded-[4rem] p-10 space-y-10 border border-slate-50 shadow-inner flex-1 flex flex-col justify-center">
+                           <div className="flex items-center justify-between"><span className="text-[11px] font-bold text-primary/30 uppercase italic">KONU ÇALIŞMA</span><div className="flex gap-4">{block.youtubeUrl && <Youtube className="h-6 w-6 text-rose-500 opacity-60" />}</div></div>
+                           <div className="h-px w-full bg-slate-200/40" />
+                           <div className="flex items-center justify-between"><div className="flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-accent animate-pulse" /><span className="text-[12px] font-black text-accent uppercase italic">TEST ÇÖZME</span></div><div className="flex gap-4">{block.testYoutubeUrl && <Youtube className="h-6 w-6 text-rose-500" />}</div></div>
+                        </div>
+                        <div className="flex gap-4 pt-4 mt-auto">
+                           <Button onClick={() => { setEditingBlock({...block, date: day.date}); setIsEditDialogOpen(true); }} className="flex-1 h-18 rounded-3xl bg-primary text-white font-black uppercase text-[12px] tracking-widest gap-4 shadow-2xl">DÜZENLE <Edit3 className="h-5 w-5 text-accent" /></Button>
+                        </div>
+                     </div>
+                  </Card>
+                ))}
+             </div>
+          </div>
+        ))}
+      </div>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="rounded-[4rem] border-none shadow-2xl p-0 bg-white max-w-2xl overflow-hidden">
-           <DialogHeader className="p-12 pb-0 flex flex-row items-center justify-between">
+        <DialogContent className="rounded-[4rem] border-none shadow-2xl p-12 bg-white max-w-2xl overflow-hidden">
+           <DialogHeader className="flex flex-row items-center justify-between">
               <DialogTitle className="text-5xl font-black italic tracking-tighter text-primary uppercase">GÖREV <span className="text-accent">DÜZENLE</span></DialogTitle>
               <Button variant="ghost" size="icon" onClick={() => setIsEditDialogOpen(false)} className="rounded-full h-12 w-12 bg-slate-50"><X className="h-6 w-6" /></Button>
            </DialogHeader>
            {editingBlock && (
-             <ScrollArea className="max-h-[85vh] p-12 pt-8">
-                <div className="space-y-12 pb-10">
-                   <div className="space-y-3">
-                      <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">KONU ADI</Label>
-                      <Input value={editingBlock.topic} onChange={(e) => setEditingBlock({...editingBlock, topic: e.target.value})} className="h-20 rounded-3xl bg-slate-50 border-none font-black text-2xl px-10 shadow-inner focus-visible:ring-accent" />
-                   </div>
-
-                   <div className="grid grid-cols-2 gap-8">
-                      <div className="space-y-3">
-                         <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">SAAT</Label>
-                         <Input type="time" value={editingBlock.phase1?.time || '10:00'} onChange={(e) => setEditingBlock({...editingBlock, phase1: { ...editingBlock.phase1, time: e.target.value }})} className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xl px-10 shadow-inner focus-visible:ring-accent" />
-                      </div>
-                      <div className="space-y-3">
-                         <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">TARİH</Label>
-                         <Input type="date" value={editingBlock.date} onChange={(e) => setEditingBlock({...editingBlock, date: e.target.value})} className="h-16 rounded-2xl bg-slate-50 border-none font-black text-sm px-10 shadow-inner focus-visible:ring-accent" />
-                      </div>
-                   </div>
-
-                   <div className="space-y-8">
-                      <h4 className="text-sm font-black uppercase tracking-widest text-primary italic ml-6">KONU ÇALIŞMA KAYNAKLARI</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                         <Input value={editingBlock.youtubeUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, youtubeUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" placeholder="YouTube Link" />
-                         <Input value={editingBlock.mebiUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, mebiUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" placeholder="MEBİ / EBA Link" />
-                         <Input value={editingBlock.pdfUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, pdfUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" placeholder="PDF Ders Notu" />
-                         <Input value={editingBlock.konuExtraUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, konuExtraUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" placeholder="Extra Kaynak" />
-                      </div>
-                   </div>
-
-                   <div className="space-y-8">
-                      <h4 className="text-sm font-black uppercase tracking-widest text-accent italic ml-6">TEST ÇÖZME KAYNAKLARI</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                         <Input value={editingBlock.testYoutubeUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, testYoutubeUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" placeholder="YouTube Soru Çözümü" />
-                         <Input value={editingBlock.testUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, testUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" placeholder="EBA Test Link" />
-                         <Input value={editingBlock.testPdfUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, testPdfUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" placeholder="PDF Yaprak Test" />
-                         <Input value={editingBlock.extraUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, extraUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" placeholder="Extra Test Link" />
-                      </div>
-                   </div>
-
-                   <Button onClick={handleSaveEdit} className="w-full h-24 rounded-[2.75rem] bg-primary hover:bg-accent text-white font-black text-xl uppercase tracking-[0.4em] gap-8 shadow-2xl transition-all">
-                      <Save className="h-10 w-10 text-accent" /> TERMİNALE KAYDET
-                   </Button>
+             <div className="space-y-10 pt-8">
+                <div className="space-y-3"><Label className="text-[11px] font-black uppercase opacity-40 ml-6 italic">KONU ADI</Label><Input value={editingBlock.topic} onChange={(e) => setEditingBlock({...editingBlock, topic: e.target.value})} className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xl px-10 shadow-inner" /></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div className="space-y-3"><Label className="text-[10px] font-bold uppercase opacity-40 ml-4">YOUTUBE KONU</Label><Input value={editingBlock.youtubeUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, youtubeUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none" /></div>
+                   <div className="space-y-3"><Label className="text-[10px] font-bold uppercase opacity-40 ml-4">YOUTUBE SORU</Label><Input value={editingBlock.testYoutubeUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, testYoutubeUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none" /></div>
                 </div>
-             </ScrollArea>
+                <Button onClick={handleSaveEdit} className="w-full h-20 rounded-[2.5rem] bg-primary hover:bg-accent text-white font-black text-xl uppercase gap-8 shadow-2xl transition-all">KAYDET <Save className="h-8 w-8 text-accent" /></Button>
+             </div>
            )}
         </DialogContent>
       </Dialog>

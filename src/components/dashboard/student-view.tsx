@@ -57,19 +57,19 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
   );
 
   return (
-    <div className="p-6 md:p-14 space-y-16 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000 bg-[#F8FAFC]">
+    <div className="p-4 md:p-14 space-y-16 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000 bg-[#F8FAFC]">
       <section className="space-y-14">
-        <div className="flex items-center justify-between px-2">
-           <div className="space-y-2">
-              <h2 className="text-6xl md:text-[9rem] font-black italic leading-[0.8] tracking-tighter text-primary uppercase text-shadow-premium">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-10 px-2">
+           <div className="space-y-2 text-center md:text-left">
+              <h2 className="text-5xl md:text-[9rem] font-black italic leading-[0.8] tracking-tighter text-primary uppercase text-shadow-premium">
                  BUGÜNKÜ<br />BLOKLARIN
               </h2>
            </div>
-           <Card className="bg-white rounded-[2.5rem] px-12 py-8 flex items-center gap-6 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] border-none shrink-0 hidden xl:flex">
+           <Card className="bg-white rounded-[2.5rem] px-12 py-8 flex items-center gap-6 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] border-none shrink-0 w-full md:w-auto">
               <div className="h-14 w-14 rounded-2xl bg-slate-50 flex items-center justify-center">
                  <Calendar className="h-7 w-7 text-primary opacity-20" />
               </div>
-              <div className="text-right">
+              <div className="text-right flex-1 md:flex-none">
                  <p className="text-3xl font-black italic tracking-tighter text-primary leading-none">{format(new Date(), 'd MMMM', { locale: tr }).toUpperCase()}</p>
                  <p className="text-[12px] font-black text-primary/20 uppercase tracking-[0.4em] mt-1.5">{format(new Date(), 'yyyy')}</p>
               </div>
@@ -81,7 +81,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                 <Card 
                   key={block.id} 
                   className={cn(
-                    "p-12 rounded-[5.5rem] border-none transition-all hover:scale-[1.03] shadow-[0_50px_100px_-25px_rgba(0,0,0,0.12)] group relative overflow-hidden bg-white h-full flex flex-col",
+                    "p-10 md:p-12 rounded-[5.5rem] border-none transition-all hover:scale-[1.03] shadow-[0_50px_100px_-25px_rgba(0,0,0,0.12)] group relative overflow-hidden bg-white h-full flex flex-col",
                     block.status === 'done' && "opacity-60"
                   )}
                 >
@@ -106,39 +106,35 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                         </div>
 
                         <div className="space-y-1">
-                           <h4 className="text-5xl md:text-[4rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-premium">
+                           <h4 className="text-4xl md:text-[4rem] font-black italic leading-[0.85] tracking-tighter uppercase text-primary text-shadow-premium">
                               {block.topic}
                            </h4>
                         </div>
 
                         <div className="bg-[#F8FAFC]/50 rounded-[4rem] p-10 space-y-10 border border-slate-50 shadow-inner flex-1 flex flex-col justify-center">
-                           {/* KONU ÇALIŞMA */}
-                           <div className="space-y-2">
-                              <div className="flex items-center gap-4">
+                           <div className="space-y-4">
+                              <div className="flex items-center justify-between">
                                  <span className="text-[11px] font-bold text-primary/30 uppercase tracking-[0.2em] italic">KONU ÇALIŞMA</span>
                                  <div className="flex gap-4 items-center">
-                                    {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="text-rose-500 hover:scale-125 transition-all"><Youtube className="h-6 w-6" /></a>}
-                                    {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="text-emerald-500 hover:scale-125 transition-all"><BookOpen className="h-6 w-6" /></a>}
-                                    {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="text-blue-500 hover:scale-125 transition-all"><FileText className="h-6 w-6" /></a>}
-                                    {(!block.youtubeUrl && !block.mebiUrl && !block.pdfUrl) && <div className="h-6 w-6 rounded-full border-2 border-slate-100 opacity-20" />}
+                                    {block.youtubeUrl && <Youtube className="h-5 w-5 text-rose-500 opacity-60" />}
+                                    {block.mebiUrl && <BookOpen className="h-5 w-5 text-emerald-500 opacity-60" />}
+                                    {block.pdfUrl && <FileText className="h-5 w-5 text-blue-500 opacity-60" />}
                                  </div>
                               </div>
                            </div>
                            
                            <div className="h-px w-full bg-slate-200/40" />
 
-                           {/* TEST ÇÖZME */}
-                           <div className="space-y-2">
-                              <div className="flex items-center gap-4">
+                           <div className="space-y-4">
+                              <div className="flex items-center justify-between">
                                  <div className="flex items-center gap-2">
                                     <div className="h-2 w-2 rounded-full bg-accent shadow-[0_0_15px_rgba(245,158,11,0.6)]" />
                                     <span className="text-[12px] font-black text-accent uppercase tracking-[0.2em] italic">TEST ÇÖZME</span>
                                  </div>
                                  <div className="flex gap-4 items-center">
-                                    {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank" className="text-rose-500 hover:scale-125 transition-all"><Youtube className="h-6 w-6" /></a>}
-                                    {block.testUrl && <a href={block.testUrl} target="_blank" className="text-emerald-500 hover:scale-125 transition-all"><BookOpen className="h-6 w-6" /></a>}
-                                    {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank" className="text-blue-500 hover:scale-125 transition-all"><FileText className="h-6 w-6" /></a>}
-                                    {(!block.testYoutubeUrl && !block.testUrl && !block.testPdfUrl) && <div className="h-6 w-6 rounded-full border-2 border-slate-100 opacity-20" />}
+                                    {block.testYoutubeUrl && <Youtube className="h-5 w-5 text-rose-500 opacity-80" />}
+                                    {block.testUrl && <BookOpen className="h-5 w-5 text-emerald-500 opacity-80" />}
+                                    {block.testPdfUrl && <FileText className="h-5 w-5 text-blue-500 opacity-80" />}
                                  </div>
                               </div>
                            </div>

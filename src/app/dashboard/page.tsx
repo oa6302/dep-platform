@@ -19,7 +19,7 @@ import { tr } from 'date-fns/locale';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
 
-// Otonom Adaptive Planlama Motoru v10.0
+// Otonom Adaptive Planlama Motoru v14.0 - Full Sync Mode
 export const generateAdaptivePlan = (startDateStr: string, completedTopics: any = {}) => {
   const plan = [];
   const config = EXAM_CONFIGS['YKS_EA'];
@@ -30,15 +30,13 @@ export const generateAdaptivePlan = (startDateStr: string, completedTopics: any 
   const daysInterval = differenceInDays(endDate, startDate);
   if (daysInterval < 0) return [];
 
-  // Çalışılmamış (Eksik) Konuları Filtreleme
+  // Çalışılmamış (Eksik) Konuları Filtreleme Mantığı
   const getRemainingTopics = (lesson: string) => {
-    // Normal anahtarı dene, bulamazsa TYT/AYT kısmını kaldırıp dene
     let allTopics = YKS_TM_TOPICS[lesson];
     if (!allTopics) {
       const fallbackKey = lesson.replace('TYT ', '').replace('AYT ', '');
       allTopics = YKS_TM_TOPICS[fallbackKey] || [];
     }
-    
     const done = completedTopics[lesson] || [];
     return allTopics.filter(t => !done.includes(t));
   };
@@ -51,33 +49,23 @@ export const generateAdaptivePlan = (startDateStr: string, completedTopics: any 
     const isAytStarted = !isBefore(currentDate, aytDate);
     
     const dailyBlocks = [];
-    
-    // Ders Havuzu Belirleme
     const currentLessons = isAytStarted 
       ? [...config.tytLessons.slice(0, 2), ...config.aytLessons] 
       : config.tytLessons;
 
-    // Günlük 2 Ana Ders Bloğu
+    // Günlük 2 Ana Akademik Blok
     for (let j = 0; j < 2; j++) {
       const lesson = currentLessons[(i * 2 + j) % currentLessons.length];
       if (lessonPointers[lesson] === undefined) lessonPointers[lesson] = 0;
       
       const remainingTopics = getRemainingTopics(lesson);
-      
-      // Eğer müfredatta ders varsa
-      let allTopicsInList = YKS_TM_TOPICS[lesson];
-      if (!allTopicsInList) {
-        const fallbackKey = lesson.replace('TYT ', '').replace('AYT ', '');
-        allTopicsInList = YKS_TM_TOPICS[fallbackKey] || ['Genel Tekrar'];
-      }
+      let allTopicsInList = YKS_TM_TOPICS[lesson] || YKS_TM_TOPICS[lesson.replace('TYT ', '').replace('AYT ', '')] || ['Genel Tekrar'];
 
-      // Konu Belirleme: Eksik konu varsa onu al, yoksa müfredatı döngüye sok
       const topic = remainingTopics.length > 0 
         ? remainingTopics[lessonPointers[lesson] % remainingTopics.length]
         : allTopicsInList[lessonPointers[lesson] % allTopicsInList.length];
       
       lessonPointers[lesson]++;
-      
       const topicQuery = encodeURIComponent(lesson + ' ' + topic);
       
       dailyBlocks.push({
@@ -87,39 +75,19 @@ export const generateAdaptivePlan = (startDateStr: string, completedTopics: any 
         status: 'planned',
         phase1: { type: 'KONU ÇALIŞMA', time: j === 0 ? '10:00' : '11:00' },
         phase2: { type: 'TEST ÇÖZME' },
+        // Subject Resources
         youtubeUrl: `https://www.youtube.com/results?search_query=${topicQuery}`,
-        pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}`,
         mebiUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}`,
+        pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}`,
         konuExtraUrl: '',
+        // Test Resources
         testYoutubeUrl: `https://www.youtube.com/results?search_query=${topicQuery}+soru+çözümü`,
-        testPdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}+test`,
         testUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}+test`,
+        testPdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}+test`,
         extraUrl: ''
       });
     }
     
-    // Stratejik Tekrar
-    dailyBlocks.push({
-      id: `review_${dateStr}`,
-      lesson: 'STRATEJİK',
-      topic: isAytStarted ? 'AYT/TYT Karma Tekrar' : 'Dünün Analizi & TYT Tekrar',
-      status: 'planned',
-      isReview: true,
-      phase1: { type: 'STRATEJİK', time: '12:00' }
-    });
-
-    // Paragraf Kampı
-    dailyBlocks.push({
-      id: `para_${dateStr}`,
-      lesson: 'TYT Türkçe',
-      topic: '20 Paragraf Soru Çözümü',
-      status: 'planned',
-      isParagraph: true,
-      phase1: { type: 'GÜNLÜK KAMP', time: '15:00' },
-      youtubeUrl: `https://www.youtube.com/results?search_query=paragraf+soru+çözümü`,
-      testUrl: `https://www.eba.gov.tr/arama?q=Paragraf+test`
-    });
-
     plan.push({
       date: dateStr,
       day: format(currentDate, 'EEEE', { locale: tr }),
@@ -145,9 +113,7 @@ function DashboardContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     const initProfile = async () => {
@@ -161,14 +127,11 @@ function DashboardContent() {
             role: 'student',
             targetExam: 'YKS_EA',
             points: 1250,
-            level: 4,
             completedTopics: {},
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
           }, { merge: true });
-        } catch (e) {
-          console.error("Profile initialization error:", e);
-        }
+        } catch (e) { console.error(e); }
       }
 
       if (!planLoading && !studyPlan && userData) {
@@ -176,13 +139,11 @@ function DashboardContent() {
           const adaptivePlan = generateAdaptivePlan('2026-09-01', userData.completedTopics || {});
           await setDoc(doc(db, 'studyPlans', user.uid), {
             userId: user.uid,
-            targetExam: 'YKS_EA',
+            startDate: '2026-09-01',
             masterPlan: adaptivePlan,
             updatedAt: serverTimestamp()
           }, { merge: true });
-        } catch (e) {
-          console.error("Plan initialization error:", e);
-        }
+        } catch (e) { console.error(e); }
       }
     };
     initProfile();
@@ -203,7 +164,8 @@ function DashboardContent() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row relative">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row relative overflow-hidden">
+      {/* Mobile Header */}
       <header className="md:hidden h-20 bg-white border-b border-slate-100 flex items-center justify-between px-6 sticky top-0 z-[60]">
         <div className="text-xl font-black italic tracking-tighter text-primary uppercase">DEK <span className="text-accent">AI</span></div>
         <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="rounded-xl h-12 w-12 bg-slate-50">

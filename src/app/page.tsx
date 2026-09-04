@@ -36,7 +36,6 @@ export default function LandingPage() {
 
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
-  // Zaten giriş yapmışsa dashboard'a otonom fırlatır
   useEffect(() => {
     if (user) {
       router.replace('/dashboard');
@@ -80,7 +79,6 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-[#F8FAFC] selection:bg-accent selection:text-white">
-
       <nav className="fixed inset-x-0 top-0 z-50 border-b border-primary/5 bg-white/85 py-3 backdrop-blur-2xl">
         <div className="container mx-auto flex items-center justify-between px-5 md:px-6">
           <button
@@ -130,19 +128,18 @@ export default function LandingPage() {
       </nav>
 
       <main className="w-full pt-28">
-
         <section id="vision" className="container mx-auto px-5 py-14 md:px-6 md:py-24">
           <div className="mx-auto flex max-w-7xl flex-col items-center space-y-8 text-center md:space-y-12">
-            <div className="inline-flex items-center gap-3 rounded-full bg-primary px-5 py-2.5 text-[8px] font-black uppercase tracking-widest text-white shadow-2xl shadow-primary/20 animate-in fade-in slide-in-from-top-4 duration-700 md:text-[10px]">
+            <div className="inline-flex items-center gap-3 rounded-full bg-primary px-5 py-2.5 text-[8px] font-black uppercase tracking-widest text-white shadow-2xl shadow-primary/20 md:text-[10px]">
               <Sparkles className="h-4 w-4 animate-pulse text-accent" />
               EĞİTİMİN YENİ NESİL TERMİNALİ
             </div>
 
-            <h1 className="text-5xl font-black uppercase italic leading-[0.86] tracking-tighter text-primary text-shadow-premium animate-in fade-in slide-in-from-bottom-8 duration-1000 md:text-7xl lg:text-[8rem]">
+            <h1 className="text-5xl font-black uppercase italic leading-[0.86] tracking-tighter text-primary text-shadow-premium md:text-7xl lg:text-[8rem]">
               BAŞARIYI <br /><span className="text-accent text-shadow-accent">PLANLA.</span>
             </h1>
 
-            <p className="max-w-3xl px-4 text-base font-medium italic leading-relaxed text-muted-foreground animate-in fade-in duration-1000 md:text-2xl">
+            <p className="max-w-3xl px-4 text-base font-medium italic leading-relaxed text-muted-foreground md:text-2xl">
               Dijital Eğitim Koçu; akademik hedeflerinizi analiz eden, çalışma planınızı otonom oluşturan ve gelişiminizi günlük olarak takip eden yapay zekâ destekli eğitim ekosistemidir.
             </p>
 
@@ -181,7 +178,7 @@ export default function LandingPage() {
                 <h2 className="text-5xl font-black uppercase italic leading-[0.88] tracking-tighter text-white text-shadow-premium md:text-7xl lg:text-8xl">
                   MAKSİMUM <br /><span className="text-accent text-shadow-accent">ODAKLANMA</span>
                 </h2>
-                <p className="max-w-xl text-base font-medium italic leading-relaxed text-white/95 md:text-xl lg:text-2xl">
+                <p className="max-w-xl text-base font-medium italic leading-relaxed text-white/80 md:text-xl lg:text-2xl">
                   Pomodoro tabanlı odak terminali ile çalışma ve mola sürelerini düzenleyin, akademik performansınızı saniyeler içinde daha istikrarlı hale getirin.
                 </p>
                 <div className="grid grid-cols-2 gap-5 border-t border-white/10 pt-8 md:gap-10 md:pt-10">

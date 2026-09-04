@@ -35,17 +35,16 @@ export default function DashboardPage() {
     setMounted(true);
   }, []);
 
+  // YÖNLENDİRME MOTORU (LOOP-BREAKER)
   useEffect(() => {
-    if (!authLoading && !user && mounted) {
+    if (mounted && !authLoading && !user) {
       router.replace('/');
     }
   }, [user, authLoading, router, mounted]);
 
   useEffect(() => {
-    if (!docLoading && user && userData && mounted && !simulateUid) {
-      if (userData.role === 'student' && !userData.targetExam) {
-        router.replace('/dashboard/select-exam');
-      }
+    if (mounted && !docLoading && user && !userData && !simulateUid) {
+      router.replace('/dashboard/select-exam');
     }
   }, [userData, docLoading, user, router, mounted, simulateUid]);
 
@@ -61,22 +60,6 @@ export default function DashboardPage() {
   }
 
   if (!user) return null;
-
-  if (!userData && !docLoading && !simulateUid) {
-    return (
-      <div className="min-h-screen bg-[#F8FAFC] py-20 px-6 flex items-center justify-center">
-        <div className="max-w-md w-full text-center space-y-10">
-           <UserCircle className="h-24 w-24 text-accent mx-auto" />
-           <h2 className="text-2xl font-black text-primary uppercase italic">PROFİL EKSİK</h2>
-           <p className="text-muted-foreground font-medium italic">Sistemde size ait akademik profil bulunamadı. Lütfen kurulumu tamamlayın.</p>
-           <div className="flex flex-col gap-4">
-              <Button onClick={() => router.push('/dashboard/select-exam')} className="w-full h-16 rounded-2xl bg-accent text-primary font-black uppercase tracking-widest shadow-xl">PROFİL KURULUMUNU TAMAMLA</Button>
-              <Button variant="ghost" onClick={() => auth && signOut(auth)} className="w-full h-12 rounded-xl text-primary/40 font-black text-[10px] uppercase">GÜVENLİ ÇIKIŞ YAP</Button>
-           </div>
-        </div>
-      </div>
-    );
-  }
 
   const navItems = [
     { id: 'dashboard', label: 'Anasayfa', icon: LayoutDashboard, path: '/dashboard' },

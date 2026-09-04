@@ -59,7 +59,7 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
     const cleanName = displayName.trim();
 
     if (!cleanName || !cleanEmail || password.length < 6) {
-      toast({ variant: 'destructive', title: 'Validasyon Hatası', description: 'Lütfen tüm alanları doğru doldurun.' });
+      toast({ variant: 'destructive', title: 'Hata', description: 'Lütfen bilgileri eksiksiz doldurun (Şifre min 6 karakter).' });
       return;
     }
 
@@ -98,15 +98,14 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
       }
 
       await setDoc(doc(db, 'users', credential.user.uid), userData);
-      toast({ title: 'Kayıt Başarılı', description: 'Profiliniz oluşturuldu.', className: 'bg-primary text-white rounded-2xl' });
+      toast({ title: 'Kayıt Başarılı', description: 'Profiliniz otonom olarak oluşturuldu.', className: 'bg-primary text-white rounded-2xl' });
       router.replace('/dashboard');
     } catch (error: any) {
-      console.error('Register Error:', error);
       if (error.code === 'auth/email-already-in-use') {
-        toast({ title: 'Hesap Bulundu', description: 'Bu e-posta ile zaten bir hesap var. Giriş yapabilirsiniz.', className: 'bg-accent text-primary' });
+        toast({ title: 'Hesap Bulundu', description: 'Bu e-posta ile zaten bir hesap var. Giriş terminaline yönlendiriliyorsunuz.', className: 'bg-accent text-primary' });
         setAuthMode('login');
       } else {
-        toast({ variant: 'destructive', title: 'Kayıt Hatası', description: 'Kayıt sırasında bir hata oluştu.' });
+        toast({ variant: 'destructive', title: 'Hata', description: 'Kayıt işlemi saniyeler içinde başarısız oldu.' });
       }
     } finally {
       setLoading(false);
@@ -120,11 +119,10 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, cleanEmail, password);
-      toast({ title: 'Giriş Başarılı', className: 'bg-primary text-white rounded-2xl' });
+      toast({ title: 'Giriş Başarılı', className: 'bg-primary text-white rounded-2xl shadow-2xl' });
       router.replace('/dashboard');
     } catch (error: any) {
-      console.error('Login Error:', error);
-      toast({ variant: 'destructive', title: 'Giriş Hatası', description: 'E-posta veya şifre hatalı.' });
+      toast({ variant: 'destructive', title: 'Hata', description: 'E-posta veya şifre terminale saniyeler içinde uymuyor.' });
     } finally {
       setLoading(false);
     }
@@ -213,8 +211,8 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
             <div className="space-y-2">
               <Label className="ml-4 text-[10px] font-black uppercase italic text-primary/80">ŞİFRE</Label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-primary/30" />
-                <Input type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} className="h-16 rounded-2xl border-none bg-white px-14 pr-12 font-bold shadow-xl" placeholder="Min. 6 Karakter" />
+                <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-primary/30 transition-colors group-focus-within:text-accent" />
+                <Input type={showPassword ? 'text' : 'password'} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="h-16 rounded-2xl border-none bg-white px-14 pr-12 font-bold shadow-xl" placeholder="Min. 6 Karakter" />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/30">
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>

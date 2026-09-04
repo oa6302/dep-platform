@@ -40,7 +40,7 @@ export default function PlanningPage() {
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState('2027-06-15');
+  const [endDate, setEndDate] = useState('2026-06-15');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<any>(null);
 
@@ -273,7 +273,7 @@ export default function PlanningPage() {
                              className={cn(
                                "px-5 py-2 rounded-full text-[10px] font-black shrink-0", 
                                block.status === 'done' 
-                                 ? "bg-emerald-500 text-white shadow-lg" 
+                                 ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" 
                                  : "bg-[#FF4D6D] text-white shadow-lg"
                              )}
                            >

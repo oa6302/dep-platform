@@ -46,20 +46,22 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
   const activeBlocks = useMemo(() => {
     if (!studyPlan?.masterPlan?.length || !today) return [];
     
-    // Logic: Today's blocks + Unfinished blocks from the past
+    // OTONOM GÖREV DEVRİ MANTIĞI
     const todayPlan = studyPlan.masterPlan.find((day: any) => day.date === today);
     const pastUnfinished: any[] = [];
     
     studyPlan.masterPlan.forEach((day: any) => {
       if (isBefore(parseISO(day.date), parseISO(today))) {
         const unfinished = (day.blocks || []).filter((b: any) => b.status !== 'done' && !b.carriedForward);
-        pastUnfinished.push(...unfinished);
+        pastUnfinished.push(...unfinished.map((b: any) => ({
+          ...b,
+          isDelayed: true,
+          originalDate: day.date
+        })));
       }
     });
 
     const currentBlocks = [...(todayPlan?.blocks || [])];
-    
-    // Return combined blocks to show carried-over tasks as well
     return [...pastUnfinished, ...currentBlocks];
   }, [studyPlan, today]);
 
@@ -139,7 +141,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
               const isDone = block.status === 'done';
               return (
                 <Card key={block.id || `${today}-${index}`} className={cn('relative flex min-h-[380px] flex-col overflow-hidden rounded-[3rem] border border-slate-100 bg-white p-8 shadow-[0_20px_50px_-20px_rgba(15,23,42,0.18)] transition-all duration-300', isDone && 'opacity-60')}>
-                  <div className={cn('absolute left-0 top-0 h-full w-2', isDone ? 'bg-emerald-500' : 'bg-accent')} />
+                  <div className={cn('absolute left-0 top-0 h-full w-2', isDone ? 'bg-emerald-500' : block.isDelayed ? 'bg-amber-500' : 'bg-accent')} />
                   <div className="flex flex-1 flex-col space-y-6">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
@@ -147,7 +149,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                         <h3 className="line-clamp-3 text-2xl font-black uppercase italic leading-[1] text-primary">{block.topic || 'Konu Belirleniyor'}</h3>
                       </div>
                       <Badge className={cn('shrink-0 rounded-full border-none px-4 py-1.5 text-[8px] font-black uppercase tracking-wider', isDone ? 'bg-emerald-500 text-white' : 'bg-[#FF4D6D] text-white shadow-lg')}>
-                        {isDone ? 'Tamam' : 'Bekliyor'}
+                        {isDone ? 'Tamam' : block.isDelayed ? 'Gecikmiş' : 'Bekliyor'}
                       </Badge>
                     </div>
 
@@ -172,12 +174,12 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                     </div>
 
                     <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-6">
-                      <Button onClick={() => handleTaskAction(block.id)} className={cn('h-12 flex-1 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-xl', isDone ? 'bg-slate-100 text-slate-500' : 'bg-emerald-500 text-white')}>
-                        <CheckCircle2 className="mr-2 h-4 w-4" /> {isDone ? 'Geri Al' : 'Tamamla'}
-                      </Button>
-                      <Button onClick={() => router.push('/dashboard/planning')} variant="outline" size="icon" className="ml-3 h-12 w-12 shrink-0 rounded-xl border-slate-200 bg-white text-primary shadow-sm hover:border-primary transition-all">
+                      <button onClick={() => handleTaskAction(block.id)} className={cn('h-12 flex-1 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-xl flex items-center justify-center gap-2', isDone ? 'bg-slate-100 text-slate-500' : 'bg-emerald-500 text-white')}>
+                        <CheckCircle2 className="h-4 w-4" /> {isDone ? 'Geri Al' : 'Tamamla'}
+                      </button>
+                      <button onClick={() => router.push('/dashboard/planning')} className="ml-3 h-12 w-12 shrink-0 rounded-xl border border-slate-200 bg-white text-primary shadow-sm hover:border-primary transition-all flex items-center justify-center">
                         <Edit3 className="h-5 w-5" />
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 </Card>

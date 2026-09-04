@@ -126,7 +126,7 @@ export default function PlanningPage() {
              <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><Home className="h-5 w-5" /></Button>
           </div>
           <div className="space-y-2">
-             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v21.0</div>
+             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v22.0</div>
              <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-premium">Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span></h2>
           </div>
         </div>
@@ -207,7 +207,10 @@ export default function PlanningPage() {
                   <Card key={block.id} className={cn("p-12 rounded-[5.5rem] border-none shadow-[0_50px_100px_-25px_rgba(0,0,0,0.12)] transition-all hover:scale-[1.03] bg-white h-full flex flex-col group relative overflow-hidden", block.status === 'done' && "opacity-60")}>
                      <div className="space-y-12 relative z-10 flex-1 flex flex-col">
                         <div className="flex justify-between items-center">
-                           <div className="px-6 py-2.5 rounded-2xl bg-[#FFF8E7] text-[#0F172A] font-black text-[14px] border border-[#FEF3C7] shadow-sm">{block.phase1?.time || '10:00'}</div>
+                           <div className="px-6 py-2.5 rounded-[1.25rem] bg-[#FFF8E7] text-[#0F172A] font-black text-[14px] border border-[#FEF3C7] shadow-sm flex items-center gap-2">
+                             <Clock className="h-4 w-4 text-accent" />
+                             {block.phase1?.time || '10:00'}
+                           </div>
                            <Badge className={cn("px-8 py-3 rounded-2xl text-[11px] font-black shadow-xl", block.status === 'done' ? "bg-emerald-50 text-white" : "bg-[#FF4D6D] text-white")}>{block.status === 'done' ? 'TAMAM' : 'BEK'}</Badge>
                         </div>
                         <h4 className="text-[5rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-premium text-center break-words">{block.topic.length > 8 ? block.topic.substring(0, 7) + ".." : block.topic}</h4>

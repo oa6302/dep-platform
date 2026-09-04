@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -96,7 +95,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                              onClick={() => handleTaskAction(block.id)}
                              className={cn(
                                "px-8 py-3.5 rounded-[1.5rem] text-[12px] font-black shrink-0 shadow-xl border-none cursor-pointer active:scale-95 transition-all", 
-                               block.status === 'done' ? "bg-emerald-500 text-white" : "bg-[#FF4D6D] text-white hover:bg-[#FF4D6D]/90"
+                               block.status === 'done' ? "bg-emerald-50 text-white" : "bg-[#FF4D6D] text-white hover:bg-[#FF4D6D]/90"
                              )}
                            >
                               {block.status === 'done' ? 'TAMAM' : 'BEK'}

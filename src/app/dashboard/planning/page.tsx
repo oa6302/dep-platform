@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -166,7 +165,7 @@ export default function PlanningPage() {
                      <div className="space-y-12 relative z-10 flex-1 flex flex-col">
                         <div className="flex justify-between items-center">
                            <div className="px-6 py-2.5 rounded-2xl bg-[#FFF8E7] text-[#B45309] font-black text-[14px] border border-[#FEF3C7] shadow-sm">{block.phase1?.time || '10:00'}</div>
-                           <Badge className={cn("px-8 py-3 rounded-2xl text-[11px] font-black shadow-xl", block.status === 'done' ? "bg-emerald-500 text-white" : "bg-[#FF4D6D] text-white")}>{block.status === 'done' ? 'TAMAM' : 'BEK'}</Badge>
+                           <Badge className={cn("px-8 py-3 rounded-2xl text-[11px] font-black shadow-xl", block.status === 'done' ? "bg-emerald-50 text-white" : "bg-[#FF4D6D] text-white")}>{block.status === 'done' ? 'TAMAM' : 'BEK'}</Badge>
                         </div>
                         <h4 className="text-5xl md:text-[4rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-premium">{block.topic}</h4>
                         <div className="bg-[#F8FAFC]/50 rounded-[4rem] p-10 space-y-10 border border-slate-50 shadow-inner flex-1 flex flex-col justify-center">

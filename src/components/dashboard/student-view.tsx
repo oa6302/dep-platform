@@ -144,35 +144,28 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                            </Badge>
                         </div>
 
-                        <div className="space-y-4 flex-1">
-                           <div className="p-6 rounded-[2.5rem] bg-slate-50 border border-slate-100 space-y-6 shadow-inner">
-                              <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-                                 <span className="text-[9px] font-black text-primary/30 uppercase tracking-[0.2em]">KAYNAKLAR</span>
-                                 <div className="flex gap-2">
-                                    {(block.youtubeUrl || block.pdfUrl || block.mebiUrl) && (
-                                      <div className="flex gap-1.5 bg-white/50 p-1.5 rounded-xl border border-slate-200 shadow-sm">
-                                        {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:scale-110 transition-all"><Youtube className="h-4 w-4" /></a>}
-                                        {block.pdfUrl && <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:scale-110 transition-all"><FileText className="h-4 w-4" /></a>}
-                                        {block.mebiUrl && <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:scale-110 transition-all"><BookOpen className="h-4 w-4" /></a>}
-                                      </div>
-                                    )}
-                                    {(block.testUrl || block.extraUrl) && (
-                                      <div className="flex gap-1.5 bg-accent/10 p-1.5 rounded-xl border border-accent/20 shadow-sm">
-                                        {block.testUrl && <a href={block.testUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:scale-110 transition-all"><FileQuestion className="h-4 w-4" /></a>}
-                                        {block.extraUrl && <a href={block.extraUrl} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:scale-110 transition-all"><LinkIcon className="h-4 w-4" /></a>}
-                                      </div>
-                                    )}
+                        <div className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 space-y-6 shadow-inner flex-1">
+                           {/* KONU ÇALIŞMA BÖLÜMÜ */}
+                           <div className="space-y-3">
+                              <div className="flex justify-between items-center border-b border-slate-200 pb-2.5">
+                                 <span className="text-[9px] font-black text-primary/40 uppercase tracking-[0.2em] italic">KONU ÇALIŞMA</span>
+                                 <div className="flex gap-1.5 bg-white/50 p-1.5 rounded-xl border border-slate-200 shadow-sm">
+                                    {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:scale-110 transition-all"><Youtube className="h-4 w-4" /></a>}
+                                    {block.pdfUrl && <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:scale-110 transition-all"><FileText className="h-4 w-4" /></a>}
+                                    {block.mebiUrl && <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:scale-110 transition-all"><BookOpen className="h-4 w-4" /></a>}
                                  </div>
                               </div>
-                              
-                              <div className="space-y-3">
-                                 <div className="flex items-center gap-3">
-                                    <div className="h-1.5 w-1.5 rounded-full bg-primary/20" />
-                                    <p className="text-[11px] font-black text-primary opacity-60 uppercase italic leading-none">{block.phase1?.type || (block.isOverdue ? 'ERTELENEN GÖREV' : 'KONU ÇALIŞMA')}</p>
-                                 </div>
-                                 <div className="flex items-center gap-3">
-                                    <div className="h-1.5 w-1.5 rounded-full bg-accent" />
-                                    <p className="text-[11px] font-black text-accent uppercase italic leading-none">TEST ÇÖZME</p>
+                           </div>
+
+                           {/* TEST ÇÖZME BÖLÜMÜ */}
+                           <div className="space-y-3">
+                              <div className="flex justify-between items-center">
+                                 <p className="text-[10px] font-black text-accent uppercase tracking-[0.2em] italic flex items-center gap-2">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" /> TEST ÇÖZME
+                                 </p>
+                                 <div className="flex gap-1.5 bg-accent/10 p-1.5 rounded-xl border border-accent/20 shadow-sm">
+                                    {block.testUrl && <a href={block.testUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:scale-110 transition-all"><FileQuestion className="h-4 w-4" /></a>}
+                                    {block.extraUrl && <a href={block.extraUrl} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:scale-110 transition-all"><LinkIcon className="h-4 w-4" /></a>}
                                  </div>
                               </div>
                            </div>
@@ -187,6 +180,12 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                    </div>
                 </Card>
              ))}
+             {(!activeTasks || activeTasks.length === 0) && (
+                <Card onClick={() => router.push('/dashboard/planning')} className="lg:col-span-4 h-[300px] text-center bg-white rounded-[4rem] border-4 border-dashed border-slate-200 flex flex-col items-center justify-center gap-6 cursor-pointer hover:border-accent/20 transition-all group w-full">
+                   <Zap className="h-10 w-10 text-accent opacity-20 group-hover:scale-110 transition-transform" />
+                   <p className="text-xl font-black uppercase tracking-[0.4em] text-primary/20 italic">AKADEMİK TAKVİM BEKLENİYOR</p>
+                </Card>
+             )}
         </div>
       </div>
     </div>

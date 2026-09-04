@@ -230,7 +230,6 @@ export default function PlanningPage() {
 
     let newPlan = [...studyPlan.masterPlan];
 
-    // Eğer tarih değiştiyse eski tarihten sil
     if (editingBlock.date && editingBlock.date !== editingBlock.originalDate) {
       newPlan = newPlan.map(day => {
         if (day.date === editingBlock.originalDate) {
@@ -239,7 +238,6 @@ export default function PlanningPage() {
         return day;
       });
 
-      // Yeni tarihe ekle
       newPlan = newPlan.map(day => {
         if (day.date === editingBlock.date) {
           return { ...day, blocks: [...day.blocks, { ...editingBlock, originalDate: editingBlock.date }] };
@@ -247,7 +245,6 @@ export default function PlanningPage() {
         return day;
       });
     } else {
-      // Sadece içerik güncellendi
       newPlan = newPlan.map(day => {
         if (day.date === editingBlock.originalDate) {
           return {
@@ -343,33 +340,28 @@ export default function PlanningPage() {
                         </div>
 
                         <div className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 space-y-6 shadow-inner flex-1">
-                           <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-                              <span className="text-[10px] font-black text-primary/30 uppercase tracking-[0.2em]">KAYNAKLAR</span>
-                              <div className="flex gap-2">
-                                 {(block.youtubeUrl || block.pdfUrl || block.mebiUrl) && (
-                                   <div className="flex gap-1.5 bg-white/50 p-1.5 rounded-xl border border-slate-200 shadow-sm">
-                                     {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:scale-110 transition-all"><Youtube className="h-5 w-5" /></a>}
-                                     {block.pdfUrl && <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:scale-110 transition-all"><FileText className="h-5 w-5" /></a>}
-                                     {block.mebiUrl && <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:scale-110 transition-all"><BookOpen className="h-5 w-5" /></a>}
-                                   </div>
-                                 )}
-                                 {(block.testUrl || block.extraUrl) && (
-                                   <div className="flex gap-1.5 bg-accent/10 p-1.5 rounded-xl border border-accent/20 shadow-sm">
-                                     {block.testUrl && <a href={block.testUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:scale-110 transition-all"><FileQuestion className="h-5 w-5" /></a>}
-                                     {block.extraUrl && <a href={block.extraUrl} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:scale-110 transition-all"><LinkIcon className="h-5 w-5" /></a>}
-                                   </div>
-                                 )}
+                           {/* KONU ÇALIŞMA BÖLÜMÜ */}
+                           <div className="space-y-4">
+                              <div className="flex justify-between items-center border-b border-slate-200 pb-2.5">
+                                 <span className="text-[9px] font-black text-primary/40 uppercase tracking-[0.2em] italic">KONU ÇALIŞMA</span>
+                                 <div className="flex gap-1.5 bg-white/50 p-1.5 rounded-xl border border-slate-200 shadow-sm">
+                                    {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:scale-110 transition-all"><Youtube className="h-4 w-4" /></a>}
+                                    {block.pdfUrl && <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:scale-110 transition-all"><FileText className="h-4 w-4" /></a>}
+                                    {block.mebiUrl && <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:scale-110 transition-all"><BookOpen className="h-4 w-4" /></a>}
+                                 </div>
                               </div>
                            </div>
 
+                           {/* TEST ÇÖZME BÖLÜMÜ */}
                            <div className="space-y-4">
-                              <div className="flex items-center gap-3">
-                                 <div className="h-2 w-2 rounded-full bg-primary/20" />
-                                 <p className="text-[12px] font-black text-primary opacity-60 uppercase italic">{block.phase1?.type || 'KONU ÇALIŞMA'}</p>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                 <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
-                                 <p className="text-[12px] font-black text-accent uppercase italic">TEST ÇÖZME</p>
+                              <div className="flex justify-between items-center">
+                                 <p className="text-[10px] font-black text-accent uppercase tracking-[0.2em] italic flex items-center gap-2">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" /> TEST ÇÖZME
+                                 </p>
+                                 <div className="flex gap-1.5 bg-accent/10 p-1.5 rounded-xl border border-accent/20 shadow-sm">
+                                    {block.testUrl && <a href={block.testUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:scale-110 transition-all"><FileQuestion className="h-4 w-4" /></a>}
+                                    {block.extraUrl && <a href={block.extraUrl} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:scale-110 transition-all"><LinkIcon className="h-4 w-4" /></a>}
+                                 </div>
                               </div>
                            </div>
                         </div>
@@ -398,7 +390,6 @@ export default function PlanningPage() {
            {editingBlock && (
              <ScrollArea className="max-h-[85vh] p-12 pt-8">
                 <div className="space-y-12 pb-10">
-                   {/* Konu Adı */}
                    <div className="space-y-3">
                       <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">KONU ADI</Label>
                       <div className="relative group">
@@ -412,7 +403,6 @@ export default function PlanningPage() {
                    </div>
 
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                      {/* Seans Saati */}
                       <div className="space-y-3">
                          <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">SEANS SAATİ</Label>
                          <div className="relative group">
@@ -426,7 +416,6 @@ export default function PlanningPage() {
                          </div>
                       </div>
 
-                      {/* Görev Tarihi */}
                       <div className="space-y-3">
                          <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">GÖREV TARİHİ</Label>
                          <div className="relative group">
@@ -441,7 +430,6 @@ export default function PlanningPage() {
                       </div>
                    </div>
 
-                   {/* Ders Seçimi */}
                    <div className="space-y-3">
                       <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">BRANŞ / DERS</Label>
                       <Select 
@@ -461,7 +449,6 @@ export default function PlanningPage() {
                       </Select>
                    </div>
 
-                   {/* Dijital Kaynaklar */}
                    <div className="grid gap-6">
                       <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">DİJİTAL KAYNAKLAR</Label>
                       {[

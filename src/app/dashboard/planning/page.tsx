@@ -48,7 +48,6 @@ export default function PlanningPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date(2026, 8, 1));
   
-  // Varsayılan değerler, plan yüklendiğinde güncellenecek
   const [startDate, setStartDate] = useState('2026-09-01');
   const [endDate, setEndDate] = useState('2026-09-14');
   
@@ -57,20 +56,24 @@ export default function PlanningPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<any>(null);
 
-  // Firestore'daki plan yüklendiğinde yerel state'i güncelle
+  // Firestore'daki plan yüklendiğinde yerel state'i güncelle ve başlama tarihini sabitle
   useEffect(() => {
     if (studyPlan?.startDate) {
       setStartDate(studyPlan.startDate);
-      // Bitiş tarihini otomatik olarak 2 hafta sonrasına ayarla (ilk görünüm için)
-      setEndDate(format(addDays(parseISO(studyPlan.startDate), 13), 'yyyy-MM-dd'));
+      // Eğer aylık moddaysak ve henüz ay seçilmemişse, başlangıç tarihinin ayına odaklan
+      if (viewMode === 'daily') {
+         setEndDate(format(addDays(parseISO(studyPlan.startDate), 13), 'yyyy-MM-dd'));
+      }
     } else if (studyPlan?.masterPlan && studyPlan.masterPlan.length > 0) {
       const firstDate = studyPlan.masterPlan[0].date;
       setStartDate(firstDate);
       setEndDate(format(addDays(parseISO(firstDate), 13), 'yyyy-MM-dd'));
     }
-  }, [studyPlan]);
+  }, [studyPlan, viewMode]);
 
+  // Tüm Akademik Aylar (Ağustos 2026 - Temmuz 2027)
   const academicMonths = useMemo(() => [
+    { label: 'AĞU', date: new Date(2026, 7, 1) },
     { label: 'EYL', date: new Date(2026, 8, 1) },
     { label: 'EKİ', date: new Date(2026, 9, 1) },
     { label: 'KAS', date: new Date(2026, 10, 1) },
@@ -80,7 +83,8 @@ export default function PlanningPage() {
     { label: 'MAR', date: new Date(2027, 2, 1) },
     { label: 'NİS', date: new Date(2027, 3, 1) },
     { label: 'MAY', date: new Date(2027, 4, 1) },
-    { label: 'HAZ', date: new Date(2027, 5, 1) }
+    { label: 'HAZ', date: new Date(2027, 5, 1) },
+    { label: 'TEM', date: new Date(2027, 6, 1) }
   ], []);
 
   const filteredPlan = useMemo(() => {
@@ -116,13 +120,13 @@ export default function PlanningPage() {
     try {
       const newPlan = generateAdaptivePlan(startDate, userData.completedTopics || {});
       await updateDoc(doc(db, 'studyPlans', user.uid), {
-        startDate: startDate, // Seçilen tarihi buluta kaydet
+        startDate: startDate, // Seçilen tarihi buluta kalıcı olarak kaydet
         masterPlan: newPlan,
         updatedAt: serverTimestamp()
       });
       toast({
-        title: "PLANI YENİDEN KURGULANDI",
-        description: `Çalışma başlangıcınız ${format(parseISO(startDate), 'd MMMM yyyy', { locale: tr })} olarak mühürlendi.`,
+        title: "AKADEMİK TERMİNAL MÜHÜRLENDİ",
+        description: `Başlama tarihiniz ${format(parseISO(startDate), 'd MMMM yyyy', { locale: tr })} olarak sisteme kaydedildi.`,
         className: "bg-accent text-primary rounded-2xl font-black shadow-2xl"
       });
       setViewMode('daily');
@@ -220,7 +224,7 @@ export default function PlanningPage() {
           </div>
           <div className="space-y-2">
              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20">
-                <Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v11.0
+                <Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v12.0
              </div>
              <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-premium">
                 Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span>
@@ -255,27 +259,27 @@ export default function PlanningPage() {
              </Button>
           </Card>
           
-          <div className="flex flex-col md:flex-row gap-6 items-center">
-             <Button onClick={handleRunReport} disabled={isReporting} className="h-16 px-10 rounded-2xl bg-[#0F172A] hover:bg-accent text-white font-black text-[10px] uppercase tracking-[0.4em] gap-4 shadow-2xl w-full md:w-auto">
+          <div className="flex flex-col lg:flex-row gap-6 items-center">
+             <Button onClick={handleRunReport} disabled={isReporting} className="h-16 px-10 rounded-2xl bg-[#0F172A] hover:bg-accent text-white font-black text-[10px] uppercase tracking-[0.4em] gap-4 shadow-2xl w-full lg:w-auto shrink-0">
                 {isReporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5 text-accent" />}
                 RAPORU ÇALIŞTIR
              </Button>
 
-             <div className="flex gap-2 bg-white/50 p-2 rounded-2xl border-2 border-primary/5 shadow-sm overflow-x-auto scrollbar-hide max-w-full">
+             <div className="flex-1 flex gap-2 bg-white/50 p-2 rounded-2xl border-2 border-primary/5 shadow-sm overflow-x-auto scrollbar-hide max-w-full">
                 {academicMonths.map((m, i) => (
                   <button 
                     key={i} 
                     onClick={() => { setSelectedMonth(m.date); setViewMode('monthly'); }} 
                     className={cn(
                       "h-12 px-6 rounded-xl font-black text-[10px] uppercase transition-all whitespace-nowrap", 
-                      isSameMonth(m.date, selectedMonth) ? "bg-primary text-white shadow-xl scale-105" : "bg-white text-muted-foreground hover:bg-slate-50 border border-primary/5"
+                      isSameMonth(m.date, selectedMonth) && viewMode === 'monthly' ? "bg-primary text-white shadow-xl scale-105" : "bg-white text-muted-foreground hover:bg-slate-50 border border-primary/5"
                     )}
                   >
                     {m.label}
                   </button>
                 ))}
              </div>
-             <div className="flex gap-2 bg-white p-2 rounded-2xl border-2 border-primary/5 shadow-lg">
+             <div className="flex gap-2 bg-white p-2 rounded-2xl border-2 border-primary/5 shadow-lg shrink-0">
                 <button onClick={() => applyQuickFilter('today')} className="h-10 px-4 rounded-xl font-black text-[9px] uppercase hover:bg-slate-50 transition-all">Bugün</button>
                 <button onClick={() => applyQuickFilter('week')} className="h-10 px-4 rounded-xl font-black text-[9px] uppercase hover:bg-slate-50 transition-all">Hafta</button>
                 <button onClick={() => applyQuickFilter('year')} className="h-10 px-4 rounded-xl font-black text-[9px] uppercase hover:bg-slate-50 transition-all">2027 Hedef</button>
@@ -320,6 +324,12 @@ export default function PlanningPage() {
                    </div>
                 </Card>
               ))}
+              {filteredPlan.length === 0 && (
+                <div className="col-span-full py-40 text-center space-y-4">
+                   <p className="text-xl font-black uppercase tracking-widest text-primary/20 italic">Seçilen ay için akademik veri bulunamadı.</p>
+                   <Button variant="link" onClick={() => setViewMode('daily')} className="font-black text-accent text-xs uppercase tracking-widest">Günlük Görünüme Dön</Button>
+                </div>
+              )}
             </div>
           )}
 
@@ -394,8 +404,8 @@ export default function PlanningPage() {
                                 <CheckCircle2 className="h-5 w-5 mr-3" /> {block.status === 'done' ? 'GERİ AL' : 'TAMAMLA'}
                              </Button>
                              <div className="flex gap-3">
-                                <Button onClick={() => handleTaskAction(day.date, block.id, 'edit')} size="icon" className="h-14 w-14 rounded-2xl border-2 border-slate-100 bg-white text-primary hover:border-primary transition-all shadow-md"><Edit3 className="h-5 w-5" /></Button>
-                                <Button onClick={() => handleTaskAction(day.date, block.id, 'delete')} size="icon" className="h-14 w-14 rounded-2xl border-2 border-slate-100 bg-white text-rose-500 hover:border-rose-500 transition-all shadow-md"><Trash2 className="h-5 w-5" /></Button>
+                                <button onClick={() => handleTaskAction(day.date, block.id, 'edit')} className="h-14 w-14 rounded-2xl border-2 border-slate-100 bg-white text-primary flex items-center justify-center hover:border-primary transition-all shadow-md"><Edit3 className="h-5 w-5" /></button>
+                                <button onClick={() => handleTaskAction(day.date, block.id, 'delete')} className="h-14 w-14 rounded-2xl border-2 border-slate-100 bg-white text-rose-500 flex items-center justify-center hover:border-rose-500 transition-all shadow-md"><Trash2 className="h-5 w-5" /></button>
                              </div>
                           </div>
                        </div>

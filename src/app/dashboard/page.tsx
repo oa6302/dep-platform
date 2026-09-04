@@ -85,7 +85,7 @@ interface StudyDay {
 }
 
 /* =========================================================
-   ADAPTİF PLAN MOTORU v21.0
+   ADAPTİF PLAN MOTORU v24.0
 ========================================================= */
 
 export const generateAdaptivePlan = (
@@ -147,6 +147,8 @@ export const generateAdaptivePlan = (
     if (currentLessons.length === 0) continue;
 
     const dailyBlocks: StudyBlock[] = [];
+    
+    // 1 & 2. ANA DERS BLOKLARI
     for (let j = 0; j < 2; j++) {
       const lessonIndex = (i * 2 + j) % currentLessons.length;
       const lesson = currentLessons[lessonIndex];
@@ -188,6 +190,45 @@ export const generateAdaptivePlan = (
         testPdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${testSearchQuery}`,
       });
     }
+
+    // 3. DÜNÜN TEKRARI (12:00)
+    dailyBlocks.push({
+      id: `block_${dateStr}_review`,
+      lesson: 'STRATEJİK TEKRAR',
+      topic: 'DÜNÜN TEKRARI',
+      status: 'planned',
+      phase1: {
+        type: 'HIZLI TARAMA',
+        time: '12:00',
+      },
+      youtubeUrl: '',
+      mebiUrl: '',
+      pdfUrl: '',
+      testYoutubeUrl: '',
+      testUrl: '',
+      testPdfUrl: '',
+    });
+
+    // 4. PARAGRAF ÇALIŞMASI (15:00)
+    dailyBlocks.push({
+      id: `block_${dateStr}_paragraf`,
+      lesson: 'TYT TÜRKÇE',
+      topic: '20 ADET PARAGRAF',
+      status: 'planned',
+      phase1: {
+        type: 'SORU ÇÖZÜMÜ',
+        time: '15:00',
+      },
+      youtubeUrl: '',
+      mebiUrl: '',
+      pdfUrl: '',
+      testYoutubeUrl: 'https://www.youtube.com/results?search_query=paragraf+soru+çözümü+teknikleri',
+      testUrl: 'https://www.eba.gov.tr/arama?q=paragraf+testi',
+      testPdfUrl: 'https://ogmmateryal.eba.gov.tr/arama?q=paragraf+testi',
+    });
+
+    // Zaman sırasına göre sırala
+    dailyBlocks.sort((a, b) => a.phase1.time.localeCompare(b.phase1.time));
 
     plan.push({
       date: dateStr,

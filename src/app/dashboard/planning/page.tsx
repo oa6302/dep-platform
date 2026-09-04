@@ -11,7 +11,7 @@ import {
   Calendar, Zap, Loader2, Sparkles, 
   ArrowLeft, Home, Edit3, Youtube, Save, FileText, 
   BookOpen, X, Clock, Target, TrendingUp, Brain,
-  ChevronRight, CheckCircle2, AlertCircle, CalendarDays,
+  ChevronRight, CheckCircle2, AlertCircle,
   LayoutGrid, ListFilter, Star
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -100,7 +100,6 @@ export default function PlanningPage() {
     if (!db || !user || !userData) return;
     setIsRegenerating(true);
     try {
-      // Yıllık planı Eylül'den başlayarak tekrar kurgula
       const newPlan = generateAdaptivePlan('2026-09-01', userData.completedTopics || {});
       
       await setDoc(doc(db, 'studyPlans', user.uid), {
@@ -153,7 +152,7 @@ export default function PlanningPage() {
              <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><Home className="h-5 w-5" /></Button>
           </div>
           <div className="space-y-2">
-             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> OMNI-SYNC v30.0</div>
+             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> OMNI-SYNC v32.0</div>
              <h2 className="text-6xl md:text-[7rem] font-black tracking-tighter italic text-primary uppercase leading-[0.8] text-shadow-premium">Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span></h2>
           </div>
         </div>

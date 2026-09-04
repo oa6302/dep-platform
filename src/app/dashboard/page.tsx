@@ -85,7 +85,7 @@ interface StudyDay {
 }
 
 /* =========================================================
-   ADAPTİF PLAN MOTORU v24.0
+   ADAPTİF PLAN MOTORU v32.0
 ========================================================= */
 
 export const generateAdaptivePlan = (
@@ -332,7 +332,7 @@ function DashboardContent() {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] md:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* SIDEBAR - v15.0 VISUAL MATCH */}
+      {/* SIDEBAR */}
       <aside className={cn(`w-[280px] bg-white border-r border-slate-100 flex flex-col fixed md:sticky inset-y-0 left-0 z-[58] transition-transform duration-500 md:translate-x-0 h-screen`,
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}

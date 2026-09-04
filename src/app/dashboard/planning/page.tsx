@@ -14,7 +14,7 @@ import {
   BookOpen, Target, Clock, AlertCircle,
   ChevronRight, CalendarDays, Hash, Layers,
   Link as LinkIcon, FileQuestion, BarChart3, List,
-  ArrowRight
+  ArrowRight, X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
@@ -58,8 +58,8 @@ export default function PlanningPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('monthly');
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date(2026, 8, 1));
   
-  const [startDate, setStartDate] = useState('2026-09-01');
-  const [endDate, setEndDate] = useState('2026-09-30');
+  const [startDate, setStartDate] = useState('2026-09-04');
+  const [endDate, setEndDate] = useState('2026-09-14');
   const [isReporting, setIsReporting] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<any>(null);
@@ -176,12 +176,25 @@ export default function PlanningPage() {
   const handleSaveEdit = async () => {
     if (!db || !user || !editingBlock) return;
     let newPlan = [...studyPlan.masterPlan];
+    
+    // Tarih değiştiyse eskisinden sil, yeniye ekle
     if (editingBlock.date && editingBlock.date !== editingBlock.originalDate) {
-      newPlan = newPlan.map(day => day.date === editingBlock.originalDate ? { ...day, blocks: day.blocks.filter((b: any) => b.id !== editingBlock.id) } : day);
-      newPlan = newPlan.map(day => day.date === editingBlock.date ? { ...day, blocks: [...(day.blocks || []), { ...editingBlock, originalDate: editingBlock.date }] } : day);
+      newPlan = newPlan.map(day => day.date === editingBlock.originalDate 
+        ? { ...day, blocks: day.blocks.filter((b: any) => b.id !== editingBlock.id) } 
+        : day
+      );
+      newPlan = newPlan.map(day => day.date === editingBlock.date 
+        ? { ...day, blocks: [...(day.blocks || []), { ...editingBlock, originalDate: editingBlock.date }] } 
+        : day
+      );
     } else {
-      newPlan = newPlan.map(day => day.date === editingBlock.originalDate ? { ...day, blocks: day.blocks.map((b: any) => b.id === editingBlock.id ? { ...editingBlock } : b) } : day);
+      // Sadece içerik değiştiyse güncelle
+      newPlan = newPlan.map(day => day.date === editingBlock.originalDate 
+        ? { ...day, blocks: day.blocks.map((b: any) => b.id === editingBlock.id ? { ...editingBlock } : b) } 
+        : day
+      );
     }
+    
     await updateDoc(doc(db, 'studyPlans', user.uid), { masterPlan: newPlan, updatedAt: serverTimestamp() });
     setIsEditDialogOpen(false);
     toast({ title: 'Terminal Güncellendi', className: "bg-primary text-white rounded-xl shadow-2xl" });
@@ -192,16 +205,16 @@ export default function PlanningPage() {
       <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-10">
         <div className="flex flex-col gap-6">
           <div className="flex items-center gap-4">
-             <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all shadow-sm group">
+             <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all group">
                 <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
              </Button>
-             <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all shadow-sm">
+             <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all">
                 <Home className="h-5 w-5" />
              </Button>
           </div>
           <div className="space-y-2">
              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20">
-                <Calendar className="h-3.5 w-3.5" /> MASTER ACADEMIC TERMINAL v6.0
+                <Calendar className="h-3.5 w-3.5" /> MASTER ACADEMIC TERMINAL v6.5
              </div>
              <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-premium">
                 {format(selectedMonth, 'MMMM', { locale: tr })} <br /><span className="text-accent text-shadow-accent">{format(selectedMonth, 'yyyy')}</span>
@@ -235,7 +248,7 @@ export default function PlanningPage() {
                   <TabsTrigger value="daily" className="rounded-xl px-6 h-full font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white gap-2"><List className="h-4 w-4" /> Günlük</TabsTrigger>
                 </TabsList>
              </Tabs>
-             <div className="flex gap-2 bg-white p-2 rounded-2xl border-2 border-primary/5 shadow-lg overflow-x-auto scrollbar-hide">
+             <div className="flex gap-2 bg-white p-2 rounded-2xl border-2 border-primary/5 shadow-lg">
                 <button onClick={() => applyQuickFilter('today')} className="h-10 px-4 rounded-xl font-black text-[9px] uppercase hover:bg-slate-50 transition-all">Bugün</button>
                 <button onClick={() => applyQuickFilter('week')} className="h-10 px-4 rounded-xl font-black text-[9px] uppercase hover:bg-slate-50 transition-all">Hafta</button>
                 <button onClick={() => applyQuickFilter('year')} className="h-10 px-4 rounded-xl font-black text-[9px] uppercase hover:bg-slate-50 transition-all">2027 Hedef</button>
@@ -262,20 +275,15 @@ export default function PlanningPage() {
       ) : (
         <ScrollArea className="h-full">
           <div className="space-y-24 pb-20">
-            {/* YEARLY VIEW */}
             {viewMode === 'yearly' && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 animate-in zoom-in-95 duration-500 px-6">
                 {academicMonths.map((m, i) => {
                   const stats = calculateMonthStats(m.date);
-                  const isAytMonth = format(m.date, 'yyyy-MM') >= '2026-12';
                   return (
                     <Card key={i} onClick={() => { setSelectedMonth(m.date); setViewMode('monthly'); }} className="p-8 rounded-[3rem] border-none shadow-xl bg-white hover:-translate-y-2 transition-all cursor-pointer group relative overflow-hidden">
                       <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full translate-x-1/2 -translate-y-1/2 group-hover:bg-accent/10 transition-all" />
                       <div className="space-y-6 relative z-10">
-                        <div className="flex justify-between items-center">
-                          <h4 className="text-2xl font-black italic text-primary uppercase tracking-tighter">{format(m.date, 'MMMM', { locale: tr })}</h4>
-                          {format(m.date, 'yyyy-MM') === '2026-12' && <Badge className="bg-accent text-primary font-black text-[8px] animate-pulse">🎯 AYT START</Badge>}
-                        </div>
+                        <h4 className="text-2xl font-black italic text-primary uppercase tracking-tighter">{format(m.date, 'MMMM', { locale: tr })}</h4>
                         <div className="space-y-2">
                           <p className="text-[10px] font-black text-muted-foreground uppercase opacity-40">TAMAMLANMA</p>
                           <p className="text-4xl font-black italic text-primary">%{stats.percent}</p>
@@ -284,7 +292,7 @@ export default function PlanningPage() {
                           </div>
                         </div>
                         <div className="pt-4 border-t border-slate-50 flex justify-between items-center">
-                          <span className="text-[9px] font-black uppercase text-muted-foreground/40 italic">{isAytMonth ? 'TYT + AYT MASTER' : 'TYT TEMEL'}</span>
+                          <span className="text-[9px] font-black uppercase text-muted-foreground/40 italic">{format(m.date, 'yyyy-MM') >= '2026-12' ? 'TYT + AYT' : 'TYT TEMEL'}</span>
                           <ChevronRight className="h-4 w-4 text-accent group-hover:translate-x-1 transition-transform" />
                         </div>
                       </div>
@@ -294,7 +302,6 @@ export default function PlanningPage() {
               </div>
             )}
 
-            {/* MONTHLY VIEW - POPULATED WITH CARDS */}
             {viewMode === 'monthly' && (
               <div className="space-y-12 animate-in fade-in duration-700 px-6">
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
@@ -314,31 +321,18 @@ export default function PlanningPage() {
                                  <span className="text-[10px] font-black text-primary/30 uppercase tracking-widest leading-none mb-1">{day.day}</span>
                                  <span className="text-4xl font-black text-primary italic leading-none tracking-tighter">{format(parseISO(day.date), 'd')}</span>
                                </div>
-                               {day.isAytDay && <Badge className="bg-accent text-primary font-black text-[8px] animate-pulse">🎯 AYT BAŞLANGIÇ</Badge>}
+                               {day.isAytDay && <Badge className="bg-accent text-primary font-black text-[8px] animate-pulse">🎯 AYT</Badge>}
                             </div>
-                            
                             <div className="space-y-3 flex-1">
                                {day.blocks?.map((b: any, bi: number) => (
                                  <div key={bi} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100/50 group-hover:bg-white group-hover:shadow-md transition-all">
                                     <div className="flex items-center gap-2 mb-1.5">
                                        <div className={cn("h-2 w-2 rounded-full", b.status === 'done' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-slate-200")} />
-                                       <span className="text-[9px] font-black uppercase text-primary/40 italic tracking-widest">
-                                          {b.phase1?.time || '10:00'} • {b.lesson.substring(0, 4)}
-                                       </span>
+                                       <span className="text-[9px] font-black uppercase text-primary/40 italic tracking-widest">{b.phase1?.time || '10:00'}</span>
                                     </div>
                                     <p className="text-[11px] font-black text-primary leading-tight uppercase line-clamp-1 italic tracking-tight">{b.topic}</p>
                                  </div>
                                ))}
-                               {(!day.blocks || day.blocks.length === 0) && (
-                                 <div className="h-full flex items-center justify-center border-2 border-dashed border-slate-100 rounded-3xl opacity-20">
-                                    <p className="text-[9px] font-black uppercase italic">Boş Gün</p>
-                                 </div>
-                               )}
-                            </div>
-                            
-                            <div className="pt-4 border-t border-slate-50 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-                               <span className="text-[9px] font-black text-accent uppercase tracking-widest">DETAYLI ANALİZ</span>
-                               <ArrowRight className="h-4 w-4 text-accent" />
                             </div>
                          </div>
                       </Card>
@@ -347,13 +341,12 @@ export default function PlanningPage() {
               </div>
             )}
 
-            {/* DAILY VIEW */}
             {viewMode === 'daily' && filteredPlan.map((day: any) => (
               <div key={day.date} className="space-y-12 px-6">
                  {day.isAytDay && (
-                   <div className="p-8 rounded-[3rem] bg-accent text-primary flex items-center justify-between shadow-[0_40px_80px_-20px_rgba(245,158,11,0.4)] animate-pulse">
+                   <div className="p-8 rounded-[3rem] bg-accent text-primary flex items-center justify-between shadow-2xl animate-pulse">
                       <div className="flex items-center gap-6">
-                         <div className="h-16 w-16 rounded-[1.75rem] bg-white flex items-center justify-center shadow-xl"><Target className="h-10 w-10 text-accent" /></div>
+                         <div className="h-16 w-16 rounded-[1.75rem] bg-white flex items-center justify-center"><Target className="h-10 w-10 text-accent" /></div>
                          <div><h3 className="text-3xl font-black italic tracking-tighter uppercase leading-none">AYT PROGRAMI BAŞLADI</h3><p className="text-sm font-bold opacity-60 italic mt-1">TYT çalışmalarına devam ederken AYT konu programı otonom olarak aktif hale geldi.</p></div>
                       </div>
                       <Badge className="bg-primary text-white h-12 px-8 rounded-2xl font-black text-xs uppercase tracking-widest">01 ARALIK</Badge>
@@ -384,27 +377,26 @@ export default function PlanningPage() {
                                </Badge>
                             </div>
 
-                            <div className="space-y-4 flex-1">
-                               <div className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 space-y-6 hover:bg-white transition-all shadow-inner">
-                                  <div className="space-y-3">
-                                     <div className="flex justify-between items-center border-b border-slate-200 pb-2.5">
-                                        <span className="text-[9px] font-black text-primary/40 uppercase tracking-[0.2em] italic">KONU ÇALIŞMA</span>
-                                        <div className="flex gap-2">
-                                           {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="text-rose-500 hover:scale-125 transition-all"><Youtube className="h-4 w-4" /></a>}
-                                           {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="text-blue-500 hover:scale-125 transition-all"><FileText className="h-4 w-4" /></a>}
-                                           {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="text-emerald-500 hover:scale-125 transition-all"><BookOpen className="h-4 w-4" /></a>}
-                                        </div>
+                            <div className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 space-y-6 flex-1 shadow-inner">
+                               <div className="space-y-3">
+                                  <div className="flex justify-between items-center border-b border-slate-200 pb-2.5">
+                                     <span className="text-[9px] font-black text-primary/40 uppercase tracking-[0.2em] italic">KONU ÇALIŞMA</span>
+                                     <div className="flex gap-2">
+                                        {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="text-rose-500 hover:scale-125 transition-all"><Youtube className="h-4 w-4" /></a>}
+                                        {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="text-emerald-500 hover:scale-125 transition-all"><BookOpen className="h-4 w-4" /></a>}
+                                        {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="text-blue-500 hover:scale-125 transition-all"><FileText className="h-4 w-4" /></a>}
+                                        {block.konuExtraUrl && <a href={block.konuExtraUrl} target="_blank" className="text-amber-500 hover:scale-125 transition-all"><LinkIcon className="h-4 w-4" /></a>}
                                      </div>
                                   </div>
-                                  <div className="space-y-3">
-                                     <div className="flex justify-between items-center">
-                                        <p className="text-[10px] font-black text-accent uppercase tracking-[0.2em] italic flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" /> TEST ÇÖZME</p>
-                                        <div className="flex gap-2">
-                                           {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank" className="text-rose-500 hover:scale-125 transition-all"><Youtube className="h-4 w-4" /></a>}
-                                           {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank" className="text-blue-500 hover:scale-125 transition-all"><FileText className="h-4 w-4" /></a>}
-                                           {block.testUrl && <a href={block.testUrl} target="_blank" className="text-emerald-500 hover:scale-125 transition-all"><BookOpen className="h-4 w-4" /></a>}
-                                           {block.extraUrl && <a href={block.extraUrl} target="_blank" className="text-amber-500 hover:scale-125 transition-all"><LinkIcon className="h-4 w-4" /></a>}
-                                        </div>
+                               </div>
+                               <div className="space-y-3">
+                                  <div className="flex justify-between items-center">
+                                     <p className="text-[10px] font-black text-accent uppercase tracking-[0.2em] italic flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" /> TEST ÇÖZME</p>
+                                     <div className="flex gap-2">
+                                        {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank" className="text-rose-500 hover:scale-125 transition-all"><Youtube className="h-4 w-4" /></a>}
+                                        {block.testUrl && <a href={block.testUrl} target="_blank" className="text-emerald-500 hover:scale-125 transition-all"><BookOpen className="h-4 w-4" /></a>}
+                                        {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank" className="text-blue-500 hover:scale-125 transition-all"><FileText className="h-4 w-4" /></a>}
+                                        {block.extraUrl && <a href={block.extraUrl} target="_blank" className="text-amber-500 hover:scale-125 transition-all"><LinkIcon className="h-4 w-4" /></a>}
                                      </div>
                                   </div>
                                </div>
@@ -413,8 +405,8 @@ export default function PlanningPage() {
                             <div className="flex justify-between gap-4 pt-8 border-t border-slate-50 mt-auto">
                                <button onClick={() => handleTaskAction(day.date, block.id, 'done')} className={cn("h-14 w-14 rounded-full flex items-center justify-center transition-all", block.status === 'done' ? "bg-slate-100 text-slate-400 shadow-inner" : "bg-emerald-500 text-white shadow-xl")}><CheckCircle2 className="h-7 w-7" /></button>
                                <div className="flex gap-3">
-                                  <button onClick={() => handleTaskAction(day.date, block.id, 'edit')} className="h-14 w-14 rounded-full border-2 border-slate-100 flex items-center justify-center text-primary hover:border-primary transition-all"><Edit3 className="h-6 w-6" /></button>
-                                  <button onClick={() => handleTaskAction(day.date, block.id, 'delete')} className="h-14 w-14 rounded-full border-2 border-slate-100 flex items-center justify-center text-rose-500 hover:border-rose-500 transition-all"><Trash2 className="h-6 w-6" /></button>
+                                  <button onClick={() => handleTaskAction(day.date, block.id, 'edit')} className="h-14 w-14 rounded-full border-2 border-slate-100 flex items-center justify-center text-primary hover:border-primary transition-all shadow-sm"><Edit3 className="h-6 w-6" /></button>
+                                  <button onClick={() => handleTaskAction(day.date, block.id, 'delete')} className="h-14 w-14 rounded-full border-2 border-slate-100 flex items-center justify-center text-rose-500 hover:border-rose-500 transition-all shadow-sm"><Trash2 className="h-6 w-6" /></button>
                                </div>
                             </div>
                          </div>
@@ -429,46 +421,109 @@ export default function PlanningPage() {
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="rounded-[4rem] border-none shadow-2xl p-0 bg-white max-w-2xl overflow-hidden">
-           <DialogHeader className="p-12 pb-0">
+           <DialogHeader className="p-12 pb-0 flex flex-row items-center justify-between">
               <DialogTitle className="text-5xl font-black italic tracking-tighter text-primary uppercase">GÖREV <span className="text-accent">DÜZENLE</span></DialogTitle>
+              <Button variant="ghost" size="icon" onClick={() => setIsEditDialogOpen(false)} className="rounded-full h-12 w-12 bg-slate-50"><X className="h-6 w-6" /></Button>
            </DialogHeader>
            {editingBlock && (
              <ScrollArea className="max-h-[85vh] p-12 pt-8">
                 <div className="space-y-12 pb-10">
                    <div className="space-y-3">
                       <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">KONU ADI</Label>
-                      <Input value={editingBlock.topic} onChange={(e) => setEditingBlock({...editingBlock, topic: e.target.value})} className="h-20 rounded-3xl bg-slate-50 border-none font-black text-2xl px-10 shadow-inner" />
+                      <Input value={editingBlock.topic} onChange={(e) => setEditingBlock({...editingBlock, topic: e.target.value})} className="h-20 rounded-3xl bg-slate-50 border-none font-black text-2xl px-10 shadow-inner focus-visible:ring-accent" />
                    </div>
+
                    <div className="grid grid-cols-2 gap-8">
                       <div className="space-y-3">
                          <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">SAAT</Label>
-                         <Input type="time" value={editingBlock.phase1?.time || '10:00'} onChange={(e) => setEditingBlock({...editingBlock, phase1: { ...editingBlock.phase1, time: e.target.value }})} className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xl text-center" />
+                         <div className="relative group">
+                            <Input type="time" value={editingBlock.phase1?.time || '10:00'} onChange={(e) => setEditingBlock({...editingBlock, phase1: { ...editingBlock.phase1, time: e.target.value }})} className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xl px-10 shadow-inner focus-visible:ring-accent" />
+                            <Clock className="absolute right-6 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/20 group-focus-within:text-accent" />
+                         </div>
                       </div>
                       <div className="space-y-3">
                          <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">TARİH</Label>
-                         <Input type="date" value={editingBlock.date} onChange={(e) => setEditingBlock({...editingBlock, date: e.target.value})} className="h-16 rounded-2xl bg-slate-50 border-none font-black text-sm" />
+                         <div className="relative group">
+                            <Input type="date" value={editingBlock.date} onChange={(e) => setEditingBlock({...editingBlock, date: e.target.value})} className="h-16 rounded-2xl bg-slate-50 border-none font-black text-sm px-10 shadow-inner focus-visible:ring-accent" />
+                            <Calendar className="absolute right-6 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/20 group-focus-within:text-accent" />
+                         </div>
                       </div>
                    </div>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                         <Label className="text-[10px] font-black uppercase opacity-40 ml-6 italic">KONU YOUTUBE</Label>
-                         <Input value={editingBlock.youtubeUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, youtubeUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" />
+
+                   <div className="space-y-8">
+                      <div className="flex items-center gap-4 ml-6">
+                         <span className="h-3 w-3 rounded-full bg-primary" />
+                         <h4 className="text-sm font-black uppercase tracking-widest text-primary italic">KONU ÇALIŞMA KAYNAKLARI</h4>
                       </div>
-                      <div className="space-y-3">
-                         <Label className="text-[10px] font-black uppercase opacity-40 ml-6 italic">SORU YOUTUBE</Label>
-                         <Input value={editingBlock.testYoutubeUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, testYoutubeUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         <div className="space-y-2">
+                            <Label className="text-[9px] font-black uppercase opacity-30 ml-6 italic">YOUTUBE (KONU)</Label>
+                            <div className="relative group">
+                               <Youtube className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-500 opacity-40 group-focus-within:opacity-100" />
+                               <Input value={editingBlock.youtubeUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, youtubeUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner pl-14 text-xs" placeholder="Video Linki" />
+                            </div>
+                         </div>
+                         <div className="space-y-2">
+                            <Label className="text-[9px] font-black uppercase opacity-30 ml-6 italic">MEBİ / EBA (KONU)</Label>
+                            <div className="relative group">
+                               <BookOpen className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500 opacity-40 group-focus-within:opacity-100" />
+                               <Input value={editingBlock.mebiUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, mebiUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner pl-14 text-xs" placeholder="Konu Anlatım" />
+                            </div>
+                         </div>
+                         <div className="space-y-2">
+                            <Label className="text-[9px] font-black uppercase opacity-30 ml-6 italic">PDF (KONU)</Label>
+                            <div className="relative group">
+                               <FileText className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-500 opacity-40 group-focus-within:opacity-100" />
+                               <Input value={editingBlock.pdfUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, pdfUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner pl-14 text-xs" placeholder="Ders Notu PDF" />
+                            </div>
+                         </div>
+                         <div className="space-y-2">
+                            <Label className="text-[9px] font-black uppercase opacity-30 ml-6 italic">KONU EXTRA</Label>
+                            <div className="relative group">
+                               <LinkIcon className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500 opacity-40 group-focus-within:opacity-100" />
+                               <Input value={editingBlock.konuExtraUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, konuExtraUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner pl-14 text-xs" placeholder="Extra Kaynak" />
+                            </div>
+                         </div>
                       </div>
                    </div>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                         <Label className="text-[10px] font-black uppercase opacity-40 ml-6 italic">TEST LINKI (EBA)</Label>
-                         <Input value={editingBlock.testUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, testUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" />
+
+                   <div className="space-y-8">
+                      <div className="flex items-center gap-4 ml-6">
+                         <span className="h-3 w-3 rounded-full bg-accent" />
+                         <h4 className="text-sm font-black uppercase tracking-widest text-accent italic">TEST ÇÖZME KAYNAKLARI</h4>
                       </div>
-                      <div className="space-y-3">
-                         <Label className="text-[10px] font-black uppercase opacity-40 ml-6 italic">EKSTRA KAYNAK</Label>
-                         <Input value={editingBlock.extraUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, extraUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner text-xs" />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         <div className="space-y-2">
+                            <Label className="text-[9px] font-black uppercase opacity-30 ml-6 italic">YOUTUBE (ÇÖZÜM)</Label>
+                            <div className="relative group">
+                               <Youtube className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-500 opacity-40 group-focus-within:opacity-100" />
+                               <Input value={editingBlock.testYoutubeUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, testYoutubeUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner pl-14 text-xs" placeholder="Soru Çözüm Videosu" />
+                            </div>
+                         </div>
+                         <div className="space-y-2">
+                            <Label className="text-[9px] font-black uppercase opacity-30 ml-6 italic">MEBİ / EBA (SORU)</Label>
+                            <div className="relative group">
+                               <BookOpen className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500 opacity-40 group-focus-within:opacity-100" />
+                               <Input value={editingBlock.testUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, testUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner pl-14 text-xs" placeholder="EBA Test Linki" />
+                            </div>
+                         </div>
+                         <div className="space-y-2">
+                            <Label className="text-[9px] font-black uppercase opacity-30 ml-6 italic">PDF (TEST)</Label>
+                            <div className="relative group">
+                               <FileText className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-500 opacity-40 group-focus-within:opacity-100" />
+                               <Input value={editingBlock.testPdfUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, testPdfUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner pl-14 text-xs" placeholder="Yaprak Test PDF" />
+                            </div>
+                         </div>
+                         <div className="space-y-2">
+                            <Label className="text-[9px] font-black uppercase opacity-30 ml-6 italic">TEST EXTRA</Label>
+                            <div className="relative group">
+                               <LinkIcon className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500 opacity-40 group-focus-within:opacity-100" />
+                               <Input value={editingBlock.extraUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, extraUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner pl-14 text-xs" placeholder="Extra Link" />
+                            </div>
+                         </div>
                       </div>
                    </div>
+
                    <Button onClick={handleSaveEdit} className="w-full h-24 rounded-[2.75rem] bg-primary hover:bg-accent text-white font-black text-xl uppercase tracking-[0.4em] gap-8 shadow-2xl transition-all">
                       <Save className="h-10 w-10 text-accent" /> TERMİNALE KAYDET
                    </Button>

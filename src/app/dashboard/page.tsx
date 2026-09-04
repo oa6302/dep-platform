@@ -1,94 +1,262 @@
-
 'use client';
 
 import { useUser, useDoc, useFirestore } from '@/firebase';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  LayoutDashboard, Calendar, BookOpen, BarChart3, 
-  Trophy, Link as LinkIcon, Award, Clock, 
-  Brain, Menu, X, Loader2
+
+import {
+  LayoutDashboard,
+  Calendar,
+  BookOpen,
+  BarChart3,
+  Trophy,
+  Link as LinkIcon,
+  Award,
+  Clock,
+  Brain,
+  Menu,
+  X,
+  Loader2,
 } from 'lucide-react';
+
 import { cn } from '@/lib/utils';
 import { useState, useEffect, Suspense } from 'react';
+
 import { StudentView } from '@/components/dashboard/student-view';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { format, addDays, differenceInDays, parseISO, isBefore } from 'date-fns';
+
+import {
+  doc,
+  setDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
+
+import {
+  format,
+  addDays,
+  differenceInDays,
+  parseISO,
+  isBefore,
+} from 'date-fns';
+
 import { tr } from 'date-fns/locale';
+
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
 
-// Otonom Adaptive Planlama Motoru v15.0 - Full Sync & Memory persistence
-export const generateAdaptivePlan = (startDateStr: string, completedTopics: any = {}) => {
-  const plan = [];
-  const config = EXAM_CONFIGS['YKS_EA'];
-  const startDate = parseISO(startDateStr);
-  const aytDate = parseISO(config.aytStartDate); 
-  const endDate = parseISO(config.examDate); 
-  
-  const daysInterval = differenceInDays(endDate, startDate);
-  if (daysInterval < 0) return [];
+/* =========================================================
+   AYARLAR
+========================================================= */
 
-  const getRemainingTopics = (lesson: string) => {
-    let allTopics = YKS_TM_TOPICS[lesson];
-    if (!allTopics) {
-      const fallbackKey = lesson.replace('TYT ', '').replace('AYT ', '');
-      allTopics = YKS_TM_TOPICS[fallbackKey] || [];
-    }
-    const done = completedTopics[lesson] || [];
-    return allTopics.filter(t => !done.includes(t));
+const PLAN_START_DATE = '2026-09-01';
+
+/**
+ * AYT başlangıç tarihi
+ * 1 Aralık 2026 olarak mühürlendi.
+ */
+const AYT_START_DATE = '2026-12-01';
+
+/* =========================================================
+   TİPLER
+========================================================= */
+
+type CompletedTopics = Record<string, string[]>;
+
+interface StudyBlock {
+  id: string;
+  lesson: string;
+  topic: string;
+  status: 'planned' | 'done' | 'skipped';
+
+  phase1: {
+    type: string;
+    time: string;
   };
 
+  youtubeUrl: string;
+  mebiUrl: string;
+  pdfUrl: string;
+  extraUrl?: string;
+
+  testYoutubeUrl: string;
+  testUrl: string;
+  testPdfUrl: string;
+  testExtraUrl?: string;
+}
+
+interface StudyDay {
+  date: string;
+  day: string;
+  blocks: StudyBlock[];
+}
+
+/* =========================================================
+   ADAPTİF PLAN MOTORU v16.0
+========================================================= */
+
+export const generateAdaptivePlan = (
+  startDateStr: string,
+  completedTopics: CompletedTopics = {}
+): StudyDay[] => {
+  const config = EXAM_CONFIGS['YKS_EA'];
+
+  if (!config) {
+    console.error('YKS_EA sınav konfigürasyonu bulunamadı.');
+    return [];
+  }
+
+  const startDate = parseISO(startDateStr);
+  const aytDate = parseISO(AYT_START_DATE);
+  const endDate = parseISO(config.examDate);
+
+  const daysInterval = differenceInDays(endDate, startDate);
+
+  if (daysInterval < 0) {
+    return [];
+  }
+
+  /* -------------------------------------------------------
+     Konuları getir
+  ------------------------------------------------------- */
+
+  const getTopics = (lesson: string): string[] => {
+    let topics = YKS_TM_TOPICS[lesson];
+
+    if (!topics) {
+      const normalizedLesson = lesson
+        .replace(/^TYT\s+/i, '')
+        .replace(/^AYT\s+/i, '')
+        .trim();
+
+      topics = YKS_TM_TOPICS[normalizedLesson];
+    }
+
+    return Array.isArray(topics) ? topics : [];
+  };
+
+  /* -------------------------------------------------------
+     Tamamlanan konuları filtrele
+  ------------------------------------------------------- */
+
+  const getRemainingTopics = (lesson: string): string[] => {
+    const allTopics = getTopics(lesson);
+    const completed = completedTopics[lesson] || [];
+
+    return allTopics.filter(
+      (topic) => !completed.includes(topic)
+    );
+  };
+
+  /* -------------------------------------------------------
+     Her ders için ayrı pointer
+  ------------------------------------------------------- */
+
   const lessonPointers: Record<string, number> = {};
+
+  const plan: StudyDay[] = [];
+
+  /* =======================================================
+     GÜNLER
+  ======================================================= */
 
   for (let i = 0; i <= daysInterval; i++) {
     const currentDate = addDays(startDate, i);
     const dateStr = format(currentDate, 'yyyy-MM-dd');
+    const dayName = format(currentDate, 'EEEE', { locale: tr });
+
+    /* -----------------------------------------------------
+       AYT kontrolü
+    ----------------------------------------------------- */
+
     const isAytStarted = !isBefore(currentDate, aytDate);
-    
-    const dailyBlocks = [];
-    const currentLessons = isAytStarted 
-      ? [...config.tytLessons.slice(0, 2), ...config.aytLessons] 
-      : config.tytLessons;
+
+    /* -----------------------------------------------------
+       Ders havuzu
+    ----------------------------------------------------- */
+
+    let currentLessons: string[];
+
+    if (isAytStarted) {
+      currentLessons = [
+        ...config.tytLessons.slice(0, 2),
+        ...config.aytLessons,
+      ];
+    } else {
+      currentLessons = [
+        ...config.tytLessons,
+      ];
+    }
+
+    if (currentLessons.length === 0) continue;
+
+    /* -----------------------------------------------------
+       Günlük 2 çalışma bloğu
+    ----------------------------------------------------- */
+
+    const dailyBlocks: StudyBlock[] = [];
 
     for (let j = 0; j < 2; j++) {
-      const lesson = currentLessons[(i * 2 + j) % currentLessons.length];
-      if (lessonPointers[lesson] === undefined) lessonPointers[lesson] = 0;
-      
-      const remainingTopics = getRemainingTopics(lesson);
-      let allTopicsInList = YKS_TM_TOPICS[lesson] || YKS_TM_TOPICS[lesson.replace('TYT ', '').replace('AYT ', '')] || ['Genel Tekrar'];
+      const lessonIndex = (i * 2 + j) % currentLessons.length;
+      const lesson = currentLessons[lessonIndex];
 
-      const topic = remainingTopics.length > 0 
-        ? remainingTopics[lessonPointers[lesson] % remainingTopics.length]
-        : allTopicsInList[lessonPointers[lesson] % allTopicsInList.length];
-      
+      if (lessonPointers[lesson] === undefined) {
+        lessonPointers[lesson] = 0;
+      }
+
+      const allTopics = getTopics(lesson);
+      const remainingTopics = getRemainingTopics(lesson);
+
+      /* ---------------------------------------------------
+         Konu seçimi
+      --------------------------------------------------- */
+
+      let topic = 'Genel Tekrar';
+
+      if (remainingTopics.length > 0) {
+        const pointer = lessonPointers[lesson] % remainingTopics.length;
+        topic = remainingTopics[pointer];
+      } else if (allTopics.length > 0) {
+        const pointer = lessonPointers[lesson] % allTopics.length;
+        topic = allTopics[pointer];
+      }
+
       lessonPointers[lesson]++;
-      const topicQuery = encodeURIComponent(lesson + ' ' + topic);
-      
+
+      const topicQuery = encodeURIComponent(`${lesson} ${topic}`);
+      const testQuery = encodeURIComponent(`${lesson} ${topic} soru çözümü`);
+      const testSearchQuery = encodeURIComponent(`${lesson} ${topic} test`);
+
       dailyBlocks.push({
         id: `block_${dateStr}_${j}`,
         lesson,
         topic,
         status: 'planned',
-        phase1: { type: 'KONU ÇALIŞMA', time: j === 0 ? '10:00' : '11:00' },
+        phase1: {
+          type: 'KONU ÇALIŞMA',
+          time: j === 0 ? '10:00' : '11:00',
+        },
         youtubeUrl: `https://www.youtube.com/results?search_query=${topicQuery}`,
         mebiUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}`,
         pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}`,
-        testYoutubeUrl: `https://www.youtube.com/results?search_query=${topicQuery}+soru+çözümü`,
-        testUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}+test`,
-        testPdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}+test`,
+        testYoutubeUrl: `https://www.youtube.com/results?search_query=${testQuery}`,
+        testUrl: `https://www.eba.gov.tr/arama?q=${testSearchQuery}`,
+        testPdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${testSearchQuery}`,
       });
     }
-    
+
     plan.push({
       date: dateStr,
-      day: format(currentDate, 'EEEE', { locale: tr }),
-      blocks: dailyBlocks
+      day: dayName,
+      blocks: dailyBlocks,
     });
   }
+
   return plan;
 };
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
 
 function DashboardContent() {
   const { user } = useUser();
@@ -99,19 +267,23 @@ function DashboardContent() {
   const simulateUid = searchParams.get('simulate');
   
   const targetUid = simulateUid || user?.uid;
+
   const { data: userData, loading: docLoading } = useDoc<any>(targetUid ? `users/${targetUid}` : null);
   const { data: studyPlan, loading: planLoading } = useDoc<any>(targetUid ? `studyPlans/${targetUid}` : null);
-  
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
+    if (!mounted || !db || !user || simulateUid) return;
+
     const initProfile = async () => {
-      if (!mounted || !db || !user || simulateUid) return;
-      if (!docLoading && !userData) {
-        try {
+      try {
+        if (!docLoading && !userData) {
           await setDoc(doc(db, 'users', user.uid), {
             uid: user.uid,
             displayName: 'Misafir Öğrenci',
@@ -120,24 +292,28 @@ function DashboardContent() {
             points: 1250,
             completedTopics: {},
             createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
+            updatedAt: serverTimestamp(),
           }, { merge: true });
-        } catch (e) { console.error(e); }
-      }
-      if (!planLoading && !studyPlan && userData) {
-        try {
-          const adaptivePlan = generateAdaptivePlan('2026-09-01', userData.completedTopics || {});
+          return;
+        }
+
+        if (!planLoading && !studyPlan && userData) {
+          const adaptivePlan = generateAdaptivePlan(PLAN_START_DATE, userData.completedTopics || {});
           await setDoc(doc(db, 'studyPlans', user.uid), {
             userId: user.uid,
-            startDate: '2026-09-01',
+            startDate: PLAN_START_DATE,
+            aytStartDate: AYT_START_DATE,
             masterPlan: adaptivePlan,
-            updatedAt: serverTimestamp()
+            updatedAt: serverTimestamp(),
           }, { merge: true });
-        } catch (e) { console.error(e); }
+        }
+      } catch (error) {
+        console.error('Profil / plan oluşturma hatası:', error);
       }
     };
+
     initProfile();
-  }, [userData, studyPlan, docLoading, planLoading, mounted, db, user, simulateUid]);
+  }, [mounted, db, user, simulateUid, userData, studyPlan, docLoading, planLoading]);
 
   if (!mounted) return null;
 
@@ -155,36 +331,52 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row relative overflow-hidden">
-      {/* Mobile Header */}
+      {/* MOBILE HEADER */}
       <header className="md:hidden h-20 bg-white border-b border-slate-100 flex items-center justify-between px-6 sticky top-0 z-[60]">
-        <div className="text-xl font-black italic tracking-tighter text-primary uppercase">DEK <span className="text-accent">AI</span></div>
+        <div className="text-xl font-black italic tracking-tighter text-primary uppercase">
+          DEK <span className="text-accent">AI</span>
+        </div>
         <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="rounded-xl h-12 w-12 bg-slate-50">
           {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </Button>
       </header>
 
-      {sidebarOpen && <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] md:hidden" onClick={() => setSidebarOpen(false)} />}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] md:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
 
-      <aside className={cn("w-[280px] bg-white border-r border-slate-100 flex flex-col fixed md:sticky inset-y-0 left-0 z-[58] transition-transform duration-500 md:translate-x-0 h-screen", sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0")}>
+      {/* SIDEBAR */}
+      <aside className={cn(`w-[280px] bg-white border-r border-slate-100 flex flex-col fixed md:sticky inset-y-0 left-0 z-[58] transition-transform duration-500 md:translate-x-0 h-screen`,
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        )}
+      >
         <div className="p-8 border-b border-slate-50 hidden md:block">
-          <div className="text-2xl font-black italic tracking-tighter text-primary uppercase leading-none">DEK <span className="text-accent">AI</span></div>
+          <div className="text-2xl font-black italic tracking-tighter text-primary uppercase leading-none">
+            DEK <span className="text-accent">AI</span>
+          </div>
         </div>
+
         <ScrollArea className="flex-1 p-6">
           <nav className="space-y-3">
-            {navItems.map((item) => (
-              <button 
-                key={item.id} 
-                onClick={() => { router.push(item.path); setSidebarOpen(false); }} 
-                className={cn(
-                  "w-full flex items-center gap-4 px-6 py-4 rounded-[1.25rem] transition-all font-black text-[11px] uppercase tracking-widest text-left group",
-                  pathname === item.path 
-                    ? "bg-[#0F172A] text-white shadow-[0_20px_40px_-10px_rgba(15,23,42,0.4)]" 
-                    : "text-primary/40 hover:bg-slate-50 hover:text-primary"
-                )}
-              >
-                <item.icon className={cn("h-5 w-5", pathname === item.path ? "text-accent" : "text-slate-300 group-hover:text-primary")} /> {item.label}
-              </button>
-            ))}
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.path;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    router.push(item.path);
+                    setSidebarOpen(false);
+                  }}
+                  className={cn(`w-full flex items-center gap-4 px-6 py-4 rounded-[1.25rem] transition-all font-black text-[11px] uppercase tracking-widest text-left group`,
+                    isActive ? `bg-[#0F172A] text-white shadow-[0_20px_40px_-10px_rgba(15,23,42,0.4)]` : `text-primary/40 hover:bg-slate-50 hover:text-primary`
+                  )}
+                >
+                  <Icon className={cn('h-5 w-5', isActive ? 'text-accent' : `text-slate-300 group-hover:text-primary`)} />
+                  {item.label}
+                </button>
+              );
+            })}
           </nav>
         </ScrollArea>
       </aside>

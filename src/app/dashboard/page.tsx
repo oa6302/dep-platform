@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   LayoutDashboard, Calendar, BookOpen, BarChart3, 
   Trophy, Link as LinkIcon, Award, Clock, Users, 
-  Brain, Settings, LogOut, Sparkles, Menu, X, Loader2, UserCircle
+  Brain, Settings, LogOut, Sparkles, Menu, X, Loader2, UserCircle, Target
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
@@ -58,8 +58,11 @@ export default function DashboardPage() {
         <div className="max-w-md w-full text-center space-y-10">
            <UserCircle className="h-24 w-24 text-accent mx-auto" />
            <h2 className="text-2xl font-black text-primary uppercase italic">PROFİL EKSİK</h2>
-           <p className="text-muted-foreground font-medium italic">Sistemde size ait akademik profil bulunamadı.</p>
-           <Button onClick={() => auth && signOut(auth)} className="w-full h-16 rounded-2xl bg-primary text-white font-black">GÜVENLİ ÇIKIŞ YAP</Button>
+           <p className="text-muted-foreground font-medium italic">Sistemde size ait akademik profil bulunamadı. Lütfen kurulumu tamamlayın.</p>
+           <div className="flex flex-col gap-4">
+              <Button onClick={() => router.push('/dashboard/select-exam')} className="w-full h-16 rounded-2xl bg-accent text-primary font-black uppercase tracking-widest shadow-xl">PROFİL KURULUMUNU TAMAMLA</Button>
+              <Button variant="ghost" onClick={() => auth && signOut(auth)} className="w-full h-12 rounded-xl text-primary/40 font-black text-[10px] uppercase">GÜVENLİ ÇIKIŞ YAP</Button>
+           </div>
         </div>
       </div>
     );

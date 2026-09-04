@@ -62,31 +62,17 @@ type UserRole =
 export function AuthForm({
   mode: initialMode,
 }: AuthFormProps) {
-  const [authMode, setAuthMode] =
-    useState<AuthMode>(initialMode);
-
-  const [role, setRole] =
-    useState<UserRole>('student');
-
+  const [authMode, setAuthMode] = useState<AuthMode>(initialMode);
+  const [role, setRole] = useState<UserRole>('student');
   const [email, setEmail] = useState('');
-  const [password, setPassword] =
-    useState('');
-
-  const [displayName, setDisplayName] =
-    useState('');
-
-  const [targetExam, setTargetExam] =
-    useState('');
-
-  const [showPassword, setShowPassword] =
-    useState(false);
-
-  const [loading, setLoading] =
-    useState(false);
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [targetExam, setTargetExam] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const auth = useAuth();
   const db = useFirestore();
-
   const router = useRouter();
   const { toast } = useToast();
 
@@ -110,25 +96,15 @@ export function AuthForm({
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!auth || !db) {
-      toast({ variant: 'destructive', title: 'Bağlantı Hatası', description: 'Firebase bağlantısı hazır değil.' });
+      toast({ variant: 'destructive', title: 'Bağlantı Hatası', description: 'Firebase hazır değil.' });
       return;
     }
 
     const cleanEmail = email.trim().toLowerCase();
     const cleanName = displayName.trim();
 
-    if (!cleanName) {
-      toast({ variant: 'destructive', title: 'Ad Soyad Eksik', description: 'Lütfen adınızı ve soyadınızı giriniz.' });
-      return;
-    }
-
-    if (!cleanEmail) {
-      toast({ variant: 'destructive', title: 'E-posta Eksik', description: 'Lütfen geçerli bir e-posta adresi giriniz.' });
-      return;
-    }
-
-    if (!password || password.length < 6) {
-      toast({ variant: 'destructive', title: 'Şifre Hatası', description: 'Şifreniz en az 6 karakter olmalıdır.' });
+    if (!cleanName || !cleanEmail || !password || password.length < 6) {
+      toast({ variant: 'destructive', title: 'Validasyon Hatası', description: 'Lütfen tüm alanları doğru doldurun.' });
       return;
     }
 
@@ -140,11 +116,10 @@ export function AuthForm({
     setLoading(true);
     try {
       const credential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
-      const finalUser = credential.user;
-      await updateProfile(finalUser, { displayName: cleanName });
+      await updateProfile(credential.user, { displayName: cleanName });
 
       const userData: any = {
-        uid: finalUser.uid,
+        uid: credential.user.uid,
         email: cleanEmail,
         displayName: cleanName,
         role,
@@ -163,22 +138,16 @@ export function AuthForm({
         userData.isActivated = false;
       }
 
-      if (role === 'school_admin') {
-        userData.isApproved = false;
-      }
-
-      await setDoc(doc(db, 'users', finalUser.uid), userData);
-      toast({ title: 'Kayıt Başarılı', description: 'Akademik profiliniz oluşturuldu.', className: 'bg-primary text-white rounded-[2rem] shadow-2xl' });
+      await setDoc(doc(db, 'users', credential.user.uid), userData);
+      toast({ title: 'Kayıt Başarılı', description: 'Profiliniz oluşturuldu.', className: 'bg-primary text-white rounded-[2rem]' });
       router.replace('/dashboard');
     } catch (error: any) {
-      let title = 'Kayıt Başarısız';
       let message = 'Bir hata oluştu.';
-      if (error?.code === 'auth/email-already-in-use') {
-        title = 'E-posta Kullanımda';
-        message = 'Bu hesap zaten kayıtlı. Lütfen giriş yapın.';
+      if (error.code === 'auth/email-already-in-use') {
+        message = 'Bu e-posta zaten kullanımda. Giriş yapın.';
         setAuthMode('login');
       }
-      toast({ variant: 'destructive', title, description: message });
+      toast({ variant: 'destructive', title: 'Hata', description: message });
     } finally {
       setLoading(false);
     }
@@ -188,18 +157,13 @@ export function AuthForm({
     e.preventDefault();
     if (!auth) return;
     const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail || !password) {
-      toast({ variant: 'destructive', title: 'Eksik Bilgi', description: 'E-posta ve şifre gereklidir.' });
-      return;
-    }
-
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, cleanEmail, password);
       toast({ title: 'Giriş Başarılı', className: 'bg-primary text-white rounded-2xl' });
       router.replace('/dashboard');
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Giriş Hatası', description: 'E-posta veya şifre hatalı.' });
+      toast({ variant: 'destructive', title: 'Hata', description: 'E-posta veya şifre hatalı.' });
     } finally {
       setLoading(false);
     }

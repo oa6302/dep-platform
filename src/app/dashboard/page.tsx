@@ -19,18 +19,17 @@ import { tr } from 'date-fns/locale';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
 
-// Otonom Adaptive Planlama Motoru v14.0 - Full Sync Mode
+// Otonom Adaptive Planlama Motoru v15.0 - Full Sync & Memory persistence
 export const generateAdaptivePlan = (startDateStr: string, completedTopics: any = {}) => {
   const plan = [];
   const config = EXAM_CONFIGS['YKS_EA'];
   const startDate = parseISO(startDateStr);
-  const aytDate = parseISO(config.aytStartDate); // 2026-12-01
-  const endDate = parseISO(config.examDate); // 2027-06-15
+  const aytDate = parseISO(config.aytStartDate); 
+  const endDate = parseISO(config.examDate); 
   
   const daysInterval = differenceInDays(endDate, startDate);
   if (daysInterval < 0) return [];
 
-  // Çalışılmamış (Eksik) Konuları Filtreleme Mantığı
   const getRemainingTopics = (lesson: string) => {
     let allTopics = YKS_TM_TOPICS[lesson];
     if (!allTopics) {
@@ -53,7 +52,6 @@ export const generateAdaptivePlan = (startDateStr: string, completedTopics: any 
       ? [...config.tytLessons.slice(0, 2), ...config.aytLessons] 
       : config.tytLessons;
 
-    // Günlük 2 Ana Akademik Blok
     for (let j = 0; j < 2; j++) {
       const lesson = currentLessons[(i * 2 + j) % currentLessons.length];
       if (lessonPointers[lesson] === undefined) lessonPointers[lesson] = 0;
@@ -74,24 +72,18 @@ export const generateAdaptivePlan = (startDateStr: string, completedTopics: any 
         topic,
         status: 'planned',
         phase1: { type: 'KONU ÇALIŞMA', time: j === 0 ? '10:00' : '11:00' },
-        phase2: { type: 'TEST ÇÖZME' },
-        // Subject Resources
         youtubeUrl: `https://www.youtube.com/results?search_query=${topicQuery}`,
         mebiUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}`,
         pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}`,
-        konuExtraUrl: '',
-        // Test Resources
         testYoutubeUrl: `https://www.youtube.com/results?search_query=${topicQuery}+soru+çözümü`,
         testUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}+test`,
         testPdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}+test`,
-        extraUrl: ''
       });
     }
     
     plan.push({
       date: dateStr,
       day: format(currentDate, 'EEEE', { locale: tr }),
-      isAytDay: dateStr === '2026-12-01',
       blocks: dailyBlocks
     });
   }
@@ -118,7 +110,6 @@ function DashboardContent() {
   useEffect(() => {
     const initProfile = async () => {
       if (!mounted || !db || !user || simulateUid) return;
-
       if (!docLoading && !userData) {
         try {
           await setDoc(doc(db, 'users', user.uid), {
@@ -133,7 +124,6 @@ function DashboardContent() {
           }, { merge: true });
         } catch (e) { console.error(e); }
       }
-
       if (!planLoading && !studyPlan && userData) {
         try {
           const adaptivePlan = generateAdaptivePlan('2026-09-01', userData.completedTopics || {});
@@ -180,16 +170,16 @@ function DashboardContent() {
           <div className="text-2xl font-black italic tracking-tighter text-primary uppercase leading-none">DEK <span className="text-accent">AI</span></div>
         </div>
         <ScrollArea className="flex-1 p-6">
-          <nav className="space-y-2">
+          <nav className="space-y-3">
             {navItems.map((item) => (
               <button 
                 key={item.id} 
                 onClick={() => { router.push(item.path); setSidebarOpen(false); }} 
                 className={cn(
-                  "w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all font-black text-[11px] uppercase tracking-widest text-left group",
+                  "w-full flex items-center gap-4 px-6 py-4 rounded-[1.25rem] transition-all font-black text-[11px] uppercase tracking-widest text-left group",
                   pathname === item.path 
-                    ? "bg-primary text-white shadow-xl shadow-primary/20" 
-                    : "text-muted-foreground hover:bg-slate-50 hover:text-primary"
+                    ? "bg-[#0F172A] text-white shadow-[0_20px_40px_-10px_rgba(15,23,42,0.4)]" 
+                    : "text-primary/40 hover:bg-slate-50 hover:text-primary"
                 )}
               >
                 <item.icon className={cn("h-5 w-5", pathname === item.path ? "text-accent" : "text-slate-300 group-hover:text-primary")} /> {item.label}

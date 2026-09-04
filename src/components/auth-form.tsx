@@ -99,6 +99,7 @@ export function AuthForm({
         displayName: displayName.trim(),
         role,
         targetExam: role === 'student' ? targetExam : null,
+        points: 0,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -117,7 +118,13 @@ export function AuthForm({
       
       router.replace('/dashboard');
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Kayıt Hatası', description: error.message });
+      toast({ 
+        variant: 'destructive', 
+        title: 'Kayıt Hatası', 
+        description: error.message === 'Firebase: Error (auth/email-already-in-use).' 
+          ? 'Bu e-posta adresi zaten kullanımda. Lütfen giriş yapın.' 
+          : error.message 
+      });
     } finally {
       setLoading(false);
     }
@@ -145,7 +152,7 @@ export function AuthForm({
            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 text-primary font-black text-[10px] uppercase tracking-widest italic border border-primary/5">
               <Key className="h-3 w-3 text-accent" /> SECURE LOGIN
            </div>
-           <h2 className="text-5xl font-black italic tracking-tighter text-primary uppercase">GİRİŞ YAP</h2>
+           <h2 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-none">GİRİŞ YAP</h2>
         </div>
         <form onSubmit={handleLogin} className="space-y-6">
            <div className="space-y-2">
@@ -162,7 +169,7 @@ export function AuthForm({
                 <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-14 focus-visible:ring-accent text-primary" placeholder="••••••••" />
               </div>
            </div>
-           <Button type="submit" disabled={loading} className="w-full h-20 rounded-[2.5rem] bg-primary hover:bg-accent text-white font-black text-sm uppercase tracking-[0.4em] shadow-2xl gap-4 border-none">
+           <Button type="submit" disabled={loading} className="w-full h-20 rounded-[2.5rem] bg-primary hover:bg-accent text-white font-black text-sm uppercase tracking-[0.4em] shadow-2xl gap-4 border-none transition-all active:scale-95">
               {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <LogIn className="h-6 w-6 text-accent" />} TERMİNALE GİR
            </Button>
            <button type="button" onClick={() => setAuthMode('register')} className="w-full text-center text-[11px] font-black uppercase tracking-widest text-primary/40 hover:text-accent transition-colors italic">YENİ HESAP OLUŞTUR →</button>
@@ -177,7 +184,7 @@ export function AuthForm({
          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/10 text-accent font-black text-[10px] uppercase tracking-widest italic border border-accent/10">
             <Sparkles className="h-3 w-3" /> Digital Academy Setup
          </div>
-         <h2 className="text-5xl font-black italic tracking-tighter text-primary uppercase">ÜYE OL</h2>
+         <h2 className="text-5xl font-black italic tracking-tighter text-primary uppercase leading-none">ÜYE OL</h2>
       </div>
       <form onSubmit={handleRegister} className="space-y-10">
         <div className="grid grid-cols-3 gap-4">
@@ -257,7 +264,7 @@ export function AuthForm({
            </div>
         )}
 
-        <Button type="submit" disabled={loading} className="w-full h-24 rounded-[3rem] bg-[#0F172A] hover:bg-accent text-white font-black text-xl uppercase tracking-[0.4em] shadow-2xl transition-all border-none">
+        <Button type="submit" disabled={loading} className="w-full h-24 rounded-[3rem] bg-[#0F172A] hover:bg-accent text-white font-black text-xl uppercase tracking-[0.4em] shadow-2xl transition-all border-none active:scale-95">
            {loading ? <Loader2 className="h-8 w-8 animate-spin" /> : <Zap className="h-8 w-8 text-accent" />} KAYDI TAMAMLA
         </Button>
         <button type="button" onClick={() => setAuthMode('login')} className="w-full text-center text-[10px] font-black uppercase tracking-[0.3em] text-primary/30 hover:text-primary italic transition-colors">ZATEN BİR HESABIM VAR → GİRİŞ YAP</button>

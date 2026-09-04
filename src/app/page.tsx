@@ -80,8 +80,8 @@ export default function LandingPage() {
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl rounded-[3rem] p-0 border-none bg-white overflow-hidden shadow-3xl">
-                   <DialogHeader className="p-10 pb-0 sr-only">
-                      <DialogTitle>Sisteme Giriş ve Kayıt</DialogTitle>
+                   <DialogHeader className="p-10 pb-0">
+                      <DialogTitle className="text-center font-black italic uppercase tracking-widest text-primary/40 text-[10px]">Sisteme Giriş ve Kayıt v4.8</DialogTitle>
                    </DialogHeader>
                    <ScrollArea className="max-h-[90vh]">
                       <AuthForm mode="register" />

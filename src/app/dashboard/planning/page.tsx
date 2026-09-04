@@ -49,7 +49,7 @@ export default function PlanningPage() {
     const queryStr = encodeURIComponent(`${lesson} ${topic}`);
     return {
       youtubeUrl: `https://www.youtube.com/results?search_query=${queryStr}+konu+anlatımı`,
-      pdfUrl: `https://ogmmateryal.eba.gov.tr/panel/FasikulGoster.aspx?arama=${encodeURIComponent(topic)}`,
+      pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${encodeURIComponent(topic)}`,
       mebiUrl: `https://mebi.eba.gov.tr/arama?q=${encodeURIComponent(topic)}`
     };
   };
@@ -108,7 +108,6 @@ export default function PlanningPage() {
         const existingDay = existingPlan.find((day: any) => day.date === dateStr);
         const dailyBlocks = [];
 
-        // BLOK 1 & 2: ANA DERSLER
         for (let j = 0; j < 2; j++) {
           const lesson = lessonPool[(i * 2 + j) % lessonPool.length];
           const topics = getTopics(lesson);
@@ -129,7 +128,6 @@ export default function PlanningPage() {
           lessonPointers[lesson]++;
         }
 
-        // BLOK 3: PARAGRAF
         const oldPara = existingDay?.blocks?.find((b: any) => b.id === `para_${dateStr}`);
         dailyBlocks.push({
           id: `para_${dateStr}`,
@@ -141,7 +139,6 @@ export default function PlanningPage() {
           ...generateAutoLinks('Paragraf', 'Türkçe'),
         });
 
-        // BLOK 4: STRATEJİK TEKRAR
         const oldReview = existingDay?.blocks?.find((b: any) => b.id === `review_${dateStr}`);
         dailyBlocks.push({
           id: `review_${dateStr}`,

@@ -66,7 +66,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
   if (planLoading) return (
     <div className="p-20 flex flex-col items-center justify-center gap-6 min-h-[60vh]">
       <Loader2 className="h-10 w-10 animate-spin text-accent" />
-      <p className="text-[10px] font-black uppercase italic tracking-[0.4em] text-primary/40">Terminal Senkronize Ediliyor...</p>
+      <p className="text-[10px] font-black uppercase italic tracking-[0.4em] text-primary/40 italic">Terminal Senkronize Ediliyor...</p>
     </div>
   );
 
@@ -89,7 +89,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
 
       <div className="space-y-12">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-4">
-             <h2 className="text-3xl font-black italic tracking-tighter text-primary uppercase">GÜNLÜK AKADEMİK BLOKLARIN</h2>
+             <h2 className="text-3xl md:text-4xl font-black italic tracking-tighter text-primary uppercase">GÜNLÜK AKADEMİK BLOKLARIN</h2>
              <Badge className="bg-white text-primary border-2 border-slate-100 rounded-3xl px-8 py-3.5 font-black uppercase text-[10px] tracking-[0.2em] shadow-lg">
                 <Clock3 className="h-4 w-4 mr-2" /> {format(new Date(), 'd MMMM yyyy', { locale: tr })}
              </Badge>
@@ -97,14 +97,14 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
              {currentDayPlan?.blocks?.map((block: any) => (
-                <Card key={block.id} className={cn("p-8 rounded-[3.5rem] border-none shadow-xl transition-all hover:scale-[1.02] bg-white h-full flex flex-col", block.status === 'done' && "opacity-60")}>
+                <Card key={block.id} className={cn("p-8 rounded-[3.5rem] border-none transition-all hover:scale-[1.02] shadow-xl bg-white h-full flex flex-col", block.status === 'done' && "opacity-60")}>
                    <div className="space-y-6 flex-1 flex flex-col">
                         <div className="flex justify-between items-start">
                            <div className="space-y-1 flex-1">
                               <p className="text-[8px] font-black text-accent uppercase tracking-widest italic">#{String(block.lesson || 'DERS').substring(0, 4).toUpperCase()}</p>
                               <h4 className="text-2xl font-black italic leading-tight tracking-tighter uppercase text-primary line-clamp-2">{block.topic}</h4>
                            </div>
-                           <Badge className={cn("px-4 py-1.5 rounded-full text-[8px] font-black shrink-0", block.status === 'done' ? "bg-emerald-500 text-white" : "bg-rose-500 text-white shadow-lg")}>
+                           <Badge className={cn("px-4 py-1.5 rounded-full text-[8px] font-black shrink-0", block.status === 'done' ? "bg-emerald-500 text-white shadow-lg" : "bg-rose-500 text-white shadow-lg")}>
                               {block.status === 'done' ? 'TAMAM' : 'BEK'}
                            </Badge>
                         </div>
@@ -136,7 +136,6 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                 <Card onClick={() => router.push('/dashboard/planning')} className="lg:col-span-4 h-[300px] text-center bg-white rounded-[4rem] border-4 border-dashed border-slate-200 flex flex-col items-center justify-center gap-6 cursor-pointer hover:border-accent/20 transition-all group w-full">
                    <Zap className="h-10 w-10 text-accent opacity-20 group-hover:scale-110 transition-transform" />
                    <p className="text-xl font-black uppercase tracking-[0.4em] text-primary/20 italic">AKADEMİK TAKVİM BEKLENİYOR</p>
-                   <Button className="rounded-xl bg-primary px-8 text-[9px] font-black uppercase tracking-widest text-white">PLAN OLUŞTUR</Button>
                 </Card>
              )}
         </div>

@@ -13,7 +13,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useState, useEffect, Suspense } from 'react';
 import { StudentView } from '@/components/dashboard/student-view';
-import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { format, addDays, differenceInDays, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
@@ -45,7 +45,6 @@ function DashboardContent() {
     const examDate = parseISO(config.examDate);
     const lessons = config.lessons;
     
-    // Sınava kadar kaç gün var?
     const daysUntilExam = Math.max(90, differenceInDays(examDate, baseDate));
     
     const getTopics = (lesson: string) => {
@@ -105,7 +104,6 @@ function DashboardContent() {
     const initProfile = async () => {
       if (!mounted || !db || !user || simulateUid) return;
 
-      // Profile check
       if (!docLoading && !userData) {
         try {
           await setDoc(doc(db, 'users', user.uid), {
@@ -123,7 +121,6 @@ function DashboardContent() {
         }
       }
 
-      // Plan check - explicitly check if the document exists in Firestore to be sure
       if (!planLoading && !studyPlan) {
         try {
           const adaptivePlan = generateAutoPlan();

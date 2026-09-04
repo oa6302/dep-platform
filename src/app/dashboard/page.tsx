@@ -13,8 +13,8 @@ import {
 import { cn } from '@/lib/utils';
 import { useState, useEffect, Suspense } from 'react';
 import { StudentView } from '@/components/dashboard/student-view';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { format, addDays } from 'date-fns';
+import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { format, addDays, differenceInDays, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
@@ -42,16 +42,25 @@ function DashboardContent() {
     const plan = [];
     const baseDate = new Date();
     const config = EXAM_CONFIGS['YKS_EA'];
+    const examDate = parseISO(config.examDate);
     const lessons = config.lessons;
     
-    for (let i = 0; i < 90; i++) {
+    // Sınava kadar kaç gün var?
+    const daysUntilExam = Math.max(90, differenceInDays(examDate, baseDate));
+    
+    const getTopics = (lesson: string) => {
+      const cleanName = lesson.replace(/^(TYT|AYT)\s+/i, '').trim();
+      return YKS_TM_TOPICS[lesson] || YKS_TM_TOPICS[cleanName] || ['Genel Tekrar'];
+    };
+
+    for (let i = 0; i < daysUntilExam; i++) {
       const currentDate = addDays(baseDate, i);
       const dateStr = format(currentDate, 'yyyy-MM-dd');
       
       const dailyBlocks = [];
       for (let j = 0; j < 2; j++) {
         const lesson = lessons[(i * 2 + j) % lessons.length];
-        const topics = YKS_TM_TOPICS[lesson] || ['Genel Tekrar'];
+        const topics = getTopics(lesson);
         const topic = topics[i % topics.length];
         
         dailyBlocks.push({
@@ -94,9 +103,11 @@ function DashboardContent() {
 
   useEffect(() => {
     const initProfile = async () => {
-      if (mounted && !docLoading && !planLoading && !userData && !studyPlan && !simulateUid && db && user) {
+      if (!mounted || !db || !user || simulateUid) return;
+
+      // Profile check
+      if (!docLoading && !userData) {
         try {
-          const adaptivePlan = generateAutoPlan();
           await setDoc(doc(db, 'users', user.uid), {
             uid: user.uid,
             displayName: 'Misafir Öğrenci',
@@ -107,7 +118,15 @@ function DashboardContent() {
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
           }, { merge: true });
+        } catch (e) {
+          console.error("Profile initialization error:", e);
+        }
+      }
 
+      // Plan check - explicitly check if the document exists in Firestore to be sure
+      if (!planLoading && !studyPlan) {
+        try {
+          const adaptivePlan = generateAutoPlan();
           await setDoc(doc(db, 'studyPlans', user.uid), {
             userId: user.uid,
             targetExam: 'YKS_EA',
@@ -115,7 +134,7 @@ function DashboardContent() {
             updatedAt: serverTimestamp()
           }, { merge: true });
         } catch (e) {
-          console.error("Initialization error:", e);
+          console.error("Plan initialization error:", e);
         }
       }
     };

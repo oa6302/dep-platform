@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -40,7 +41,7 @@ export default function PlanningPage() {
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState('2026-06-15');
+  const [endDate, setEndDate] = useState('2027-06-15');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<any>(null);
 

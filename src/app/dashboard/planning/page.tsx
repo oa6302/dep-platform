@@ -11,14 +11,13 @@ import {
   Calendar, Zap, Loader2, Sparkles, 
   ArrowLeft, Home, Edit3, Youtube, Save, FileText, 
   BookOpen, X, Clock, Target, TrendingUp, Brain,
-  ChevronRight, CheckCircle2, AlertCircle,
-  LayoutGrid, ListFilter, Star
+  ChevronRight, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { format, parseISO, isBefore, isSameMonth, addDays, startOfWeek, endOfWeek, isWithinInterval, startOfMonth, endOfMonth, isAfter } from 'date-fns';
+import { format, parseISO, isBefore, isSameMonth, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isAfter } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import {
   Dialog,
@@ -44,7 +43,7 @@ export default function PlanningPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('monthly');
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date(2026, 8, 1));
   const [startDate, setStartDate] = useState('2026-09-01');
-  const [endDate, setEndDate] = useState('2026-09-30');
+  const [endDate, setEndDate] = useState('2027-06-15');
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<any>(null);
@@ -152,8 +151,8 @@ export default function PlanningPage() {
              <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-10 w-10 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><Home className="h-5 w-5" /></Button>
           </div>
           <div className="space-y-2">
-             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-primary font-black text-[9px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3 w-3" /> OMNI-SYNC v34.0</div>
-             <h2 className="text-5xl md:text-8xl font-black tracking-tighter italic text-primary uppercase leading-[0.85] text-shadow-premium break-words">Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span></h2>
+             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-primary font-black text-[9px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3 w-3" /> OMNI-SYNC v36.0</div>
+             <h2 className="text-6xl md:text-8xl lg:text-[9.5rem] font-black tracking-tighter italic text-primary uppercase leading-[0.85] text-shadow-premium break-words">Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span></h2>
           </div>
         </div>
 
@@ -309,7 +308,7 @@ export default function PlanningPage() {
                                   </div>
                                   <span className="text-[9px] font-black text-primary/10 uppercase tracking-[0.2em] italic">#{String(block.lesson).includes('AYT') ? 'AYT' : 'TYT'}</span>
                                </div>
-                               <Badge className={cn("px-4 py-1.5 rounded-[1rem] text-[8px] font-black shadow-xl", (block.status === 'done' || block.status === 'completed') ? "bg-emerald-50 text-white" : "bg-[#FF4D6D] text-white")}>
+                               <Badge className={cn("px-4 py-1.5 rounded-[1rem] text-[8px] font-black shadow-xl border-none", (block.status === 'done' || block.status === 'completed') ? "bg-emerald-50 text-white" : "bg-[#FF4D6D] text-white")}>
                                  {(block.status === 'done' || block.status === 'completed') ? 'TAMAM' : 'BEK'}
                                </Badge>
                             </div>

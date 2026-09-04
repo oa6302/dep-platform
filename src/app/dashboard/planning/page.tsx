@@ -320,7 +320,7 @@ export default function PlanningPage() {
                </div>
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full">
                   {day.blocks?.map((block: any) => (
-                    <Card key={block.id} className={cn("p-10 rounded-[4rem] border-none shadow-xl transition-all hover:scale-[1.02] bg-white h-full flex flex-col group relative overflow-hidden", block.status === 'done' && "opacity-60")}>
+                    <Card key={block.id} className={cn("p-10 rounded-[4.5rem] border-none shadow-xl transition-all hover:scale-[1.02] bg-white h-full flex flex-col group relative overflow-hidden", block.status === 'done' && "opacity-60")}>
                        <div className="space-y-8 h-full flex flex-col flex-1 relative z-10">
                           <div className="flex justify-between items-start gap-4">
                              <div className="space-y-1 flex-1">
@@ -331,43 +331,47 @@ export default function PlanningPage() {
                                   </div>
                                   <p className="text-[8px] font-bold text-muted-foreground/40 uppercase tracking-[0.3em] italic">#{String(block.lesson || 'GENEL').substring(0, 4).toUpperCase()}</p>
                                 </div>
-                                <h4 className="text-2xl font-black italic leading-[0.9] tracking-tighter uppercase text-primary line-clamp-3">{block.topic}</h4>
+                                <h4 className="text-3xl font-black italic leading-[0.9] tracking-tighter uppercase text-primary line-clamp-3 mb-2">{block.topic}</h4>
                              </div>
-                             <Badge className={cn("px-5 py-2 rounded-full text-[10px] font-black shrink-0 shadow-lg", block.status === 'done' ? "bg-emerald-500 text-white" : "bg-rose-500 text-white")}>
+                             <Badge className={cn("px-5 py-2.5 rounded-2xl text-[10px] font-black shrink-0 shadow-lg", block.status === 'done' ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-[#FF4D6D] text-white")}>
                                 {block.status === 'done' ? 'TAMAM' : 'BEK'}
                              </Badge>
                           </div>
 
-                          <div className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 space-y-6 flex-1 shadow-inner">
-                             <div className="space-y-3">
-                                <div className="flex justify-between items-center border-b border-slate-200 pb-2.5">
-                                   <span className="text-[9px] font-black text-primary/40 uppercase tracking-[0.2em] italic">KONU ÇALIŞMA</span>
-                                   <div className="flex gap-2">
-                                      {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="text-rose-500 hover:scale-125 transition-all"><Youtube className="h-4 w-4" /></a>}
-                                      {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="text-emerald-500 hover:scale-125 transition-all"><BookOpen className="h-4 w-4" /></a>}
-                                      {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="text-blue-500 hover:scale-125 transition-all"><FileText className="h-4 w-4" /></a>}
-                                      {block.konuExtraUrl && <a href={block.konuExtraUrl} target="_blank" className="text-amber-500 hover:scale-125 transition-all"><LinkIcon className="h-4 w-4" /></a>}
+                          <div className="p-8 rounded-[3rem] bg-slate-50 border border-slate-100 space-y-8 shadow-inner flex-1 flex flex-col justify-center">
+                             <div className="space-y-4">
+                                <div className="flex justify-between items-center border-b border-slate-200/60 pb-3">
+                                   <span className="text-[10px] font-black text-primary/30 uppercase tracking-[0.2em] italic">KONU ÇALIŞMA</span>
+                                   <div className="flex gap-3">
+                                      {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="text-rose-500 hover:scale-125 transition-all"><Youtube className="h-5 w-5" /></a>}
+                                      {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="text-emerald-500 hover:scale-125 transition-all"><BookOpen className="h-5 w-5" /></a>}
+                                      {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="text-blue-500 hover:scale-125 transition-all"><FileText className="h-5 w-5" /></a>}
+                                      {block.konuExtraUrl && <a href={block.konuExtraUrl} target="_blank" className="text-amber-500 hover:scale-125 transition-all"><LinkIcon className="h-5 w-5" /></a>}
                                    </div>
                                 </div>
                              </div>
-                             <div className="space-y-3">
+                             <div className="space-y-4">
                                 <div className="flex justify-between items-center">
-                                   <p className="text-[10px] font-black text-accent uppercase tracking-[0.2em] italic flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" /> TEST ÇÖZME</p>
-                                   <div className="flex gap-2">
-                                      {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank" className="text-rose-500 hover:scale-125 transition-all"><Youtube className="h-4 w-4" /></a>}
-                                      {block.testUrl && <a href={block.testUrl} target="_blank" className="text-emerald-500 hover:scale-125 transition-all"><BookOpen className="h-4 w-4" /></a>}
-                                      {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank" className="text-blue-500 hover:scale-125 transition-all"><FileText className="h-4 w-4" /></a>}
-                                      {block.extraUrl && <a href={block.extraUrl} target="_blank" className="text-amber-500 hover:scale-125 transition-all"><LinkIcon className="h-4 w-4" /></a>}
+                                   <p className="text-[11px] font-black text-accent uppercase tracking-[0.2em] italic flex items-center gap-2.5">
+                                      <span className="h-2 w-2 rounded-full bg-accent animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.5)]" /> TEST ÇÖZME
+                                   </p>
+                                   <div className="flex gap-3">
+                                      {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank" className="text-rose-500 hover:scale-125 transition-all"><Youtube className="h-5 w-5" /></a>}
+                                      {block.testUrl && <a href={block.testUrl} target="_blank" className="text-emerald-500 hover:scale-125 transition-all"><BookOpen className="h-5 w-5" /></a>}
+                                      {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank" className="text-blue-500 hover:scale-125 transition-all"><FileText className="h-5 w-5" /></a>}
+                                      {block.extraUrl && <a href={block.extraUrl} target="_blank" className="text-amber-500 hover:scale-125 transition-all"><LinkIcon className="h-5 w-5" /></a>}
                                    </div>
                                 </div>
                              </div>
                           </div>
 
-                          <div className="flex justify-between gap-4 pt-8 border-t border-slate-50 mt-auto">
-                             <button onClick={() => handleTaskAction(day.date, block.id, 'done')} className={cn("h-14 w-14 rounded-full flex items-center justify-center transition-all", block.status === 'done' ? "bg-slate-100 text-slate-400 shadow-inner" : "bg-emerald-500 text-white shadow-xl")}><CheckCircle2 className="h-7 w-7" /></button>
+                          <div className="flex justify-between gap-3 pt-8 border-t border-slate-50 mt-auto">
+                             <Button onClick={() => handleTaskAction(day.date, block.id, 'done')} className={cn("flex-1 h-14 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all", block.status === 'done' ? "bg-slate-100 text-slate-400 shadow-inner" : "bg-emerald-500 text-white shadow-xl shadow-emerald-500/20")}>
+                                <CheckCircle2 className="h-5 w-5 mr-3" /> {block.status === 'done' ? 'GERİ AL' : 'TAMAMLA'}
+                             </Button>
                              <div className="flex gap-3">
-                                <button onClick={() => handleTaskAction(day.date, block.id, 'edit')} className="h-14 w-14 rounded-full border-2 border-slate-100 flex items-center justify-center text-primary hover:border-primary transition-all shadow-sm"><Edit3 className="h-6 w-6" /></button>
-                                <button onClick={() => handleTaskAction(day.date, block.id, 'delete')} className="h-14 w-14 rounded-full border-2 border-slate-100 flex items-center justify-center text-rose-500 hover:border-rose-500 transition-all shadow-sm"><Trash2 className="h-6 w-6" /></button>
+                                <Button onClick={() => handleTaskAction(day.date, block.id, 'edit')} size="icon" className="h-14 w-14 rounded-2xl border-2 border-slate-100 bg-white text-primary hover:border-primary transition-all shadow-md"><Edit3 className="h-5 w-5" /></Button>
+                                <Button onClick={() => handleTaskAction(day.date, block.id, 'delete')} size="icon" className="h-14 w-14 rounded-2xl border-2 border-slate-100 bg-white text-rose-500 hover:border-rose-500 transition-all shadow-md"><Trash2 className="h-5 w-5" /></Button>
                              </div>
                           </div>
                        </div>

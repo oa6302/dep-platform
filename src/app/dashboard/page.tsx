@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useDoc, useFirestore } from '@/firebase';
@@ -49,11 +50,6 @@ import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
 ========================================================= */
 
 const PLAN_START_DATE = '2026-09-01';
-
-/**
- * AYT başlangıç tarihi
- * 1 Aralık 2026 olarak mühürlendi.
- */
 const AYT_START_DATE = '2026-12-01';
 
 /* =========================================================
@@ -76,12 +72,10 @@ interface StudyBlock {
   youtubeUrl: string;
   mebiUrl: string;
   pdfUrl: string;
-  extraUrl?: string;
 
   testYoutubeUrl: string;
   testUrl: string;
   testPdfUrl: string;
-  testExtraUrl?: string;
 }
 
 interface StudyDay {
@@ -91,7 +85,7 @@ interface StudyDay {
 }
 
 /* =========================================================
-   ADAPTİF PLAN MOTORU v16.0
+   ADAPTİF PLAN MOTORU v17.0
 ========================================================= */
 
 export const generateAdaptivePlan = (
@@ -115,103 +109,54 @@ export const generateAdaptivePlan = (
     return [];
   }
 
-  /* -------------------------------------------------------
-     Konuları getir
-  ------------------------------------------------------- */
-
   const getTopics = (lesson: string): string[] => {
     let topics = YKS_TM_TOPICS[lesson];
-
     if (!topics) {
       const normalizedLesson = lesson
         .replace(/^TYT\s+/i, '')
         .replace(/^AYT\s+/i, '')
         .trim();
-
       topics = YKS_TM_TOPICS[normalizedLesson];
     }
-
     return Array.isArray(topics) ? topics : [];
   };
-
-  /* -------------------------------------------------------
-     Tamamlanan konuları filtrele
-  ------------------------------------------------------- */
 
   const getRemainingTopics = (lesson: string): string[] => {
     const allTopics = getTopics(lesson);
     const completed = completedTopics[lesson] || [];
-
-    return allTopics.filter(
-      (topic) => !completed.includes(topic)
-    );
+    return allTopics.filter((topic) => !completed.includes(topic));
   };
 
-  /* -------------------------------------------------------
-     Her ders için ayrı pointer
-  ------------------------------------------------------- */
-
   const lessonPointers: Record<string, number> = {};
-
   const plan: StudyDay[] = [];
-
-  /* =======================================================
-     GÜNLER
-  ======================================================= */
 
   for (let i = 0; i <= daysInterval; i++) {
     const currentDate = addDays(startDate, i);
     const dateStr = format(currentDate, 'yyyy-MM-dd');
     const dayName = format(currentDate, 'EEEE', { locale: tr });
 
-    /* -----------------------------------------------------
-       AYT kontrolü
-    ----------------------------------------------------- */
-
     const isAytStarted = !isBefore(currentDate, aytDate);
-
-    /* -----------------------------------------------------
-       Ders havuzu
-    ----------------------------------------------------- */
-
     let currentLessons: string[];
 
     if (isAytStarted) {
-      currentLessons = [
-        ...config.tytLessons.slice(0, 2),
-        ...config.aytLessons,
-      ];
+      currentLessons = [...config.tytLessons.slice(0, 2), ...config.aytLessons];
     } else {
-      currentLessons = [
-        ...config.tytLessons,
-      ];
+      currentLessons = [...config.tytLessons];
     }
 
     if (currentLessons.length === 0) continue;
 
-    /* -----------------------------------------------------
-       Günlük 2 çalışma bloğu
-    ----------------------------------------------------- */
-
     const dailyBlocks: StudyBlock[] = [];
-
     for (let j = 0; j < 2; j++) {
       const lessonIndex = (i * 2 + j) % currentLessons.length;
       const lesson = currentLessons[lessonIndex];
 
-      if (lessonPointers[lesson] === undefined) {
-        lessonPointers[lesson] = 0;
-      }
+      if (lessonPointers[lesson] === undefined) lessonPointers[lesson] = 0;
 
       const allTopics = getTopics(lesson);
       const remainingTopics = getRemainingTopics(lesson);
 
-      /* ---------------------------------------------------
-         Konu seçimi
-      --------------------------------------------------- */
-
       let topic = 'Genel Tekrar';
-
       if (remainingTopics.length > 0) {
         const pointer = lessonPointers[lesson] % remainingTopics.length;
         topic = remainingTopics[pointer];
@@ -345,7 +290,7 @@ function DashboardContent() {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] md:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* SIDEBAR */}
+      {/* SIDEBAR - v15.0 VISUAL MATCH */}
       <aside className={cn(`w-[280px] bg-white border-r border-slate-100 flex flex-col fixed md:sticky inset-y-0 left-0 z-[58] transition-transform duration-500 md:translate-x-0 h-screen`,
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}

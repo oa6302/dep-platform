@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -8,9 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
   Calendar, Zap, Loader2, Sparkles, 
-  CheckCircle2, Trash2, ArrowLeft,
+  Trash2, ArrowLeft,
   Home, Edit3, Youtube, Save, FileText, 
-  BookOpen, Target, Clock, X, Link as LinkIcon
+  BookOpen, X, Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
@@ -25,7 +26,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { generateAdaptivePlan } from '@/app/dashboard/page';
 
 export default function PlanningPage() {
@@ -107,7 +107,7 @@ export default function PlanningPage() {
              <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><Home className="h-5 w-5" /></Button>
           </div>
           <div className="space-y-2">
-             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v14.0</div>
+             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v17.0</div>
              <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-premium">Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span></h2>
           </div>
         </div>
@@ -135,11 +135,10 @@ export default function PlanningPage() {
         {viewMode === 'monthly' ? (
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-8">
              {filteredPlan.map((day: any) => (
-              <Card key={day.date} onClick={() => { setStartDate(day.date); setEndDate(day.date); setViewMode('daily'); }} className={cn("p-10 rounded-[4rem] border-none shadow-xl bg-white hover:scale-[1.03] transition-all cursor-pointer group min-h-[300px]", day.isAytDay && "border-2 border-accent/40")}>
+              <Card key={day.date} onClick={() => { setStartDate(day.date); setEndDate(day.date); setViewMode('daily'); }} className={cn("p-10 rounded-[4rem] border-none shadow-xl bg-white hover:scale-[1.03] transition-all cursor-pointer group min-h-[300px]")}>
                  <div className="space-y-8">
                     <div className="flex justify-between">
                        <span className="text-5xl font-black text-primary italic tracking-tighter">{format(parseISO(day.date), 'd')}</span>
-                       {day.isAytDay && <Badge className="bg-accent text-primary font-black text-[9px]">AYT START</Badge>}
                     </div>
                     <div className="space-y-3">
                        {day.blocks?.map((b: any, bi: number) => (
@@ -164,10 +163,10 @@ export default function PlanningPage() {
                   <Card key={block.id} className={cn("p-12 rounded-[5.5rem] border-none shadow-[0_50px_100px_-25px_rgba(0,0,0,0.12)] transition-all hover:scale-[1.03] bg-white h-full flex flex-col group relative overflow-hidden", block.status === 'done' && "opacity-60")}>
                      <div className="space-y-12 relative z-10 flex-1 flex flex-col">
                         <div className="flex justify-between items-center">
-                           <div className="px-6 py-2.5 rounded-2xl bg-[#FFF8E7] text-[#B45309] font-black text-[14px] border border-[#FEF3C7] shadow-sm">{block.phase1?.time || '10:00'}</div>
+                           <div className="px-6 py-2.5 rounded-2xl bg-[#FFF8E7] text-[#0F172A] font-black text-[14px] border border-[#FEF3C7] shadow-sm">{block.phase1?.time || '10:00'}</div>
                            <Badge className={cn("px-8 py-3 rounded-2xl text-[11px] font-black shadow-xl", block.status === 'done' ? "bg-emerald-50 text-white" : "bg-[#FF4D6D] text-white")}>{block.status === 'done' ? 'TAMAM' : 'BEK'}</Badge>
                         </div>
-                        <h4 className="text-5xl md:text-[4rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-premium">{block.topic}</h4>
+                        <h4 className="text-[5rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-premium text-center">{block.topic.length > 8 ? block.topic.substring(0, 7) + ".." : block.topic}</h4>
                         <div className="bg-[#F8FAFC]/50 rounded-[4rem] p-10 space-y-10 border border-slate-50 shadow-inner flex-1 flex flex-col justify-center">
                            <div className="flex items-center justify-between"><span className="text-[11px] font-bold text-primary/30 uppercase italic">KONU ÇALIŞMA</span><div className="flex gap-4">{block.youtubeUrl && <Youtube className="h-6 w-6 text-rose-500 opacity-60" />}</div></div>
                            <div className="h-px w-full bg-slate-200/40" />

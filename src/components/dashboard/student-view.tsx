@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -7,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Sparkles, Brain, CheckCircle2, Loader2, 
   Youtube, FileText, BellRing, Calendar, Edit3, Trash2,
-  BookOpen, Zap
+  BookOpen, Zap, Target, BookOpenCheck, ArrowRight
 } from 'lucide-react';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -17,7 +18,7 @@ import { useRouter } from 'next/navigation';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 export function StudentView({ user, userData }: { user: any, userData: any }) {
   const db = useFirestore();
@@ -61,7 +62,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
         path: planRef.path,
         operation: 'update',
         requestResourceData: { masterPlan: 'student_action_update' },
-      });
+      } satisfies SecurityRuleContext);
       errorEmitter.emit('permission-error', permissionError);
     });
     
@@ -111,12 +112,12 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                   )}
                 >
                    <div className="space-y-6 relative z-10 flex-1 flex flex-col">
-                        <div className="flex justify-between items-start">
-                           <div className="space-y-1">
+                        <div className="flex justify-between items-start gap-2">
+                           <div className="space-y-1 flex-1 min-w-0">
                               <h4 className="text-2xl font-black italic leading-tight tracking-tighter uppercase text-primary text-shadow-deep line-clamp-2">{block.topic}</h4>
                               <p className="text-[8px] font-bold text-muted-foreground/40 uppercase tracking-widest italic">#{block.lesson.substring(0, 3)}</p>
                            </div>
-                           <Badge className={cn("px-4 py-1.5 rounded-full text-[8px] font-black", block.status === 'done' ? "bg-emerald-500 text-white" : "bg-[#FF4D6D] text-white")}>
+                           <Badge className={cn("px-4 py-1.5 rounded-full text-[8px] font-black shrink-0", block.status === 'done' ? "bg-emerald-500 text-white" : "bg-[#FF4D6D] text-white")}>
                               {block.status === 'done' ? 'TAMAM' : 'BEK'}
                            </Badge>
                         </div>
@@ -131,9 +132,18 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                                     {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="text-emerald-500 hover:scale-110 transition-all"><BookOpen className="h-4 w-4" /></a>}
                                  </div>
                               </div>
-                              <p className="text-[10px] font-bold text-primary opacity-60 uppercase italic">{block.phase1?.type || 'DERS ÇALIŞMASI'}</p>
+                              <p className="text-[10px] font-bold text-primary opacity-60 uppercase italic">{block.phase1?.type || (block.isReview ? 'STRATEJİK TEKRAR' : 'DERS ÇALIŞMASI')}</p>
                            </div>
                         </div>
+
+                        {block.targetQuestions > 0 && (
+                          <div className="flex items-center justify-between px-2">
+                             <span className="text-[10px] font-black uppercase text-primary/40">SORU: {block.solvedQuestions || 0} / {block.targetQuestions}</span>
+                             <div className="h-1.5 flex-1 mx-4 bg-slate-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-accent transition-all" style={{ width: `${Math.min(((block.solvedQuestions || 0) / block.targetQuestions) * 100, 100)}%` }} />
+                             </div>
+                          </div>
+                        )}
 
                         {block.reminder && (
                           <div className="p-3 bg-accent/5 border border-accent/10 rounded-2xl flex items-center gap-3">

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -38,6 +39,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 export default function PlanningPage() {
   const { user } = useUser();
@@ -81,14 +84,22 @@ export default function PlanningPage() {
             reminder: 'DÜNDEN AKTARILDI: ' + (b.reminder || '') 
           })),
           ...(currentPlan[todayIdx].blocks || [])
-        ].slice(0, 6);
+        ].slice(0, 4); // Günlük 4 kart sınırını koru
       }
     }
 
     if (hasDelayed) {
-      updateDoc(doc(db, 'studyPlans', user.uid), { 
+      const planRef = doc(db, 'studyPlans', user.uid);
+      updateDoc(planRef, { 
         masterPlan: currentPlan, 
         updatedAt: serverTimestamp() 
+      }).catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: planRef.path,
+          operation: 'update',
+          requestResourceData: { masterPlan: 'auto_postpone' },
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
       });
       toast({ title: 'AI PLAN DENGELENDİ', className: "bg-accent text-primary rounded-2xl" });
     }
@@ -117,8 +128,7 @@ export default function PlanningPage() {
       const examConfig = EXAM_CONFIGS[currentExam];
 
       const getLessonPool = (date: Date) => {
-        const currentYear = format(date, 'yyyy');
-        const aytStart = parseISO(`${currentYear}-12-01`);
+        const aytStart = parseISO(`2026-12-01`);
         const isAytTime = isAfter(date, aytStart) || date.getTime() === aytStart.getTime();
         
         let pool = [...(examConfig?.lessons || ['TYT Matematik', 'TYT Türkçe'])];
@@ -175,12 +185,11 @@ export default function PlanningPage() {
           lesson: 'TÜRKÇE',
           topic: '20 PARAGRAF SORU ÇÖZÜMÜ',
           status: 'planned',
-          phase1: { type: 'GÜNLÜK KAMP', time: '11:30' },
-          phase2: { type: 'ANALİZ', time: '12:00' },
+          phase1: { type: 'GÜNLÜK KAMP', time: '12:00' },
+          phase2: { type: 'ANALİZ', time: '12:30' },
           targetQuestions: 20,
           solvedQuestions: 0,
-          youtubeUrl: 'https://www.youtube.com/results?search_query=paragraf+çözüm+teknikleri',
-          pdfUrl: 'https://ogmmateryal.eba.gov.tr/panel/FasikulGoster.aspx?arama=paragraf',
+          ...generateAutoLinks('Paragraf', 'Türkçe'),
           isParagraph: true,
           isTestDone: false
         });
@@ -199,14 +208,22 @@ export default function PlanningPage() {
         newPlan.push({ date: dateStr, day: dayName, blocks: dailyBlocks });
       }
 
-      await setDoc(doc(db, 'studyPlans', user.uid), {
+      const planRef = doc(db, 'studyPlans', user.uid);
+      await setDoc(planRef, {
         userId: user.uid,
         targetExam: currentExam,
         masterPlan: newPlan,
         startDate,
         targetExamDate: endDate,
         updatedAt: serverTimestamp()
-      }, { merge: true });
+      }, { merge: true }).catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: planRef.path,
+          operation: 'write',
+          requestResourceData: { plan: 'full_generation' },
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      });
 
       toast({ title: 'Akademik Plan Senkronize Edildi', className: "bg-primary text-white rounded-2xl" });
     } catch (error) {
@@ -245,7 +262,15 @@ export default function PlanningPage() {
       return day;
     });
 
-    updateDoc(doc(db, 'studyPlans', user.uid), { masterPlan: newPlan, updatedAt: serverTimestamp() });
+    const planRef = doc(db, 'studyPlans', user.uid);
+    updateDoc(planRef, { masterPlan: newPlan, updatedAt: serverTimestamp() }).catch(async (err) => {
+      const permissionError = new FirestorePermissionError({
+        path: planRef.path,
+        operation: 'update',
+        requestResourceData: { masterPlan: 'task_action' },
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
+    });
   };
 
   const handleAutoFind = (type: 'youtube' | 'pdf' | 'mebi') => {
@@ -268,7 +293,15 @@ export default function PlanningPage() {
       return day;
     });
 
-    await updateDoc(doc(db, 'studyPlans', user.uid), { masterPlan: newPlan, updatedAt: serverTimestamp() });
+    const planRef = doc(db, 'studyPlans', user.uid);
+    await updateDoc(planRef, { masterPlan: newPlan, updatedAt: serverTimestamp() }).catch(async (err) => {
+      const permissionError = new FirestorePermissionError({
+        path: planRef.path,
+        operation: 'update',
+        requestResourceData: { block: 'edit_save' },
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
+    });
     
     if (saveAndNext) {
       const currentDay = studyPlan.masterPlan.find((d: any) => d.date === editingBlock.date);

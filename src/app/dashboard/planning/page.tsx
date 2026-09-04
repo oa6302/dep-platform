@@ -155,7 +155,8 @@ export default function PlanningPage() {
         });
       }
 
-      // ERTELENEN GÖREVLERİN AKTARILMASI (CARRY FORWARD)
+      // OTONOM GÖREV AKTARIMI (CARRY FORWARD)
+      // Önceki günlerden yapılamayan her görev bir sonraki güne kopyalanır
       for (let i = 0; i < newPlan.length - 1; i++) {
         const today = newPlan[i];
         const tomorrow = newPlan[i+1];
@@ -183,7 +184,7 @@ export default function PlanningPage() {
       toast({ 
         title: 'Akademik Motor Senkronize', 
         description: 'Ertelenen görevler otonom olarak ileri tarihlere aktarıldı.',
-        className: "bg-primary text-white rounded-2xl"
+        className: "bg-primary text-white rounded-2xl shadow-xl"
       });
     } catch (error) {
       console.error(error);
@@ -302,9 +303,9 @@ export default function PlanningPage() {
                            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
                               <span className="text-[10px] font-black text-primary/30 uppercase tracking-[0.3em]">KAYNAKLAR</span>
                               <div className="flex gap-4">
-                                 {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" aria-label={`${block.topic} YouTube Kaynağı`} className="text-rose-500 hover:scale-110 transition-all"><Youtube className="h-5 w-5" /></a>}
-                                 {block.pdfUrl && <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" aria-label={`${block.topic} PDF Kaynağı`} className="text-blue-500 hover:scale-110 transition-all"><FileText className="h-5 w-5" /></a>}
-                                 {block.mebiUrl && <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" aria-label={`${block.topic} MEBİ Kaynağı`} className="text-emerald-500 hover:scale-110 transition-all"><BookOpen className="h-5 w-5" /></a>}
+                                 {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:scale-110 transition-all"><Youtube className="h-5 w-5" /></a>}
+                                 {block.pdfUrl && <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:scale-110 transition-all"><FileText className="h-5 w-5" /></a>}
+                                 {block.mebiUrl && <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:scale-110 transition-all"><BookOpen className="h-5 w-5" /></a>}
                               </div>
                            </div>
                            <p className="text-[12px] font-black text-primary opacity-60 uppercase italic">{block.phase1?.type || 'DERS ÇALIŞMASI'}</p>
@@ -342,7 +343,7 @@ export default function PlanningPage() {
                    </div>
 
                    <div className="grid gap-6">
-                      <Label className="text-[11px] font-black uppercase opacity-40 ml-6">KAYNAK LİNKLERİ</Label>
+                      <Label className="text-[11px] font-black uppercase opacity-40 ml-6">KAYNAKLAR</Label>
                       {[
                         { key: 'youtubeUrl', label: 'Youtube', icon: Youtube, color: 'text-rose-500' },
                         { key: 'pdfUrl', label: 'OGM Materyal', icon: FileText, color: 'text-blue-500' },

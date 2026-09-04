@@ -26,6 +26,7 @@ export default function DashboardPage() {
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // FAIL-SAFE: Router güncellemeleri sadece useEffect içinde yapılmalıdır
   useEffect(() => {
     if (!authLoading && !user) {
       router.replace('/');
@@ -53,6 +54,7 @@ export default function DashboardPage() {
 
   if (!user) return null;
 
+  // Profil eksikse sonsuz döngü yerine kurulum butonunu gösterir
   if (!userData && !docLoading) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] py-20 px-6 flex items-center justify-center">

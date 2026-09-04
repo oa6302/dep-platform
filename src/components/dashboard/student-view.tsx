@@ -25,67 +25,39 @@ import {
   Zap,
   CalendarDays,
   Clock3,
+  ArrowRight
 } from 'lucide-react';
 
-type StudyBlock = {
-  id: string;
-  lesson?: string;
-  topic?: string;
-  status?: 'planned' | 'done';
-  youtubeUrl?: string;
-  pdfUrl?: string;
-  mebiUrl?: string;
-  isReview?: boolean;
-  carriedForward?: boolean;
-  phase1?: {
-    type?: string;
-  };
-};
-
-type DayPlan = {
-  date: string;
-  blocks?: StudyBlock[];
-};
-
-type StudyPlan = {
-  masterPlan?: DayPlan[];
-};
-
-interface StudentViewProps {
-  user: any;
-  userData: any;
-}
-
-export function StudentView({ user, userData }: StudentViewProps) {
+export function StudentView({ user, userData }: { user: any, userData: any }) {
   const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
   
   const [today, setToday] = useState<string>('');
 
+  // Hydration Fix: İstemci tarafında tarih kesinleştirilir
   useEffect(() => {
     setToday(format(new Date(), 'yyyy-MM-dd'));
   }, []);
 
-  const { data: studyPlan, loading: planLoading } = useDoc<StudyPlan>(
+  const { data: studyPlan, loading: planLoading } = useDoc<any>(
     user?.uid ? `studyPlans/${user.uid}` : null
   );
 
+  // GÖREV DEVİR MANTIĞI: Bugünün blokları + Geçmişten kalan yapılmamışlar
   const activeBlocks = useMemo(() => {
     if (!studyPlan?.masterPlan?.length || !today) return [];
     
-    // Bugünün blokları + Geçmişten devreden (carriedForward) tamamlanmamış bloklar
-    const allBlocks: StudyBlock[] = [];
-    
-    studyPlan.masterPlan.forEach(day => {
+    const allBlocks: any[] = [];
+    studyPlan.masterPlan.forEach((day: any) => {
       const isToday = day.date === today;
       const isPast = isBefore(parseISO(day.date), parseISO(today));
       
       if (isToday) {
         allBlocks.push(...(day.blocks || []));
       } else if (isPast) {
-        // Geçmişten sarkan yapılmamış görevleri topla
-        const pending = (day.blocks || []).filter(b => b.status === 'planned' && !b.carriedForward);
+        // Geçmişten gelen ve tamamlanmamış görevleri topla (sadece ana görevleri, kopyaları değil)
+        const pending = (day.blocks || []).filter((b: any) => b.status === 'planned' && !b.carriedForward);
         allBlocks.push(...pending);
       }
     });
@@ -98,17 +70,19 @@ export function StudentView({ user, userData }: StudentViewProps) {
   const handleTaskAction = async (blockId: string) => {
     if (!db || !user?.uid || !studyPlan?.masterPlan) return;
     try {
-      const newPlan = studyPlan.masterPlan.map((day) => {
-        return {
-          ...day,
-          blocks: (day.blocks ?? []).map((block) => {
-            if (block.id !== blockId) return block;
-            return { ...block, status: block.status === 'done' ? 'planned' : 'done' };
-          }),
-        };
-      });
+      const newPlan = studyPlan.masterPlan.map((day: any) => ({
+        ...day,
+        blocks: (day.blocks ?? []).map((block: any) => {
+          if (block.id !== blockId) return block;
+          return { ...block, status: block.status === 'done' ? 'planned' : 'done' };
+        }),
+      }));
 
-      await updateDoc(doc(db, 'studyPlans', user.uid), { masterPlan: newPlan, updatedAt: serverTimestamp() });
+      await updateDoc(doc(db, 'studyPlans', user.uid), { 
+        masterPlan: newPlan, 
+        updatedAt: serverTimestamp() 
+      });
+      
       toast({ title: 'Terminal Güncellendi', className: 'bg-primary text-white rounded-2xl shadow-2xl' });
     } catch (error) {
       toast({ title: 'Hata', variant: 'destructive' });
@@ -126,7 +100,7 @@ export function StudentView({ user, userData }: StudentViewProps) {
 
   return (
     <div className="mx-auto w-full max-w-[1800px] space-y-10 bg-[#F8FAFC] p-4 animate-in fade-in duration-700 md:p-10 lg:p-14">
-      <section className="group relative overflow-hidden rounded-[3rem] bg-primary p-8 text-white shadow-[0_40px_100px_-30px_rgba(15,23,42,0.5)] md:p-12">
+      <section className="group relative overflow-hidden rounded-[3.5rem] bg-primary p-8 text-white shadow-[0_40px_100px_-30px_rgba(15,23,42,0.5)] md:p-12">
         <div className="absolute -right-20 -top-20 h-96 w-96 rounded-full bg-accent/10 blur-[130px]" />
         <div className="relative z-10 flex flex-col items-center justify-between gap-10 lg:flex-row">
           <div className="flex-1 space-y-5 text-center lg:text-left">
@@ -165,7 +139,7 @@ export function StudentView({ user, userData }: StudentViewProps) {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
           {activeBlocks.map((block, index) => {
               const isDone = block.status === 'done';
-              const isCarried = block.carriedForward;
+              const isCarried = block.carriedForward || (block.date && block.date !== today);
               return (
                 <Card key={block.id || `${today}-${index}`} className={cn('relative flex min-h-[380px] flex-col overflow-hidden rounded-[3rem] border border-slate-100 bg-white p-8 shadow-[0_20px_50px_-20px_rgba(15,23,42,0.18)] transition-all duration-300', isDone && 'opacity-60')}>
                   <div className={cn('absolute left-0 top-0 h-full w-2', isDone ? 'bg-emerald-500' : isCarried ? 'bg-amber-500' : 'bg-accent')} />
@@ -189,13 +163,13 @@ export function StudentView({ user, userData }: StudentViewProps) {
                       <p className="text-[7px] font-black uppercase tracking-[0.3em] text-slate-400">TERMİNAL KAYNAKLARI</p>
                       <div className="flex gap-3">
                         {block.youtubeUrl && (
-                          <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" aria-label={`${block.topic} YouTube Kaynağı`} className="flex h-11 w-11 items-center justify-center rounded-full bg-rose-50 text-rose-500 border border-rose-100 hover:bg-rose-500 hover:text-white transition-all hover:scale-110 shadow-sm"><Youtube className="h-5 w-5" /></a>
+                          <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" className="flex h-11 w-11 items-center justify-center rounded-full bg-rose-50 text-rose-500 border border-rose-100 hover:bg-rose-500 hover:text-white transition-all hover:scale-110 shadow-sm"><Youtube className="h-5 w-5" /></a>
                         )}
                         {block.pdfUrl && (
-                          <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" aria-label={`${block.topic} PDF Kaynağı`} className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 text-blue-500 border border-blue-100 hover:bg-blue-500 hover:text-white transition-all hover:scale-110 shadow-sm"><FileText className="h-5 w-5" /></a>
+                          <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 text-blue-500 border border-blue-100 hover:bg-blue-500 hover:text-white transition-all hover:scale-110 shadow-sm"><FileText className="h-5 w-5" /></a>
                         )}
                         {block.mebiUrl && (
-                          <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" aria-label={`${block.topic} MEBİ Kaynağı`} className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white transition-all hover:scale-110 shadow-sm"><BookOpen className="h-5 w-5" /></a>
+                          <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white transition-all hover:scale-110 shadow-sm"><BookOpen className="h-5 w-5" /></a>
                         )}
                       </div>
                     </div>

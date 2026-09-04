@@ -94,7 +94,7 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
       }
 
       if (role === 'school_admin') {
-        userData.isApproved = false; // Kurum yönetici onayı gereklidir
+        userData.isApproved = false;
       }
 
       await setDoc(doc(db, 'users', credential.user.uid), userData);

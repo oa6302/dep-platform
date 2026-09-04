@@ -36,6 +36,7 @@ export default function LandingPage() {
 
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
+  // Zaten giriş yapmışsa dashboard'a otonom fırlatır
   useEffect(() => {
     if (user) {
       router.replace('/dashboard');

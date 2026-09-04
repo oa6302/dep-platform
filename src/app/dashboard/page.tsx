@@ -24,8 +24,8 @@ export const generateAdaptivePlan = (startDateStr: string, completedTopics: any 
   const plan = [];
   const config = EXAM_CONFIGS['YKS_EA'];
   const startDate = parseISO(startDateStr);
-  const aytDate = parseISO(config.aytStartDate);
-  const endDate = parseISO(config.examDate);
+  const aytDate = parseISO(config.aytStartDate); // 2026-12-01
+  const endDate = parseISO(config.examDate); // 2027-06-15
   
   const daysInterval = differenceInDays(endDate, startDate);
   if (daysInterval < 0) return [];
@@ -34,7 +34,6 @@ export const generateAdaptivePlan = (startDateStr: string, completedTopics: any 
   const getRemainingTopics = (lesson: string) => {
     const allTopics = YKS_TM_TOPICS[lesson] || [];
     const done = completedTopics[lesson] || [];
-    // Eğer konu listesinde varsa ve done içinde yoksa 'çalışılmamış' kabul edilir
     return allTopics.filter(t => !done.includes(t));
   };
 

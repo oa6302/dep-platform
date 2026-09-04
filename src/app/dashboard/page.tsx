@@ -68,7 +68,8 @@ function DashboardContent() {
           lesson,
           topic,
           status: 'planned',
-          phase1: { type: 'KONU ÇALIŞMA', time: j === 0 ? '10:00' : '12:00' },
+          // 12:00 -> 11:00 yapıldı
+          phase1: { type: 'KONU ÇALIŞMA', time: j === 0 ? '10:00' : '11:00' },
           youtubeUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic)}`,
           pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}`,
           mebiUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}`
@@ -81,7 +82,8 @@ function DashboardContent() {
         topic: '20 Paragraf Soru Çözümü',
         status: 'planned',
         isParagraph: true,
-        phase1: { type: 'GÜNLÜK KAMP', time: '14:00' },
+        // 14:00 -> 15:00 yapıldı
+        phase1: { type: 'GÜNLÜK KAMP', time: '15:00' },
         youtubeUrl: `https://www.youtube.com/results?search_query=paragraf+soru+çözümü`,
         pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=Paragraf`,
         mebiUrl: `https://www.eba.gov.tr/arama?q=Paragraf`
@@ -93,7 +95,8 @@ function DashboardContent() {
         topic: 'Dünün Analizi & Stratejik Tekrar',
         status: 'planned',
         isReview: true,
-        phase1: { type: 'STRATEJİK', time: '16:00' }
+        // 15:00 -> 12:00 yapıldı
+        phase1: { type: 'STRATEJİK', time: '12:00' }
       });
 
       plan.push({

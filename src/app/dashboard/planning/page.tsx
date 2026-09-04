@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -122,7 +123,8 @@ export default function PlanningPage() {
             lesson,
             topic,
             status: oldBlock?.status || 'planned',
-            phase1: { type: 'KONU ÇALIŞMA', time: j === 0 ? '10:00' : '12:00' },
+            // 12:00 -> 11:00 yapıldı
+            phase1: { type: 'KONU ÇALIŞMA', time: j === 0 ? '10:00' : '11:00' },
             ...links
           });
           lessonPointers[lesson]++;
@@ -135,7 +137,8 @@ export default function PlanningPage() {
           topic: '20 PARAGRAF SORU ÇÖZÜMÜ',
           status: oldPara?.status || 'planned',
           isParagraph: true,
-          phase1: { type: 'GÜNLÜK KAMP', time: '14:00' },
+          // 14:00 -> 15:00 yapıldı
+          phase1: { type: 'GÜNLÜK KAMP', time: '15:00' },
           ...generateAutoLinks('Paragraf', 'Türkçe'),
         });
 
@@ -146,7 +149,8 @@ export default function PlanningPage() {
           topic: 'DÜNÜN ANALİZİ & STRATEJİK TEKRAR',
           status: oldReview?.status || 'planned',
           isReview: true,
-          phase1: { type: 'STRATEJİK', time: '15:00' }
+          // 15:00 -> 12:00 yapıldı
+          phase1: { type: 'STRATEJİK', time: '12:00' }
         });
 
         newPlan.push({

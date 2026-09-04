@@ -1,3 +1,4 @@
+
 /**
  * @fileOverview Omni-Curriculum Verisi (ÖSYM, MEB ve YÖK Standartları)
  * Tüm anahtarlar EXAM_CONFIGS ile tam uyumlu hale getirilmiştir.

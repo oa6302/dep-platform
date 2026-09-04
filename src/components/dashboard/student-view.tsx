@@ -110,19 +110,21 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                         </div>
 
                         <div className="bg-[#F8FAFC]/50 rounded-[4.5rem] p-12 space-y-12 border border-slate-50 shadow-inner">
+                           {/* KONU ÇALIŞMA BÖLÜMÜ */}
                            <div className="space-y-5">
                               <div className="flex items-center justify-between">
                                  <span className="text-[12px] font-black text-primary/20 uppercase tracking-[0.3em] italic">KONU ÇALIŞMA</span>
                                  <div className="flex gap-5 items-center">
-                                    {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank"><Youtube className="h-6 w-6 text-rose-500 opacity-60" /></a>}
-                                    {block.pdfUrl && <a href={block.pdfUrl} target="_blank"><FileText className="h-6 w-6 text-blue-500 opacity-60" /></a>}
-                                    {block.mebiUrl && <a href={block.mebiUrl} target="_blank"><BookOpen className="h-6 w-6 text-emerald-500 opacity-60" /></a>}
+                                    {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="hover:scale-110 transition-all"><Youtube className="h-6 w-6 text-rose-500 opacity-60" /></a>}
+                                    {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="hover:scale-110 transition-all"><FileText className="h-6 w-6 text-blue-500 opacity-60" /></a>}
+                                    {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="hover:scale-110 transition-all"><BookOpen className="h-6 w-6 text-emerald-500 opacity-60" /></a>}
                                  </div>
                               </div>
                            </div>
                            
                            <div className="h-px w-full bg-slate-200/40" />
 
+                           {/* TEST ÇÖZME BÖLÜMÜ */}
                            <div className="space-y-5">
                               <div className="flex items-center justify-between">
                                  <div className="flex items-center gap-3">
@@ -130,9 +132,9 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                                     <span className="text-[13px] font-black text-accent uppercase tracking-[0.3em] italic">TEST ÇÖZME</span>
                                  </div>
                                  <div className="flex gap-5 items-center">
-                                    {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank"><Youtube className="h-6 w-6 text-rose-500 opacity-80" /></a>}
-                                    {block.testUrl && <a href={block.testUrl} target="_blank"><BookOpen className="h-6 w-6 text-emerald-500 opacity-80" /></a>}
-                                    {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank"><FileText className="h-6 w-6 text-blue-500 opacity-80" /></a>}
+                                    {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank" className="hover:scale-110 transition-all"><Youtube className="h-6 w-6 text-rose-500 opacity-80" /></a>}
+                                    {block.testUrl && <a href={block.testUrl} target="_blank" className="hover:scale-110 transition-all"><BookOpen className="h-6 w-6 text-emerald-500 opacity-80" /></a>}
+                                    {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank" className="hover:scale-110 transition-all"><FileText className="h-6 w-6 text-blue-500 opacity-80" /></a>}
                                  </div>
                               </div>
                            </div>
@@ -155,3 +157,4 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
     </div>
   );
 }
+

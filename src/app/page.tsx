@@ -36,38 +36,19 @@ export default function LandingPage() {
 
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
-  /*
-   * =========================================================
-   * AUTH KONTROLÜ
-   * =========================================================
-   */
-
   useEffect(() => {
     if (user) {
       router.replace('/dashboard');
     }
   }, [user, router]);
 
-  /*
-   * =========================================================
-   * BAŞLA
-   * =========================================================
-   */
-
   const handleStartClick = () => {
     if (user) {
-      router.push('/dashboard');
+      router.replace('/dashboard');
       return;
     }
-
     setIsAuthOpen(true);
   };
-
-  /*
-   * =========================================================
-   * NAVIGATION
-   * =========================================================
-   */
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -76,12 +57,6 @@ export default function LandingPage() {
       block: 'start',
     });
   };
-
-  /*
-   * =========================================================
-   * FEATURES
-   * =========================================================
-   */
 
   const features = [
     {
@@ -105,18 +80,12 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-[#F8FAFC] selection:bg-accent selection:text-white">
 
-      {/* =====================================================
-          NAVBAR
-      ===================================================== */}
-
       <nav className="fixed inset-x-0 top-0 z-50 border-b border-primary/5 bg-white/85 py-3 backdrop-blur-2xl">
         <div className="container mx-auto flex items-center justify-between px-5 md:px-6">
-          {/* LOGO */}
           <button
             type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="flex items-center gap-3"
-            aria-label="DEK AI ana sayfa"
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary font-black italic text-white shadow-xl">
               D
@@ -126,7 +95,6 @@ export default function LandingPage() {
             </span>
           </button>
 
-          {/* NAV LINKS */}
           <div className="hidden items-center gap-7 md:flex">
             <button
               type="button"
@@ -151,7 +119,6 @@ export default function LandingPage() {
             </button>
           </div>
 
-          {/* LOGIN */}
           <Button
             onClick={handleStartClick}
             className="h-11 rounded-xl border-none bg-primary px-5 text-[9px] font-black uppercase tracking-widest text-white shadow-xl shadow-primary/20 transition-all hover:bg-accent md:h-12 md:px-8 md:text-[10px]"
@@ -161,35 +128,23 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* =====================================================
-          MAIN
-      ===================================================== */}
-
       <main className="w-full pt-28">
-
-        {/* ===================================================
-            HERO
-        =================================================== */}
 
         <section id="vision" className="container mx-auto px-5 py-14 md:px-6 md:py-24">
           <div className="mx-auto flex max-w-7xl flex-col items-center space-y-8 text-center md:space-y-12">
-            {/* BADGE */}
             <div className="inline-flex items-center gap-3 rounded-full bg-primary px-5 py-2.5 text-[8px] font-black uppercase tracking-widest text-white shadow-2xl shadow-primary/20 animate-in fade-in slide-in-from-top-4 duration-700 md:text-[10px]">
               <Sparkles className="h-4 w-4 animate-pulse text-accent" />
               EĞİTİMİN YENİ NESİL TERMİNALİ
             </div>
 
-            {/* TITLE */}
             <h1 className="text-5xl font-black uppercase italic leading-[0.86] tracking-tighter text-primary text-shadow-premium animate-in fade-in slide-in-from-bottom-8 duration-1000 md:text-7xl lg:text-[8rem]">
               BAŞARIYI <br /><span className="text-accent text-shadow-accent">PLANLA.</span>
             </h1>
 
-            {/* DESCRIPTION */}
             <p className="max-w-3xl px-4 text-base font-medium italic leading-relaxed text-muted-foreground animate-in fade-in duration-1000 md:text-2xl">
-              Dijital Eğitim Koçu; hedeflerini analiz eden, çalışma planını oluşturan ve akademik gelişimini günlük olarak takip eden yapay zekâ destekli eğitim ekosistemidir.
+              Dijital Eğitim Koçu; akademik hedeflerinizi analiz eden, çalışma planınızı otonom oluşturan ve gelişiminizi günlük olarak takip eden yapay zekâ destekli eğitim ekosistemidir.
             </p>
 
-            {/* CTA */}
             <div className="flex w-full flex-col items-center gap-4 px-4 pt-5 sm:w-auto sm:flex-row md:gap-6 md:pt-8">
               <Button
                 onClick={handleStartClick}
@@ -213,16 +168,10 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ===================================================
-            FOCUS TERMINAL
-        =================================================== */}
-
         <section id="focus" className="relative mt-16 w-full px-4 sm:px-8 md:mt-24">
           <div className="group relative w-full overflow-hidden rounded-[3rem] border border-white/5 bg-[#0F172A] py-16 shadow-2xl sm:rounded-[4rem] md:py-28 lg:rounded-[5rem]">
-            {/* GLOW */}
             <div className="absolute -right-40 -top-40 h-[600px] w-[600px] rounded-full bg-accent/10 blur-[150px]" />
             <div className="container relative z-10 mx-auto grid items-center gap-14 px-6 md:px-12 lg:grid-cols-2 lg:gap-20">
-              {/* LEFT */}
               <div className="space-y-7 text-center text-white lg:text-left">
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[8px] font-black uppercase tracking-[0.2em] text-accent">
                   <Zap className="h-3.5 w-3.5" />
@@ -231,8 +180,8 @@ export default function LandingPage() {
                 <h2 className="text-5xl font-black uppercase italic leading-[0.88] tracking-tighter text-white text-shadow-premium md:text-7xl lg:text-8xl">
                   MAKSİMUM <br /><span className="text-accent text-shadow-accent">ODAKLANMA</span>
                 </h2>
-                <p className="max-w-xl text-base font-medium italic leading-relaxed text-white/80 md:text-xl lg:text-2xl">
-                  Çalışma süreni planla, mola zamanını yönet ve günlük odak performansını takip et.
+                <p className="max-w-xl text-base font-medium italic leading-relaxed text-white/95 md:text-xl lg:text-2xl">
+                  Pomodoro tabanlı odak terminali ile çalışma ve mola sürelerini düzenleyin, akademik performansınızı saniyeler içinde daha istikrarlı hale getirin.
                 </p>
                 <div className="grid grid-cols-2 gap-5 border-t border-white/10 pt-8 md:gap-10 md:pt-10">
                   <div>
@@ -246,7 +195,6 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* TIMER */}
               <div className="mx-auto w-full max-w-md rounded-[2.5rem] border border-white/10 bg-white/5 p-7 text-center shadow-3xl backdrop-blur-3xl md:rounded-[4rem] md:p-14 lg:max-w-none">
                 <div className="mb-8 flex justify-center gap-2 md:gap-4">
                   <span className="rounded-xl bg-white px-5 py-2.5 text-[8px] font-black tracking-widest text-primary shadow-xl md:px-7 md:py-3 md:text-[10px]">ÇALIŞMA</span>
@@ -268,10 +216,6 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
-
-        {/* ===================================================
-            FEATURES
-        =================================================== */}
 
         <section id="features" className="container mx-auto w-full px-5 py-28 md:px-6 md:py-40">
           <div className="mb-14 text-center md:mb-20">
@@ -304,10 +248,6 @@ export default function LandingPage() {
         </section>
       </main>
 
-      {/* =====================================================
-          FOOTER
-      ===================================================== */}
-
       <footer className="border-t border-primary/5 bg-white px-6 py-12 text-center">
         <div className="mb-5 flex items-center justify-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-black italic text-white">D</div>
@@ -315,10 +255,6 @@ export default function LandingPage() {
         </div>
         <p className="text-[8px] font-black uppercase italic tracking-[0.35em] text-primary/20 md:text-[9px] md:tracking-[0.5em]">DIGITAL EDUCATION COACH · 2026</p>
       </footer>
-
-      {/* =====================================================
-          AUTH MODAL
-      ===================================================== */}
 
       <Dialog open={isAuthOpen} onOpenChange={setIsAuthOpen}>
         <DialogContent className="max-h-[95vh] max-w-2xl overflow-hidden rounded-[2rem] border-none bg-white p-0 shadow-3xl sm:rounded-[3rem]">

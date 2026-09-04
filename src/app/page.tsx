@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -9,13 +10,35 @@ import {
   Sparkles, 
   Clock,
   TrendingUp,
-  ShieldCheck
+  ShieldCheck,
+  Menu,
+  X
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { AuthForm } from '@/components/auth-form';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { useUser } from '@/firebase';
 
 export default function LandingPage() {
   const router = useRouter();
+  const { user } = useUser();
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+
+  const handleStartClick = () => {
+    if (user) {
+      router.push('/dashboard');
+    } else {
+      setIsAuthOpen(true);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] selection:bg-accent selection:text-white overflow-x-hidden w-full">
@@ -30,7 +53,9 @@ export default function LandingPage() {
               <button key={item} className="text-[10px] font-black tracking-[0.2em] text-primary/40 hover:text-primary transition-all uppercase">{item}</button>
             ))}
           </div>
-          <Button onClick={() => router.push('/dashboard')} className="h-12 px-8 rounded-xl bg-primary hover:bg-accent text-white font-black text-[10px] md:text-xs uppercase tracking-widest shadow-2xl shadow-primary/20 transition-all border-none">SİSTEME GİRİŞ</Button>
+          <Button onClick={handleStartClick} className="h-12 px-8 rounded-xl bg-primary hover:bg-accent text-white font-black text-[10px] md:text-xs uppercase tracking-widest shadow-2xl shadow-primary/20 transition-all border-none">
+            {user ? 'PANELİME GİT' : 'SİSTEME GİRİŞ'}
+          </Button>
         </div>
       </nav>
 
@@ -50,9 +75,19 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-6 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500 w-full sm:w-auto px-4">
-              <Button onClick={() => router.push('/dashboard')} size="lg" className="w-full sm:w-auto h-20 px-12 md:px-16 rounded-[2rem] bg-primary hover:bg-accent text-white font-black text-xl uppercase tracking-widest shadow-[0_40px_80px_-20px_rgba(15,23,42,0.45)] hover:scale-105 transition-all group border-none">
-                HEMEN BAŞLA <ChevronRight className="ml-4 h-6 w-6 group-hover:translate-x-2 transition-transform" />
-              </Button>
+              <Dialog open={isAuthOpen} onOpenChange={setIsAuthOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={handleStartClick} size="lg" className="w-full sm:w-auto h-20 px-12 md:px-16 rounded-[2rem] bg-primary hover:bg-accent text-white font-black text-xl uppercase tracking-widest shadow-[0_40px_80px_-20px_rgba(15,23,42,0.45)] hover:scale-105 transition-all group border-none">
+                    HEMEN BAŞLA <ChevronRight className="ml-4 h-6 w-6 group-hover:translate-x-2 transition-transform" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl rounded-[3rem] p-0 border-none bg-white overflow-hidden shadow-3xl">
+                   <div className="p-8 md:p-12 overflow-y-auto max-h-[90vh]">
+                      <AuthForm mode="register" />
+                   </div>
+                </DialogContent>
+              </Dialog>
+
               <Button onClick={() => router.push('/dashboard/pomodoro')} variant="outline" size="lg" className="w-full sm:w-auto h-20 px-12 rounded-[2rem] border-2 border-primary/5 bg-white text-primary font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all">
                 <Clock className="mr-3 h-5 w-5 text-accent" /> FOCUS TERMİNALİ
               </Button>
@@ -60,16 +95,16 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <section className="mt-40 relative w-full px-0 sm:px-10">
-          <div className="bg-primary rounded-none sm:rounded-[5rem] overflow-hidden group shadow-2xl py-24 md:py-32 w-full">
+        <section className="mt-40 relative w-full px-4 sm:px-10">
+          <div className="bg-primary rounded-[3rem] sm:rounded-[5rem] overflow-hidden group shadow-2xl py-20 md:py-32 w-full">
             <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-accent/5 blur-[150px] rounded-full translate-x-1/3 -translate-y-1/3" />
-            <div className="container mx-auto grid lg:grid-cols-2 gap-20 items-center relative z-10 px-6 md:px-12">
-              <div className="space-y-10 text-white text-center lg:text-left">
-                 <h2 className="text-5xl md:text-7xl lg:text-8xl font-black italic tracking-tighter leading-[0.85] uppercase text-shadow-premium">Maksimum <br /><span className="text-accent text-shadow-accent">Odaklanma</span></h2>
-                 <p className="text-xl md:text-2xl text-white/95 font-medium leading-relaxed italic max-w-xl">
+            <div className="container mx-auto grid lg:grid-cols-2 gap-16 items-center relative z-10 px-6 md:px-12">
+              <div className="space-y-8 text-white text-center lg:text-left">
+                 <h2 className="text-4xl md:text-7xl lg:text-8xl font-black italic tracking-tighter leading-[0.85] uppercase text-white text-shadow-premium">Maksimum <br /><span className="text-accent text-shadow-accent">Odaklanma</span></h2>
+                 <p className="text-lg md:text-2xl text-white/90 font-medium leading-relaxed italic max-w-xl">
                    Apple tasarım standartlarında optimize edilmiş Pomodoro terminali ile ders çalışma seanslarınızın verimini anında %40 artırın.
                  </p>
-                 <div className="grid grid-cols-2 gap-8 md:gap-12 pt-10 border-t border-white/5">
+                 <div className="grid grid-cols-2 gap-8 md:gap-12 pt-10 border-t border-white/10">
                     <div>
                        <p className="text-4xl md:text-7xl font-black text-accent text-shadow-accent">%94</p>
                        <p className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.4em] text-white/40 italic mt-2">ODAK SKORU</p>
@@ -81,10 +116,10 @@ export default function LandingPage() {
                  </div>
               </div>
               
-              <div className="bg-white/5 backdrop-blur-3xl rounded-[3rem] md:rounded-[4rem] p-8 md:p-16 border border-white/10 shadow-3xl text-center space-y-12 w-full">
+              <div className="bg-white/5 backdrop-blur-3xl rounded-[3rem] md:rounded-[4rem] p-8 md:p-16 border border-white/10 shadow-3xl text-center space-y-12 w-full max-w-md mx-auto lg:max-w-none">
                  <div className="flex justify-center gap-4">
                     <span className="px-6 md:px-8 py-3 rounded-2xl bg-white text-primary text-[8px] md:text-[10px] font-black tracking-widest shadow-xl">ÇALIŞMA</span>
-                    <span className="px-6 md:px-8 py-3 rounded-2xl bg-white/5 text-white/40 text-[8px] md:text-[10px] font-black tracking-widest">MOLA</span>
+                    <span className="px-6 md:px-8 py-3 rounded-2xl bg-white/5 text-white/60 text-[8px] md:text-[10px] font-black tracking-widest">MOLA</span>
                  </div>
                  <p className="text-[6rem] md:text-[11rem] font-black italic tracking-tighter text-white leading-none text-shadow-premium">25<span className="text-accent animate-pulse">:</span>00</p>
                  <div className="flex justify-center gap-6 md:gap-8">

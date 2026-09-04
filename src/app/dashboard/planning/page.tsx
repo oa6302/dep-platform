@@ -11,7 +11,7 @@ import {
   Calendar, Zap, Loader2, Sparkles, 
   CheckCircle2, Trash2, ArrowLeft,
   Home, Edit3, Youtube, Save, FileText, 
-  BookOpen, Target
+  BookOpen, Target, BookOpenCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
@@ -287,22 +287,24 @@ export default function PlanningPage() {
                       ))}
                    </div>
 
-                   <Button onClick={async () => {
-                     const newPlan = studyPlan.masterPlan.map((day: any) => {
-                       if (day.date === editingBlock.date) {
-                         return {
-                           ...day,
-                           blocks: day.blocks.map((b: any) => b.id === editingBlock.id ? { ...editingBlock } : b)
-                         };
-                       }
-                       return day;
-                     });
-                     await updateDoc(doc(db!, 'studyPlans', user!.uid), { masterPlan: newPlan, updatedAt: serverTimestamp() });
-                     setIsEditDialogOpen(false);
-                     toast({ title: 'Görev Güncellendi', className: "bg-primary text-white rounded-xl" });
-                   }} className="w-full h-20 rounded-[2.5rem] bg-[#0F172A] hover:bg-accent text-white font-black text-lg uppercase tracking-[0.4em] gap-6 shadow-2xl transition-all border-none">
-                      <Save className="h-8 w-8 text-accent" /> DEĞİŞİKLİKLERİ KAYDET
-                   </Button>
+                   <div className="pt-6">
+                      <Button onClick={async () => {
+                        const newPlan = studyPlan.masterPlan.map((day: any) => {
+                          if (day.date === editingBlock.date) {
+                            return {
+                              ...day,
+                              blocks: day.blocks.map((b: any) => b.id === editingBlock.id ? { ...editingBlock } : b)
+                            };
+                          }
+                          return day;
+                        });
+                        await updateDoc(doc(db!, 'studyPlans', user!.uid), { masterPlan: newPlan, updatedAt: serverTimestamp() });
+                        setIsEditDialogOpen(false);
+                        toast({ title: 'Görev Güncellendi', className: "bg-primary text-white rounded-xl" });
+                      }} className="w-full h-20 rounded-[2.5rem] bg-[#0F172A] hover:bg-accent text-white font-black text-lg uppercase tracking-[0.4em] gap-6 shadow-2xl transition-all border-none">
+                         <Save className="h-8 w-8 text-accent" /> DEĞİŞİKLİKLERİ KAYDET
+                      </Button>
+                   </div>
                 </div>
              </ScrollArea>
            )}

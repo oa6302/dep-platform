@@ -17,7 +17,6 @@ import { StudentView } from '@/components/dashboard/student-view';
 import { TeacherView } from '@/components/dashboard/teacher-view';
 import { SchoolAdminView } from '@/components/dashboard/school-admin-view';
 import { AdminView } from '@/components/dashboard/admin-view';
-import { AuthForm } from '@/components/auth-form';
 import { signOut } from 'firebase/auth';
 
 export default function DashboardPage() {
@@ -30,10 +29,13 @@ export default function DashboardPage() {
 
   useEffect(() => {
     // Sınav türü seçilmemiş öğrenciyi ilgili sayfaya yönlendir
-    if (!docLoading && userData && userData.role === 'student' && !userData.targetExam) {
+    if (!docLoading && user && !userData) {
+      // Profil Firestore'da henüz yok, Google ile giriş yapmış olabilir veya kayıt yarım kalmış olabilir.
+      // Redirect to select-exam if student role is desired, but for now we stay on this page to show profile-missing UI.
+    } else if (!docLoading && userData && userData.role === 'student' && !userData.targetExam) {
       router.replace('/dashboard/select-exam');
     }
-  }, [userData, docLoading, router]);
+  }, [userData, docLoading, user, router]);
 
   const navItems = [
     { id: 'dashboard', label: 'Anasayfa', icon: LayoutDashboard, path: '/dashboard' },
@@ -49,7 +51,6 @@ export default function DashboardPage() {
     { id: 'settings', label: 'Ayarlar', icon: Settings, path: '/dashboard/settings' },
   ];
 
-  // Yükleme durumu kontrolü
   if (authLoading || (user && docLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
@@ -61,20 +62,11 @@ export default function DashboardPage() {
     );
   }
 
-  // Oturum yoksa giriş ekranına yönlendir (Dönüşüm modalı tetiklensin diye root'a da gönderilebilir)
   if (!user) {
-    return (
-      <div className="min-h-screen bg-[#F8FAFC] py-20 px-6 flex items-center justify-center">
-        <div className="max-w-md w-full text-center space-y-10">
-           <Zap className="h-16 w-16 text-accent mx-auto animate-pulse" />
-           <h2 className="text-3xl font-black italic tracking-tighter uppercase">OTURUM BEKLENİYOR</h2>
-           <Button onClick={() => router.push('/')} className="h-16 w-full rounded-2xl bg-primary font-black uppercase tracking-widest text-xs">ANA SAYFAYA DÖN</Button>
-        </div>
-      </div>
-    );
+    router.replace('/');
+    return null;
   }
 
-  // Oturum var ama profil dökümanı yoksa (Senkronizasyon hatası durumu)
   if (!userData && !docLoading) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] py-20 px-6 flex items-center justify-center">
@@ -85,10 +77,10 @@ export default function DashboardPage() {
            </div>
            <div className="space-y-4">
               <h2 className="text-2xl font-black text-primary uppercase italic">PROFİL EKSİK</h2>
-              <p className="text-muted-foreground font-medium italic">Sistemde size ait akademik profil kaydı bulunamadı.</p>
+              <p className="text-muted-foreground font-medium italic">Sistemde size ait akademik profil kaydı bulunamadı. Lütfen kurulumu tamamlamak için sınav türü seçin.</p>
            </div>
            <div className="flex flex-col gap-4">
-              <Button onClick={() => router.push('/')} className="h-16 rounded-2xl bg-primary font-black uppercase tracking-widest text-xs">ANA SAYFAYA DÖN</Button>
+              <Button onClick={() => router.push('/dashboard/select-exam')} className="h-16 rounded-2xl bg-accent hover:bg-primary transition-all text-white font-black uppercase tracking-widest text-xs shadow-2xl">PROFİL KURULUMUNU TAMAMLA</Button>
               <Button variant="ghost" onClick={() => auth && signOut(auth)} className="text-xs font-black uppercase tracking-widest text-destructive">GÜVENLİ ÇIKIŞ</Button>
            </div>
         </div>
@@ -108,7 +100,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row relative">
-      {/* Mobile Header */}
       <header className="md:hidden h-20 bg-white border-b border-slate-100 flex items-center justify-between px-6 sticky top-0 z-[60]">
         <div className="text-xl font-black italic tracking-tighter text-primary uppercase leading-none">
           DEK <span className="text-accent">AI</span>
@@ -118,7 +109,6 @@ export default function DashboardPage() {
         </Button>
       </header>
 
-      {/* Sidebar Overlay (Mobile) */}
       {sidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] md:hidden transition-all animate-in fade-in"
@@ -126,7 +116,6 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* Sidebar */}
       <aside className={cn(
         "w-[280px] bg-white border-r border-slate-100 flex flex-col fixed md:sticky inset-y-0 left-0 z-[58] transition-transform duration-500 ease-spring md:translate-x-0 h-screen",
         sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"

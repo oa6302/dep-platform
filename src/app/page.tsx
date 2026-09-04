@@ -109,7 +109,7 @@ export default function LandingPage() {
             <div className="container mx-auto grid lg:grid-cols-2 gap-16 items-center relative z-10 px-6 md:px-12">
               <div className="space-y-8 text-white text-center lg:text-left">
                  <h2 className="text-5xl md:text-7xl lg:text-8xl font-black italic tracking-tighter leading-[0.85] uppercase text-white text-shadow-premium">Maksimum <br /><span className="text-accent text-shadow-accent">Odaklanma</span></h2>
-                 <p className="text-lg md:text-2xl text-white font-medium leading-relaxed italic max-w-xl opacity-90">
+                 <p className="text-lg md:text-2xl text-white/95 font-medium leading-relaxed italic max-w-xl opacity-100">
                    Apple tasarım standartlarında optimize edilmiş Pomodoro terminali ile ders çalışma seanslarınızın verimini anında %40 artırın.
                  </p>
                  <div className="grid grid-cols-2 gap-8 md:gap-12 pt-10 border-t border-white/10">

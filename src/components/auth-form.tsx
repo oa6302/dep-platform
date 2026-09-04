@@ -123,7 +123,7 @@ export function AuthForm({
       let msg = 'Kayıt sırasında bir hata oluştu.';
       if (error.code === 'auth/email-already-in-use') {
         msg = 'Bu e-posta adresi zaten kullanımda. Giriş yapmayı deneyin.';
-        setAuthMode('login'); // Otomatik giriş moduna geç
+        setAuthMode('login');
       } else if (error.code === 'auth/weak-password') {
         msg = 'Şifre çok zayıf. En az 6 karakter kullanın.';
       }
@@ -223,7 +223,7 @@ export function AuthForm({
           <div className="space-y-2">
              <Label className="text-[10px] font-black uppercase text-primary/80 ml-4 italic">AD SOYAD</Label>
              <div className="relative group">
-                <User className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/40" />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/40" />
                 <Input required value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-14 focus-visible:ring-accent text-primary" placeholder="Adınız Soyadınız" />
              </div>
           </div>

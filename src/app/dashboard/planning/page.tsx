@@ -43,7 +43,7 @@ export default function PlanningPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date(2026, 8, 1)); // Eylül 2026 default
   const [startDate, setStartDate] = useState('2026-09-01');
-  const [endDate, setEndDate] = useState('2027-06-14');
+  const [endDate, setEndDate] = useState('2026-09-14'); // Varsayılan 2 haftalık görünüm
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<any>(null);
@@ -81,7 +81,6 @@ export default function PlanningPage() {
   const stats = useMemo(() => {
     if (!studyPlan?.masterPlan) return { planned: 0, completed: 0, missing: 0, rate: 0 };
     
-    // Eğer aylık moddaysak sadece o ayın, değilsek seçili tarih aralığının istatistiğini getir
     const relevantPlan = viewMode === 'monthly' 
       ? studyPlan.masterPlan.filter((d: any) => d.date.startsWith(format(selectedMonth, 'yyyy-MM')))
       : studyPlan.masterPlan.filter((d: any) => !isBefore(parseISO(d.date), parseISO(startDate)) && !isBefore(parseISO(endDate), parseISO(d.date)));
@@ -101,7 +100,7 @@ export default function PlanningPage() {
     if (!db || !user || !userData) return;
     setIsRegenerating(true);
     try {
-      // Yıllık planı 1 Eylül'den başlayarak tekrar kurgula (AYT 1 Aralık kuralı generateAdaptivePlan içinde)
+      // Yıllık planı 1 Eylül'den başlayarak tekrar kurgula
       const newPlan = generateAdaptivePlan('2026-09-01', userData.completedTopics || {});
       
       await setDoc(doc(db, 'studyPlans', user.uid), {
@@ -141,28 +140,6 @@ export default function PlanningPage() {
     toast({ title: 'Terminal Güncellendi', className: "bg-primary text-white rounded-2xl shadow-2xl" });
   };
 
-  const setQuickFilter = (type: 'today' | 'week' | 'month' | 'annual') => {
-    const now = new Date();
-    if (type === 'today') {
-      const d = format(now, 'yyyy-MM-dd');
-      setStartDate(d);
-      setEndDate(d);
-      setViewMode('daily');
-    } else if (type === 'week') {
-      setStartDate(format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'));
-      setEndDate(format(endOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'));
-      setViewMode('daily');
-    } else if (type === 'month') {
-      setStartDate(format(startOfMonth(now), 'yyyy-MM-dd'));
-      setEndDate(format(endOfMonth(now), 'yyyy-MM-dd'));
-      setViewMode('daily');
-    } else if (type === 'annual') {
-      setStartDate('2026-09-01');
-      setEndDate('2027-06-15');
-      setViewMode('annual');
-    }
-  };
-
   return (
     <div className="p-4 md:p-14 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000 bg-[#F8FAFC]">
       <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-10">
@@ -172,7 +149,7 @@ export default function PlanningPage() {
              <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><Home className="h-5 w-5" /></Button>
           </div>
           <div className="space-y-2">
-             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v27.0</div>
+             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v28.0</div>
              <h2 className="text-6xl md:text-[7rem] font-black tracking-tighter italic text-primary uppercase leading-[0.8] text-shadow-premium">Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span></h2>
           </div>
         </div>
@@ -204,14 +181,14 @@ export default function PlanningPage() {
              <Button 
                onClick={handleRegeneratePlan} 
                disabled={isRegenerating} 
-               className="h-20 px-12 rounded-[2rem] bg-accent hover:bg-primary text-primary hover:text-white font-black text-[12px] uppercase tracking-[0.2em] gap-5 shadow-[0_30px_60px_-15px_rgba(245,158,11,0.4)] transition-all active:scale-95 relative z-10"
+               className="h-20 px-12 rounded-[2rem] bg-primary hover:bg-accent text-white font-black text-[12px] uppercase tracking-[0.2em] gap-5 shadow-[0_30px_60px_-15px_rgba(15,23,42,0.4)] transition-all active:scale-95 relative z-10 border-none"
              >
-                {isRegenerating ? <Loader2 className="h-6 w-6 animate-spin" /> : <Sparkles className="h-6 w-6 animate-pulse" />} RAPORU ÇALIŞTIR
+                {isRegenerating ? <Loader2 className="h-6 w-6 animate-spin" /> : <Sparkles className="h-6 w-6 animate-pulse text-accent" />} RAPORU ÇALIŞTIR
              </Button>
           </Card>
           
           <div className="flex gap-2 bg-white p-3 rounded-3xl border border-primary/5 shadow-xl overflow-x-auto scrollbar-hide max-w-full">
-             <button onClick={() => setQuickFilter('annual')} className={cn("h-14 px-6 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all", viewMode === 'annual' ? "bg-primary text-white" : "bg-transparent text-primary/40 hover:bg-slate-50")}>TÜM YIL</button>
+             <button onClick={() => setViewMode('annual')} className={cn("h-14 px-6 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all", viewMode === 'annual' ? "bg-primary text-white" : "bg-transparent text-primary/40 hover:bg-slate-50")}>TÜM YIL</button>
              <div className="w-px h-8 bg-slate-100 my-auto mx-2" />
              {academicMonths.map((m, i) => (
                <button 
@@ -232,7 +209,7 @@ export default function PlanningPage() {
         </div>
       </header>
 
-      {/* ANALİTİK ÖZET KARTLARI */}
+      {/* ANALİTİK ÖZET KARTLARI - "KARTLAR NEREDE" ÇÖZÜMÜ */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
          {[
            { label: 'İLERLEME', val: `%${stats.rate}`, sub: 'GENEL BAŞARI', color: 'primary', icon: Target },
@@ -258,7 +235,7 @@ export default function PlanningPage() {
 
       <div className="space-y-24 pb-20">
         {viewMode === 'annual' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-10">
              {academicMonths.map((m, i) => {
                const mStr = format(m.date, 'yyyy-MM');
                const mData = studyPlan?.masterPlan?.filter((d: any) => d.date.startsWith(mStr)) || [];
@@ -288,19 +265,13 @@ export default function PlanningPage() {
           <div className="space-y-20">
             {filteredPlan.map((day: any) => (
               <div key={day.date} className="space-y-16">
-                 {day.date === '2026-12-01' && (
-                    <div className="bg-accent text-primary p-8 rounded-[3rem] text-center space-y-2 shadow-2xl animate-pulse">
-                       <p className="text-[11px] font-black uppercase tracking-[0.5em]">01 ARALIK 2026</p>
-                       <h4 className="text-4xl font-black italic uppercase tracking-tighter">🎯 AYT PROGRAMI BAŞLADI</h4>
-                       <p className="text-sm font-bold italic opacity-60">TYT çalışmalarına ek olarak AYT konu programı otonom olarak aktifleşti.</p>
-                    </div>
-                 )}
                  <div className="flex items-center gap-10">
                     <h3 className="text-5xl md:text-6xl font-black italic text-primary uppercase tracking-tighter">{format(parseISO(day.date), 'd MMMM yyyy', { locale: tr })}</h3>
                     <div className="h-px flex-1 bg-slate-200" />
                     <Badge variant="outline" className="h-14 px-8 rounded-3xl font-black uppercase border-2 border-slate-100 text-primary text-[14px]">{day.day}</Badge>
                  </div>
                  
+                 {/* DAILY GRID - SIMETRİK 4 KART */}
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-10">
                     {day.blocks?.map((block: any) => (
                       <Card key={block.id} className={cn("p-12 md:p-14 rounded-[5.5rem] border-none shadow-[0_60px_120px_-30px_rgba(15,23,42,0.15)] transition-all hover:scale-[1.03] bg-white h-full flex flex-col group relative overflow-hidden", (block.status === 'done' || block.status === 'completed') && "opacity-60")}>
@@ -387,16 +358,14 @@ export default function PlanningPage() {
                 <div className="space-y-3">
                   <Label className="text-[11px] font-black uppercase opacity-40 ml-6 italic">DURUM</Label>
                   <div className="flex gap-4">
-                    <Button 
+                    <button 
                       onClick={() => setEditingBlock({...editingBlock, status: 'planned'})}
-                      variant={editingBlock.status === 'planned' ? 'default' : 'outline'}
-                      className="flex-1 h-14 rounded-2xl font-black uppercase"
-                    >BEKLEMEDE</Button>
-                    <Button 
+                      className={cn("flex-1 h-16 rounded-2xl font-black uppercase text-xs transition-all", editingBlock.status === 'planned' ? "bg-primary text-white" : "bg-slate-50 text-primary/40")}
+                    >BEKLEMEDE</button>
+                    <button 
                       onClick={() => setEditingBlock({...editingBlock, status: 'done'})}
-                      variant={editingBlock.status === 'done' || editingBlock.status === 'completed' ? 'default' : 'outline'}
-                      className="flex-1 h-14 rounded-2xl font-black uppercase"
-                    >TAMAMLANDI</Button>
+                      className={cn("flex-1 h-16 rounded-2xl font-black uppercase text-xs transition-all", editingBlock.status === 'done' || editingBlock.status === 'completed' ? "bg-emerald-500 text-white" : "bg-slate-50 text-primary/40")}
+                    >TAMAMLANDI</button>
                   </div>
                 </div>
                 <Button onClick={handleSaveEdit} className="w-full h-20 rounded-[2.5rem] bg-primary hover:bg-accent text-white font-black text-xl uppercase gap-8 shadow-2xl transition-all">KAYDET <Save className="h-8 w-8 text-accent" /></Button>

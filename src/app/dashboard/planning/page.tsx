@@ -9,9 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
   Calendar, Zap, Loader2, Sparkles, 
-  CheckCircle2, Trash2, ArrowLeft, ArrowRight,
+  CheckCircle2, Trash2, ArrowLeft,
   Home, Edit3, Youtube, Save, FileText, 
-  BookOpen, Plus, Target
+  BookOpen, Target
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
@@ -73,6 +73,8 @@ export default function PlanningPage() {
       for (let i = 0; i <= diffDays; i++) {
         const currentDt = addDays(start, i);
         const dateStr = format(currentDt, 'yyyy-MM-dd');
+        
+        // 1 ARALIK AYT KURALI
         const isStrictTYT = isBefore(currentDt, aytCutoffDate);
         
         let lessonPool = [...(examConfig?.lessons || ['TYT Matematik', 'TYT Türkçe'])];
@@ -81,6 +83,7 @@ export default function PlanningPage() {
         }
 
         const dailyBlocks = [];
+        // BLOK 1 & 2: ANA DERSLER
         for (let j = 0; j < 2; j++) {
           const lesson = lessonPool[(i * 2 + j) % lessonPool.length];
           const topics = YKS_TM_TOPICS[lesson] || ['Genel Tekrar'];
@@ -99,6 +102,7 @@ export default function PlanningPage() {
           lessonPointers[lesson]++;
         }
 
+        // BLOK 3: SABİT 20 PARAGRAF
         dailyBlocks.push({
           id: `para_${dateStr}`,
           lesson: 'TYT Türkçe',
@@ -109,6 +113,7 @@ export default function PlanningPage() {
           ...generateAutoLinks('Paragraf', 'Türkçe'),
         });
 
+        // BLOK 4: STRATEJİK TEKRAR
         dailyBlocks.push({
           id: `review_${dateStr}`,
           lesson: 'GENEL',
@@ -220,7 +225,7 @@ export default function PlanningPage() {
                               <h4 className="text-2xl font-black italic leading-[0.9] tracking-tighter uppercase text-primary line-clamp-3">{block.topic}</h4>
                               <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-[0.3em] italic mt-2">#{block.lesson.substring(0, 3)}</p>
                            </div>
-                           <Badge className={cn("px-5 py-2 rounded-full text-[10px] font-black shrink-0", block.status === 'done' ? "bg-emerald-500 text-white" : "bg-[#FF4D6D] text-white")}>
+                           <Badge className={cn("px-5 py-2 rounded-full text-[10px] font-black shrink-0", block.status === 'done' ? "bg-emerald-50 text-white" : "bg-[#FF4D6D] text-white")}>
                               {block.status === 'done' ? 'TAMAM' : 'BEK'}
                            </Badge>
                         </div>
@@ -238,10 +243,10 @@ export default function PlanningPage() {
                         </div>
 
                         <div className="flex justify-between gap-4 pt-8 mt-auto border-t border-slate-50">
-                           <Button onClick={() => handleTaskAction(day.date, block.id, 'done')} size="icon" className={cn("h-14 w-14 rounded-full transition-all", block.status === 'done' ? "bg-slate-100 text-slate-400" : "bg-emerald-500 text-white shadow-lg")}><CheckCircle2 className="h-7 w-7" /></Button>
+                           <button onClick={() => handleTaskAction(day.date, block.id, 'done')} className={cn("h-14 w-14 rounded-full flex items-center justify-center transition-all", block.status === 'done' ? "bg-slate-100 text-slate-400" : "bg-emerald-500 text-white shadow-lg")}><CheckCircle2 className="h-7 w-7" /></button>
                            <div className="flex gap-3">
-                              <Button onClick={() => handleTaskAction(day.date, block.id, 'edit')} size="icon" variant="outline" className="h-14 w-14 rounded-full border-2 border-slate-100 text-primary hover:border-primary transition-all shadow-sm"><Edit3 className="h-6 w-6" /></Button>
-                              <Button onClick={() => handleTaskAction(day.date, block.id, 'delete')} size="icon" variant="outline" className="h-14 w-14 rounded-full border-2 border-slate-100 text-rose-500 hover:border-rose-500 transition-all shadow-sm"><Trash2 className="h-6 w-6" /></Button>
+                              <button onClick={() => handleTaskAction(day.date, block.id, 'edit')} className="h-14 w-14 rounded-full border-2 border-slate-100 flex items-center justify-center text-primary hover:border-primary transition-all shadow-sm"><Edit3 className="h-6 w-6" /></button>
+                              <button onClick={() => handleTaskAction(day.date, block.id, 'delete')} className="h-14 w-14 rounded-full border-2 border-slate-100 flex items-center justify-center text-rose-500 hover:border-rose-500 transition-all shadow-sm"><Trash2 className="h-6 w-6" /></button>
                            </div>
                         </div>
                      </div>

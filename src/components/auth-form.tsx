@@ -121,10 +121,14 @@ export function AuthForm({
     } catch (error: any) {
       console.error(error);
       let msg = 'Kayıt sırasında bir hata oluştu.';
-      if (error.code === 'auth/email-already-in-use') msg = 'Bu e-posta adresi zaten kullanımda.';
-      if (error.code === 'auth/weak-password') msg = 'Şifre çok zayıf. En az 6 karakter kullanın.';
+      if (error.code === 'auth/email-already-in-use') {
+        msg = 'Bu e-posta adresi zaten kullanımda. Giriş yapmayı deneyin.';
+        setAuthMode('login'); // Otomatik giriş moduna geç
+      } else if (error.code === 'auth/weak-password') {
+        msg = 'Şifre çok zayıf. En az 6 karakter kullanın.';
+      }
       
-      toast({ variant: 'destructive', title: 'Kayıt Hatası', description: msg });
+      toast({ variant: 'destructive', title: 'Hata', description: msg });
     } finally {
       setLoading(false);
     }

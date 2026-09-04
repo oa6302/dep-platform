@@ -29,6 +29,7 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
+    // Sınav türü seçilmemiş öğrenciyi ilgili sayfaya yönlendir
     if (!docLoading && userData && userData.role === 'student' && !userData.targetExam) {
       router.replace('/dashboard/select-exam');
     }
@@ -48,17 +49,19 @@ export default function DashboardPage() {
     { id: 'settings', label: 'Ayarlar', icon: Settings, path: '/dashboard/settings' },
   ];
 
+  // Yükleme durumu kontrolü
   if (authLoading || (user && docLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
         <div className="flex flex-col items-center gap-6">
           <Loader2 className="h-10 w-10 animate-spin text-accent" />
-          <p className="text-xs font-black uppercase tracking-[0.4em] text-primary/40 italic">Bağlantı Kuruluyor...</p>
+          <p className="text-xs font-black uppercase tracking-[0.4em] text-primary/40 italic">Terminal Senkronize Ediliyor...</p>
         </div>
       </div>
     );
   }
 
+  // Oturum yoksa giriş ekranına yönlendir
   if (!user) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] py-20 px-6 flex items-center justify-center">
@@ -67,6 +70,7 @@ export default function DashboardPage() {
     );
   }
 
+  // Oturum var ama profil dökümanı yoksa (Senkronizasyon hatası durumu)
   if (!userData && !docLoading) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] py-20 px-6 flex items-center justify-center">
@@ -76,31 +80,20 @@ export default function DashboardPage() {
               <UserCircle className="h-24 w-24 text-accent relative z-10" />
            </div>
            <div className="space-y-4">
-              <h2 className="text-2xl font-black text-primary uppercase italic">PROFİL BULUNAMADI</h2>
-              <p className="text-muted-foreground font-medium italic">Sistemde size ait bir profil kaydı bulunamadı veya senkronizasyon hatası oluştu.</p>
+              <h2 className="text-2xl font-black text-primary uppercase italic">PROFİL EKSİK</h2>
+              <p className="text-muted-foreground font-medium italic">Sistemde size ait akademik profil kaydı bulunamadı.</p>
            </div>
            <div className="flex flex-col gap-4">
-              <Button onClick={() => router.push('/')} className="h-16 rounded-2xl bg-primary font-black uppercase tracking-widest text-xs">KAYIT EKRANINA DÖN</Button>
-              <Button variant="ghost" onClick={() => auth && signOut(auth)} className="text-xs font-black uppercase tracking-widest text-destructive">OTURUMU KAPAT</Button>
+              <Button onClick={() => router.push('/')} className="h-16 rounded-2xl bg-primary font-black uppercase tracking-widest text-xs">ANA SAYFAYA DÖN</Button>
+              <Button variant="ghost" onClick={() => auth && signOut(auth)} className="text-xs font-black uppercase tracking-widest text-destructive">GÜVENLİ ÇIKIŞ</Button>
            </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!userData) {
-    return (
-      <div className="min-h-screen bg-[#F8FAFC] py-20 px-6 flex items-center justify-center">
-        <div className="max-w-md w-full text-center space-y-6">
-           <Loader2 className="h-12 w-12 animate-spin mx-auto text-accent" />
-           <p className="font-black italic uppercase text-primary">Terminal Senkronize Ediliyor...</p>
         </div>
       </div>
     );
   }
 
   const renderView = () => {
-    switch (userData.role) {
+    switch (userData?.role) {
       case 'student': return <StudentView user={user} userData={userData} />;
       case 'teacher': return <TeacherView user={user} userData={userData} />;
       case 'school_admin': return <SchoolAdminView user={user} userData={userData} />;
@@ -169,7 +162,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex-1 overflow-hidden">
               <p className="font-black text-[11px] uppercase truncate">{userData?.displayName || 'Kullanıcı'}</p>
-              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{userData.role?.toUpperCase() || 'ÖĞRENCİ'}</p>
+              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{userData?.role?.toUpperCase() || 'ÖĞRENCİ'}</p>
             </div>
           </div>
         </div>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -78,10 +79,7 @@ export default function PlanningPage() {
     if (!db || !user || !userData) return;
     setIsRegenerating(true);
     try {
-      // 1. Yeni Planı Üret
       const newPlan = generateAdaptivePlan(startDate, userData.completedTopics || {});
-      
-      // 2. Firestore'a Yaz (Mühürle)
       await setDoc(doc(db, 'studyPlans', user.uid), {
         userId: user.uid,
         startDate: startDate,
@@ -128,7 +126,7 @@ export default function PlanningPage() {
              <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><Home className="h-5 w-5" /></Button>
           </div>
           <div className="space-y-2">
-             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v20.0</div>
+             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v21.0</div>
              <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-premium">Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span></h2>
           </div>
         </div>

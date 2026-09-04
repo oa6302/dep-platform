@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useDoc, useFirestore } from '@/firebase';
@@ -84,7 +85,7 @@ interface StudyDay {
 }
 
 /* =========================================================
-   ADAPTİF PLAN MOTORU v20.0
+   ADAPTİF PLAN MOTORU v21.0
 ========================================================= */
 
 export const generateAdaptivePlan = (

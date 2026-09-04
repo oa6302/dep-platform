@@ -55,21 +55,21 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
   );
 
   return (
-    <div className="p-4 md:p-10 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000 bg-[#F8FAFC]">
-      <section className="space-y-10">
+    <div className="p-4 md:p-8 space-y-10 max-w-[1600px] mx-auto w-full animate-in fade-in duration-1000 bg-[#F8FAFC]">
+      <section className="space-y-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-8 px-2">
            <div className="space-y-2 text-center md:text-left overflow-hidden">
-              <h2 className="text-5xl md:text-8xl lg:text-[9.5rem] font-black italic leading-[0.85] tracking-tighter text-primary uppercase text-shadow-premium break-words">
+              <h2 className="text-4xl md:text-6xl lg:text-[8rem] font-black italic leading-[0.85] tracking-tighter text-primary uppercase text-shadow-premium break-words">
                  BUGÜNKÜ<br />BLOKLARIN
               </h2>
            </div>
-           <Card className="bg-white rounded-[2.5rem] px-10 py-6 flex items-center gap-5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] border-none shrink-0 w-full md:w-auto">
-              <div className="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center">
-                 <Calendar className="h-6 w-6 text-primary opacity-20" />
+           <Card className="bg-white rounded-[2rem] px-8 py-5 flex items-center gap-4 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] border-none shrink-0 w-full md:w-auto">
+              <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center">
+                 <Calendar className="h-5 w-5 text-primary opacity-20" />
               </div>
               <div className="text-right flex-1 md:flex-none">
-                 <p className="text-2xl font-black italic tracking-tighter text-primary leading-none">{format(new Date(), 'd MMMM', { locale: tr }).toUpperCase()}</p>
-                 <p className="text-[10px] font-black text-primary/20 uppercase tracking-[0.4em] mt-1">{format(new Date(), 'yyyy')}</p>
+                 <p className="text-xl font-black italic tracking-tighter text-primary leading-none">{format(new Date(), 'd MMMM', { locale: tr }).toUpperCase()}</p>
+                 <p className="text-[9px] font-black text-primary/20 uppercase tracking-[0.3em] mt-1">{format(new Date(), 'yyyy')}</p>
               </div>
            </Card>
         </div>
@@ -79,23 +79,23 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                 <Card 
                   key={block.id} 
                   className={cn(
-                    "aspect-square p-6 md:p-8 rounded-[3.5rem] border-none transition-all hover:scale-[1.03] shadow-[0_40px_80px_-20px_rgba(15,23,42,0.12)] group relative overflow-hidden bg-white h-full flex flex-col",
+                    "aspect-square p-5 md:p-6 rounded-[3rem] border-none transition-all hover:scale-[1.03] shadow-[0_30px_60px_-15px_rgba(15,23,42,0.12)] group relative overflow-hidden bg-white h-full flex flex-col",
                     block.status === 'done' && "opacity-60"
                   )}
                 >
                    <div className="space-y-4 relative z-10 flex-1 flex flex-col h-full overflow-hidden">
                         <div className="flex justify-between items-center">
-                           <div className="flex items-center gap-3">
-                              <div className="px-3 py-1.5 rounded-[1rem] bg-[#FFF8E7] text-[#0F172A] flex items-center gap-2 border border-[#FEF3C7] shadow-sm">
-                                <Clock className="h-3 w-3 text-accent" />
-                                <span className="text-[11px] font-black">{block.phase1?.time || '10:00'}</span>
+                           <div className="flex items-center gap-2">
+                              <div className="px-2 py-1 rounded-lg bg-[#FFF8E7] text-[#0F172A] flex items-center gap-1.5 border border-[#FEF3C7] shadow-sm">
+                                <Clock className="h-2.5 w-2.5 text-accent" />
+                                <span className="text-[9px] font-black">{block.phase1?.time || '10:00'}</span>
                               </div>
-                              <span className="text-[9px] font-black text-primary/10 uppercase tracking-[0.2em] italic">#{String(block.lesson).includes('AYT') ? 'AYT' : 'TYT'}</span>
+                              <span className="text-[8px] font-black text-primary/10 uppercase tracking-[0.1em] italic">#{String(block.lesson).includes('AYT') ? 'AYT' : 'TYT'}</span>
                            </div>
                            <Badge 
                              onClick={() => handleTaskAction(block.id)}
                              className={cn(
-                               "px-4 py-1.5 rounded-[1rem] text-[8px] font-black shrink-0 shadow-xl border-none cursor-pointer active:scale-95 transition-all", 
+                               "px-3 py-1 rounded-lg text-[7px] font-black shrink-0 shadow-md border-none cursor-pointer active:scale-95 transition-all", 
                                block.status === 'done' ? "bg-emerald-50 text-white" : "bg-[#FF4D6D] text-white hover:bg-[#FF4D6D]/90"
                              )}
                            >
@@ -103,36 +103,36 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                            </Badge>
                         </div>
 
-                        <div className="flex-1 flex items-center justify-center py-4 overflow-hidden px-2">
-                           <h4 className="text-3xl md:text-4xl lg:text-5xl font-black italic leading-[0.95] tracking-tighter uppercase text-primary text-shadow-premium text-center break-words line-clamp-3 hyphens-auto">
+                        <div className="flex-1 flex items-center justify-center py-2 overflow-hidden px-1">
+                           <h4 className="text-xl md:text-2xl lg:text-3xl font-black italic leading-tight tracking-tighter uppercase text-primary text-shadow-premium text-center break-words line-clamp-3">
                               {block.topic}
                            </h4>
                         </div>
 
-                        <div className="bg-[#F8FAFC]/60 rounded-[2.5rem] p-5 space-y-4 border border-slate-50 shadow-inner mt-auto">
-                           <div className="space-y-2">
+                        <div className="bg-[#F8FAFC]/60 rounded-[1.5rem] p-4 space-y-3 border border-slate-50 shadow-inner mt-auto">
+                           <div className="space-y-1.5">
                               <div className="flex items-center justify-between">
-                                 <span className="text-[8px] font-black text-primary/20 uppercase tracking-[0.3em] italic">KONU ÇALIŞMA</span>
-                                 <div className="flex gap-2.5 items-center">
-                                    {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="hover:scale-110 transition-all"><Youtube className="h-4 w-4 text-rose-500 opacity-60" /></a>}
-                                    {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="hover:scale-110 transition-all"><FileText className="h-4 w-4 text-blue-500 opacity-60" /></a>}
-                                    {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="hover:scale-110 transition-all"><BookOpen className="h-4 w-4 text-emerald-500 opacity-60" /></a>}
+                                 <span className="text-[7px] font-black text-primary/20 uppercase tracking-[0.2em] italic">KONU ÇALIŞMA</span>
+                                 <div className="flex gap-2 items-center">
+                                    {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="hover:scale-110 transition-all text-rose-500 opacity-60"><Youtube className="h-3.5 w-3.5" /></a>}
+                                    {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="hover:scale-110 transition-all text-blue-500 opacity-60"><FileText className="h-3.5 w-3.5" /></a>}
+                                    {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="hover:scale-110 transition-all text-emerald-500 opacity-60"><BookOpen className="h-3.5 w-3.5" /></a>}
                                  </div>
                               </div>
                            </div>
                            
                            <div className="h-px w-full bg-slate-200/40" />
 
-                           <div className="space-y-2">
+                           <div className="space-y-1.5">
                               <div className="flex items-center justify-between">
-                                 <div className="flex items-center gap-1.5">
-                                    <div className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
-                                    <span className="text-[9px] font-black text-accent uppercase tracking-[0.3em] italic">TEST ÇÖZME</span>
+                                 <div className="flex items-center gap-1">
+                                    <div className="h-1 w-1 rounded-full bg-accent shadow-[0_0_5px_rgba(245,158,11,0.6)]" />
+                                    <span className="text-[7px] font-black text-accent uppercase tracking-[0.2em] italic">TEST ÇÖZME</span>
                                  </div>
-                                 <div className="flex gap-2.5 items-center">
-                                    {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank" className="hover:scale-110 transition-all"><Youtube className="h-4 w-4 text-rose-500 opacity-80" /></a>}
-                                    {block.testUrl && <a href={block.testUrl} target="_blank" className="hover:scale-110 transition-all"><BookOpen className="h-4 w-4 text-emerald-500 opacity-80" /></a>}
-                                    {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank" className="hover:scale-110 transition-all"><FileText className="h-4 w-4 text-blue-500 opacity-80" /></a>}
+                                 <div className="flex gap-2 items-center">
+                                    {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank" className="hover:scale-110 transition-all text-rose-500 opacity-80"><Youtube className="h-3.5 w-3.5" /></a>}
+                                    {block.testUrl && <a href={block.testUrl} target="_blank" className="hover:scale-110 transition-all text-emerald-500 opacity-80"><BookOpen className="h-3.5 w-3.5" /></a>}
+                                    {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank" className="hover:scale-110 transition-all text-blue-500 opacity-80"><FileText className="h-3.5 w-3.5" /></a>}
                                  </div>
                               </div>
                            </div>
@@ -142,11 +142,11 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
              ))}
              
              {(!currentDayPlan || currentDayPlan?.blocks?.length === 0) && (
-                <Card onClick={() => router.push('/dashboard/planning')} className="lg:col-span-4 h-[350px] text-center bg-white rounded-[4rem] border-4 border-dashed border-slate-100 flex flex-col items-center justify-center gap-8 cursor-pointer hover:border-accent/30 transition-all group w-full">
-                   <Zap className="h-16 w-16 text-accent opacity-20 group-hover:scale-110 transition-transform" />
+                <Card onClick={() => router.push('/dashboard/planning')} className="lg:col-span-4 h-[300px] text-center bg-white rounded-[3rem] border-4 border-dashed border-slate-100 flex flex-col items-center justify-center gap-6 cursor-pointer hover:border-accent/30 transition-all group w-full">
+                   <Zap className="h-12 w-12 text-accent opacity-20 group-hover:scale-110 transition-transform" />
                    <div className="space-y-2">
-                      <p className="text-3xl font-black uppercase tracking-[0.4em] text-primary/10 italic">BUGÜN BOŞ</p>
-                      <p className="text-[10px] font-bold text-primary/5 uppercase tracking-widest italic">AKADEMİK TERMİNALİ ÇALIŞTIRIN</p>
+                      <p className="text-2xl font-black uppercase tracking-[0.3em] text-primary/10 italic">BUGÜN BOŞ</p>
+                      <p className="text-[9px] font-bold text-primary/5 uppercase tracking-widest italic">AKADEMİK TERMİNALİ ÇALIŞTIRIN</p>
                    </div>
                 </Card>
              )}

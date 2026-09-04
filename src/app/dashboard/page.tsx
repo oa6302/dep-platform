@@ -148,7 +148,7 @@ export const generateAdaptivePlan = (
 
     const dailyBlocks: StudyBlock[] = [];
     
-    // 1 & 2. ANA DERS BLOKLARI
+    // 1 & 2. ANA DERS BLOKLARI (SAYISAL/SÖZEL)
     for (let j = 0; j < 2; j++) {
       const lessonIndex = (i * 2 + j) % currentLessons.length;
       const lesson = currentLessons[lessonIndex];

@@ -74,6 +74,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
            </Card>
         </div>
 
+        {/* QUAD-GRID (4 KART SIMETRİ) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-10">
              {currentDayPlan?.blocks?.map((block: any) => (
                 <Card 
@@ -157,4 +158,3 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
     </div>
   );
 }
-

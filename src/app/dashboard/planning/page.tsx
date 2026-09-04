@@ -9,15 +9,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
   Calendar, Zap, Loader2, Sparkles, 
-  ArrowLeft,
-  Home, Edit3, Youtube, Save, FileText, 
-  BookOpen, X, Clock, Target, TrendingUp, Award, Brain
+  ArrowLeft, Home, Edit3, Youtube, Save, FileText, 
+  BookOpen, X, Clock, Target, TrendingUp, Award, Brain,
+  ChevronRight, ListFilter, LayoutGrid, CalendarDays, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { format, parseISO, isBefore, isSameMonth, addDays, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
+import { format, parseISO, isBefore, isSameMonth, addDays, startOfWeek, endOfWeek, isWithinInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import {
   Dialog,
@@ -26,7 +26,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { generateAdaptivePlan } from '@/app/dashboard/page';
+
+type ViewMode = 'annual' | 'monthly' | 'daily';
 
 export default function PlanningPage() {
   const { user } = useUser();
@@ -37,8 +40,8 @@ export default function PlanningPage() {
   const { data: userData } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
   const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   
-  const [viewMode, setViewMode] = useState<'monthly' | 'daily'>('daily');
-  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date(2026, 8, 1));
+  const [viewMode, setViewMode] = useState<ViewMode>('daily');
+  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date(2026, 8, 1)); // Eylül 2026 default
   const [startDate, setStartDate] = useState('2026-09-01');
   const [endDate, setEndDate] = useState('2026-09-14');
   const [isRegenerating, setIsRegenerating] = useState(false);
@@ -51,12 +54,16 @@ export default function PlanningPage() {
   }, [studyPlan]);
 
   const academicMonths = useMemo(() => [
-    { label: 'AĞU', date: new Date(2026, 7, 1) }, { label: 'EYL', date: new Date(2026, 8, 1) },
-    { label: 'EKİ', date: new Date(2026, 9, 1) }, { label: 'KAS', date: new Date(2026, 10, 1) },
-    { label: 'ARA', date: new Date(2026, 11, 1) }, { label: 'OCA', date: new Date(2027, 0, 1) },
-    { label: 'ŞUB', date: new Date(2027, 1, 1) }, { label: 'MAR', date: new Date(2027, 2, 1) },
-    { label: 'NİS', date: new Date(2027, 3, 1) }, { label: 'MAY', date: new Date(2027, 4, 1) },
-    { label: 'HAZ', date: new Date(2027, 5, 1) }
+    { label: 'EYLÜL', date: new Date(2026, 8, 1) },
+    { label: 'EKİM', date: new Date(2026, 9, 1) },
+    { label: 'KASIM', date: new Date(2026, 10, 1) },
+    { label: 'ARALIK', date: new Date(2026, 11, 1), isAyt: true },
+    { label: 'OCAK', date: new Date(2027, 0, 1) },
+    { label: 'ŞUBAT', date: new Date(2027, 1, 1) },
+    { label: 'MART', date: new Date(2027, 2, 1) },
+    { label: 'NİSAN', date: new Date(2027, 3, 1) },
+    { label: 'MAYIS', date: new Date(2027, 4, 1) },
+    { label: 'HAZİRAN', date: new Date(2027, 5, 1) }
   ], []);
 
   const filteredPlan = useMemo(() => {
@@ -71,33 +78,23 @@ export default function PlanningPage() {
     return studyPlan.masterPlan.filter((d: any) => d.date.startsWith(mStr));
   }, [studyPlan, viewMode, startDate, endDate, selectedMonth]);
 
-  // Hiyerarşik İstatistik Hesaplamaları
-  const summaryStats = useMemo(() => {
-    if (!studyPlan?.masterPlan) return { annual: 0, monthly: 0, weekly: 0, daily: 0 };
+  const stats = useMemo(() => {
+    if (!studyPlan?.masterPlan) return { planned: 0, completed: 0, missing: 0, rate: 0 };
     
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
-    const startOfThisWeek = startOfWeek(new Date(), { weekStartsOn: 1 });
-    const endOfThisWeek = endOfWeek(new Date(), { weekStartsOn: 1 });
-    const mStr = format(selectedMonth, 'yyyy-MM');
+    const relevantPlan = viewMode === 'annual' 
+      ? studyPlan.masterPlan 
+      : studyPlan.masterPlan.filter((d: any) => d.date.startsWith(format(selectedMonth, 'yyyy-MM')));
 
-    const annualTotal = studyPlan.masterPlan.reduce((acc: number, day: any) => acc + (day.blocks?.length || 0), 0);
-    const annualDone = studyPlan.masterPlan.reduce((acc: number, day: any) => acc + (day.blocks?.filter((b: any) => b.status === 'done').length || 0), 0);
+    const total = relevantPlan.reduce((acc: number, day: any) => acc + (day.blocks?.length || 0), 0);
+    const done = relevantPlan.reduce((acc: number, day: any) => acc + (day.blocks?.filter((b: any) => b.status === 'done').length || 0), 0);
     
-    const monthBlocks = studyPlan.masterPlan.filter((d: any) => d.date.startsWith(mStr)).reduce((acc: number, day: any) => acc + (day.blocks?.length || 0), 0);
-    
-    const weekBlocks = studyPlan.masterPlan.filter((d: any) => 
-      isWithinInterval(parseISO(d.date), { start: startOfThisWeek, end: endOfThisWeek })
-    ).reduce((acc: number, day: any) => acc + (day.blocks?.length || 0), 0);
-
-    const dayBlocks = studyPlan.masterPlan.find((d: any) => d.date === todayStr)?.blocks?.length || 0;
-
     return {
-      annual: Math.round((annualDone / (annualTotal || 1)) * 100),
-      monthly: monthBlocks,
-      weekly: weekBlocks,
-      daily: dayBlocks
+      planned: total,
+      completed: done,
+      missing: total - done,
+      rate: Math.round((done / (total || 1)) * 100)
     };
-  }, [studyPlan, selectedMonth]);
+  }, [studyPlan, selectedMonth, viewMode]);
 
   const handleRegeneratePlan = async () => {
     if (!db || !user || !userData) return;
@@ -114,7 +111,7 @@ export default function PlanningPage() {
 
       toast({ 
         title: "TERMİNAL MÜHÜRLENDİ", 
-        description: "Akademik yol haritası saniyeler içinde yeni miladına göre kurgulandı.",
+        description: "Yıllık akademik strateji saniyeler içinde yeni miladına göre kurgulandı.",
         className: "bg-accent text-primary rounded-2xl font-black shadow-2xl border-none" 
       });
     } catch (e) { 
@@ -141,6 +138,26 @@ export default function PlanningPage() {
     toast({ title: 'Terminal Güncellendi', className: "bg-primary text-white rounded-2xl shadow-2xl" });
   };
 
+  const setQuickFilter = (type: 'today' | 'week' | 'month' | 'annual') => {
+    const now = new Date();
+    if (type === 'today') {
+      const d = format(now, 'yyyy-MM-dd');
+      setStartDate(d);
+      setEndDate(d);
+      setViewMode('daily');
+    } else if (type === 'week') {
+      setStartDate(format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+      setEndDate(format(endOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+      setViewMode('daily');
+    } else if (type === 'month') {
+      setStartDate(format(startOfMonth(now), 'yyyy-MM-dd'));
+      setEndDate(format(endOfMonth(now), 'yyyy-MM-dd'));
+      setViewMode('daily');
+    } else if (type === 'annual') {
+      setViewMode('annual');
+    }
+  };
+
   return (
     <div className="p-4 md:p-14 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000 bg-[#F8FAFC]">
       <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-10">
@@ -150,7 +167,7 @@ export default function PlanningPage() {
              <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><Home className="h-5 w-5" /></Button>
           </div>
           <div className="space-y-2">
-             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v26.0</div>
+             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v27.0</div>
              <h2 className="text-6xl md:text-[7rem] font-black tracking-tighter italic text-primary uppercase leading-[0.8] text-shadow-premium">Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span></h2>
           </div>
         </div>
@@ -160,7 +177,7 @@ export default function PlanningPage() {
              <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2" />
              
              <div className="space-y-3 relative z-10">
-                <Label className="text-[11px] font-black uppercase tracking-[0.3em] opacity-40 ml-4 italic text-primary">BAŞLAMA TARİHİ</Label>
+                <Label className="text-[11px] font-black uppercase tracking-[0.3em] opacity-40 ml-4 italic text-primary">BAŞLANGIÇ</Label>
                 <Input 
                   type="date" 
                   value={startDate} 
@@ -170,7 +187,7 @@ export default function PlanningPage() {
              </div>
 
              <div className="space-y-3 relative z-10">
-                <Label className="text-[11px] font-black uppercase tracking-[0.3em] opacity-40 ml-4 italic text-primary">BİTİŞ TARİHİ</Label>
+                <Label className="text-[11px] font-black uppercase tracking-[0.3em] opacity-40 ml-4 italic text-primary">BİTİŞ</Label>
                 <Input 
                   type="date" 
                   value={endDate} 
@@ -184,47 +201,50 @@ export default function PlanningPage() {
                disabled={isRegenerating} 
                className="h-20 px-12 rounded-[2rem] bg-accent hover:bg-primary text-primary hover:text-white font-black text-[12px] uppercase tracking-[0.2em] gap-5 shadow-[0_30px_60px_-15px_rgba(245,158,11,0.4)] transition-all active:scale-95 relative z-10"
              >
-                {isRegenerating ? <Loader2 className="h-6 w-6 animate-spin" /> : <Sparkles className="h-6 w-6 animate-pulse" />} PLANI YENİDEN KURGULA
+                {isRegenerating ? <Loader2 className="h-6 w-6 animate-spin" /> : <Sparkles className="h-6 w-6 animate-pulse" />} RAPORU ÇALIŞTIR
              </Button>
           </Card>
           
           <div className="flex gap-2 bg-white p-3 rounded-3xl border border-primary/5 shadow-xl overflow-x-auto scrollbar-hide max-w-full">
+             <button onClick={() => setQuickFilter('annual')} className={cn("h-14 px-6 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all", viewMode === 'annual' ? "bg-primary text-white" : "bg-transparent text-primary/40 hover:bg-slate-50")}>TÜM YIL</button>
+             <div className="w-px h-8 bg-slate-100 my-auto mx-2" />
              {academicMonths.map((m, i) => (
                <button 
                  key={i} 
                  onClick={() => { setSelectedMonth(m.date); setViewMode('monthly'); }} 
                  className={cn(
-                   "h-14 min-w-[90px] px-6 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all whitespace-nowrap", 
+                   "h-14 min-w-[100px] px-6 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all whitespace-nowrap flex items-center justify-center gap-2", 
                    isSameMonth(m.date, selectedMonth) && viewMode === 'monthly' 
                      ? "bg-primary text-white shadow-xl scale-105" 
-                     : "bg-transparent text-primary/40 hover:bg-slate-50 border border-transparent"
+                     : "bg-transparent text-primary/40 hover:bg-slate-50 border border-transparent",
+                   m.isAyt && "text-accent"
                  )}
                >
-                 {m.label}
+                 {m.label} {m.isAyt && <Zap className="h-3 w-3 fill-current" />}
                </button>
              ))}
           </div>
         </div>
       </header>
 
-      {/* HİYERARŞİK ÖZET KARTLARI */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      {/* ANALİTİK ÖZET KARTLARI */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
          {[
-           { label: 'YILLIK TERMİNAL', val: `%${summaryStats.annual}`, icon: Target, sub: '15 HAZİRAN 2027 HEDEFİ', color: 'primary' },
-           { label: 'AYLIK HEDEF', val: summaryStats.monthly, icon: Calendar, sub: `${format(selectedMonth, 'MMMM', { locale: tr }).toUpperCase()} PLANI`, color: 'accent' },
-           { label: 'HAFTALIK TEMPO', val: summaryStats.weekly, icon: TrendingUp, sub: 'AKTİF HAFTA YOĞUNLUĞU', color: 'primary' },
-           { label: 'GÜNLÜK ODAK', val: summaryStats.daily, icon: Brain, sub: 'BUGÜNKÜ AKADEMİK BLOKLAR', color: 'accent' },
+           { label: 'İLERLEME', val: `%${stats.rate}`, sub: 'GENEL BAŞARI', color: 'primary', icon: Target },
+           { label: 'PLANLANAN', val: stats.planned, sub: 'TOPLAM GÖREV', color: 'accent', icon: Calendar },
+           { label: 'TAMAMLANAN', val: stats.completed, sub: 'MÜHÜRLENEN', color: 'primary', icon: CheckCircle2 },
+           { label: 'EKSİK', val: stats.missing, sub: 'KRİTİK YOLLAR', color: 'accent', icon: AlertCircle },
+           { label: 'DURUM', val: stats.rate > 70 ? 'STABİL' : 'RİSKLİ', sub: 'AI ANALİZİ', color: 'primary', icon: Brain },
          ].map((item, i) => (
-           <Card key={i} className="premium-card p-10 border border-primary/5 group relative overflow-hidden bg-white">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 rounded-full translate-x-1/2 -translate-y-1/2 group-hover:scale-150 transition-transform duration-700" />
+           <Card key={i} className="premium-card p-8 border border-primary/5 group relative overflow-hidden bg-white">
               <div className="space-y-6 relative z-10">
-                 <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center text-white shadow-xl", item.color === 'accent' ? 'bg-accent' : 'bg-primary')}>
-                    <item.icon className="h-7 w-7" />
+                 <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center text-white shadow-lg", item.color === 'accent' ? 'bg-accent' : 'bg-primary')}>
+                    <item.icon className="h-6 w-6" />
                  </div>
                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-1 italic">{item.label}</p>
-                    <p className="text-5xl font-black text-primary italic tracking-tighter">{item.val}</p>
-                    <p className="text-[9px] font-bold text-muted-foreground/40 uppercase mt-2 tracking-widest">{item.sub}</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-1 italic">{item.label}</p>
+                    <p className="text-4xl font-black text-primary italic tracking-tighter">{item.val}</p>
+                    <p className="text-[8px] font-bold text-muted-foreground/30 uppercase mt-1.5 tracking-widest">{item.sub}</p>
                  </div>
               </div>
            </Card>
@@ -232,13 +252,43 @@ export default function PlanningPage() {
       </div>
 
       <div className="space-y-24 pb-20">
-        {viewMode === 'monthly' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {viewMode === 'annual' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+             {academicMonths.map((m, i) => {
+               const mStr = format(m.date, 'yyyy-MM');
+               const mData = studyPlan?.masterPlan?.filter((d: any) => d.date.startsWith(mStr)) || [];
+               const mTotal = mData.reduce((acc: number, day: any) => acc + (day.blocks?.length || 0), 0);
+               const mDone = mData.reduce((acc: number, day: any) => acc + (day.blocks?.filter((b: any) => b.status === 'done').length || 0), 0);
+               const mRate = Math.round((mDone / (mTotal || 1)) * 100);
+
+               return (
+                <Card key={i} className="p-10 rounded-[3.5rem] bg-white border border-primary/5 shadow-xl group hover:scale-[1.02] transition-all">
+                   <div className="flex justify-between items-center mb-8">
+                      <div className="flex items-center gap-4">
+                         <span className="text-4xl font-black text-primary italic tracking-tighter">{m.label}</span>
+                         {m.isAyt && <Badge className="bg-accent text-primary font-black text-[9px] px-3 py-1 rounded-full">AYT BAŞLANGICI</Badge>}
+                      </div>
+                      <span className="text-2xl font-black text-accent">%{mRate}</span>
+                   </div>
+                   <Progress value={mRate} className="h-3 bg-slate-50" />
+                   <div className="mt-6 flex justify-between text-[10px] font-black uppercase tracking-widest text-primary/30 italic">
+                      <span>{mDone} TAMAMLANDI</span>
+                      <span>{mTotal} PLANLANDI</span>
+                   </div>
+                </Card>
+               );
+             })}
+          </div>
+        ) : viewMode === 'monthly' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-8">
              {filteredPlan.map((day: any) => (
-              <Card key={day.date} onClick={() => { setStartDate(day.date); setEndDate(day.date); setViewMode('daily'); }} className={cn("p-10 rounded-[4rem] border-none shadow-xl bg-white hover:scale-[1.03] transition-all cursor-pointer group min-h-[300px]")}>
+              <Card key={day.date} onClick={() => { setStartDate(day.date); setEndDate(day.date); setViewMode('daily'); }} className={cn("p-10 rounded-[4rem] border-none shadow-xl bg-white hover:scale-[1.03] transition-all cursor-pointer group min-h-[300px]", day.date === '2026-12-01' && "border-2 border-accent")}>
                  <div className="space-y-8">
                     <div className="flex justify-between">
-                       <span className="text-5xl font-black text-primary italic tracking-tighter">{format(parseISO(day.date), 'd')}</span>
+                       <div className="flex items-center gap-3">
+                          <span className="text-5xl font-black text-primary italic tracking-tighter">{format(parseISO(day.date), 'd')}</span>
+                          {day.date === '2026-12-01' && <Zap className="h-5 w-5 text-accent fill-current" />}
+                       </div>
                        <Badge variant="outline" className="border-primary/10 text-[9px] font-black uppercase">{day.day.substring(0, 3)}</Badge>
                     </div>
                     <div className="space-y-3">
@@ -257,12 +307,19 @@ export default function PlanningPage() {
           <div className="space-y-20">
             {filteredPlan.map((day: any) => (
               <div key={day.date} className="space-y-16">
+                 {day.date === '2026-12-01' && (
+                    <div className="bg-accent text-primary p-8 rounded-[3rem] text-center space-y-2 shadow-2xl animate-pulse">
+                       <p className="text-[11px] font-black uppercase tracking-[0.5em]">01 ARALIK 2026</p>
+                       <h4 className="text-4xl font-black italic uppercase tracking-tighter">🎯 AYT PROGRAMI BAŞLADI</h4>
+                       <p className="text-sm font-bold italic opacity-60">TYT çalışmalarına ek olarak AYT konu programı otonom olarak aktifleşti.</p>
+                    </div>
+                 )}
                  <div className="flex items-center gap-10">
                     <h3 className="text-5xl md:text-6xl font-black italic text-primary uppercase tracking-tighter">{format(parseISO(day.date), 'd MMMM yyyy', { locale: tr })}</h3>
                     <div className="h-px flex-1 bg-slate-200" />
                     <Badge variant="outline" className="h-14 px-8 rounded-3xl font-black uppercase border-2 border-slate-100 text-primary text-[14px]">{day.day}</Badge>
                  </div>
-                 {/* HER GÜNE 4 KART (QUAD-GRID) */}
+                 {/* SIMETRIK QUAD-GRID (4 KART) */}
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-10">
                     {day.blocks?.map((block: any) => (
                       <Card key={block.id} className={cn("p-12 md:p-14 rounded-[5.5rem] border-none shadow-[0_60px_120px_-30px_rgba(15,23,42,0.15)] transition-all hover:scale-[1.03] bg-white h-full flex flex-col group relative overflow-hidden", block.status === 'done' && "opacity-60")}>

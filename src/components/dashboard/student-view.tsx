@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Sparkles, Brain, CheckCircle2, Loader2, 
-  Youtube, FileText, BellRing, Calendar, Edit3, Trash2,
-  BookOpen, Zap, Target, BookOpenCheck, ArrowRight
+  Youtube, FileText, BellRing, Edit3, BookOpen, 
+  Zap, Target, BookOpenCheck
 } from 'lucide-react';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -134,15 +134,6 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                               <p className="text-[10px] font-bold text-primary opacity-60 uppercase italic">{block.phase1?.type || (block.isReview ? 'STRATEJİK TEKRAR' : 'DERS ÇALIŞMASI')}</p>
                            </div>
                         </div>
-
-                        {block.targetQuestions > 0 && (
-                          <div className="flex items-center justify-between px-2">
-                             <span className="text-[10px] font-black uppercase text-primary/40">SORU: {block.solvedQuestions || 0} / {block.targetQuestions}</span>
-                             <div className="h-1.5 flex-1 mx-4 bg-slate-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-accent transition-all" style={{ width: `${Math.min(((block.solvedQuestions || 0) / block.targetQuestions) * 100, 100)}%` }} />
-                             </div>
-                          </div>
-                        )}
 
                         {block.reminder && (
                           <div className="p-3 bg-accent/5 border border-accent/10 rounded-2xl flex items-center gap-3">

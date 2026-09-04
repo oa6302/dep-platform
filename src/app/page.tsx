@@ -62,10 +62,10 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Feature Preview (Live Terminal) - CONTRAST FIX */}
-        <section className="mt-40 relative px-4 md:px-10 py-24 md:py-32 bg-primary rounded-[3rem] md:rounded-[5rem] mx-4 md:mx-10 overflow-hidden group shadow-2xl">
+        {/* Feature Preview (Live Terminal) - CONTRAST FIXED */}
+        <section className="mt-40 relative w-full md:w-[calc(100%-80px)] md:mx-10 py-24 md:py-32 bg-primary rounded-[3rem] md:rounded-[5rem] overflow-hidden group shadow-2xl">
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-accent/5 blur-[150px] rounded-full translate-x-1/3 -translate-y-1/3" />
-          <div className="container mx-auto grid lg:grid-cols-2 gap-20 items-center relative z-10">
+          <div className="container mx-auto grid lg:grid-cols-2 gap-20 items-center relative z-10 px-6 md:px-12">
             <div className="space-y-10 text-white text-center lg:text-left">
                <h2 className="text-4xl md:text-7xl lg:text-8xl font-black italic tracking-tighter leading-[0.85] uppercase text-shadow-premium text-white">Maksimum <br /><span className="text-accent text-shadow-accent">Odaklanma</span></h2>
                <p className="text-lg md:text-2xl text-white/70 font-medium leading-relaxed italic max-w-xl">
@@ -97,7 +97,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Global Features Grid */}
+        {/* Global Features Grid - DYNAMIC WIDTH FIX */}
         <section className="container mx-auto px-6 py-40">
            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
               {[

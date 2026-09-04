@@ -342,14 +342,16 @@ export function AuthForm({
            </div>
         )}
 
-        <Button
-          type="submit"
-          disabled={loading}
-          className="w-full h-20 md:h-32 rounded-[1.75rem] md:rounded-[3.5rem] bg-[#0F172A] hover:bg-accent transition-all duration-700 font-black text-lg md:text-2xl uppercase tracking-[0.2em] md:tracking-[0.5em] gap-4 md:gap-10 shadow-[0_50px_100px_-20px_rgba(15,23,42,0.45)] group/btn text-white"
-        >
-          {loading ? <Loader2 className="h-6 w-6 md:h-10 md:w-10 animate-spin" /> : <Zap className="h-6 w-6 md:h-10 md:w-10 text-accent group-hover/btn:animate-pulse" />}
-          KURULUMU TAMAMLA
-        </Button>
+        <div className="pt-8">
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full h-20 md:h-32 rounded-[1.75rem] md:rounded-[3.5rem] bg-[#0F172A] hover:bg-accent transition-all duration-700 font-black text-lg md:text-2xl uppercase tracking-[0.2em] md:tracking-[0.5em] gap-4 md:gap-10 shadow-[0_50px_100px_-20px_rgba(15,23,42,0.45)] group/btn text-white"
+          >
+            {loading ? <Loader2 className="h-6 w-6 md:h-10 md:w-10 animate-spin" /> : <Zap className="h-6 w-6 md:h-10 md:w-10 text-accent group-hover/btn:animate-pulse" />}
+            KURULUMU TAMAMLA
+          </Button>
+        </div>
       </form>
       {!isProfileCompletion && (
          <button type="button" onClick={() => setAuthMode('login')} className="w-full text-center text-[7px] md:text-[11px] font-black uppercase tracking-[0.15em] md:tracking-[0.3em] text-primary/30 hover:text-primary transition-all italic">ZATEN BİR HESABIM VAR → GİRİŞ YAP</button>

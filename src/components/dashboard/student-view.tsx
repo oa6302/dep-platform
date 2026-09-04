@@ -145,20 +145,35 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                         </div>
 
                         <div className="space-y-4 flex-1">
-                           <div className="p-5 rounded-3xl bg-slate-50 border border-slate-100 space-y-4 shadow-inner">
-                              <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                                 <span className="text-[8px] font-black text-primary/30 uppercase tracking-[0.2em]">KAYNAKLAR</span>
+                           <div className="p-6 rounded-[2.5rem] bg-slate-50 border border-slate-100 space-y-6 shadow-inner">
+                              <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+                                 <span className="text-[9px] font-black text-primary/30 uppercase tracking-[0.2em]">KAYNAKLAR</span>
                                  <div className="flex gap-2">
-                                    {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm"><Youtube className="h-4 w-4" /></a>}
-                                    {block.pdfUrl && <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all shadow-sm"><FileText className="h-4 w-4" /></a>}
-                                    {block.mebiUrl && <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm"><BookOpen className="h-4 w-4" /></a>}
-                                    {block.testUrl && <a href={block.testUrl} target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-500 hover:text-white transition-all shadow-sm"><FileQuestion className="h-4 w-4" /></a>}
-                                    {block.extraUrl && <a href={block.extraUrl} target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center hover:bg-amber-500 hover:text-white transition-all shadow-sm"><LinkIcon className="h-4 w-4" /></a>}
+                                    {(block.youtubeUrl || block.pdfUrl || block.mebiUrl) && (
+                                      <div className="flex gap-1.5 bg-white/50 p-1.5 rounded-xl border border-slate-200 shadow-sm">
+                                        {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:scale-110 transition-all"><Youtube className="h-4 w-4" /></a>}
+                                        {block.pdfUrl && <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:scale-110 transition-all"><FileText className="h-4 w-4" /></a>}
+                                        {block.mebiUrl && <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:scale-110 transition-all"><BookOpen className="h-4 w-4" /></a>}
+                                      </div>
+                                    )}
+                                    {(block.testUrl || block.extraUrl) && (
+                                      <div className="flex gap-1.5 bg-accent/10 p-1.5 rounded-xl border border-accent/20 shadow-sm">
+                                        {block.testUrl && <a href={block.testUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:scale-110 transition-all"><FileQuestion className="h-4 w-4" /></a>}
+                                        {block.extraUrl && <a href={block.extraUrl} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:scale-110 transition-all"><LinkIcon className="h-4 w-4" /></a>}
+                                      </div>
+                                    )}
                                  </div>
                               </div>
-                              <div className="space-y-1.5">
-                                 <p className="text-[10px] font-bold text-primary opacity-60 uppercase italic leading-tight">{block.phase1?.type || (block.isOverdue ? 'ERTELENEN GÖREV' : 'DERS ÇALIŞMASI')}</p>
-                                 {block.phase2 && <p className="text-[10px] font-black text-accent uppercase italic">• {block.phase2.type}</p>}
+                              
+                              <div className="space-y-3">
+                                 <div className="flex items-center gap-3">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-primary/20" />
+                                    <p className="text-[11px] font-black text-primary opacity-60 uppercase italic leading-none">{block.phase1?.type || (block.isOverdue ? 'ERTELENEN GÖREV' : 'KONU ÇALIŞMA')}</p>
+                                 </div>
+                                 <div className="flex items-center gap-3">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-accent" />
+                                    <p className="text-[11px] font-black text-accent uppercase italic leading-none">TEST ÇÖZME</p>
+                                 </div>
                               </div>
                            </div>
                         </div>

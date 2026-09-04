@@ -342,20 +342,35 @@ export default function PlanningPage() {
                            </Badge>
                         </div>
 
-                        <div className="p-6 rounded-[2.5rem] bg-slate-50 border border-slate-100 space-y-4 shadow-inner flex-1">
+                        <div className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 space-y-6 shadow-inner flex-1">
                            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
                               <span className="text-[10px] font-black text-primary/30 uppercase tracking-[0.2em]">KAYNAKLAR</span>
-                              <div className="flex gap-4">
-                                 {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:scale-110 transition-all"><Youtube className="h-5 w-5" /></a>}
-                                 {block.pdfUrl && <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:scale-110 transition-all"><FileText className="h-5 w-5" /></a>}
-                                 {block.mebiUrl && <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:scale-110 transition-all"><BookOpen className="h-5 w-5" /></a>}
-                                 {block.testUrl && <a href={block.testUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:scale-110 transition-all"><FileQuestion className="h-5 w-5" /></a>}
-                                 {block.extraUrl && <a href={block.extraUrl} target="_blank" rel="noopener noreferrer" className="text-amber-500 hover:scale-110 transition-all"><LinkIcon className="h-5 w-5" /></a>}
+                              <div className="flex gap-2">
+                                 {(block.youtubeUrl || block.pdfUrl || block.mebiUrl) && (
+                                   <div className="flex gap-1.5 bg-white/50 p-1.5 rounded-xl border border-slate-200 shadow-sm">
+                                     {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:scale-110 transition-all"><Youtube className="h-5 w-5" /></a>}
+                                     {block.pdfUrl && <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:scale-110 transition-all"><FileText className="h-5 w-5" /></a>}
+                                     {block.mebiUrl && <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:scale-110 transition-all"><BookOpen className="h-5 w-5" /></a>}
+                                   </div>
+                                 )}
+                                 {(block.testUrl || block.extraUrl) && (
+                                   <div className="flex gap-1.5 bg-accent/10 p-1.5 rounded-xl border border-accent/20 shadow-sm">
+                                     {block.testUrl && <a href={block.testUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:scale-110 transition-all"><FileQuestion className="h-5 w-5" /></a>}
+                                     {block.extraUrl && <a href={block.extraUrl} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:scale-110 transition-all"><LinkIcon className="h-5 w-5" /></a>}
+                                   </div>
+                                 )}
                               </div>
                            </div>
-                           <div className="space-y-1">
-                              <p className="text-[12px] font-black text-primary opacity-60 uppercase italic">{block.phase1?.type || 'DERS ÇALIŞMASI'}</p>
-                              {block.phase2 && <p className="text-[12px] font-black text-accent uppercase italic">• {block.phase2.type}</p>}
+
+                           <div className="space-y-4">
+                              <div className="flex items-center gap-3">
+                                 <div className="h-2 w-2 rounded-full bg-primary/20" />
+                                 <p className="text-[12px] font-black text-primary opacity-60 uppercase italic">{block.phase1?.type || 'KONU ÇALIŞMA'}</p>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                 <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+                                 <p className="text-[12px] font-black text-accent uppercase italic">TEST ÇÖZME</p>
+                              </div>
                            </div>
                         </div>
 

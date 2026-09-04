@@ -17,8 +17,6 @@ import { tr } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 export function StudentView({ user, userData }: { user: any, userData: any }) {
   const db = useFirestore();
@@ -33,7 +31,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
     return studyPlan.masterPlan.find((p: any) => p.date === today);
   }, [studyPlan, today]);
 
-  const handleTaskAction = (blockId: string, action: string) => {
+  const handleTaskAction = async (blockId: string, action: string) => {
     if (!db || !user || !studyPlan) return;
     
     const newPlan = studyPlan.masterPlan.map((day: any) => {
@@ -53,17 +51,9 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
       return day;
     });
 
-    const planRef = doc(db, 'studyPlans', user.uid);
-    updateDoc(planRef, { 
+    await updateDoc(doc(db, 'studyPlans', user.uid), { 
       masterPlan: newPlan,
       updatedAt: serverTimestamp()
-    }).catch(async (err) => {
-      const permissionError = new FirestorePermissionError({
-        path: planRef.path,
-        operation: 'update',
-        requestResourceData: { masterPlan: 'student_action_update' },
-      } satisfies SecurityRuleContext);
-      errorEmitter.emit('permission-error', permissionError);
     });
     
     toast({ 

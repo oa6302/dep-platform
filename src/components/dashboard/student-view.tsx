@@ -9,7 +9,7 @@ import {
   Sparkles, Brain, CheckCircle2, Loader2, 
   Youtube, FileText, Edit3, BookOpen, 
   Zap, Clock, CalendarDays, ArrowRight,
-  Link as LinkIcon
+  Link as LinkIcon, FileQuestion
 } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -152,10 +152,14 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                                     {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm"><Youtube className="h-4 w-4" /></a>}
                                     {block.pdfUrl && <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all shadow-sm"><FileText className="h-4 w-4" /></a>}
                                     {block.mebiUrl && <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm"><BookOpen className="h-4 w-4" /></a>}
+                                    {block.testUrl && <a href={block.testUrl} target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-500 hover:text-white transition-all shadow-sm"><FileQuestion className="h-4 w-4" /></a>}
                                     {block.extraUrl && <a href={block.extraUrl} target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center hover:bg-amber-500 hover:text-white transition-all shadow-sm"><LinkIcon className="h-4 w-4" /></a>}
                                  </div>
                               </div>
-                              <p className="text-[10px] font-bold text-primary opacity-60 uppercase italic">{block.phase1?.type || (block.isOverdue ? 'ERTELENEN GÖREV' : 'DERS ÇALIŞMASI')}</p>
+                              <div className="space-y-1.5">
+                                 <p className="text-[10px] font-bold text-primary opacity-60 uppercase italic leading-tight">{block.phase1?.type || (block.isOverdue ? 'ERTELENEN GÖREV' : 'DERS ÇALIŞMASI')}</p>
+                                 {block.phase2 && <p className="text-[10px] font-black text-accent uppercase italic">• {block.phase2.type}</p>}
+                              </div>
                            </div>
                         </div>
 

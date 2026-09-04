@@ -13,7 +13,7 @@ import {
   Home, Edit3, Youtube, Save, FileText, 
   BookOpen, Target, Clock, AlertCircle,
   ChevronRight, CalendarDays, Hash, Layers,
-  Link as LinkIcon
+  Link as LinkIcon, FileQuestion
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
@@ -60,6 +60,7 @@ export default function PlanningPage() {
       youtubeUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic)}`,
       pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}`,
       mebiUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}`,
+      testUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}+test`,
       extraUrl: ''
     };
   };
@@ -120,6 +121,7 @@ export default function PlanningPage() {
           topic: t1,
           status: existingDay?.blocks?.find((b: any) => b.id === `block_${dateStr}_0`)?.status || 'planned',
           phase1: { type: 'KONU ÇALIŞMA', time: '10:00' },
+          phase2: { type: 'TEST ÇÖZME' },
           ...generateAutoLinks(t1, l1)
         });
 
@@ -135,6 +137,7 @@ export default function PlanningPage() {
           topic: t2,
           status: existingDay?.blocks?.find((b: any) => b.id === `block_${dateStr}_1`)?.status || 'planned',
           phase1: { type: 'KONU ÇALIŞMA', time: '11:00' },
+          phase2: { type: 'TEST ÇÖZME' },
           ...generateAutoLinks(t2, l2)
         });
 
@@ -346,10 +349,14 @@ export default function PlanningPage() {
                                  {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:scale-110 transition-all"><Youtube className="h-5 w-5" /></a>}
                                  {block.pdfUrl && <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:scale-110 transition-all"><FileText className="h-5 w-5" /></a>}
                                  {block.mebiUrl && <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:scale-110 transition-all"><BookOpen className="h-5 w-5" /></a>}
+                                 {block.testUrl && <a href={block.testUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:scale-110 transition-all"><FileQuestion className="h-5 w-5" /></a>}
                                  {block.extraUrl && <a href={block.extraUrl} target="_blank" rel="noopener noreferrer" className="text-amber-500 hover:scale-110 transition-all"><LinkIcon className="h-5 w-5" /></a>}
                               </div>
                            </div>
-                           <p className="text-[12px] font-black text-primary opacity-60 uppercase italic">{block.phase1?.type || 'DERS ÇALIŞMASI'}</p>
+                           <div className="space-y-1">
+                              <p className="text-[12px] font-black text-primary opacity-60 uppercase italic">{block.phase1?.type || 'DERS ÇALIŞMASI'}</p>
+                              {block.phase2 && <p className="text-[12px] font-black text-accent uppercase italic">• {block.phase2.type}</p>}
+                           </div>
                         </div>
 
                         <div className="flex justify-between gap-4 pt-8 mt-auto border-t border-slate-50">
@@ -446,6 +453,7 @@ export default function PlanningPage() {
                         { key: 'youtubeUrl', label: 'YouTube Playlist', icon: Youtube, color: 'text-rose-500', bg: 'bg-rose-50' },
                         { key: 'pdfUrl', label: 'OGM Materyal / PDF', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50' },
                         { key: 'mebiUrl', label: 'MEBİ / EBA Terminal', icon: BookOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+                        { key: 'testUrl', label: 'Soru Linki / Test', icon: FileQuestion, color: 'text-indigo-500', bg: 'bg-indigo-50' },
                         { key: 'extraUrl', label: 'Ekstra Kaynak / URL', icon: LinkIcon, color: 'text-amber-500', bg: 'bg-amber-50' }
                       ].map((item) => (
                          <div key={item.key} className="flex gap-4 items-center group">

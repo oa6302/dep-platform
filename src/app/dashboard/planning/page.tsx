@@ -69,8 +69,8 @@ export default function PlanningPage() {
     const todayIdx = currentPlan.findIndex((d: any) => d.date === todayStr);
 
     if (yesterdayIdx !== -1 && todayIdx !== -1) {
-      const uncompleted = currentPlan[yesterdayIdx].blocks.filter((b: any) => b.status === 'planned' && !b.isReview && !b.isParagraph);
-      if (uncompleted.length > 0) {
+      const uncompleted = currentPlan[yesterdayIdx].blocks?.filter((b: any) => b.status === 'planned' && !b.isReview && !b.isParagraph);
+      if (uncompleted && uncompleted.length > 0) {
         hasDelayed = true;
         currentPlan[yesterdayIdx].blocks = currentPlan[yesterdayIdx].blocks.filter((b: any) => b.status === 'done' || b.isReview || b.isParagraph);
         
@@ -80,7 +80,7 @@ export default function PlanningPage() {
             status: 'delayed', 
             reminder: 'DÜNDEN AKTARILDI: ' + (b.reminder || '') 
           })),
-          ...currentPlan[todayIdx].blocks
+          ...(currentPlan[todayIdx].blocks || [])
         ].slice(0, 6);
       }
     }
@@ -115,18 +115,20 @@ export default function PlanningPage() {
 
       const currentExam = userData?.targetExam || 'YKS_EA';
       const examConfig = EXAM_CONFIGS[currentExam];
-      const aytStartDate = parseISO('2026-12-01');
 
       const getLessonPool = (date: Date) => {
+        const currentYear = format(date, 'yyyy');
+        const aytStart = parseISO(`${currentYear}-12-01`);
+        const isAytTime = isAfter(date, aytStart) || date.getTime() === aytStart.getTime();
+        
         let pool = [...(examConfig?.lessons || ['TYT Matematik', 'TYT Türkçe'])];
-        // 1 ARALIK AYT Otonom Vites
-        if (isAfter(date, aytStartDate) || date.getTime() === aytStartDate.getTime()) {
-           if (currentExam === 'YKS_EA' || currentExam === 'YKS_SAY') {
-              const aytMath = 'AYT Matematik';
-              const aytSpec = currentExam === 'YKS_EA' ? 'Edebiyat' : 'Fizik';
-              if (!pool.includes(aytMath)) pool.push(aytMath);
-              if (!pool.includes(aytSpec)) pool.push(aytSpec);
-           }
+        
+        if (!isAytTime) {
+          // 1 ARALIK ÖNCESİ: AYT ve Edebiyat gibi ağır AYT konularını filtrele
+          return pool.filter(l => 
+            l.startsWith('TYT') || 
+            ['Tarih', 'Coğrafya', 'Felsefe', 'Din Kültürü', 'Türkçe', 'Matematik'].includes(l)
+          );
         }
         return pool;
       };
@@ -199,6 +201,7 @@ export default function PlanningPage() {
 
       await setDoc(doc(db, 'studyPlans', user.uid), {
         userId: user.uid,
+        targetExam: currentExam,
         masterPlan: newPlan,
         startDate,
         targetExamDate: endDate,

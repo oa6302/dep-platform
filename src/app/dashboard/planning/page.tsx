@@ -62,8 +62,8 @@ export default function PlanningPage() {
       const end = parseISO(endDate);
       const diffDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
       
-      // AYT VİTES TARİHİ: 1 ARALIK 2025
-      const aytCutoffDate = parseISO(`2025-12-01`);
+      // AYT VİTES TARİHİ: 1 ARALIK 2026
+      const aytCutoffDate = parseISO(`2026-12-01`);
 
       const currentExam = userData?.targetExam || 'YKS_EA';
       const examConfig = EXAM_CONFIGS[currentExam];
@@ -197,11 +197,11 @@ export default function PlanningPage() {
         <div className="flex flex-col sm:flex-row gap-6 items-center w-full xl:w-auto">
            <div className="grid grid-cols-2 gap-4 w-full sm:w-auto">
              <div className="space-y-2">
-               <Label className="text-[10px] font-black uppercase opacity-40 ml-4">BAŞLANGIÇ</Label>
+               <Label className="text-[10px] font-black uppercase opacity-40 ml-4 italic">BAŞLANGIÇ</Label>
                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold text-sm px-6" />
              </div>
              <div className="space-y-2">
-               <Label className="text-[10px] font-black uppercase opacity-40 ml-4">SINAV</Label>
+               <Label className="text-[10px] font-black uppercase opacity-40 ml-4 italic">SINAV</Label>
                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold text-sm px-6" />
              </div>
            </div>

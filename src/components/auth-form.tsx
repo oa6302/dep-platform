@@ -118,13 +118,12 @@ export function AuthForm({
       
       router.replace('/dashboard');
     } catch (error: any) {
-      toast({ 
-        variant: 'destructive', 
-        title: 'Kayıt Hatası', 
-        description: error.message === 'Firebase: Error (auth/email-already-in-use).' 
-          ? 'Bu e-posta adresi zaten kullanımda. Lütfen giriş yapın.' 
-          : error.message 
-      });
+      console.error(error);
+      let msg = 'Kayıt sırasında bir hata oluştu.';
+      if (error.code === 'auth/email-already-in-use') msg = 'Bu e-posta adresi zaten kullanımda.';
+      if (error.code === 'auth/weak-password') msg = 'Şifre çok zayıf. En az 6 karakter kullanın.';
+      
+      toast({ variant: 'destructive', title: 'Kayıt Hatası', description: msg });
     } finally {
       setLoading(false);
     }
@@ -133,12 +132,19 @@ export function AuthForm({
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!auth) return;
+    
+    if (!email || !password) {
+      toast({ variant: 'destructive', title: 'Eksik Bilgi', description: 'E-posta ve şifre giriniz.' });
+      return;
+    }
+
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
       toast({ title: 'Giriş Yapıldı', description: 'Terminal senkronize ediliyor.', className: "bg-primary text-white rounded-xl" });
       router.replace('/dashboard');
     } catch (error: any) {
+      console.error(error);
       toast({ variant: 'destructive', title: 'Giriş Hatası', description: 'E-posta veya şifre geçersiz.' });
     } finally {
       setLoading(false);
@@ -158,14 +164,14 @@ export function AuthForm({
            <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase text-primary/60 ml-4 italic">E-POSTA</Label>
               <div className="relative group">
-                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/20 group-focus-within:text-accent transition-colors" />
+                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/40 group-focus-within:text-accent transition-colors" />
                 <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-14 focus-visible:ring-accent text-primary" placeholder="E-posta adresiniz" />
               </div>
            </div>
            <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase text-primary/60 ml-4 italic">ŞİFRE</Label>
               <div className="relative group">
-                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/20 group-focus-within:text-accent transition-colors" />
+                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/40 group-focus-within:text-accent transition-colors" />
                 <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-14 focus-visible:ring-accent text-primary" placeholder="••••••••" />
               </div>
            </div>
@@ -212,7 +218,7 @@ export function AuthForm({
           <div className="space-y-2">
              <Label className="text-[10px] font-black uppercase text-primary/60 ml-4 italic">AD SOYAD</Label>
              <div className="relative group">
-                <User className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/20" />
+                <User className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/40" />
                 <Input required value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-14 focus-visible:ring-accent text-primary" placeholder="Adınız Soyadınız" />
              </div>
           </div>
@@ -236,7 +242,7 @@ export function AuthForm({
                     <div className="space-y-8">
                        {Object.entries(categorizedExams).map(([cat, exams]) => exams.length > 0 && (
                           <div key={cat} className="space-y-4">
-                             <h4 className="text-[10px] font-black uppercase text-primary/30 ml-2 italic tracking-widest">{cat}</h4>
+                             <h4 className="text-[10px] font-black uppercase text-primary/40 ml-2 italic tracking-widest">{cat}</h4>
                              <div className="grid gap-3">
                                 {exams.map((exam) => (
                                    <button
@@ -267,7 +273,7 @@ export function AuthForm({
         <Button type="submit" disabled={loading} className="w-full h-24 rounded-[3rem] bg-[#0F172A] hover:bg-accent text-white font-black text-xl uppercase tracking-[0.4em] shadow-2xl transition-all border-none active:scale-95">
            {loading ? <Loader2 className="h-8 w-8 animate-spin" /> : <Zap className="h-8 w-8 text-accent" />} KAYDI TAMAMLA
         </Button>
-        <button type="button" onClick={() => setAuthMode('login')} className="w-full text-center text-[10px] font-black uppercase tracking-[0.3em] text-primary/30 hover:text-primary italic transition-colors">ZATEN BİR HESABIM VAR → GİRİŞ YAP</button>
+        <button type="button" onClick={() => setAuthMode('login')} className="w-full text-center text-[10px] font-black uppercase tracking-[0.3em] text-primary/40 hover:text-primary italic transition-colors">ZATEN BİR HESABIM VAR → GİRİŞ YAP</button>
       </form>
     </div>
   );

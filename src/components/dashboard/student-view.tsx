@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Sparkles, Brain, CheckCircle2, Loader2, 
   Youtube, FileText, Edit3, BookOpen, 
-  Zap, Clock, CalendarDays, ArrowRight
+  Zap, Clock, CalendarDays, ArrowRight,
+  Link as LinkIcon
 } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -31,17 +32,14 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
 
   const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   
-  // Akıllı Plan Filtreleme: Bugünün görevleri + Geçmişte "planned" kalan tüm görevler (Carry-Forward)
   const activeTasks = useMemo(() => {
     if (!studyPlan?.masterPlan || !today) return [];
     
     let tasks: any[] = [];
     studyPlan.masterPlan.forEach((day: any) => {
-      // Bugünün görevleri
       if (day.date === today) {
         tasks = [...tasks, ...day.blocks];
       }
-      // Geçmişte unutulan görevler (Sadece 3 güne kadar devret)
       else if (isBefore(parseISO(day.date), parseISO(today))) {
         const unfinished = day.blocks.filter((b: any) => b.status === 'planned');
         if (unfinished.length > 0) {
@@ -50,7 +48,6 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
       }
     });
 
-    // Saate göre sırala
     return tasks.sort((a, b) => (a.phase1?.time || '00:00').localeCompare(b.phase1?.time || '00:00'));
   }, [studyPlan, today]);
 
@@ -89,7 +86,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
   if (planLoading) return (
     <div className="p-20 flex flex-col items-center justify-center gap-6 min-h-[60vh]">
       <Loader2 className="h-10 w-10 animate-spin text-accent" />
-      <p className="text-[10px] font-black uppercase italic tracking-[0.4em] text-primary/40 italic">Otonom Sistem Senkronize Ediliyor...</p>
+      <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/40 italic">Otonom Sistem Senkronize Ediliyor...</p>
     </div>
   );
 
@@ -155,6 +152,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                                     {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm"><Youtube className="h-4 w-4" /></a>}
                                     {block.pdfUrl && <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all shadow-sm"><FileText className="h-4 w-4" /></a>}
                                     {block.mebiUrl && <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm"><BookOpen className="h-4 w-4" /></a>}
+                                    {block.extraUrl && <a href={block.extraUrl} target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center hover:bg-amber-500 hover:text-white transition-all shadow-sm"><LinkIcon className="h-4 w-4" /></a>}
                                  </div>
                               </div>
                               <p className="text-[10px] font-bold text-primary opacity-60 uppercase italic">{block.phase1?.type || (block.isOverdue ? 'ERTELENEN GÖREV' : 'DERS ÇALIŞMASI')}</p>
@@ -170,12 +168,6 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                    </div>
                 </Card>
              ))}
-             {activeTasks.length === 0 && (
-                <Card onClick={() => router.push('/dashboard/planning')} className="lg:col-span-4 h-[300px] text-center bg-white rounded-[4rem] border-4 border-dashed border-slate-200 flex flex-col items-center justify-center gap-6 cursor-pointer hover:border-accent/20 transition-all group w-full">
-                   <Zap className="h-10 w-10 text-accent opacity-20 group-hover:scale-110 transition-transform" />
-                   <p className="text-xl font-black uppercase tracking-[0.4em] text-primary/20 italic">AKADEMİK TAKVİM BEKLENİYOR</p>
-                </Card>
-             )}
         </div>
       </div>
     </div>

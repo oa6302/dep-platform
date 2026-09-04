@@ -12,7 +12,8 @@ import {
   CheckCircle2, Trash2, ArrowLeft,
   Home, Edit3, Youtube, Save, FileText, 
   BookOpen, Target, Clock, AlertCircle,
-  ChevronRight, CalendarDays, Hash, Layers
+  ChevronRight, CalendarDays, Hash, Layers,
+  Link as LinkIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
@@ -58,7 +59,8 @@ export default function PlanningPage() {
     return {
       youtubeUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic)}`,
       pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}`,
-      mebiUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}`
+      mebiUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}`,
+      extraUrl: ''
     };
   };
 
@@ -82,7 +84,6 @@ export default function PlanningPage() {
       const end = parseISO(endDate);
       const diffDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
       
-      const aytCutoffDate = parseISO(`2026-12-01`);
       const currentExam = userData?.targetExam || 'YKS_EA';
       const examConfig = EXAM_CONFIGS[currentExam];
 
@@ -102,17 +103,8 @@ export default function PlanningPage() {
       for (let i = 0; i <= diffDays; i++) {
         const currentDt = addDays(start, i);
         const dateStr = format(currentDt, 'yyyy-MM-dd');
-        const isStrictTYT = isBefore(currentDt, aytCutoffDate);
         
         let lessonPool = [...(examConfig?.lessons || ['TYT Matematik', 'TYT Türkçe'])];
-        if (isStrictTYT) {
-          lessonPool = lessonPool.filter(l => !l.toLowerCase().includes('ayt') && !l.toLowerCase().includes('edebiyat'));
-        }
-        
-        if (lessonPool.length === 0) {
-          lessonPool = ['TYT Matematik', 'TYT Türkçe'];
-        }
-
         const existingDay = existingPlan.find((day: any) => day.date === dateStr);
         const dailyBlocks = [];
 
@@ -131,7 +123,7 @@ export default function PlanningPage() {
           ...generateAutoLinks(t1, l1)
         });
 
-        // Blok 2 - 11:00 (Eski 12:00)
+        // Blok 2 - 11:00
         const l2 = lessonPool[(i * 2 + 1) % lessonPool.length];
         const t2 = getTopics(l2)[lessonPointers[l2] % getTopics(l2).length || 0];
         if (!lessonPointers[l2]) lessonPointers[l2] = 0;
@@ -146,17 +138,18 @@ export default function PlanningPage() {
           ...generateAutoLinks(t2, l2)
         });
 
-        // Blok 3 - 12:00 (Tekrar - Eski 15:00)
+        // Blok 3 - 12:00 (Stratejik Tekrar)
         dailyBlocks.push({
           id: `review_${dateStr}`,
           lesson: 'GENEL',
           topic: 'DÜNÜN ANALİZİ & STRATEJİK TEKRAR',
           status: existingDay?.blocks?.find((b: any) => b.id === `review_${dateStr}`)?.status || 'planned',
           isReview: true,
-          phase1: { type: 'STRATEJİK', time: '12:00' }
+          phase1: { type: 'STRATEJİK', time: '12:00' },
+          extraUrl: ''
         });
 
-        // Blok 4 - 15:00 (Paragraf - Eski 14:00)
+        // Blok 4 - 15:00 (Paragraf Kampı)
         dailyBlocks.push({
           id: `para_${dateStr}`,
           lesson: 'TYT Türkçe',
@@ -200,7 +193,7 @@ export default function PlanningPage() {
     if (action === 'edit') {
       const block = studyPlan.masterPlan.find((d: any) => d.date === date)?.blocks.find((b: any) => b.id === blockId);
       if (block) {
-        setEditingBlock({ ...block, originalDate: date });
+        setEditingBlock({ ...block, originalDate: date, date: date });
         setIsEditDialogOpen(true);
       }
       return;
@@ -246,7 +239,7 @@ export default function PlanningPage() {
       // Yeni tarihe ekle
       newPlan = newPlan.map(day => {
         if (day.date === editingBlock.date) {
-          return { ...day, blocks: [...day.blocks, { ...editingBlock }] };
+          return { ...day, blocks: [...day.blocks, { ...editingBlock, originalDate: editingBlock.date }] };
         }
         return day;
       });
@@ -348,11 +341,12 @@ export default function PlanningPage() {
 
                         <div className="p-6 rounded-[2.5rem] bg-slate-50 border border-slate-100 space-y-4 shadow-inner flex-1">
                            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-                              <span className="text-[10px] font-black text-primary/30 uppercase tracking-[0.3em]">KAYNAKLAR</span>
+                              <span className="text-[10px] font-black text-primary/30 uppercase tracking-[0.2em]">KAYNAKLAR</span>
                               <div className="flex gap-4">
                                  {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:scale-110 transition-all"><Youtube className="h-5 w-5" /></a>}
                                  {block.pdfUrl && <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:scale-110 transition-all"><FileText className="h-5 w-5" /></a>}
                                  {block.mebiUrl && <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:scale-110 transition-all"><BookOpen className="h-5 w-5" /></a>}
+                                 {block.extraUrl && <a href={block.extraUrl} target="_blank" rel="noopener noreferrer" className="text-amber-500 hover:scale-110 transition-all"><LinkIcon className="h-5 w-5" /></a>}
                               </div>
                            </div>
                            <p className="text-[12px] font-black text-primary opacity-60 uppercase italic">{block.phase1?.type || 'DERS ÇALIŞMASI'}</p>
@@ -380,9 +374,9 @@ export default function PlanningPage() {
            </DialogHeader>
 
            {editingBlock && (
-             <ScrollArea className="max-h-[75vh] p-12 pt-8">
-                <div className="space-y-12">
-                   {/* Konu Adı - Modern Giriş */}
+             <ScrollArea className="max-h-[85vh] p-12 pt-8">
+                <div className="space-y-12 pb-10">
+                   {/* Konu Adı */}
                    <div className="space-y-3">
                       <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">KONU ADI</Label>
                       <div className="relative group">
@@ -417,7 +411,7 @@ export default function PlanningPage() {
                             <CalendarDays className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-primary opacity-20 group-focus-within:text-accent transition-colors" />
                             <Input 
                               type="date" 
-                              value={editingBlock.date || editingBlock.originalDate} 
+                              value={editingBlock.date} 
                               onChange={(e) => setEditingBlock({...editingBlock, date: e.target.value})} 
                               className="h-20 rounded-3xl bg-slate-50 border-none font-black text-xl pl-16 shadow-inner text-primary focus-visible:ring-2 focus-visible:ring-accent transition-all" 
                             />
@@ -445,12 +439,14 @@ export default function PlanningPage() {
                       </Select>
                    </div>
 
+                   {/* Dijital Kaynaklar */}
                    <div className="grid gap-6">
                       <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">DİJİTAL KAYNAKLAR</Label>
                       {[
                         { key: 'youtubeUrl', label: 'YouTube Playlist', icon: Youtube, color: 'text-rose-500', bg: 'bg-rose-50' },
                         { key: 'pdfUrl', label: 'OGM Materyal / PDF', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50' },
-                        { key: 'mebiUrl', label: 'MEBİ / EBA Terminal', icon: BookOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' }
+                        { key: 'mebiUrl', label: 'MEBİ / EBA Terminal', icon: BookOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+                        { key: 'extraUrl', label: 'Ekstra Kaynak / URL', icon: LinkIcon, color: 'text-amber-500', bg: 'bg-amber-50' }
                       ].map((item) => (
                          <div key={item.key} className="flex gap-4 items-center group">
                             <div className={cn("h-16 w-16 rounded-2xl flex items-center justify-center shrink-0 shadow-lg transition-transform group-hover:rotate-6", item.bg)}>

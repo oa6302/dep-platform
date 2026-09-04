@@ -100,7 +100,7 @@ export default function PlanningPage() {
     if (!db || !user || !userData) return;
     setIsRegenerating(true);
     try {
-      const newPlan = generateAdaptivePlan('2026-09-01', userData.completedTopics || {});
+      const newPlan = generateAdaptivePlan(startDate, userData.completedTopics || {});
       
       await setDoc(doc(db, 'studyPlans', user.uid), {
         userId: user.uid,
@@ -297,57 +297,58 @@ export default function PlanningPage() {
                     <Badge variant="outline" className="h-14 px-8 rounded-3xl font-black uppercase border-2 border-slate-100 text-primary text-[14px]">{day.day}</Badge>
                  </div>
                  
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+                 {/* QUAD-GRID (KARE KART SİMETRİSİ) */}
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-8">
                     {day.blocks?.map((block: any) => (
-                      <Card key={block.id} className={cn("p-12 md:p-14 rounded-[5.5rem] border-none shadow-[0_60px_120px_-30px_rgba(15,23,42,0.15)] transition-all hover:scale-[1.03] bg-white h-full flex flex-col group relative overflow-hidden", (block.status === 'done' || block.status === 'completed') && "opacity-60")}>
-                         <div className="space-y-14 relative z-10 flex-1 flex flex-col">
+                      <Card key={block.id} className={cn("aspect-square p-10 md:p-12 rounded-[5rem] border-none shadow-[0_60px_120px_-30px_rgba(15,23,42,0.15)] transition-all hover:scale-[1.03] bg-white flex flex-col group relative overflow-hidden", (block.status === 'done' || block.status === 'completed') && "opacity-60")}>
+                         <div className="space-y-8 relative z-10 flex-1 flex flex-col h-full">
                             <div className="flex justify-between items-center">
-                               <div className="flex items-center gap-6">
-                                  <div className="px-7 py-3 rounded-[1.5rem] bg-[#FFF8E7] text-[#0F172A] flex items-center gap-3 border border-[#FEF3C7] shadow-sm">
-                                    <Clock className="h-5 w-5 text-accent" />
-                                    <span className="text-[16px] font-black">{block.phase1?.time || '10:00'}</span>
+                               <div className="flex items-center gap-4">
+                                  <div className="px-5 py-2.5 rounded-[1.25rem] bg-[#FFF8E7] text-[#0F172A] flex items-center gap-2.5 border border-[#FEF3C7] shadow-sm">
+                                    <Clock className="h-4 w-4 text-accent" />
+                                    <span className="text-[14px] font-black">{block.phase1?.time || '10:00'}</span>
                                   </div>
-                                  <span className="text-[14px] font-black text-primary/10 uppercase tracking-[0.2em] italic">#{String(block.lesson).includes('AYT') ? 'AYT' : 'TYT'}</span>
+                                  <span className="text-[12px] font-black text-primary/10 uppercase tracking-[0.2em] italic">#{String(block.lesson).includes('AYT') ? 'AYT' : 'TYT'}</span>
                                </div>
-                               <Badge className={cn("px-8 py-3.5 rounded-[1.5rem] text-[12px] font-black shadow-xl", (block.status === 'done' || block.status === 'completed') ? "bg-emerald-50 text-white" : "bg-[#FF4D6D] text-white")}>
+                               <Badge className={cn("px-6 py-2.5 rounded-[1.25rem] text-[10px] font-black shadow-xl", (block.status === 'done' || block.status === 'completed') ? "bg-emerald-50 text-white" : "bg-[#FF4D6D] text-white")}>
                                  {(block.status === 'done' || block.status === 'completed') ? 'TAMAM' : 'BEK'}
                                </Badge>
                             </div>
 
-                            <div className="flex-1 flex items-center justify-center py-6">
+                            <div className="flex-1 flex items-center justify-center py-4">
                                <h4 className="text-[5rem] md:text-[8.5rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-premium text-center break-words max-w-full">
                                   {block.topic.length > 8 ? block.topic.substring(0, 7) + ".." : block.topic}
                                </h4>
                             </div>
 
-                            <div className="bg-[#F8FAFC]/50 rounded-[4.5rem] p-12 space-y-12 border border-slate-50 shadow-inner">
-                               <div className="space-y-5">
+                            <div className="bg-[#F8FAFC]/50 rounded-[4rem] p-8 space-y-8 border border-slate-50 shadow-inner mt-auto">
+                               <div className="space-y-4">
                                   <div className="flex items-center justify-between">
-                                     <span className="text-[12px] font-black text-primary/20 uppercase tracking-[0.3em] italic">KONU ÇALIŞMA</span>
-                                     <div className="flex gap-5 items-center">
-                                        {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="hover:scale-110 transition-all"><Youtube className="h-6 w-6 text-rose-500 opacity-60" /></a>}
-                                        {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="hover:scale-110 transition-all"><FileText className="h-6 w-6 text-blue-500 opacity-60" /></a>}
-                                        {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="hover:scale-110 transition-all"><BookOpen className="h-6 w-6 text-emerald-500 opacity-60" /></a>}
+                                     <span className="text-[10px] font-black text-primary/20 uppercase tracking-[0.3em] italic">KONU ÇALIŞMA</span>
+                                     <div className="flex gap-4 items-center">
+                                        {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="hover:scale-110 transition-all"><Youtube className="h-5 w-5 text-rose-500 opacity-60" /></a>}
+                                        {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="hover:scale-110 transition-all"><FileText className="h-5 w-5 text-blue-500 opacity-60" /></a>}
+                                        {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="hover:scale-110 transition-all"><BookOpen className="h-5 w-5 text-emerald-500 opacity-60" /></a>}
                                      </div>
                                   </div>
                                </div>
                                <div className="h-px w-full bg-slate-200/40" />
-                               <div className="space-y-5">
+                               <div className="space-y-4">
                                   <div className="flex items-center justify-between">
-                                     <div className="flex items-center gap-3">
-                                        <div className="h-2.5 w-2.5 rounded-full bg-accent shadow-[0_0_15px_rgba(245,158,11,0.6)]" />
-                                        <span className="text-[13px] font-black text-accent uppercase tracking-[0.3em] italic">TEST ÇÖZME</span>
+                                     <div className="flex items-center gap-2.5">
+                                        <div className="h-2 w-2 rounded-full bg-accent shadow-[0_0_12px_rgba(245,158,11,0.6)]" />
+                                        <span className="text-[11px] font-black text-accent uppercase tracking-[0.3em] italic">TEST ÇÖZME</span>
                                      </div>
-                                     <div className="flex gap-5 items-center">
-                                        {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank" className="hover:scale-110 transition-all"><Youtube className="h-6 w-6 text-rose-500 opacity-80" /></a>}
-                                        {block.testUrl && <a href={block.testUrl} target="_blank" className="hover:scale-110 transition-all"><BookOpen className="h-6 w-6 text-emerald-500 opacity-80" /></a>}
-                                        {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank" className="hover:scale-110 transition-all"><FileText className="h-6 w-6 text-blue-500 opacity-80" /></a>}
+                                     <div className="flex gap-4 items-center">
+                                        {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank" className="hover:scale-110 transition-all"><Youtube className="h-5 w-5 text-rose-500 opacity-80" /></a>}
+                                        {block.testUrl && <a href={block.testUrl} target="_blank" className="hover:scale-110 transition-all"><BookOpen className="h-5 w-5 text-emerald-500 opacity-80" /></a>}
+                                        {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank" className="hover:scale-110 transition-all"><FileText className="h-5 w-5 text-blue-500 opacity-80" /></a>}
                                      </div>
                                   </div>
                                </div>
                             </div>
-                            <div className="flex gap-4 pt-4 mt-auto">
-                               <Button onClick={() => { setEditingBlock({...block, date: day.date}); setIsEditDialogOpen(true); }} className="flex-1 h-20 rounded-3xl bg-primary text-white font-black uppercase text-[12px] tracking-widest gap-4 shadow-2xl">DÜZENLE <Edit3 className="h-6 w-6 text-accent" /></Button>
+                            <div className="flex gap-3 pt-3">
+                               <Button onClick={() => { setEditingBlock({...block, date: day.date}); setIsEditDialogOpen(true); }} className="flex-1 h-16 rounded-[1.75rem] bg-primary text-white font-black uppercase text-[10px] tracking-widest gap-3 shadow-2xl">DÜZENLE <Edit3 className="h-4 w-4 text-accent" /></Button>
                             </div>
                          </div>
                       </Card>

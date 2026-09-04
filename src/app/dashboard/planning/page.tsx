@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -46,10 +45,10 @@ export default function PlanningPage() {
   const [editingBlock, setEditingBlock] = useState<any>(null);
 
   const generateAutoLinks = (topic: string, lesson: string) => {
-    const queryStr = encodeURIComponent(`${lesson} ${topic}`);
     const topicQuery = encodeURIComponent(topic);
+    const lessonQuery = encodeURIComponent(lesson);
     return {
-      youtubeUrl: `https://www.youtube.com/results?search_query=${queryStr}+konu+anlatımı`,
+      youtubeUrl: `https://www.youtube.com/results?search_query=${lessonQuery}+${topicQuery}+konu+anlatımı`,
       pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}`,
       mebiUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}`
     };
@@ -262,18 +261,24 @@ export default function PlanningPage() {
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full">
                 {day.blocks?.map((block: any) => (
                   <Card key={block.id} className={cn("p-10 rounded-[4rem] border-none shadow-xl transition-all hover:scale-[1.02] bg-white h-full flex flex-col", block.status === 'done' && "opacity-60")}>
-                     <div className="space-y-8 h-full flex flex-col flex-1">
+                     <div className="space-y-8 h-full flex flex-col flex-1 relative z-10">
                         <div className="flex justify-between items-start gap-4">
                            <div className="space-y-1 flex-1">
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="px-3 py-1 rounded-lg bg-accent/10 text-accent flex items-center gap-1.5 border border-accent/20">
+                                  <Clock className="h-3.5 w-3.5" />
+                                  <span className="text-[10px] font-black">{block.phase1?.time || '10:00'}</span>
+                                </div>
+                                <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-[0.3em] italic">#{String(block.lesson || 'GENEL').substring(0, 3).toUpperCase()}</p>
+                              </div>
                               <h4 className="text-2xl font-black italic leading-[0.9] tracking-tighter uppercase text-primary line-clamp-3">{block.topic || 'GENEL TEKRAR'}</h4>
-                              <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-[0.3em] italic mt-2">#{String(block.lesson || 'GENEL').substring(0, 3)}</p>
                            </div>
                            <Badge 
                              className={cn(
                                "px-5 py-2 rounded-full text-[10px] font-black shrink-0", 
                                block.status === 'done' 
                                  ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" 
-                                 : "bg-[#FF4D6D] text-white shadow-lg"
+                                 : "bg-rose-500 text-white shadow-lg"
                              )}
                            >
                               {block.status === 'done' ? 'TAMAM' : 'BEK'}
@@ -321,6 +326,10 @@ export default function PlanningPage() {
                          <Label className="text-[11px] font-black uppercase opacity-40 ml-6">KONU ADI</Label>
                          <Input value={editingBlock.topic} onChange={(e) => setEditingBlock({...editingBlock, topic: e.target.value})} className="h-20 rounded-3xl bg-slate-50 border-none font-black text-2xl px-8 shadow-inner text-primary" />
                       </div>
+                      <div className="space-y-3">
+                         <Label className="text-[11px] font-black uppercase opacity-40 ml-6">SEANS SAATİ</Label>
+                         <Input type="time" value={editingBlock.phase1?.time || '10:00'} onChange={(e) => setEditingBlock({...editingBlock, phase1: { ...editingBlock.phase1, time: e.target.value }})} className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xl px-8 shadow-inner text-primary" />
+                      </div>
                    </div>
 
                    <div className="grid gap-6">
@@ -363,4 +372,3 @@ export default function PlanningPage() {
     </div>
   );
 }
-

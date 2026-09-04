@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -14,7 +13,7 @@ import {
   BookOpen, X, Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { format, parseISO, isBefore, isSameMonth, addDays } from 'date-fns';
@@ -48,9 +47,6 @@ export default function PlanningPage() {
   useEffect(() => {
     if (studyPlan?.startDate) {
       setStartDate(studyPlan.startDate);
-      if (isBefore(parseISO(endDate), parseISO(studyPlan.startDate))) {
-        setEndDate(format(addDays(parseISO(studyPlan.startDate), 13), 'yyyy-MM-dd'));
-      }
     }
     if (studyPlan?.endDate) {
       setEndDate(studyPlan.endDate);
@@ -82,16 +78,26 @@ export default function PlanningPage() {
     if (!db || !user || !userData) return;
     setIsRegenerating(true);
     try {
+      // 1. Yeni Planı Üret
       const newPlan = generateAdaptivePlan(startDate, userData.completedTopics || {});
-      await updateDoc(doc(db, 'studyPlans', user.uid), {
+      
+      // 2. Firestore'a Yaz (Mühürle)
+      await setDoc(doc(db, 'studyPlans', user.uid), {
+        userId: user.uid,
         startDate: startDate,
         endDate: endDate,
         masterPlan: newPlan,
         updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      toast({ 
+        title: "TERMİNAL MÜHÜRLENDİ", 
+        description: "Akademik yol haritası saniyeler içinde yeni miladına göre kurgulandı.",
+        className: "bg-accent text-primary rounded-2xl font-black shadow-2xl border-none" 
       });
-      toast({ title: "TERMİNAL MÜHÜRLENDİ", className: "bg-accent text-primary rounded-2xl font-black shadow-2xl" });
     } catch (e) { 
-      toast({ variant: 'destructive', title: 'Hata' }); 
+      console.error(e);
+      toast({ variant: 'destructive', title: 'Hata', description: 'Plan kurgulanamadı.' }); 
     } finally { 
       setIsRegenerating(false); 
     }
@@ -122,7 +128,7 @@ export default function PlanningPage() {
              <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><Home className="h-5 w-5" /></Button>
           </div>
           <div className="space-y-2">
-             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v19.0</div>
+             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v20.0</div>
              <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-premium">Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span></h2>
           </div>
         </div>
@@ -138,7 +144,7 @@ export default function PlanningPage() {
                     setStartDate(e.target.value);
                     setViewMode('daily');
                   }} 
-                  className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xs px-6 shadow-inner" 
+                  className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xs px-6 shadow-inner focus-visible:ring-accent" 
                 />
              </div>
              <div className="space-y-3">
@@ -150,10 +156,14 @@ export default function PlanningPage() {
                     setEndDate(e.target.value);
                     setViewMode('daily');
                   }} 
-                  className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xs px-6 shadow-inner" 
+                  className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xs px-6 shadow-inner focus-visible:ring-accent" 
                 />
              </div>
-             <Button onClick={handleRegeneratePlan} disabled={isRegenerating} className="h-16 px-10 rounded-2xl bg-accent hover:bg-primary text-primary hover:text-white font-black text-[10px] uppercase tracking-[0.2em] gap-4 shadow-2xl transition-all">
+             <Button 
+               onClick={handleRegeneratePlan} 
+               disabled={isRegenerating} 
+               className="h-16 px-10 rounded-2xl bg-accent hover:bg-primary text-primary hover:text-white font-black text-[10px] uppercase tracking-[0.2em] gap-4 shadow-2xl transition-all"
+             >
                 {isRegenerating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />} PLANI YENİDEN KURGULA
              </Button>
           </Card>
@@ -202,7 +212,7 @@ export default function PlanningPage() {
                            <div className="px-6 py-2.5 rounded-2xl bg-[#FFF8E7] text-[#0F172A] font-black text-[14px] border border-[#FEF3C7] shadow-sm">{block.phase1?.time || '10:00'}</div>
                            <Badge className={cn("px-8 py-3 rounded-2xl text-[11px] font-black shadow-xl", block.status === 'done' ? "bg-emerald-50 text-white" : "bg-[#FF4D6D] text-white")}>{block.status === 'done' ? 'TAMAM' : 'BEK'}</Badge>
                         </div>
-                        <h4 className="text-[5rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-premium text-center">{block.topic.length > 8 ? block.topic.substring(0, 7) + ".." : block.topic}</h4>
+                        <h4 className="text-[5rem] font-black italic leading-[0.8] tracking-tighter uppercase text-primary text-shadow-premium text-center break-words">{block.topic.length > 8 ? block.topic.substring(0, 7) + ".." : block.topic}</h4>
                         <div className="bg-[#F8FAFC]/50 rounded-[4rem] p-10 space-y-10 border border-slate-50 shadow-inner flex-1 flex flex-col justify-center">
                            <div className="flex items-center justify-between"><span className="text-[11px] font-bold text-primary/30 uppercase italic">KONU ÇALIŞMA</span><div className="flex gap-4">{block.youtubeUrl && <Youtube className="h-6 w-6 text-rose-500 opacity-60" />}</div></div>
                            <div className="h-px w-full bg-slate-200/40" />
@@ -230,8 +240,8 @@ export default function PlanningPage() {
              <div className="space-y-10 pt-8">
                 <div className="space-y-3"><Label className="text-[11px] font-black uppercase opacity-40 ml-6 italic">KONU ADI</Label><Input value={editingBlock.topic} onChange={(e) => setEditingBlock({...editingBlock, topic: e.target.value})} className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xl px-10 shadow-inner" /></div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   <div className="space-y-3"><Label className="text-[10px] font-bold uppercase opacity-40 ml-4">YOUTUBE KONU</Label><Input value={editingBlock.youtubeUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, youtubeUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none" /></div>
-                   <div className="space-y-3"><Label className="text-[10px] font-bold uppercase opacity-40 ml-4">YOUTUBE SORU</Label><Input value={editingBlock.testYoutubeUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, testYoutubeUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none" /></div>
+                   <div className="space-y-3"><Label className="text-[10px] font-bold uppercase opacity-40 ml-4">YOUTUBE KONU</Label><Input value={editingBlock.youtubeUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, youtubeUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner" /></div>
+                   <div className="space-y-3"><Label className="text-[10px] font-bold uppercase opacity-40 ml-4">YOUTUBE SORU</Label><Input value={editingBlock.testYoutubeUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, testYoutubeUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner" /></div>
                 </div>
                 <Button onClick={handleSaveEdit} className="w-full h-20 rounded-[2.5rem] bg-primary hover:bg-accent text-white font-black text-xl uppercase gap-8 shadow-2xl transition-all">KAYDET <Save className="h-8 w-8 text-accent" /></Button>
              </div>

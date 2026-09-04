@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useDoc, useFirestore } from '@/firebase';
@@ -49,7 +48,7 @@ import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
    AYARLAR
 ========================================================= */
 
-const PLAN_START_DATE = '2026-09-01';
+const DEFAULT_PLAN_START = '2026-09-01';
 const AYT_START_DATE = '2026-12-01';
 
 /* =========================================================
@@ -85,7 +84,7 @@ interface StudyDay {
 }
 
 /* =========================================================
-   ADAPTİF PLAN MOTORU v17.0
+   ADAPTİF PLAN MOTORU v20.0
 ========================================================= */
 
 export const generateAdaptivePlan = (
@@ -243,10 +242,11 @@ function DashboardContent() {
         }
 
         if (!planLoading && !studyPlan && userData) {
-          const adaptivePlan = generateAdaptivePlan(PLAN_START_DATE, userData.completedTopics || {});
+          const adaptivePlan = generateAdaptivePlan(DEFAULT_PLAN_START, userData.completedTopics || {});
           await setDoc(doc(db, 'studyPlans', user.uid), {
             userId: user.uid,
-            startDate: PLAN_START_DATE,
+            startDate: DEFAULT_PLAN_START,
+            endDate: format(addDays(parseISO(DEFAULT_PLAN_START), 14), 'yyyy-MM-dd'),
             aytStartDate: AYT_START_DATE,
             masterPlan: adaptivePlan,
             updatedAt: serverTimestamp(),

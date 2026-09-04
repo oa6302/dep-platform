@@ -10,8 +10,7 @@ import {
   Calendar, Zap, Loader2, Sparkles, 
   CheckCircle2, Trash2, ArrowLeft,
   Home, Edit3, Youtube, Save, FileText, 
-  BookOpen, Target, BookOpenCheck, ArrowRight,
-  Clock, AlertCircle
+  BookOpen, Target, Clock, AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
@@ -62,8 +61,8 @@ export default function PlanningPage() {
       return;
     }
 
-    if (startDate > endDate) {
-      toast({ variant: 'destructive', title: 'Geçersiz Aralık', description: 'Başlangıç tarihi bitişten sonra olamaz.' });
+    if (endDate < startDate) {
+      toast({ variant: 'destructive', title: 'Tarih Hatası', description: 'Bitiş tarihi başlangıç tarihinden önce olamaz.' });
       return;
     }
 
@@ -79,9 +78,10 @@ export default function PlanningPage() {
       const examConfig = EXAM_CONFIGS[currentExam];
 
       const getTopics = (lesson: string) => {
+        const cleanName = lesson.replace(/^(TYT|AYT)\s+/i, '').trim();
         return (
           YKS_TM_TOPICS[lesson] || 
-          YKS_TM_TOPICS[lesson.replace(/^(TYT|AYT)\s+/i, '').trim()] || 
+          YKS_TM_TOPICS[cleanName] || 
           ['Genel Tekrar']
         );
       };
@@ -99,7 +99,7 @@ export default function PlanningPage() {
         if (isStrictTYT) {
           lessonPool = lessonPool.filter(l => !l.toLowerCase().includes('ayt') && !l.toLowerCase().includes('edebiyat'));
         }
-        if (lessonPool.length === 0) lessonPool = [...(examConfig?.lessons || [])];
+        if (lessonPool.length === 0) lessonPool = ['TYT Matematik', 'TYT Türkçe'];
 
         const existingDay = existingPlan.find((day: any) => day.date === dateStr);
         const dailyBlocks = [];
@@ -156,7 +156,6 @@ export default function PlanningPage() {
       }
 
       // ERTELENEN GÖREVLERİN AKTARILMASI (CARRY FORWARD)
-      // Bu adımda bir önceki günden bitmemiş görevleri ertesi güne ekliyoruz
       for (let i = 0; i < newPlan.length - 1; i++) {
         const today = newPlan[i];
         const tomorrow = newPlan[i+1];
@@ -234,12 +233,16 @@ export default function PlanningPage() {
       <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-10">
         <div className="flex flex-col gap-6">
           <div className="flex items-center gap-4">
-             <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><ArrowLeft className="h-5 w-5" /></Button>
-             <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><Home className="h-5 w-5" /></Button>
+             <Button variant="ghost" size="icon" onClick={() => router.back()} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all shadow-sm group">
+                <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
+             </Button>
+             <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all shadow-sm">
+                <Home className="h-5 w-5" />
+             </Button>
           </div>
           <div className="space-y-2">
              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20">
-                <Calendar className="h-3.5 w-3.5" /> MASTER ACADEMIC ENGINE v4.8
+                <Calendar className="h-3.5 w-3.5" /> MASTER ACADEMIC ENGINE v5.0
              </div>
              <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none">
                 Akademik <br /><span className="text-accent">Terminal</span>
@@ -254,8 +257,8 @@ export default function PlanningPage() {
                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold text-sm px-6" />
              </div>
              <div className="space-y-2">
-               <Label className="text-[10px] font-black uppercase opacity-40 ml-4 italic">SINAV</Label>
-               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold text-sm px-6" />
+               <Label className="text-[10px] font-black uppercase opacity-40 ml-4 italic">BİTİŞ</Label>
+               <Input type="date" min={startDate} value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold text-sm px-6" />
              </div>
            </div>
            <Button onClick={generateFasikulPlan} disabled={isGenerating} className="w-full sm:w-auto h-20 px-12 rounded-[2rem] bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest gap-4 shadow-2xl text-white border-none">
@@ -285,10 +288,10 @@ export default function PlanningPage() {
                              className={cn(
                                "px-5 py-2 rounded-full text-[10px] font-black shrink-0", 
                                block.status === 'done' 
-                                 ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" 
+                                 ? "bg-emerald-500 text-white shadow-lg" 
                                  : block.carriedForward 
-                                   ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" 
-                                   : "bg-[#FF4D6D] text-white shadow-lg shadow-rose-500/20"
+                                   ? "bg-amber-500 text-white shadow-lg" 
+                                   : "bg-[#FF4D6D] text-white shadow-lg"
                              )}
                            >
                               {block.status === 'done' ? 'TAMAM' : block.carriedForward ? 'ERTELENDİ' : 'BEK'}
@@ -299,9 +302,9 @@ export default function PlanningPage() {
                            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
                               <span className="text-[10px] font-black text-primary/30 uppercase tracking-[0.3em]">KAYNAKLAR</span>
                               <div className="flex gap-4">
-                                 {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:scale-110 transition-all"><Youtube className="h-5 w-5" /></a>}
-                                 {block.pdfUrl && <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:scale-110 transition-all"><FileText className="h-5 w-5" /></a>}
-                                 {block.mebiUrl && <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:scale-110 transition-all"><BookOpen className="h-5 w-5" /></a>}
+                                 {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" aria-label={`${block.topic} YouTube Kaynağı`} className="text-rose-500 hover:scale-110 transition-all"><Youtube className="h-5 w-5" /></a>}
+                                 {block.pdfUrl && <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" aria-label={`${block.topic} PDF Kaynağı`} className="text-blue-500 hover:scale-110 transition-all"><FileText className="h-5 w-5" /></a>}
+                                 {block.mebiUrl && <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" aria-label={`${block.topic} MEBİ Kaynağı`} className="text-emerald-500 hover:scale-110 transition-all"><BookOpen className="h-5 w-5" /></a>}
                               </div>
                            </div>
                            <p className="text-[12px] font-black text-primary opacity-60 uppercase italic">{block.phase1?.type || 'DERS ÇALIŞMASI'}</p>

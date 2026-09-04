@@ -1,13 +1,13 @@
 'use client';
 
 import { useUser, useDoc, useAuth } from '@/firebase';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   LayoutDashboard, Calendar, BookOpen, BarChart3, 
   Trophy, Link as LinkIcon, Award, Clock, Users, 
-  Brain, Settings, LogOut, Sparkles, Menu, X, Loader2, UserCircle, Target
+  Brain, Settings, LogOut, Menu, X, Loader2, UserCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
@@ -21,6 +21,7 @@ export default function DashboardPage() {
   const { user, loading: authLoading } = useUser();
   const auth = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const { data: userData, loading: docLoading } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -110,8 +111,17 @@ export default function DashboardPage() {
         <ScrollArea className="flex-1 p-6">
           <nav className="space-y-2">
             {navItems.map((item) => (
-              <button key={item.id} onClick={() => { router.push(item.path); setSidebarOpen(false); }} className="w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all font-black text-[11px] uppercase tracking-widest text-muted-foreground hover:bg-slate-50 hover:text-primary">
-                <item.icon className="h-5 w-5 text-slate-300" /> {item.label}
+              <button 
+                key={item.id} 
+                onClick={() => { router.push(item.path); setSidebarOpen(false); }} 
+                className={cn(
+                  "w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all font-black text-[11px] uppercase tracking-widest text-left group",
+                  pathname === item.path 
+                    ? "bg-primary text-white shadow-xl shadow-primary/20" 
+                    : "text-muted-foreground hover:bg-slate-50 hover:text-primary"
+                )}
+              >
+                <item.icon className={cn("h-5 w-5", pathname === item.path ? "text-accent" : "text-slate-300 group-hover:text-primary")} /> {item.label}
               </button>
             ))}
           </nav>

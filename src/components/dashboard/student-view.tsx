@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { format } from 'date-fns';
+import { format, isBefore, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 
@@ -64,7 +64,6 @@ export function StudentView({ user, userData }: StudentViewProps) {
   const [today, setToday] = useState<string>('');
 
   useEffect(() => {
-    // Hydration hatasını önlemek için istemci tarafında tarihi set ediyoruz
     setToday(format(new Date(), 'yyyy-MM-dd'));
   }, []);
 
@@ -72,19 +71,34 @@ export function StudentView({ user, userData }: StudentViewProps) {
     user?.uid ? `studyPlans/${user.uid}` : null
   );
 
-  const currentDayPlan = useMemo(() => {
-    if (!studyPlan?.masterPlan?.length || !today) return null;
-    return studyPlan.masterPlan.find((day) => day.date === today) ?? null;
+  const activeBlocks = useMemo(() => {
+    if (!studyPlan?.masterPlan?.length || !today) return [];
+    
+    // Bugünün blokları + Geçmişten devreden (carriedForward) tamamlanmamış bloklar
+    const allBlocks: StudyBlock[] = [];
+    
+    studyPlan.masterPlan.forEach(day => {
+      const isToday = day.date === today;
+      const isPast = isBefore(parseISO(day.date), parseISO(today));
+      
+      if (isToday) {
+        allBlocks.push(...(day.blocks || []));
+      } else if (isPast) {
+        // Geçmişten sarkan yapılmamış görevleri topla
+        const pending = (day.blocks || []).filter(b => b.status === 'planned' && !b.carriedForward);
+        allBlocks.push(...pending);
+      }
+    });
+    
+    return allBlocks;
   }, [studyPlan, today]);
 
-  const todayBlocks = useMemo(() => currentDayPlan?.blocks ?? [], [currentDayPlan]);
-  const completedCount = useMemo(() => todayBlocks.filter((block) => block.status === 'done').length, [todayBlocks]);
+  const completedCount = useMemo(() => activeBlocks.filter((block) => block.status === 'done').length, [activeBlocks]);
 
-  const handleTaskAction = async (blockId: string, action: 'done') => {
+  const handleTaskAction = async (blockId: string) => {
     if (!db || !user?.uid || !studyPlan?.masterPlan) return;
     try {
       const newPlan = studyPlan.masterPlan.map((day) => {
-        if (day.date !== today) return day;
         return {
           ...day,
           blocks: (day.blocks ?? []).map((block) => {
@@ -95,7 +109,7 @@ export function StudentView({ user, userData }: StudentViewProps) {
       });
 
       await updateDoc(doc(db, 'studyPlans', user.uid), { masterPlan: newPlan, updatedAt: serverTimestamp() });
-      toast({ title: 'Görev Güncellendi', className: 'bg-primary text-white rounded-2xl shadow-2xl' });
+      toast({ title: 'Terminal Güncellendi', className: 'bg-primary text-white rounded-2xl shadow-2xl' });
     } catch (error) {
       toast({ title: 'Hata', variant: 'destructive' });
     }
@@ -120,11 +134,11 @@ export function StudentView({ user, userData }: StudentViewProps) {
               <Brain className="h-5 w-5 animate-pulse" /> DEK Yapay Zekâ Mentoru
             </div>
             <h1 className="max-w-4xl text-3xl font-black uppercase italic leading-[1] tracking-tight md:text-5xl">
-              Bugün seni <span className="text-accent">{todayBlocks.length}</span> akademik çalışma bloğu bekliyor.
+              Bugün seni <span className="text-accent">{activeBlocks.length}</span> akademik çalışma bloğu bekliyor.
             </h1>
             <div className="flex flex-wrap justify-center gap-3 pt-2 lg:justify-start">
               <div className="flex items-center gap-2 rounded-2xl bg-white/5 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white/70">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400" /> {completedCount}/{todayBlocks.length} tamamlandı
+                <CheckCircle2 className="h-4 w-4 text-emerald-400" /> {completedCount}/{activeBlocks.length} tamamlandı
               </div>
               <div className="flex items-center gap-2 rounded-2xl bg-white/5 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white/70">
                 <CalendarDays className="h-4 w-4 text-accent" /> {format(new Date(), 'd MMMM yyyy', { locale: tr })}
@@ -140,8 +154,8 @@ export function StudentView({ user, userData }: StudentViewProps) {
       <section className="space-y-7">
         <div className="flex flex-col justify-between gap-5 px-1 md:flex-row md:items-center">
           <div>
-            <p className="mb-1 text-[9px] font-black uppercase tracking-[0.3em] text-accent italic">GÜNLÜK AKIŞ</p>
-            <h2 className="text-2xl font-black uppercase italic tracking-tight text-primary md:text-4xl">Günlük Akademik Blokların</h2>
+            <p className="mb-1 text-[9px] font-black uppercase tracking-[0.3em] text-accent italic">AKADEMİK AKIŞ</p>
+            <h2 className="text-2xl font-black uppercase italic tracking-tight text-primary md:text-4xl">Günlük Terminal Blokların</h2>
           </div>
           <Badge variant="outline" className="w-fit rounded-2xl border-slate-200 bg-white px-5 py-3 text-[9px] font-black uppercase tracking-[0.18em] text-primary shadow-sm">
             <Clock3 className="mr-2 h-3.5 w-3.5" /> {format(new Date(), 'EEEE, d MMMM', { locale: tr })}
@@ -149,11 +163,11 @@ export function StudentView({ user, userData }: StudentViewProps) {
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-          {todayBlocks.map((block, index) => {
+          {activeBlocks.map((block, index) => {
               const isDone = block.status === 'done';
               const isCarried = block.carriedForward;
               return (
-                <Card key={block.id || `${today}-${index}`} className={cn('relative flex min-h-[360px] flex-col overflow-hidden rounded-[3rem] border border-slate-100 bg-white p-8 shadow-[0_20px_50px_-20px_rgba(15,23,42,0.18)] transition-all duration-300', isDone && 'opacity-60')}>
+                <Card key={block.id || `${today}-${index}`} className={cn('relative flex min-h-[380px] flex-col overflow-hidden rounded-[3rem] border border-slate-100 bg-white p-8 shadow-[0_20px_50px_-20px_rgba(15,23,42,0.18)] transition-all duration-300', isDone && 'opacity-60')}>
                   <div className={cn('absolute left-0 top-0 h-full w-2', isDone ? 'bg-emerald-500' : isCarried ? 'bg-amber-500' : 'bg-accent')} />
                   <div className="flex flex-1 flex-col space-y-6">
                     <div className="flex items-start justify-between gap-3">
@@ -175,19 +189,19 @@ export function StudentView({ user, userData }: StudentViewProps) {
                       <p className="text-[7px] font-black uppercase tracking-[0.3em] text-slate-400">TERMİNAL KAYNAKLARI</p>
                       <div className="flex gap-3">
                         {block.youtubeUrl && (
-                          <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" className="flex h-11 w-11 items-center justify-center rounded-full bg-rose-50 text-rose-500 border border-rose-100 hover:bg-rose-500 hover:text-white transition-all hover:scale-110 shadow-sm"><Youtube className="h-5 w-5" /></a>
+                          <a href={block.youtubeUrl} target="_blank" rel="noopener noreferrer" aria-label={`${block.topic} YouTube Kaynağı`} className="flex h-11 w-11 items-center justify-center rounded-full bg-rose-50 text-rose-500 border border-rose-100 hover:bg-rose-500 hover:text-white transition-all hover:scale-110 shadow-sm"><Youtube className="h-5 w-5" /></a>
                         )}
                         {block.pdfUrl && (
-                          <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 text-blue-500 border border-blue-100 hover:bg-blue-500 hover:text-white transition-all hover:scale-110 shadow-sm"><FileText className="h-5 w-5" /></a>
+                          <a href={block.pdfUrl} target="_blank" rel="noopener noreferrer" aria-label={`${block.topic} PDF Kaynağı`} className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 text-blue-500 border border-blue-100 hover:bg-blue-500 hover:text-white transition-all hover:scale-110 shadow-sm"><FileText className="h-5 w-5" /></a>
                         )}
                         {block.mebiUrl && (
-                          <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white transition-all hover:scale-110 shadow-sm"><BookOpen className="h-5 w-5" /></a>
+                          <a href={block.mebiUrl} target="_blank" rel="noopener noreferrer" aria-label={`${block.topic} MEBİ Kaynağı`} className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-500 hover:text-white transition-all hover:scale-110 shadow-sm"><BookOpen className="h-5 w-5" /></a>
                         )}
                       </div>
                     </div>
 
                     <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-6">
-                      <Button onClick={() => handleTaskAction(block.id, 'done')} className={cn('h-12 flex-1 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-xl', isDone ? 'bg-slate-100 text-slate-500' : 'bg-emerald-500 text-white')}>
+                      <Button onClick={() => handleTaskAction(block.id)} className={cn('h-12 flex-1 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-xl', isDone ? 'bg-slate-100 text-slate-500' : 'bg-emerald-500 text-white')}>
                         <CheckCircle2 className="mr-2 h-4 w-4" /> {isDone ? 'Geri Al' : 'Tamamla'}
                       </Button>
                       <Button onClick={() => router.push('/dashboard/planning')} variant="outline" size="icon" className="ml-3 h-12 w-12 shrink-0 rounded-xl border-slate-200 bg-white text-primary shadow-sm hover:border-primary transition-all">
@@ -200,7 +214,7 @@ export function StudentView({ user, userData }: StudentViewProps) {
             }
           )}
 
-          {todayBlocks.length === 0 && (
+          {activeBlocks.length === 0 && (
             <Card onClick={() => router.push('/dashboard/planning')} className="col-span-1 flex min-h-[320px] cursor-pointer flex-col items-center justify-center gap-6 rounded-[4rem] border-4 border-dashed border-slate-200 bg-white text-center transition-all hover:border-accent group w-full">
               <Zap className="h-10 w-10 text-accent animate-pulse" />
               <h3 className="text-xl font-black uppercase italic text-primary">AKADEMİK TAKVİM BEKLENİYOR</h3>

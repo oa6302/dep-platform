@@ -1,50 +1,16 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
-import {
-  useAuth,
-  useFirestore,
-} from '@/firebase';
-
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  updateProfile,
-} from 'firebase/auth';
-
-import {
-  doc,
-  serverTimestamp,
-  setDoc,
-} from 'firebase/firestore';
-
+import { useAuth, useFirestore } from '@/firebase';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-
-import {
-  Loader2,
-  Mail,
-  Lock,
-  User,
-  UserRound,
-  Brain,
-  Key,
-  LogIn,
-  Building,
-  CheckCircle,
-  Zap,
-  Target,
-  Sparkles,
-  Eye,
-  EyeOff,
-} from 'lucide-react';
-
+import { Loader2, Mail, Lock, User, UserRound, Brain, Key, LogIn, Building, CheckCircle, Zap, Target, Sparkles, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 
@@ -53,15 +19,9 @@ interface AuthFormProps {
 }
 
 type AuthMode = 'login' | 'register';
+type UserRole = 'student' | 'teacher' | 'school_admin';
 
-type UserRole =
-  | 'student'
-  | 'teacher'
-  | 'school_admin';
-
-export function AuthForm({
-  mode: initialMode,
-}: AuthFormProps) {
+export function AuthForm({ mode: initialMode }: AuthFormProps) {
   const [authMode, setAuthMode] = useState<AuthMode>(initialMode);
   const [role, setRole] = useState<UserRole>('student');
   const [email, setEmail] = useState('');
@@ -88,22 +48,17 @@ export function AuthForm({
 
   const handleRoleChange = (newRole: UserRole) => {
     setRole(newRole);
-    if (newRole !== 'student') {
-      setTargetExam('');
-    }
+    if (newRole !== 'student') setTargetExam('');
   };
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!auth || !db) {
-      toast({ variant: 'destructive', title: 'Bağlantı Hatası', description: 'Firebase hazır değil.' });
-      return;
-    }
+    if (!auth || !db) return;
 
     const cleanEmail = email.trim().toLowerCase();
     const cleanName = displayName.trim();
 
-    if (!cleanName || !cleanEmail || !password || password.length < 6) {
+    if (!cleanName || !cleanEmail || password.length < 6) {
       toast({ variant: 'destructive', title: 'Validasyon Hatası', description: 'Lütfen tüm alanları doğru doldurun.' });
       return;
     }
@@ -138,16 +93,20 @@ export function AuthForm({
         userData.isActivated = false;
       }
 
+      if (role === 'school_admin') {
+        userData.isApproved = false; // Kurum yönetici onayı gereklidir
+      }
+
       await setDoc(doc(db, 'users', credential.user.uid), userData);
-      toast({ title: 'Kayıt Başarılı', description: 'Profiliniz oluşturuldu.', className: 'bg-primary text-white rounded-[2rem]' });
+      toast({ title: 'Kayıt Başarılı', description: 'Profiliniz oluşturuldu.', className: 'bg-primary text-white rounded-2xl' });
       router.replace('/dashboard');
     } catch (error: any) {
       let message = 'Bir hata oluştu.';
       if (error.code === 'auth/email-already-in-use') {
-        message = 'Bu e-posta zaten kullanımda. Giriş yapın.';
+        message = 'Bu e-posta zaten kullanımda.';
         setAuthMode('login');
       }
-      toast({ variant: 'destructive', title: 'Hata', description: message });
+      toast({ variant: 'destructive', title: 'Kayıt Hatası', description: message });
     } finally {
       setLoading(false);
     }
@@ -163,7 +122,9 @@ export function AuthForm({
       toast({ title: 'Giriş Başarılı', className: 'bg-primary text-white rounded-2xl' });
       router.replace('/dashboard');
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Hata', description: 'E-posta veya şifre hatalı.' });
+      let message = 'E-posta veya şifre hatalı.';
+      if (error.code === 'auth/too-many-requests') message = 'Çok fazla deneme yapıldı. Lütfen bekleyin.';
+      toast({ variant: 'destructive', title: 'Giriş Hatası', description: message });
     } finally {
       setLoading(false);
     }
@@ -177,7 +138,7 @@ export function AuthForm({
             <Key className="h-3 w-3 text-accent" /> SECURE LOGIN
           </div>
           <h2 className="text-5xl font-black uppercase italic leading-none tracking-tighter text-primary">GİRİŞ YAP</h2>
-          <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Terminale güvenle bağlan</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Akademik takip terminaline bağlan</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
@@ -198,9 +159,9 @@ export function AuthForm({
               </button>
             </div>
           </div>
-          <Button type="submit" disabled={loading} className="h-20 w-full gap-4 rounded-[2.5rem] bg-primary text-sm font-black uppercase tracking-[0.35em] text-white shadow-2xl hover:bg-accent">
+          <Button type="submit" disabled={loading} className="h-20 w-full gap-4 rounded-[2.5rem] bg-primary text-sm font-black uppercase tracking-[0.35em] text-white shadow-2xl hover:bg-accent transition-all active:scale-95">
             {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <LogIn className="h-6 w-6 text-accent" />}
-            {loading ? 'GİRİŞ YAPILIYOR' : 'TERMİNALE GİR'}
+            {loading ? 'TERMİNAL BAĞLANIYOR' : 'TERMİNALE GİR'}
           </Button>
           <button type="button" onClick={() => setAuthMode('register')} className="w-full text-center text-[10px] font-black uppercase italic tracking-widest text-primary/50 hover:text-accent">YENİ HESAP OLUŞTUR →</button>
         </form>
@@ -276,7 +237,7 @@ export function AuthForm({
                       <h4 className="ml-2 text-[9px] font-black uppercase text-primary/40 italic">{category}</h4>
                       <div className="grid gap-2">
                         {exams.map((exam) => (
-                          <button key={exam.id} type="button" onClick={() => setTargetExam(exam.id)} className={cn('flex items-center justify-between rounded-2xl border-2 p-4 text-left transition-all', targetExam === exam.id ? 'scale-[1.01] border-accent bg-white shadow-lg' : 'border-transparent bg-white/50')}>
+                          <button key={exam.id} type="button" onClick={() => setTargetExam(exam.id)} className={cn('flex items-center justify-between rounded-2xl border-2 p-4 text-left transition-all', targetExam === exam.id ? 'scale-[1.01] border-accent bg-white shadow-lg' : 'border-transparent bg-white/50 hover:bg-white')}>
                             <div className="flex items-center gap-3">
                               <Target className={cn('h-5 w-5', targetExam === exam.id ? 'text-accent' : 'text-primary/20')} />
                               <div>
@@ -296,7 +257,7 @@ export function AuthForm({
           </div>
         )}
 
-        <Button type="submit" disabled={loading} className="h-20 w-full gap-4 rounded-[2.5rem] bg-primary text-base font-black uppercase tracking-[0.25em] text-white shadow-2xl hover:bg-accent md:h-24 md:text-xl">
+        <Button type="submit" disabled={loading} className="h-20 w-full gap-4 rounded-[2.5rem] bg-primary text-base font-black uppercase tracking-[0.25em] text-white shadow-2xl hover:bg-accent md:h-24 md:text-xl active:scale-95 transition-all">
           {loading ? <Loader2 className="h-7 w-7 animate-spin" /> : <Zap className="h-7 w-7 text-accent" />}
           {loading ? 'PROFİL OLUŞTURULUYOR' : 'KAYDI TAMAMLA'}
         </Button>

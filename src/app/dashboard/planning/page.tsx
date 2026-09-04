@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
   Calendar, Zap, Loader2, Sparkles, 
-  Trash2, ArrowLeft,
+  ArrowLeft,
   Home, Edit3, Youtube, Save, FileText, 
   BookOpen, X, Clock
 } from 'lucide-react';
@@ -48,10 +48,12 @@ export default function PlanningPage() {
   useEffect(() => {
     if (studyPlan?.startDate) {
       setStartDate(studyPlan.startDate);
-      // Sadece ilk yüklemede eğer endDate daha erkense güncelle
       if (isBefore(parseISO(endDate), parseISO(studyPlan.startDate))) {
         setEndDate(format(addDays(parseISO(studyPlan.startDate), 13), 'yyyy-MM-dd'));
       }
+    }
+    if (studyPlan?.endDate) {
+      setEndDate(studyPlan.endDate);
     }
   }, [studyPlan]);
 
@@ -83,6 +85,7 @@ export default function PlanningPage() {
       const newPlan = generateAdaptivePlan(startDate, userData.completedTopics || {});
       await updateDoc(doc(db, 'studyPlans', user.uid), {
         startDate: startDate,
+        endDate: endDate,
         masterPlan: newPlan,
         updatedAt: serverTimestamp()
       });
@@ -119,7 +122,7 @@ export default function PlanningPage() {
              <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><Home className="h-5 w-5" /></Button>
           </div>
           <div className="space-y-2">
-             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v18.0</div>
+             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v19.0</div>
              <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-premium">Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span></h2>
           </div>
         </div>
@@ -165,7 +168,7 @@ export default function PlanningPage() {
 
       <div className="space-y-24 pb-20">
         {viewMode === 'monthly' ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-8">
              {filteredPlan.map((day: any) => (
               <Card key={day.date} onClick={() => { setStartDate(day.date); setEndDate(day.date); setViewMode('daily'); }} className={cn("p-10 rounded-[4rem] border-none shadow-xl bg-white hover:scale-[1.03] transition-all cursor-pointer group min-h-[300px]")}>
                  <div className="space-y-8">
@@ -191,7 +194,7 @@ export default function PlanningPage() {
                 <div className="h-px flex-1 bg-slate-200" />
                 <Badge variant="outline" className="h-14 px-8 rounded-3xl font-black uppercase border-2 border-slate-100 text-primary text-[12px]">{day.day}</Badge>
              </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-8">
                 {day.blocks?.map((block: any) => (
                   <Card key={block.id} className={cn("p-12 rounded-[5.5rem] border-none shadow-[0_50px_100px_-25px_rgba(0,0,0,0.12)] transition-all hover:scale-[1.03] bg-white h-full flex flex-col group relative overflow-hidden", block.status === 'done' && "opacity-60")}>
                      <div className="space-y-12 relative z-10 flex-1 flex flex-col">

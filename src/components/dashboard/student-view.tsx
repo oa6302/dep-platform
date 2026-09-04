@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -73,7 +74,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
            </Card>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-10">
              {currentDayPlan?.blocks?.map((block: any) => (
                 <Card 
                   key={block.id} 
@@ -113,9 +114,9 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                               <div className="flex items-center justify-between">
                                  <span className="text-[12px] font-black text-primary/20 uppercase tracking-[0.3em] italic">KONU ÇALIŞMA</span>
                                  <div className="flex gap-5 items-center">
-                                    {block.youtubeUrl && <Youtube className="h-6 w-6 text-rose-500 opacity-60" />}
-                                    {block.pdfUrl && <FileText className="h-6 w-6 text-blue-500 opacity-60" />}
-                                    {block.mebiUrl && <BookOpen className="h-6 w-6 text-emerald-500 opacity-60" />}
+                                    {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank"><Youtube className="h-6 w-6 text-rose-500 opacity-60" /></a>}
+                                    {block.pdfUrl && <a href={block.pdfUrl} target="_blank"><FileText className="h-6 w-6 text-blue-500 opacity-60" /></a>}
+                                    {block.mebiUrl && <a href={block.mebiUrl} target="_blank"><BookOpen className="h-6 w-6 text-emerald-500 opacity-60" /></a>}
                                  </div>
                               </div>
                            </div>
@@ -129,9 +130,9 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                                     <span className="text-[13px] font-black text-accent uppercase tracking-[0.3em] italic">TEST ÇÖZME</span>
                                  </div>
                                  <div className="flex gap-5 items-center">
-                                    {block.testYoutubeUrl && <Youtube className="h-6 w-6 text-rose-500 opacity-80" />}
-                                    {block.testUrl && <BookOpen className="h-6 w-6 text-emerald-500 opacity-80" />}
-                                    {block.testPdfUrl && <FileText className="h-6 w-6 text-blue-500 opacity-80" />}
+                                    {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank"><Youtube className="h-6 w-6 text-rose-500 opacity-80" /></a>}
+                                    {block.testUrl && <a href={block.testUrl} target="_blank"><BookOpen className="h-6 w-6 text-emerald-500 opacity-80" /></a>}
+                                    {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank"><FileText className="h-6 w-6 text-blue-500 opacity-80" /></a>}
                                  </div>
                               </div>
                            </div>

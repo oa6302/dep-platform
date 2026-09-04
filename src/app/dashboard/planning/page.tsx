@@ -43,17 +43,32 @@ export default function PlanningPage() {
   const router = useRouter();
   
   const { data: userData } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
-  const { data: studyPlan } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
+  const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date(2026, 8, 1));
   
+  // Varsayılan değerler, plan yüklendiğinde güncellenecek
   const [startDate, setStartDate] = useState('2026-09-01');
   const [endDate, setEndDate] = useState('2026-09-14');
+  
   const [isReporting, setIsReporting] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<any>(null);
+
+  // Firestore'daki plan yüklendiğinde yerel state'i güncelle
+  useEffect(() => {
+    if (studyPlan?.startDate) {
+      setStartDate(studyPlan.startDate);
+      // Bitiş tarihini otomatik olarak 2 hafta sonrasına ayarla (ilk görünüm için)
+      setEndDate(format(addDays(parseISO(studyPlan.startDate), 13), 'yyyy-MM-dd'));
+    } else if (studyPlan?.masterPlan && studyPlan.masterPlan.length > 0) {
+      const firstDate = studyPlan.masterPlan[0].date;
+      setStartDate(firstDate);
+      setEndDate(format(addDays(parseISO(firstDate), 13), 'yyyy-MM-dd'));
+    }
+  }, [studyPlan]);
 
   const academicMonths = useMemo(() => [
     { label: 'EYL', date: new Date(2026, 8, 1) },
@@ -88,8 +103,8 @@ export default function PlanningPage() {
     setTimeout(() => {
       setIsReporting(false);
       toast({
-        title: "Rapor Hazır",
-        description: "Seçilen tarih aralığı analiz edildi.",
+        title: "Analiz Tamamlandı",
+        description: "Seçilen periyottaki akademik veriler süzüldü.",
         className: "bg-primary text-white rounded-2xl shadow-2xl"
       });
     }, 800);
@@ -101,12 +116,13 @@ export default function PlanningPage() {
     try {
       const newPlan = generateAdaptivePlan(startDate, userData.completedTopics || {});
       await updateDoc(doc(db, 'studyPlans', user.uid), {
+        startDate: startDate, // Seçilen tarihi buluta kaydet
         masterPlan: newPlan,
         updatedAt: serverTimestamp()
       });
       toast({
         title: "PLANI YENİDEN KURGULANDI",
-        description: "Eksik konular kaldığı yerden sınava kadar dağıtıldı.",
+        description: `Çalışma başlangıcınız ${format(parseISO(startDate), 'd MMMM yyyy', { locale: tr })} olarak mühürlendi.`,
         className: "bg-accent text-primary rounded-2xl font-black shadow-2xl"
       });
       setViewMode('daily');
@@ -204,7 +220,7 @@ export default function PlanningPage() {
           </div>
           <div className="space-y-2">
              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20">
-                <Calendar className="h-3.5 w-3.5" /> ADAPTIVE TERMINAL v7.0
+                <Calendar className="h-3.5 w-3.5" /> MEMORY SYNC v11.0
              </div>
              <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-premium">
                 Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span>
@@ -213,30 +229,38 @@ export default function PlanningPage() {
         </div>
 
         <div className="flex flex-col gap-6 w-full xl:w-auto">
-          <Card className="p-6 rounded-[2.5rem] border-none shadow-xl bg-white flex flex-wrap gap-8 items-end">
-             <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-4 italic">Başlama Tarihi</Label>
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-14 rounded-xl bg-slate-50 border-none font-bold" />
+          <Card className="p-8 rounded-[3rem] border-none shadow-[0_40px_100px_-25px_rgba(15,23,42,0.15)] bg-white flex flex-wrap gap-8 items-end">
+             <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40 ml-4 italic text-primary">BAŞLAMA TARİHİ</Label>
+                <div className="relative group">
+                  <Input 
+                    type="date" 
+                    value={startDate} 
+                    onChange={(e) => setStartDate(e.target.value)} 
+                    className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xs px-6 shadow-inner focus-visible:ring-accent transition-all" 
+                  />
+                </div>
              </div>
-             <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-4 italic">Sınav Hedefi</Label>
-                <Input disabled value="15.06.2027" className="h-14 rounded-xl bg-slate-50 border-none font-bold opacity-60" />
+             <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40 ml-4 italic text-primary">SINAV HEDEFİ</Label>
+                <Input disabled value="15.06.2027" className="h-16 rounded-2xl bg-slate-50 border-none font-black text-xs px-6 opacity-60 shadow-inner" />
              </div>
              <Button 
                onClick={handleRegeneratePlan} 
                disabled={isRegenerating}
-               className="h-14 px-8 rounded-xl bg-accent hover:bg-primary text-primary hover:text-white font-black text-[10px] uppercase tracking-widest gap-3 shadow-xl transition-all"
+               className="h-16 px-10 rounded-2xl bg-accent hover:bg-primary text-primary hover:text-white font-black text-[10px] uppercase tracking-[0.2em] gap-4 shadow-[0_20px_50px_-10px_rgba(245,158,11,0.4)] transition-all active:scale-95"
              >
-                {isRegenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                {isRegenerating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
                 PLANI YENİDEN KURGULA
-             </Button>
-             <Button onClick={handleRunReport} disabled={isReporting} className="h-14 px-8 rounded-xl bg-primary hover:bg-accent text-white font-black text-[10px] uppercase tracking-widest gap-3 shadow-xl">
-                {isReporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 text-accent" />}
-                RAPORU ÇALIŞTIR
              </Button>
           </Card>
           
-          <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex flex-col md:flex-row gap-6 items-center">
+             <Button onClick={handleRunReport} disabled={isReporting} className="h-16 px-10 rounded-2xl bg-[#0F172A] hover:bg-accent text-white font-black text-[10px] uppercase tracking-[0.4em] gap-4 shadow-2xl w-full md:w-auto">
+                {isReporting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5 text-accent" />}
+                RAPORU ÇALIŞTIR
+             </Button>
+
              <div className="flex gap-2 bg-white/50 p-2 rounded-2xl border-2 border-primary/5 shadow-sm overflow-x-auto scrollbar-hide max-w-full">
                 {academicMonths.map((m, i) => (
                   <button 

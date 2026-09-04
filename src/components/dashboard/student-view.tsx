@@ -35,7 +35,6 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
   
   const [today, setToday] = useState<string>('');
 
-  // Hydration Fix: İstemci tarafında tarih kesinleştirilir
   useEffect(() => {
     setToday(format(new Date(), 'yyyy-MM-dd'));
   }, []);
@@ -44,25 +43,24 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
     user?.uid ? `studyPlans/${user.uid}` : null
   );
 
-  // GÖREV DEVİR MANTIĞI: Bugünün blokları + Geçmişten kalan yapılmamışlar
   const activeBlocks = useMemo(() => {
     if (!studyPlan?.masterPlan?.length || !today) return [];
     
-    const allBlocks: any[] = [];
+    // Logic: Today's blocks + Unfinished blocks from the past
+    const todayPlan = studyPlan.masterPlan.find((day: any) => day.date === today);
+    const pastUnfinished: any[] = [];
+    
     studyPlan.masterPlan.forEach((day: any) => {
-      const isToday = day.date === today;
-      const isPast = isBefore(parseISO(day.date), parseISO(today));
-      
-      if (isToday) {
-        allBlocks.push(...(day.blocks || []));
-      } else if (isPast) {
-        // Geçmişten gelen ve tamamlanmamış görevleri topla (sadece ana görevleri, kopyaları değil)
-        const pending = (day.blocks || []).filter((b: any) => b.status === 'planned' && !b.carriedForward);
-        allBlocks.push(...pending);
+      if (isBefore(parseISO(day.date), parseISO(today))) {
+        const unfinished = (day.blocks || []).filter((b: any) => b.status !== 'done' && !b.carriedForward);
+        pastUnfinished.push(...unfinished);
       }
     });
+
+    const currentBlocks = [...(todayPlan?.blocks || [])];
     
-    return allBlocks;
+    // Return combined blocks to show carried-over tasks as well
+    return [...pastUnfinished, ...currentBlocks];
   }, [studyPlan, today]);
 
   const completedCount = useMemo(() => activeBlocks.filter((block) => block.status === 'done').length, [activeBlocks]);
@@ -139,18 +137,17 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
           {activeBlocks.map((block, index) => {
               const isDone = block.status === 'done';
-              const isCarried = block.carriedForward || (block.date && block.date !== today);
               return (
                 <Card key={block.id || `${today}-${index}`} className={cn('relative flex min-h-[380px] flex-col overflow-hidden rounded-[3rem] border border-slate-100 bg-white p-8 shadow-[0_20px_50px_-20px_rgba(15,23,42,0.18)] transition-all duration-300', isDone && 'opacity-60')}>
-                  <div className={cn('absolute left-0 top-0 h-full w-2', isDone ? 'bg-emerald-500' : isCarried ? 'bg-amber-500' : 'bg-accent')} />
+                  <div className={cn('absolute left-0 top-0 h-full w-2', isDone ? 'bg-emerald-500' : 'bg-accent')} />
                   <div className="flex flex-1 flex-col space-y-6">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <p className="mb-2 text-[8px] font-black uppercase tracking-[0.25em] text-accent italic">#{String(block.lesson || 'GENEL').substring(0, 4).toUpperCase()}</p>
                         <h3 className="line-clamp-3 text-2xl font-black uppercase italic leading-[1] text-primary">{block.topic || 'Konu Belirleniyor'}</h3>
                       </div>
-                      <Badge className={cn('shrink-0 rounded-full border-none px-4 py-1.5 text-[8px] font-black uppercase tracking-wider', isDone ? 'bg-emerald-500 text-white' : isCarried ? 'bg-amber-500 text-white shadow-lg' : 'bg-[#FF4D6D] text-white shadow-lg')}>
-                        {isDone ? 'Tamam' : isCarried ? 'Ertelenen' : 'Bek'}
+                      <Badge className={cn('shrink-0 rounded-full border-none px-4 py-1.5 text-[8px] font-black uppercase tracking-wider', isDone ? 'bg-emerald-500 text-white' : 'bg-[#FF4D6D] text-white shadow-lg')}>
+                        {isDone ? 'Tamam' : 'Bekliyor'}
                       </Badge>
                     </div>
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useUser, useDoc, useAuth } from '@/firebase';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
@@ -22,26 +22,34 @@ export default function DashboardPage() {
   const auth = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const { data: userData, loading: docLoading } = useDoc<any>(user?.uid ? `users/${user.uid}` : null);
+  const searchParams = useSearchParams();
+  const simulateUid = searchParams.get('simulate');
+  
+  const targetUid = simulateUid || user?.uid;
+  const { data: userData, loading: docLoading } = useDoc<any>(targetUid ? `users/${targetUid}` : null);
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  // FAIL-SAFE: Router güncellemeleri sadece useEffect içinde yapılmalıdır
   useEffect(() => {
-    if (!authLoading && !user) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!authLoading && !user && mounted) {
       router.replace('/');
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, mounted]);
 
   useEffect(() => {
-    if (!docLoading && user && userData) {
+    if (!docLoading && user && userData && mounted && !simulateUid) {
       if (userData.role === 'student' && !userData.targetExam) {
         router.replace('/dashboard/select-exam');
       }
     }
-  }, [userData, docLoading, user, router]);
+  }, [userData, docLoading, user, router, mounted, simulateUid]);
 
-  if (authLoading || (user && docLoading)) {
+  if (!mounted || authLoading || (user && docLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
         <div className="flex flex-col items-center gap-6">
@@ -54,8 +62,7 @@ export default function DashboardPage() {
 
   if (!user) return null;
 
-  // Profil eksikse sonsuz döngü yerine kurulum butonunu gösterir
-  if (!userData && !docLoading) {
+  if (!userData && !docLoading && !simulateUid) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] py-20 px-6 flex items-center justify-center">
         <div className="max-w-md w-full text-center space-y-10">
@@ -86,7 +93,8 @@ export default function DashboardPage() {
   ];
 
   const renderView = () => {
-    switch (userData?.role) {
+    const role = userData?.role || 'student';
+    switch (role) {
       case 'student': return <StudentView user={user} userData={userData} />;
       case 'teacher': return <TeacherView user={user} userData={userData} />;
       case 'school_admin': return <SchoolAdminView user={user} userData={userData} />;

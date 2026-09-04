@@ -101,12 +101,13 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
       toast({ title: 'Kayıt Başarılı', description: 'Profiliniz oluşturuldu.', className: 'bg-primary text-white rounded-2xl' });
       router.replace('/dashboard');
     } catch (error: any) {
-      let message = 'Bir hata oluştu.';
+      console.error('Register Error:', error);
       if (error.code === 'auth/email-already-in-use') {
-        message = 'Bu e-posta zaten kullanımda.';
+        toast({ title: 'Hesap Bulundu', description: 'Bu e-posta ile zaten bir hesap var. Giriş yapabilirsiniz.', className: 'bg-accent text-primary' });
         setAuthMode('login');
+      } else {
+        toast({ variant: 'destructive', title: 'Kayıt Hatası', description: 'Kayıt sırasında bir hata oluştu.' });
       }
-      toast({ variant: 'destructive', title: 'Kayıt Hatası', description: message });
     } finally {
       setLoading(false);
     }
@@ -122,9 +123,8 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
       toast({ title: 'Giriş Başarılı', className: 'bg-primary text-white rounded-2xl' });
       router.replace('/dashboard');
     } catch (error: any) {
-      let message = 'E-posta veya şifre hatalı.';
-      if (error.code === 'auth/too-many-requests') message = 'Çok fazla deneme yapıldı. Lütfen bekleyin.';
-      toast({ variant: 'destructive', title: 'Giriş Hatası', description: message });
+      console.error('Login Error:', error);
+      toast({ variant: 'destructive', title: 'Giriş Hatası', description: 'E-posta veya şifre hatalı.' });
     } finally {
       setLoading(false);
     }
@@ -261,7 +261,7 @@ export function AuthForm({ mode: initialMode }: AuthFormProps) {
           {loading ? <Loader2 className="h-7 w-7 animate-spin" /> : <Zap className="h-7 w-7 text-accent" />}
           {loading ? 'PROFİL OLUŞTURULUYOR' : 'KAYDI TAMAMLA'}
         </Button>
-        <button type="button" onClick={() => setAuthMode('login')} className="w-full text-center text-[9px] font-black uppercase italic tracking-[0.25em] text-primary/50 hover:text-accent">ZATEN HESABIM VAR → GİRİŞ YAP</button>
+        <button type="button" onClick={() => setAuthMode('login')} className="w-full text-center text-[10px] font-black uppercase italic tracking-[0.25em] text-primary/50 hover:text-accent">ZATEN HESABIM VAR → GİRİŞ YAP</button>
       </form>
     </div>
   );

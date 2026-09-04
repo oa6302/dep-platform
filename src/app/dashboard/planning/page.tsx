@@ -99,7 +99,10 @@ export default function PlanningPage() {
         if (isStrictTYT) {
           lessonPool = lessonPool.filter(l => !l.toLowerCase().includes('ayt') && !l.toLowerCase().includes('edebiyat'));
         }
-        if (lessonPool.length === 0) lessonPool = ['TYT Matematik', 'TYT Türkçe'];
+        
+        if (lessonPool.length === 0) {
+          lessonPool = ['TYT Matematik', 'TYT Türkçe'];
+        }
 
         const existingDay = existingPlan.find((day: any) => day.date === dateStr);
         const dailyBlocks = [];
@@ -155,25 +158,6 @@ export default function PlanningPage() {
         });
       }
 
-      // OTONOM GÖREV AKTARIMI (CARRY FORWARD)
-      // Önceki günlerden yapılamayan her görev bir sonraki güne kopyalanır
-      for (let i = 0; i < newPlan.length - 1; i++) {
-        const today = newPlan[i];
-        const tomorrow = newPlan[i+1];
-        const unfinished = today.blocks.filter((b: any) => b.status === 'planned' && !b.carriedForward);
-        
-        for (const block of unfinished) {
-          tomorrow.blocks.push({
-            ...block,
-            id: `${block.id}_carry_${tomorrow.date}`,
-            originalBlockId: block.id,
-            carriedForward: true,
-            carriedFrom: today.date,
-            phase1: { ...block.phase1, type: 'ERTELENEN GÖREV' }
-          });
-        }
-      }
-
       await setDoc(doc(db, 'studyPlans', user.uid), {
         userId: user.uid,
         targetExam: currentExam,
@@ -183,7 +167,7 @@ export default function PlanningPage() {
 
       toast({ 
         title: 'Akademik Motor Senkronize', 
-        description: 'Ertelenen görevler otonom olarak ileri tarihlere aktarıldı.',
+        description: `${newPlan.length} günlük takvim saniyeler içinde buluta işlendi.`,
         className: "bg-primary text-white rounded-2xl shadow-xl"
       });
     } catch (error) {
@@ -290,12 +274,10 @@ export default function PlanningPage() {
                                "px-5 py-2 rounded-full text-[10px] font-black shrink-0", 
                                block.status === 'done' 
                                  ? "bg-emerald-500 text-white shadow-lg" 
-                                 : block.carriedForward 
-                                   ? "bg-amber-500 text-white shadow-lg" 
-                                   : "bg-[#FF4D6D] text-white shadow-lg"
+                                 : "bg-[#FF4D6D] text-white shadow-lg"
                              )}
                            >
-                              {block.status === 'done' ? 'TAMAM' : block.carriedForward ? 'ERTELENDİ' : 'BEK'}
+                              {block.status === 'done' ? 'TAMAM' : 'BEK'}
                            </Badge>
                         </div>
 

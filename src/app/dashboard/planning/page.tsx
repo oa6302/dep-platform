@@ -8,11 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
-  Calendar, Clock, Zap, Loader2, Sparkles, 
+  Calendar, Zap, Loader2, Sparkles, 
   CheckCircle2, Trash2, ArrowLeft, ArrowRight,
   Home, Edit3, Youtube, Save, FileText, 
-  BookOpen, Search, ChevronDown, ListChecks, Target,
-  BookOpenCheck
+  BookOpen, Plus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
@@ -27,7 +26,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -100,9 +98,8 @@ export default function PlanningPage() {
         } satisfies SecurityRuleContext);
         errorEmitter.emit('permission-error', permissionError);
       });
-      toast({ title: 'AI Plan Senkronize Edildi', className: "bg-accent text-primary rounded-2xl" });
     }
-  }, [studyPlan?.masterPlan, user, db, toast]);
+  }, [studyPlan?.masterPlan, user, db]);
 
   const generateFasikulPlan = async () => {
     if (!db || !user || !endDate || !startDate) return;
@@ -115,7 +112,7 @@ export default function PlanningPage() {
 
       const currentExam = userData?.targetExam || 'YKS_EA';
       const examConfig = EXAM_CONFIGS[currentExam];
-      const aytStart = parseISO(`2026-12-01`);
+      const aytCutoffDate = parseISO(`2026-12-01`);
 
       const newPlan = [];
       const lessonPointers: Record<string, number> = {};
@@ -124,15 +121,19 @@ export default function PlanningPage() {
         const currentDt = addDays(start, i);
         const dateStr = format(currentDt, 'yyyy-MM-dd');
         const dayName = format(currentDt, 'EEEE', { locale: tr });
-        const isAytTime = isAfter(currentDt, aytStart) || currentDt.getTime() === aytStart.getTime();
+        
+        // STRICT 1 DEC LOGIC
+        const isAytAllowed = isAfter(currentDt, aytCutoffDate) || currentDt.getTime() === aytCutoffDate.getTime();
         
         let pool = [...(examConfig?.lessons || ['TYT Matematik', 'TYT Türkçe'])];
-        if (!isAytTime) {
-          pool = pool.filter(l => !l.includes('AYT') && !['Edebiyat'].includes(l));
+        if (!isAytAllowed) {
+          // Filter out any AYT specific lessons before Dec 1st
+          pool = pool.filter(l => !l.toUpperCase().includes('AYT') && !['Edebiyat'].includes(l));
         }
 
         const dailyBlocks = [];
 
+        // BLOCK 1 & 2: Main Academic Lessons
         for (let j = 0; j < 2; j++) {
           const lesson = pool[(i * 2 + j) % pool.length];
           const topics = YKS_TM_TOPICS[lesson] || ['Genel Tekrar'];
@@ -147,27 +148,23 @@ export default function PlanningPage() {
             status: 'planned',
             phase1: { type: 'KONU ÇALIŞMA', time: j === 0 ? '10:00' : '11:00' },
             phase2: { type: 'TEST ÇÖZME', time: j === 0 ? '10:30' : '11:30' },
-            targetQuestions: 40,
-            solvedQuestions: 0,
-            ...links,
-            isKonuDone: false,
-            isTestDone: false
+            ...links
           });
           lessonPointers[lesson]++;
         }
 
+        // BLOCK 3: Fixed Paragraph Block
         dailyBlocks.push({
           id: `para_${dateStr}`,
           lesson: 'TÜRKÇE',
           topic: '20 PARAGRAF SORU ÇÖZÜMÜ',
           status: 'planned',
-          targetQuestions: 20,
-          solvedQuestions: 0,
-          ...generateAutoLinks('Paragraf', 'Türkçe'),
           isParagraph: true,
-          phase1: { type: 'GÜNLÜK KAMP', time: '12:00' }
+          phase1: { type: 'GÜNLÜK KAMP', time: '12:00' },
+          ...generateAutoLinks('Paragraf', 'Türkçe'),
         });
 
+        // BLOCK 4: Fixed Review Block
         dailyBlocks.push({
           id: `review_${dateStr}`,
           lesson: 'GENEL',
@@ -257,7 +254,6 @@ export default function PlanningPage() {
     } else {
       setIsEditDialogOpen(false);
     }
-    toast({ title: 'Terminal Güncellendi', className: "bg-primary text-white rounded-2xl" });
   };
 
   return (
@@ -375,7 +371,10 @@ export default function PlanningPage() {
                          ].map((item) => (
                             <div key={item.key} className="relative group">
                                <item.icon className={cn("absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 opacity-30", item.color)} />
-                               <Input value={editingBlock[item.key] || ''} onChange={(e) => setEditingBlock({...editingBlock, [item.key]: e.target.value})} className="h-16 rounded-2xl bg-slate-50 border-none pl-16 font-bold text-sm shadow-inner" placeholder={item.label} />
+                               <div className="flex gap-2">
+                                  <Input value={editingBlock[item.key] || ''} onChange={(e) => setEditingBlock({...editingBlock, [item.key]: e.target.value})} className="h-16 rounded-2xl bg-slate-50 border-none pl-16 font-bold text-sm shadow-inner flex-1" placeholder={item.label} />
+                                  <Button size="icon" variant="ghost" className="h-16 w-16 rounded-2xl bg-slate-100 hover:bg-accent text-primary transition-all"><Plus className="h-6 w-6" /></Button>
+                               </div>
                             </div>
                          ))}
                       </div>

@@ -11,8 +11,6 @@ import {
   Clock,
   TrendingUp,
   ShieldCheck,
-  Menu,
-  X
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -88,7 +86,7 @@ export default function LandingPage() {
                 </DialogContent>
               </Dialog>
 
-              <Button onClick={() => router.push('/dashboard/pomodoro')} variant="outline" size="lg" className="w-full sm:w-auto h-20 px-12 rounded-[2rem] border-2 border-primary/5 bg-white text-primary font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all">
+              <Button onClick={() => router.push('/dashboard/pomodoro')} variant="outline" size="lg" className="w-full sm:w-auto h-20 px-12 rounded-[2rem] border-2 border-primary/5 bg-white text-primary font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
                 <Clock className="mr-3 h-5 w-5 text-accent" /> FOCUS TERMİNALİ
               </Button>
             </div>
@@ -100,18 +98,18 @@ export default function LandingPage() {
             <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-accent/5 blur-[150px] rounded-full translate-x-1/3 -translate-y-1/3" />
             <div className="container mx-auto grid lg:grid-cols-2 gap-16 items-center relative z-10 px-6 md:px-12">
               <div className="space-y-8 text-white text-center lg:text-left">
-                 <h2 className="text-4xl md:text-7xl lg:text-8xl font-black italic tracking-tighter leading-[0.85] uppercase text-white text-shadow-premium">Maksimum <br /><span className="text-accent text-shadow-accent">Odaklanma</span></h2>
-                 <p className="text-lg md:text-2xl text-white/90 font-medium leading-relaxed italic max-w-xl">
+                 <h2 className="text-5xl md:text-7xl lg:text-8xl font-black italic tracking-tighter leading-[0.85] uppercase text-white text-shadow-premium">Maksimum <br /><span className="text-accent text-shadow-accent">Odaklanma</span></h2>
+                 <p className="text-lg md:text-2xl text-white/95 font-medium leading-relaxed italic max-w-xl">
                    Apple tasarım standartlarında optimize edilmiş Pomodoro terminali ile ders çalışma seanslarınızın verimini anında %40 artırın.
                  </p>
                  <div className="grid grid-cols-2 gap-8 md:gap-12 pt-10 border-t border-white/10">
                     <div>
                        <p className="text-4xl md:text-7xl font-black text-accent text-shadow-accent">%94</p>
-                       <p className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.4em] text-white/40 italic mt-2">ODAK SKORU</p>
+                       <p className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.4em] text-white/60 italic mt-2">ODAK SKORU</p>
                     </div>
                     <div>
                        <p className="text-4xl md:text-7xl font-black text-white text-shadow-deep">25dk</p>
-                       <p className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.4em] text-white/40 italic mt-2">İDEAL SEANS</p>
+                       <p className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.4em] text-white/60 italic mt-2">İDEAL SEANS</p>
                     </div>
                  </div>
               </div>
@@ -119,7 +117,7 @@ export default function LandingPage() {
               <div className="bg-white/5 backdrop-blur-3xl rounded-[3rem] md:rounded-[4rem] p-8 md:p-16 border border-white/10 shadow-3xl text-center space-y-12 w-full max-w-md mx-auto lg:max-w-none">
                  <div className="flex justify-center gap-4">
                     <span className="px-6 md:px-8 py-3 rounded-2xl bg-white text-primary text-[8px] md:text-[10px] font-black tracking-widest shadow-xl">ÇALIŞMA</span>
-                    <span className="px-6 md:px-8 py-3 rounded-2xl bg-white/5 text-white/60 text-[8px] md:text-[10px] font-black tracking-widest">MOLA</span>
+                    <span className="px-6 md:px-8 py-3 rounded-2xl bg-white/5 text-white/80 text-[8px] md:text-[10px] font-black tracking-widest">MOLA</span>
                  </div>
                  <p className="text-[6rem] md:text-[11rem] font-black italic tracking-tighter text-white leading-none text-shadow-premium">25<span className="text-accent animate-pulse">:</span>00</p>
                  <div className="flex justify-center gap-6 md:gap-8">
@@ -143,7 +141,7 @@ export default function LandingPage() {
                       <f.icon className={cn("h-8 w-8 md:h-10 md:w-10", f.iconColor || "text-primary")} />
                    </div>
                    <h3 className="text-xl md:text-3xl font-black italic tracking-tighter text-primary uppercase mb-4 leading-tight">{f.title}</h3>
-                   <p className="text-base md:text-lg font-medium text-muted-foreground italic leading-relaxed opacity-70">{f.desc}</p>
+                   <p className="text-base md:text-lg font-medium text-muted-foreground italic leading-relaxed opacity-80">{f.desc}</p>
                 </div>
               ))}
            </div>

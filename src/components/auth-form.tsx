@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -7,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import {
   useAuth,
   useFirestore,
-  useCollection,
   useUser,
 } from '@/firebase';
 
@@ -18,11 +18,9 @@ import {
 } from 'firebase/auth';
 
 import {
-  collection,
   doc,
   serverTimestamp,
   setDoc,
-  orderBy,
 } from 'firebase/firestore';
 
 import { useRouter } from 'next/navigation';
@@ -33,7 +31,6 @@ import {
   Mail,
   Lock,
   User,
-  School,
   UserRound,
   Brain,
   Key,
@@ -42,7 +39,8 @@ import {
   CheckCircle,
   Zap,
   Target,
-  Sparkles
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -62,7 +60,6 @@ interface ExamItem {
   title: string;
   category?: string;
   targetGroup?: string;
-  icon?: any;
 }
 
 export function AuthForm({
@@ -197,10 +194,10 @@ export function AuthForm({
                 <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-14 focus-visible:ring-accent" placeholder="••••••••" />
               </div>
            </div>
-           <Button type="submit" disabled={loading} className="w-full h-20 rounded-[2.5rem] bg-primary hover:bg-accent text-white font-black text-sm uppercase tracking-[0.4em] shadow-2xl gap-4 transition-all active:scale-95">
+           <Button type="submit" disabled={loading} className="w-full h-20 rounded-[2.5rem] bg-primary hover:bg-accent text-white font-black text-sm uppercase tracking-[0.4em] shadow-2xl gap-4 transition-all active:scale-95 border-none">
               {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <LogIn className="h-6 w-6 text-accent" />} ERİŞİM SAĞLA
            </Button>
-           <button type="button" onClick={() => setAuthMode('register')} className="w-full text-center text-[11px] font-black uppercase tracking-widest text-primary/40 hover:text-accent italic">YENİ AKADEMİK KAYIT OLUŞTUR</button>
+           <button type="button" onClick={() => setAuthMode('register')} className="w-full text-center text-[11px] font-black uppercase tracking-widest text-primary/40 hover:text-accent italic transition-colors">YENİ AKADEMİK KAYIT OLUŞTUR</button>
         </form>
       </div>
     );
@@ -304,10 +301,10 @@ export function AuthForm({
            </div>
         )}
 
-        <Button type="submit" disabled={loading} className="w-full h-24 rounded-[3rem] bg-[#0F172A] hover:bg-accent text-white font-black text-xl uppercase tracking-[0.4em] shadow-[0_40px_80px_-20px_rgba(15,23,42,0.45)] gap-6 transition-all active:scale-95 group">
+        <Button type="submit" disabled={loading} className="w-full h-24 rounded-[3rem] bg-[#0F172A] hover:bg-accent text-white font-black text-xl uppercase tracking-[0.4em] shadow-[0_40px_80px_-20px_rgba(15,23,42,0.45)] gap-6 transition-all active:scale-95 group border-none">
            {loading ? <Loader2 className="h-8 w-8 animate-spin" /> : <Zap className="h-8 w-8 text-accent group-hover:animate-pulse" />} KAYDI TAMAMLA
         </Button>
-        <button type="button" onClick={() => setAuthMode('login')} className="w-full text-center text-[10px] font-black uppercase tracking-[0.3em] text-primary/30 hover:text-primary italic">ZATEN BİR HESABIM VAR → GİRİŞ YAP</button>
+        <button type="button" onClick={() => setAuthMode('login')} className="w-full text-center text-[10px] font-black uppercase tracking-[0.3em] text-primary/30 hover:text-primary italic transition-colors">ZATEN BİR HESABIM VAR → GİRİŞ YAP</button>
       </form>
     </div>
   );

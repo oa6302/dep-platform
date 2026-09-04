@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -136,8 +135,8 @@ export default function PlanningPage() {
         if (!isAytTime) {
           // 1 ARALIK ÖNCESİ: AYT ve Edebiyat gibi ağır AYT konularını filtrele
           return pool.filter(l => 
-            l.startsWith('TYT') || 
-            ['Tarih', 'Coğrafya', 'Felsefe', 'Din Kültürü', 'Türkçe', 'Matematik'].includes(l)
+            !l.includes('AYT') && 
+            !['Edebiyat'].includes(l)
           );
         }
         return pool;

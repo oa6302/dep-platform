@@ -1,9 +1,9 @@
 /**
  * @fileOverview Omni-Curriculum Verisi (ÖSYM, MEB ve YÖK Standartları)
+ * Tüm anahtarlar EXAM_CONFIGS ile tam uyumlu hale getirilmiştir.
  */
 
 export const YKS_TM_TOPICS: Record<string, string[]> = {
-  // YKS - Ortak & TM
   'TYT Türkçe': [
     'Sözcükte Anlam (Gerçek-Mecaz-Yan Anlam)', 
     'Söz Öbeklerinde Anlam (Deyimler-Atasözleri)',
@@ -38,41 +38,30 @@ export const YKS_TM_TOPICS: Record<string, string[]> = {
     'Divan Edebiyatı', 'Tanzimat Edebiyatı', 'Servet-i Fünun', 'Milli Edebiyat', 
     'Cumhuriyet Dönemi Şiir', 'Cumhuriyet Dönemi Roman', 'Cumhuriyet Dönemi Tiyatro'
   ],
-  'Tarih': [
+  'TYT Tarih': [
     'Tarih ve Zaman', 'İlk Çağ Uygarlıkları', 'İslam Tarihi', 'Türk-İslam Devletleri', 
     'Osmanlı Kuruluş ve Yükselme', 'Osmanlı Duraklama ve Gerileme', 'Osmanlı Dağılma',
     'Milli Mücadele Hazırlık', 'Kurtuluş Savaşı', 'Atatürk İlkeleri ve İnkılapları'
   ],
-  'Coğrafya': [
+  'AYT Tarih': [
+    'Tarih Bilimi', 'Uygarlığın Doğuşu', 'Orta Çağda Dünya', 'Türklerin İslamiyeti Kabulü',
+    'Beylikten Devlete Osmanlı', 'Dünya Gücü Osmanlı', 'Modernleşen Türkiye', '21. Yüzyıl Dünyası'
+  ],
+  'TYT Coğrafya': [
     'Doğa ve İnsan', 'Dünya\'nın Şekli ve Hareketleri', 'Harita Bilgisi', 'Atmosfer ve İklim', 
     'İç ve Dış Kuvvetler', 'Nüfus ve Yerleşme', 'Ekonomik Faaliyetler', 'Bölgeler',
     'Türkiye\'nin Yer Şekilleri', 'Doğal Afetler'
   ],
-  'Felsefe': [
+  'AYT Coğrafya': [
+    'Ekosistemlerin İşleyişi', 'Biyoçeşitlilik', 'Nüfus Politikaları', 'Türkiye Ekonomisi',
+    'Küresel Ticaret', 'Sıcak Bölgeler', 'Çevre ve Toplum'
+  ],
+  'TYT Felsefe': [
     'Felsefe ile Tanışma', 'Bilgi Felsefesi (Epistemoloji)', 'Varlık Felsefesi (Ontoloji)', 
     'Ahlak Felsefesi (Etik)', 'Din Felsefesi', 'Siyaset Felsefesi', 'Bilim Felsefesi'
   ],
-
-  // YKS - Sayısal Ek
-  'Fizik': ['Vektörler', 'Kuvvet ve Hareket', 'Enerji', 'Elektrik ve Manyetizma', 'Optik', 'Modern Fizik'],
-  'Kimya': ['Atom ve Periyodik Sistem', 'Kimyasal Türler', 'Sıvı Çözeltiler', 'Enerji', 'Hız', 'Organik Kimya'],
-  'Biyoloji': ['Hücre', 'Kalıtım', 'Ekoloji', 'Sistemler', 'Bitki Biyolojisi'],
-
-  // LGS Ek
-  'Fen Bilimleri': ['Mevsimler ve İklim', 'DNA ve Genetik Kod', 'Basınç', 'Madde ve Endüstri', 'Işığın Kırılması'],
-  'İnkılap Tarihi': ['Bir Kahraman Doğuyor', 'Milli Uyanış', 'Ya İstiklal Ya Ölüm', 'Atatürkçülük'],
-  'İngilizce': ['Friendship', 'Teen Life', 'In The Kitchen', 'On The Phone', 'The Internet'],
-
-  // KPSS & ALES Ek
-  'Vatandaşlık': ['Hukukun Temel Kavramları', 'Devlet ve Hükümet', '1982 Anayasası', 'İdare Hukuku'],
-  'Güncel Bilgiler': ['Kültürel Gelişmeler', 'Uluslararası Örgütler', 'Ekonomik Veriler', 'Spor ve Sanat'],
-  'Matematik': ['Sayılar', 'Problemler', 'Mantıksal Akıl Yürütme', 'Tablo ve Grafik Yorumlama'],
-  'Türkçe': ['Sözcük ve Cümle Anlamı', 'Paragraf Analizi', 'Sözel Mantık'],
-  'Sayısal Mantık': ['Diziler', 'Şekil Yeteneği', 'Veri Analizi', 'Karmaşık Mantık Problemleri'],
-  'Sözel Mantık': ['Kesin Çıkarım', 'Yerleştirme Problemleri', 'Mantıksal Çerçeveleme'],
-
-  // Yabancı Dil
-  'Gramer': ['Tenses', 'Modals', 'Passive Voice', 'Conjunctions', 'Relative Clauses'],
-  'Kelime Bilgisi': ['Phrasal Verbs', 'Academic Vocabulary', 'Synonyms & Antonyms'],
-  'Okuma Anlama': ['Sentence Completion', 'Paragraph Completion', 'Restatement']
+  'TYT Din': [
+    'Bilgi ve İnanç', 'İbadet ve Ahlak', 'Hz. Muhammed (S.A.V)', 'Vahiy ve Akıl', 'İslam ve Barış',
+    'Türklerin Müslüman Olma Süreci', 'İslam Medeniyetinde Bilim'
+  ]
 };

@@ -19,7 +19,7 @@ import { tr } from 'date-fns/locale';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
 
-// Otonom Adaptive Planlama Motoru v7.0
+// Otonom Adaptive Planlama Motoru v10.0
 export const generateAdaptivePlan = (startDateStr: string, completedTopics: any = {}) => {
   const plan = [];
   const config = EXAM_CONFIGS['YKS_EA'];
@@ -32,7 +32,13 @@ export const generateAdaptivePlan = (startDateStr: string, completedTopics: any 
 
   // Çalışılmamış (Eksik) Konuları Filtreleme
   const getRemainingTopics = (lesson: string) => {
-    const allTopics = YKS_TM_TOPICS[lesson] || [];
+    // Normal anahtarı dene, bulamazsa TYT/AYT kısmını kaldırıp dene
+    let allTopics = YKS_TM_TOPICS[lesson];
+    if (!allTopics) {
+      const fallbackKey = lesson.replace('TYT ', '').replace('AYT ', '');
+      allTopics = YKS_TM_TOPICS[fallbackKey] || [];
+    }
+    
     const done = completedTopics[lesson] || [];
     return allTopics.filter(t => !done.includes(t));
   };
@@ -46,7 +52,7 @@ export const generateAdaptivePlan = (startDateStr: string, completedTopics: any 
     
     const dailyBlocks = [];
     
-    // Ders Havuzu Belirleme (1 Aralık Öncesi vs Sonrası)
+    // Ders Havuzu Belirleme
     const currentLessons = isAytStarted 
       ? [...config.tytLessons.slice(0, 2), ...config.aytLessons] 
       : config.tytLessons;
@@ -54,19 +60,25 @@ export const generateAdaptivePlan = (startDateStr: string, completedTopics: any 
     // Günlük 2 Ana Ders Bloğu
     for (let j = 0; j < 2; j++) {
       const lesson = currentLessons[(i * 2 + j) % currentLessons.length];
-      if (!lessonPointers[lesson]) lessonPointers[lesson] = 0;
+      if (lessonPointers[lesson] === undefined) lessonPointers[lesson] = 0;
       
       const remainingTopics = getRemainingTopics(lesson);
-      const allTopics = YKS_TM_TOPICS[lesson] || ['Genel Tekrar'];
       
-      // Eğer çalışılmamış konu bittiyse genel tekrar yaptır
+      // Eğer müfredatta ders varsa
+      let allTopicsInList = YKS_TM_TOPICS[lesson];
+      if (!allTopicsInList) {
+        const fallbackKey = lesson.replace('TYT ', '').replace('AYT ', '');
+        allTopicsInList = YKS_TM_TOPICS[fallbackKey] || ['Genel Tekrar'];
+      }
+
+      // Konu Belirleme: Eksik konu varsa onu al, yoksa müfredatı döngüye sok
       const topic = remainingTopics.length > 0 
         ? remainingTopics[lessonPointers[lesson] % remainingTopics.length]
-        : allTopics[lessonPointers[lesson] % allTopics.length];
+        : allTopicsInList[lessonPointers[lesson] % allTopicsInList.length];
       
       lessonPointers[lesson]++;
       
-      const topicQuery = encodeURIComponent(topic);
+      const topicQuery = encodeURIComponent(lesson + ' ' + topic);
       
       dailyBlocks.push({
         id: `block_${dateStr}_${j}`,
@@ -75,30 +87,28 @@ export const generateAdaptivePlan = (startDateStr: string, completedTopics: any 
         status: 'planned',
         phase1: { type: 'KONU ÇALIŞMA', time: j === 0 ? '10:00' : '11:00' },
         phase2: { type: 'TEST ÇÖZME' },
-        // Konu Linkleri (4 Link)
-        youtubeUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic)}`,
+        youtubeUrl: `https://www.youtube.com/results?search_query=${topicQuery}`,
         pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}`,
         mebiUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}`,
         konuExtraUrl: '',
-        // Test Linkleri (4 Link)
-        testYoutubeUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic + ' soru çözümü')}`,
+        testYoutubeUrl: `https://www.youtube.com/results?search_query=${topicQuery}+soru+çözümü`,
         testPdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}+test`,
         testUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}+test`,
         extraUrl: ''
       });
     }
     
-    // Stratejik Tekrar ve Analiz
+    // Stratejik Tekrar
     dailyBlocks.push({
       id: `review_${dateStr}`,
-      lesson: 'GENEL',
-      topic: isAytStarted ? 'AYT/TYT Karma Tekrar & Analiz' : 'Dünün Analizi & TYT Tekrar',
+      lesson: 'STRATEJİK',
+      topic: isAytStarted ? 'AYT/TYT Karma Tekrar' : 'Dünün Analizi & TYT Tekrar',
       status: 'planned',
       isReview: true,
       phase1: { type: 'STRATEJİK', time: '12:00' }
     });
 
-    // Günlük Kamp
+    // Paragraf Kampı
     dailyBlocks.push({
       id: `para_${dateStr}`,
       lesson: 'TYT Türkçe',
@@ -107,8 +117,6 @@ export const generateAdaptivePlan = (startDateStr: string, completedTopics: any 
       isParagraph: true,
       phase1: { type: 'GÜNLÜK KAMP', time: '15:00' },
       youtubeUrl: `https://www.youtube.com/results?search_query=paragraf+soru+çözümü`,
-      pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=Paragraf`,
-      mebiUrl: `https://www.eba.gov.tr/arama?q=Paragraf`,
       testUrl: `https://www.eba.gov.tr/arama?q=Paragraf+test`
     });
 

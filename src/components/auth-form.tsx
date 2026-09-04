@@ -87,43 +87,33 @@ export function AuthForm({
   const { data: dbPrograms } = useCollection<any>('programs', orderBy('title', 'asc'));
 
   const categorizedExams = useMemo(() => {
-    const categories = ['ORTAOKUL', 'ÜNİVERSİTE', 'MEB SINAVLARI', 'KAMU SINAVLARI', 'AKADEMİK', 'YABANCI DİL', 'ÜNİVERSİTE GEÇİŞ', 'DİNÎ EĞİTİM', 'AKADEMİK DESTEK', 'ÖZEL PROGRAMLAR'];
+    const categories = ['ORTAOKUL', 'ÜNİVERSİTE', 'KAMU SINAVLARI', 'AKADEMİK', 'YABANCI DİL'];
     const grouped: Record<string, ExamItem[]> = {};
     categories.forEach((category) => { grouped[category] = []; });
 
     Object.values(EXAM_CONFIGS).forEach((exam: any) => {
-      const category = exam.category || 'ÖZEL PROGRAMLAR';
+      const category = exam.category || 'ÜNİVERSİTE';
       if (!grouped[category]) grouped[category] = [];
       grouped[category].push(exam);
     });
 
-    if (dbPrograms) {
-      dbPrograms.forEach((exam: any) => {
-        const category = exam.category || 'ÖZEL PROGRAMLAR';
-        if (!grouped[category]) grouped[category] = [];
-        if (!grouped[category].find(e => e.id === exam.id)) grouped[category].push(exam);
-      });
-    }
-
     return grouped;
-  }, [dbPrograms]);
+  }, []);
 
   const handleAction = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!db) return;
+    if (!db || !auth) return;
 
     setLoading(true);
     try {
       let finalUser = currentUser;
       
-      // Eğer profil tamamlama değilse ve kayıt modundaysa yeni hesap oluştur
       if (!isProfileCompletion && authMode === 'register') {
-        if (!auth) throw new Error('Auth servisi bulunamadı.');
         const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
         finalUser = credential.user;
       }
 
-      if (!finalUser) throw new Error('Kullanıcı oturumu bulunamadı.');
+      if (!finalUser) throw new Error('Oturum başlatılamadı.');
 
       await updateProfile(finalUser, { displayName: displayName.trim() });
 
@@ -138,6 +128,10 @@ export function AuthForm({
 
       if (!isProfileCompletion) {
         userData.createdAt = serverTimestamp();
+        // Varsayılan aktivasyon kodu üretimi (Öğretmenler için)
+        if (role === 'teacher') {
+          userData.activationCode = `DK-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        }
       }
 
       if (role !== 'student' && schoolName) {
@@ -147,14 +141,14 @@ export function AuthForm({
       await setDoc(doc(db, 'users', finalUser.uid), userData, { merge: true });
       
       toast({ 
-        title: 'Sistem Yapılandırıldı', 
-        description: 'Profiliniz saniyeler içinde başarıyla oluşturuldu.',
+        title: 'Kayıt Başarılı', 
+        description: 'Profiliniz saniyeler içinde yapılandırıldı.',
         className: "bg-primary text-white rounded-[2rem]"
       });
       
       router.replace('/dashboard');
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'İşlem Başarısız', description: error.message });
+      toast({ variant: 'destructive', title: 'Hata', description: error.message });
     } finally {
       setLoading(false);
     }
@@ -174,175 +168,103 @@ export function AuthForm({
     }
   };
 
-  // GİRİŞ EKRANI
   if (authMode === 'login' && !isProfileCompletion) {
     return (
-      <div className="max-w-md mx-auto space-y-12 animate-in fade-in duration-700 px-4 w-full">
+      <div className="max-w-md mx-auto space-y-12 px-4 w-full">
         <div className="text-center space-y-3">
-           <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep">SİSTEME DÖN</h2>
-           <p className="text-[10px] font-black text-primary/40 uppercase tracking-[0.4em] italic">Operational Node v4.8</p>
+           <h2 className="text-4xl font-black italic tracking-tighter text-primary uppercase">SİSTEME GİRİŞ</h2>
+           <p className="text-[10px] font-black text-primary/40 uppercase tracking-[0.4em]">Terminal v4.8</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-6">
            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60 ml-4 italic">SİSTEM E-POSTASI</Label>
-              <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-6 text-primary" placeholder="ornek@email.com" />
+              <Label className="text-[10px] font-black uppercase tracking-widest text-primary/60 ml-4">E-POSTA</Label>
+              <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-6" placeholder="ornek@email.com" />
            </div>
            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60 ml-4 italic">ŞİFRE</Label>
-              <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-6 text-primary" placeholder="••••••••" />
+              <Label className="text-[10px] font-black uppercase tracking-widest text-primary/60 ml-4">ŞİFRE</Label>
+              <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-6" placeholder="••••••••" />
            </div>
-           <Button type="submit" disabled={loading} className="w-full h-20 rounded-[2rem] bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-[0.4em] shadow-2xl gap-4 text-white">
+           <Button type="submit" disabled={loading} className="w-full h-20 rounded-[2rem] bg-primary hover:bg-accent text-white font-black text-xs uppercase tracking-[0.4em] shadow-2xl gap-4">
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogIn className="h-5 w-5 text-accent" />} ERİŞİM SAĞLA
            </Button>
-           <button type="button" onClick={() => setAuthMode('register')} className="w-full text-center text-[11px] font-black uppercase tracking-widest text-primary/40 hover:text-accent transition-colors">YENİ KURULUM BAŞLAT</button>
+           <button type="button" onClick={() => setAuthMode('register')} className="w-full text-center text-[11px] font-black uppercase tracking-widest text-primary/40 hover:text-accent">YENİ KAYIT OLUŞTUR</button>
         </form>
       </div>
     );
   }
 
-  // KAYIT VE PROFİL TAMAMLAMA EKRANI
   return (
-    <div className="max-w-2xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000 px-4 md:px-6 w-full">
-      <form onSubmit={handleAction} className="space-y-12">
-        {/* ROL SEÇİMİ */}
-        <div className="space-y-8">
-          <Label className="text-[11px] font-black uppercase tracking-[0.5em] text-primary/60 block text-center italic">ROLÜNÜZÜ BELİRLEYİN</Label>
-          <div className="grid grid-cols-3 gap-4 md:gap-8">
-            {[
-              { id: 'student', label: 'ÖĞRENCİ', icon: UserRound },
-              { id: 'teacher', label: 'EĞİTMEN', icon: Brain },
-              { id: 'school_admin', label: 'KURUM', icon: Building },
-            ].map((r) => {
-              const Icon = r.icon;
-              return (
-                <button
-                  key={r.id}
-                  type="button"
-                  onClick={() => setRole(r.id as UserRole)}
-                  className={cn(
-                    'p-6 md:p-10 rounded-[2rem] md:rounded-[2.5rem] border-2 transition-all duration-500 flex flex-col items-center gap-3 md:gap-5 group',
-                    role === r.id ? 'border-accent bg-white shadow-[0_30px_60px_-10px_rgba(245,158,11,0.2)] scale-[1.05]' : 'border-primary/5 bg-slate-50 opacity-40 hover:opacity-100'
-                  )}
-                >
-                  <Icon className={cn('h-6 w-6 md:h-10 md:w-10 transition-transform group-hover:scale-110', role === r.id ? 'text-accent' : 'text-primary')} />
-                  <span className="font-black text-[8px] md:text-[9px] tracking-[0.2em] md:tracking-[0.3em] uppercase text-center">{r.label}</span>
-                </button>
-              );
-            })}
-          </div>
+    <div className="max-w-2xl mx-auto space-y-12 px-4 w-full">
+      <div className="text-center space-y-3">
+         <h2 className="text-4xl font-black italic tracking-tighter text-primary uppercase">ÜYE OL / KURULUM</h2>
+         <p className="text-[10px] font-black text-primary/40 uppercase tracking-[0.4em]">Master Engine v4.8</p>
+      </div>
+      <form onSubmit={handleAction} className="space-y-10">
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { id: 'student', label: 'ÖĞRENCİ', icon: UserRound },
+            { id: 'teacher', label: 'EĞİTMEN', icon: Brain },
+            { id: 'school_admin', label: 'KURUM', icon: Building },
+          ].map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => setRole(r.id as UserRole)}
+              className={cn(
+                'p-5 rounded-2xl border-2 transition-all flex flex-col items-center gap-3',
+                role === r.id ? 'border-accent bg-white shadow-xl scale-105' : 'border-primary/5 bg-slate-50 opacity-40'
+              )}
+            >
+              <r.icon className={cn('h-6 w-6', role === r.id ? 'text-accent' : 'text-primary')} />
+              <span className="font-black text-[8px] tracking-widest uppercase">{r.label}</span>
+            </button>
+          ))}
         </div>
 
-        {/* TEMEL BİLGİLER */}
-        <div className="space-y-6 md:space-y-8">
-          <div className="space-y-3">
-             <Label className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60 ml-6 italic">TAM AD SOYAD *</Label>
-             <div className="relative group">
-                <User className="absolute left-6 md:left-7 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/20 group-focus-within:text-accent transition-colors" />
-                <Input 
-                  required 
-                  value={displayName} 
-                  onChange={(e) => setDisplayName(e.target.value)} 
-                  className="h-16 md:h-20 rounded-[1.5rem] md:rounded-[2rem] bg-white border-none shadow-xl pl-16 md:pl-20 font-bold text-lg focus-visible:ring-accent text-primary" 
-                  placeholder="Adınız Soyadınız" 
-                />
-             </div>
+        <div className="space-y-6">
+          <div className="space-y-2">
+             <Label className="text-[10px] font-black uppercase text-primary/60 ml-4">AD SOYAD</Label>
+             <Input required value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-6" placeholder="Adınız Soyadınız" />
           </div>
-
           {!isProfileCompletion && (
              <>
-               <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60 ml-6 italic">SİSTEM E-POSTASI *</Label>
-                  <div className="relative group">
-                     <Mail className="absolute left-6 md:left-7 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/20 group-focus-within:text-accent transition-colors" />
-                     <Input 
-                       type="email" 
-                       required 
-                       value={email} 
-                       onChange={(e) => setEmail(e.target.value)} 
-                       className="h-16 md:h-20 rounded-[1.5rem] md:rounded-[2rem] bg-white border-none shadow-xl pl-16 md:pl-20 font-bold text-lg focus-visible:ring-accent text-primary" 
-                       placeholder="ornek@eposta.com" 
-                     />
-                  </div>
+               <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary/60 ml-4">E-POSTA</Label>
+                  <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-6" placeholder="ornek@email.com" />
                </div>
-               <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60 ml-6 italic">GÜVENLİ ŞİFRE *</Label>
-                  <div className="relative group">
-                     <Lock className="absolute left-6 md:left-7 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/20 group-focus-within:text-accent transition-colors" />
-                     <Input 
-                       type="password" 
-                       required 
-                       value={password} 
-                       onChange={(e) => setPassword(e.target.value)} 
-                       className="h-16 md:h-20 rounded-[1.5rem] md:rounded-[2rem] bg-white border-none shadow-xl pl-16 md:pl-20 font-bold text-lg text-primary" 
-                       placeholder="Min. 6 Karakter" 
-                     />
-                  </div>
+               <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-primary/60 ml-4">ŞİFRE</Label>
+                  <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold px-6" placeholder="Min. 6 Karakter" />
                </div>
              </>
           )}
-
-          {role === 'student' ? (
-             <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase tracking-[0.4em] text-accent ml-6 italic">EĞİTMEN KODU (OPSİYONEL)</Label>
-                <div className="relative group">
-                   <Key className="absolute left-6 md:left-7 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/20 group-focus-within:text-accent transition-colors" />
-                   <Input 
-                     value={teacherCode} 
-                     onChange={(e) => setTeacherCode(e.target.value.toUpperCase())} 
-                     className="h-16 md:h-20 rounded-[1.5rem] md:rounded-[2rem] bg-white border-none shadow-xl pl-16 md:pl-20 font-black tracking-[0.3em] text-lg uppercase focus-visible:ring-accent text-primary" 
-                     placeholder="DK-XXXX-XXXX" 
-                   />
-                </div>
-             </div>
-          ) : (
-            <div className="space-y-3">
-               <Label className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60 ml-6 italic">KURUM ADI *</Label>
-               <div className="relative group">
-                  <School className="absolute left-6 md:left-7 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/20 group-focus-within:text-accent transition-colors" />
-                  <Input 
-                    required 
-                    value={schoolName} 
-                    onChange={(e) => setSchoolName(e.target.value)} 
-                    className="h-16 md:h-20 rounded-[1.5rem] md:rounded-[2rem] bg-white border-none shadow-xl pl-16 md:pl-20 font-bold text-lg text-primary" 
-                    placeholder="Çalıştığınız Kurum" 
-                  />
-               </div>
-            </div>
-          )}
         </div>
 
-        {/* HEDEF SEÇİMİ (SADECE ÖĞRENCİ) */}
         {role === 'student' && (
-           <div className="space-y-8">
-              <Label className="text-[11px] font-black uppercase tracking-[0.5em] text-primary/60 block text-center italic">AKADEMİK HEDEFİNİZİ SEÇİN</Label>
-              <div className="bg-[#F8FAFC]/50 rounded-[3rem] md:rounded-[4rem] p-6 md:p-12 border-2 border-white shadow-2xl relative overflow-hidden">
-                 <div className="absolute top-0 right-0 w-48 h-48 bg-accent/5 blur-[80px] rounded-full" />
-                 <ScrollArea className="h-[300px] md:h-[450px] pr-8">
-                    <div className="space-y-12">
+           <div className="space-y-6">
+              <Label className="text-[11px] font-black uppercase tracking-[0.5em] text-primary/60 block text-center">AKADEMİK HEDEF</Label>
+              <div className="bg-slate-50 rounded-[2.5rem] p-4 border-2 border-white shadow-inner">
+                 <ScrollArea className="h-[250px] pr-4">
+                    <div className="space-y-8">
                        {Object.entries(categorizedExams).map(([cat, exams]) => exams.length > 0 && (
-                          <div key={cat} className="space-y-6">
-                             <h4 className="text-[10px] font-black uppercase tracking-[0.5em] text-primary/30 ml-6 italic">{cat}</h4>
-                             <div className="grid gap-4">
+                          <div key={cat} className="space-y-4">
+                             <h4 className="text-[9px] font-black uppercase text-primary/30 ml-4 italic">{cat}</h4>
+                             <div className="grid gap-2">
                                 {exams.map((exam) => (
                                    <button
                                      key={exam.id}
                                      type="button"
                                      onClick={() => setTargetExam(exam.id)}
                                      className={cn(
-                                       "flex items-center justify-between p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border-2 transition-all duration-500 text-left group/item",
-                                       targetExam === exam.id ? "bg-white border-accent shadow-xl scale-[1.02]" : "bg-white/40 border-transparent hover:bg-white/80"
+                                       "flex items-center justify-between p-5 rounded-xl border-2 transition-all text-left",
+                                       targetExam === exam.id ? "bg-white border-accent shadow-md scale-[1.01]" : "bg-white/40 border-transparent"
                                      )}
                                    >
-                                      <div className="flex items-center gap-6 md:gap-8">
-                                         <div className={cn("h-12 w-12 md:h-16 md:w-16 rounded-[1.25rem] md:rounded-[1.5rem] bg-slate-50 flex items-center justify-center shadow-inner group-hover/item:rotate-6 transition-all", targetExam === exam.id ? "bg-accent/10" : "")}>
-                                            <Target className={cn("h-6 w-6 md:h-7 md:w-7", targetExam === exam.id ? "text-accent" : "text-primary/20")} />
-                                         </div>
-                                         <div className="space-y-1">
-                                            <span className={cn("font-black text-sm md:text-lg uppercase tracking-tight block leading-none", targetExam === exam.id ? "text-primary" : "text-primary/60")}>{exam.title}</span>
-                                            <span className="text-[8px] md:text-[9px] font-black text-primary/30 uppercase tracking-[0.2em]">{exam.targetGroup}</span>
-                                         </div>
+                                      <div className="flex items-center gap-4">
+                                         <Target className={cn("h-4 w-4", targetExam === exam.id ? "text-accent" : "text-primary/20")} />
+                                         <span className="font-black text-xs uppercase">{exam.title}</span>
                                       </div>
-                                      {targetExam === exam.id && <CheckCircle className="h-6 w-6 md:h-8 md:w-8 text-accent animate-in zoom-in-50" />}
+                                      {targetExam === exam.id && <CheckCircle className="h-4 w-4 text-accent" />}
                                    </button>
                                 ))}
                              </div>
@@ -354,20 +276,11 @@ export function AuthForm({
            </div>
         )}
 
-        <div className="pt-8">
-          <Button
-            type="submit"
-            disabled={loading}
-            className="w-full h-24 md:h-32 rounded-[2.5rem] md:rounded-[3.5rem] bg-[#0F172A] hover:bg-accent transition-all duration-700 font-black text-xl md:text-2xl uppercase tracking-[0.4em] md:tracking-[0.5em] gap-6 md:gap-10 shadow-[0_50px_100px_-20px_rgba(15,23,42,0.45)] group/btn text-white"
-          >
-            {loading ? <Loader2 className="h-8 w-8 md:h-10 md:w-10 animate-spin" /> : <Zap className="h-8 w-8 md:h-10 md:w-10 text-accent group-hover/btn:animate-pulse" />}
-            KURULUMU TAMAMLA
-          </Button>
-        </div>
+        <Button type="submit" disabled={loading} className="w-full h-24 rounded-[2.5rem] bg-primary hover:bg-accent text-white font-black text-xl uppercase tracking-[0.4em] shadow-2xl gap-6">
+           {loading ? <Loader2 className="h-8 w-8 animate-spin" /> : <Zap className="h-8 w-8 text-accent" />} KAYDI TAMAMLA
+        </Button>
+        <button type="button" onClick={() => setAuthMode('login')} className="w-full text-center text-[10px] font-black uppercase tracking-[0.3em] text-primary/30 hover:text-primary italic">ZATEN BİR HESABIM VAR → GİRİŞ YAP</button>
       </form>
-      {!isProfileCompletion && (
-         <button type="button" onClick={() => setAuthMode('login')} className="w-full text-center text-[10px] font-black uppercase tracking-[0.3em] text-primary/30 hover:text-primary transition-all italic">ZATEN BİR HESABIM VAR → GİRİŞ YAP</button>
-      )}
     </div>
   );
 }

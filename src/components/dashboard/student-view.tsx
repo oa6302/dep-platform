@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Sparkles, Brain, CheckCircle2, Loader2, 
   Youtube, FileText, BellRing, Edit3, BookOpen, 
-  Zap, Target, BookOpenCheck
+  Zap, Target, BookOpenCheck, ArrowRight
 } from 'lucide-react';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -87,11 +87,11 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
             <div className="inline-flex items-center gap-4 text-accent font-black text-[10px] uppercase tracking-[0.3em] italic bg-white/5 px-6 py-2 rounded-full border border-white/10">
               <Brain className="h-5 w-5 animate-pulse" /> AOS YAPAY ZEKA MENTORU
             </div>
-            <p className="text-3xl md:text-5xl font-black italic leading-[0.95] text-shadow-premium uppercase tracking-tighter">
+            <p className="text-3xl md:text-5xl font-black italic leading-[0.95] text-shadow-premium uppercase tracking-tighter text-white">
                "Bugün {currentDayPlan?.blocks?.length || 0} devasa akademik blok saniyeler içinde seni bekliyor."
             </p>
           </div>
-          <Button onClick={() => router.push('/dashboard/planning')} className="w-full md:w-auto bg-accent hover:bg-white hover:text-primary transition-all duration-500 rounded-[2rem] h-20 px-12 font-black uppercase text-[12px] tracking-[0.3em] shadow-3xl text-primary">AKADEMİK TAKVİM</Button>
+          <Button onClick={() => router.push('/dashboard/planning')} className="w-full md:w-auto bg-accent hover:bg-white hover:text-primary transition-all duration-500 rounded-[2rem] h-20 px-12 font-black uppercase text-[12px] tracking-[0.3em] shadow-3xl text-primary border-none">AKADEMİK TAKVİM</Button>
         </div>
       </section>
 
@@ -101,7 +101,6 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
              <Badge className="bg-white text-primary border-2 border-slate-100 rounded-3xl px-8 py-3.5 font-black uppercase text-[10px] tracking-[0.2em] shadow-lg">{format(new Date(), 'd MMMM yyyy', { locale: tr })}</Badge>
         </div>
 
-        {/* QUAD GRID - 4 per row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
              {currentDayPlan?.blocks?.map((block: any) => (
                 <Card 
@@ -115,7 +114,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                         <div className="flex justify-between items-start gap-2">
                            <div className="space-y-1 flex-1 min-w-0">
                               <h4 className="text-2xl font-black italic leading-tight tracking-tighter uppercase text-primary text-shadow-deep line-clamp-2">{block.topic}</h4>
-                              <p className="text-[8px] font-bold text-primary/30 uppercase tracking-widest italic">#{block.lesson.substring(0, 3)}</p>
+                              <p className="text-[8px] font-bold text-muted-foreground/40 uppercase tracking-widest italic">#{block.lesson.substring(0, 3)}</p>
                            </div>
                            <Badge className={cn("px-4 py-1.5 rounded-full text-[8px] font-black shrink-0", block.status === 'done' ? "bg-emerald-500 text-white" : "bg-[#FF4D6D] text-white shadow-lg")}>
                               {block.status === 'done' ? 'TAMAM' : 'BEK'}
@@ -132,7 +131,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                                     {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="text-emerald-500 hover:scale-110 transition-all"><BookOpen className="h-4 w-4" /></a>}
                                  </div>
                               </div>
-                              <p className="text-[10px] font-bold text-primary opacity-60 uppercase italic">{block.phase1?.type || (block.isReview ? 'STRATEJİK TEKRAR' : 'DERS ÇALIŞMASI')}</p>
+                              <p className="text-[10px] font-bold text-primary opacity-60 uppercase italic leading-tight">{block.phase1?.type || (block.isReview ? 'STRATEJİK TEKRAR' : 'DERS ÇALIŞMASI')}</p>
                            </div>
                         </div>
 
@@ -153,7 +152,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                 </Card>
              ))}
              {(!currentDayPlan || currentDayPlan?.blocks?.length === 0) && (
-                <Card onClick={() => router.push('/dashboard/planning')} className="lg:col-span-4 h-[300px] text-center bg-white rounded-[4rem] border-4 border-dashed border-slate-200 flex flex-col items-center justify-center gap-6 cursor-pointer hover:border-accent/20 transition-all group">
+                <Card onClick={() => router.push('/dashboard/planning')} className="lg:col-span-4 h-[300px] text-center bg-white rounded-[4rem] border-4 border-dashed border-slate-200 flex flex-col items-center justify-center gap-6 cursor-pointer hover:border-accent/20 transition-all group w-full">
                    <Zap className="h-10 w-10 text-accent opacity-20 group-hover:scale-110 transition-transform" />
                    <p className="text-xl font-black uppercase tracking-[0.4em] text-primary/20 italic">AKADEMİK TAKVİM BEKLENİYOR</p>
                 </Card>

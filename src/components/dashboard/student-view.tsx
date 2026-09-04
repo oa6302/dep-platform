@@ -88,7 +88,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
               <Brain className="h-5 w-5 animate-pulse" /> AOS YAPAY ZEKA MENTORU
             </div>
             <p className="text-3xl md:text-5xl font-black italic leading-[0.95] text-shadow-premium uppercase tracking-tighter">
-               "Bugün {currentDayPlan?.blocks?.length || 0} devasa akademik blok seni bekliyor."
+               "Bugün {currentDayPlan?.blocks?.length || 0} devasa akademik blok saniyeler içinde seni bekliyor."
             </p>
           </div>
           <Button onClick={() => router.push('/dashboard/planning')} className="w-full md:w-auto bg-accent hover:bg-white hover:text-primary transition-all duration-500 rounded-[2rem] h-20 px-12 font-black uppercase text-[12px] tracking-[0.3em] shadow-3xl text-primary">AKADEMİK TAKVİM</Button>
@@ -101,6 +101,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
              <Badge className="bg-white text-primary border-2 border-slate-100 rounded-3xl px-8 py-3.5 font-black uppercase text-[10px] tracking-[0.2em] shadow-lg">{format(new Date(), 'd MMMM yyyy', { locale: tr })}</Badge>
         </div>
 
+        {/* QUAD GRID - 4 per row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
              {currentDayPlan?.blocks?.map((block: any) => (
                 <Card 
@@ -114,15 +115,15 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                         <div className="flex justify-between items-start gap-2">
                            <div className="space-y-1 flex-1 min-w-0">
                               <h4 className="text-2xl font-black italic leading-tight tracking-tighter uppercase text-primary text-shadow-deep line-clamp-2">{block.topic}</h4>
-                              <p className="text-[8px] font-bold text-muted-foreground/40 uppercase tracking-widest italic">#{block.lesson.substring(0, 3)}</p>
+                              <p className="text-[8px] font-bold text-primary/30 uppercase tracking-widest italic">#{block.lesson.substring(0, 3)}</p>
                            </div>
-                           <Badge className={cn("px-4 py-1.5 rounded-full text-[8px] font-black shrink-0", block.status === 'done' ? "bg-emerald-500 text-white" : "bg-[#FF4D6D] text-white")}>
+                           <Badge className={cn("px-4 py-1.5 rounded-full text-[8px] font-black shrink-0", block.status === 'done' ? "bg-emerald-500 text-white" : "bg-[#FF4D6D] text-white shadow-lg")}>
                               {block.status === 'done' ? 'TAMAM' : 'BEK'}
                            </Badge>
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 flex-1">
-                           <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100 space-y-2 hover:bg-white transition-all">
+                           <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100 space-y-2 hover:bg-white transition-all shadow-inner">
                               <div className="flex justify-between items-center border-b border-slate-200 pb-1.5">
                                  <span className="text-[8px] font-black text-primary/30 uppercase tracking-[0.2em]">KAYNAKLAR</span>
                                  <div className="flex gap-2">

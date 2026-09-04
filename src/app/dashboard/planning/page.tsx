@@ -60,6 +60,8 @@ export default function PlanningPage() {
       youtubeUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic)}`,
       pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}`,
       mebiUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}`,
+      testYoutubeUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic + ' soru çözümü')}`,
+      testPdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}+test`,
       testUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}+test`,
       extraUrl: ''
     };
@@ -148,8 +150,7 @@ export default function PlanningPage() {
           topic: 'DÜNÜN ANALİZİ & STRATEJİK TEKRAR',
           status: existingDay?.blocks?.find((b: any) => b.id === `review_${dateStr}`)?.status || 'planned',
           isReview: true,
-          phase1: { type: 'STRATEJİK', time: '12:00' },
-          extraUrl: ''
+          phase1: { type: 'STRATEJİK', time: '12:00' }
         });
 
         // Blok 4 - 15:00 (Paragraf Kampı)
@@ -240,7 +241,7 @@ export default function PlanningPage() {
 
       newPlan = newPlan.map(day => {
         if (day.date === editingBlock.date) {
-          return { ...day, blocks: [...day.blocks, { ...editingBlock, originalDate: editingBlock.date }] };
+          return { ...day, blocks: [...(day.blocks || []), { ...editingBlock, originalDate: editingBlock.date }] };
         }
         return day;
       });
@@ -359,7 +360,9 @@ export default function PlanningPage() {
                                     <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" /> TEST ÇÖZME
                                  </p>
                                  <div className="flex gap-1.5 bg-accent/10 p-1.5 rounded-xl border border-accent/20 shadow-sm">
-                                    {block.testUrl && <a href={block.testUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:scale-110 transition-all"><FileQuestion className="h-4 w-4" /></a>}
+                                    {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:scale-110 transition-all"><Youtube className="h-4 w-4" /></a>}
+                                    {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:scale-110 transition-all"><FileText className="h-4 w-4" /></a>}
+                                    {block.testUrl && <a href={block.testUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:scale-110 transition-all"><BookOpen className="h-4 w-4" /></a>}
                                     {block.extraUrl && <a href={block.extraUrl} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:scale-110 transition-all"><LinkIcon className="h-4 w-4" /></a>}
                                  </div>
                               </div>
@@ -449,27 +452,49 @@ export default function PlanningPage() {
                       </Select>
                    </div>
 
-                   <div className="grid gap-6">
-                      <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">DİJİTAL KAYNAKLAR</Label>
-                      {[
-                        { key: 'youtubeUrl', label: 'YouTube Playlist', icon: Youtube, color: 'text-rose-500', bg: 'bg-rose-50' },
-                        { key: 'pdfUrl', label: 'OGM Materyal / PDF', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50' },
-                        { key: 'mebiUrl', label: 'MEBİ / EBA Terminal', icon: BookOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-                        { key: 'testUrl', label: 'Soru Linki / Test', icon: FileQuestion, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-                        { key: 'extraUrl', label: 'Ekstra Kaynak / URL', icon: LinkIcon, color: 'text-amber-500', bg: 'bg-amber-50' }
-                      ].map((item) => (
-                         <div key={item.key} className="flex gap-4 items-center group">
-                            <div className={cn("h-16 w-16 rounded-2xl flex items-center justify-center shrink-0 shadow-lg transition-transform group-hover:rotate-6", item.bg)}>
-                               <item.icon className={cn("h-8 w-8", item.color)} />
-                            </div>
-                            <Input 
-                              value={editingBlock[item.key] || ''} 
-                              onChange={(e) => setEditingBlock({...editingBlock, [item.key]: e.target.value})} 
-                              className="h-16 rounded-2xl bg-slate-50 border-none px-8 shadow-inner flex-1 text-primary font-bold text-xs focus-visible:ring-accent" 
-                              placeholder={item.label} 
-                            />
-                         </div>
-                      ))}
+                   <div className="space-y-8">
+                      <div className="space-y-4">
+                        <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">KONU ÇALIŞMA KAYNAKLARI</Label>
+                        {[
+                          { key: 'youtubeUrl', label: 'YouTube Playlist', icon: Youtube, color: 'text-rose-500', bg: 'bg-rose-50' },
+                          { key: 'pdfUrl', label: 'OGM Materyal / PDF', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50' },
+                          { key: 'mebiUrl', label: 'MEBİ / EBA Terminal', icon: BookOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+                        ].map((item) => (
+                           <div key={item.key} className="flex gap-4 items-center group">
+                              <div className={cn("h-16 w-16 rounded-2xl flex items-center justify-center shrink-0 shadow-lg transition-transform group-hover:rotate-6", item.bg)}>
+                                 <item.icon className={cn("h-8 w-8", item.color)} />
+                              </div>
+                              <Input 
+                                value={editingBlock[item.key] || ''} 
+                                onChange={(e) => setEditingBlock({...editingBlock, [item.key]: e.target.value})} 
+                                className="h-16 rounded-2xl bg-slate-50 border-none px-8 shadow-inner flex-1 text-primary font-bold text-xs focus-visible:ring-accent" 
+                                placeholder={item.label} 
+                              />
+                           </div>
+                        ))}
+                      </div>
+
+                      <div className="space-y-4">
+                        <Label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40 ml-6 italic">TEST ÇÖZME KAYNAKLARI</Label>
+                        {[
+                          { key: 'testYoutubeUrl', label: 'YouTube Soru Çözümü', icon: Youtube, color: 'text-rose-500', bg: 'bg-rose-50' },
+                          { key: 'testPdfUrl', label: 'PDF Test / Fasikül', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50' },
+                          { key: 'testUrl', label: 'EBA / MEBİ Test Terminali', icon: BookOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+                          { key: 'extraUrl', label: 'Ekstra Kaynak / URL', icon: LinkIcon, color: 'text-amber-500', bg: 'bg-amber-50' }
+                        ].map((item) => (
+                           <div key={item.key} className="flex gap-4 items-center group">
+                              <div className={cn("h-16 w-16 rounded-2xl flex items-center justify-center shrink-0 shadow-lg transition-transform group-hover:rotate-6", item.bg)}>
+                                 <item.icon className={cn("h-8 w-8", item.color)} />
+                              </div>
+                              <Input 
+                                value={editingBlock[item.key] || ''} 
+                                onChange={(e) => setEditingBlock({...editingBlock, [item.key]: e.target.value})} 
+                                className="h-16 rounded-2xl bg-slate-50 border-none px-8 shadow-inner flex-1 text-primary font-bold text-xs focus-visible:ring-accent" 
+                                placeholder={item.label} 
+                              />
+                           </div>
+                        ))}
+                      </div>
                    </div>
 
                    <div className="pt-10">

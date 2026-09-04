@@ -164,7 +164,9 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                                     <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" /> TEST ÇÖZME
                                  </p>
                                  <div className="flex gap-1.5 bg-accent/10 p-1.5 rounded-xl border border-accent/20 shadow-sm">
-                                    {block.testUrl && <a href={block.testUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:scale-110 transition-all"><FileQuestion className="h-4 w-4" /></a>}
+                                    {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:scale-110 transition-all"><Youtube className="h-4 w-4" /></a>}
+                                    {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:scale-110 transition-all"><FileText className="h-4 w-4" /></a>}
+                                    {block.testUrl && <a href={block.testUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:scale-110 transition-all"><BookOpen className="h-4 w-4" /></a>}
                                     {block.extraUrl && <a href={block.extraUrl} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:scale-110 transition-all"><LinkIcon className="h-4 w-4" /></a>}
                                  </div>
                               </div>

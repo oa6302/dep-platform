@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   LayoutDashboard, Calendar, BookOpen, BarChart3, 
-  Trophy, Link as LinkIcon, Award, Clock, Users, 
-  Brain, Settings, Menu, X, Loader2, Sparkles
+  Trophy, Link as LinkIcon, Award, Clock, 
+  Brain, Menu, X, Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect, Suspense } from 'react';
@@ -33,7 +33,6 @@ function DashboardContent() {
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -50,7 +49,6 @@ function DashboardContent() {
       const dateStr = format(currentDate, 'yyyy-MM-dd');
       
       const dailyBlocks = [];
-      // 2 Ana Ders
       for (let j = 0; j < 2; j++) {
         const lesson = lessons[(i * 2 + j) % lessons.length];
         const topics = YKS_TM_TOPICS[lesson] || ['Genel Tekrar'];
@@ -67,7 +65,6 @@ function DashboardContent() {
         });
       }
       
-      // Paragraf Kampı
       dailyBlocks.push({
         id: `para_${dateStr}`,
         lesson: 'TYT Türkçe',
@@ -77,7 +74,6 @@ function DashboardContent() {
         phase1: { type: 'GÜNLÜK KAMP', time: '14:00' }
       });
 
-      // Stratejik Tekrar
       dailyBlocks.push({
         id: `review_${dateStr}`,
         lesson: 'GENEL',
@@ -98,12 +94,9 @@ function DashboardContent() {
 
   useEffect(() => {
     const initProfile = async () => {
-      // Profil veya Plan eksikse saniyeler içinde sessiz kurulum yap
       if (mounted && !docLoading && !planLoading && !userData && !studyPlan && !simulateUid && db && user) {
-        setIsInitializing(true);
         try {
           const adaptivePlan = generateAutoPlan();
-          
           await setDoc(doc(db, 'users', user.uid), {
             uid: user.uid,
             displayName: 'Misafir Öğrenci',
@@ -123,27 +116,13 @@ function DashboardContent() {
           }, { merge: true });
         } catch (e) {
           console.error("Initialization error:", e);
-        } finally {
-          setIsInitializing(false);
         }
       }
     };
-
     initProfile();
   }, [userData, studyPlan, docLoading, planLoading, mounted, db, user, simulateUid]);
 
-  if (!mounted || isInitializing) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8FAFC] gap-6 p-6 text-center">
-      <div className="relative">
-        <div className="h-24 w-24 animate-spin rounded-[2.5rem] border-[6px] border-accent border-t-transparent shadow-[0_0_50px_rgba(245,158,11,0.2)]" />
-        <Sparkles className="absolute inset-0 m-auto h-10 w-10 text-accent animate-pulse" />
-      </div>
-      <div className="space-y-2">
-        <p className="text-2xl font-black text-primary uppercase tracking-tighter italic">AKADEMİK TERMİNAL</p>
-        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/40 italic animate-pulse">YKS TM Müfredatı Senkronize Ediliyor...</p>
-      </div>
-    </div>
-  );
+  if (!mounted) return null;
 
   const navItems = [
     { id: 'dashboard', label: 'Anasayfa', icon: LayoutDashboard, path: '/dashboard' },

@@ -153,7 +153,7 @@ export default function PlanningPage() {
           </div>
           <div className="space-y-2">
              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-primary font-black text-[9px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3 w-3" /> OMNI-SYNC v34.0</div>
-             <h2 className="text-6xl md:text-8xl font-black tracking-tighter italic text-primary uppercase leading-[0.8] text-shadow-premium">Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span></h2>
+             <h2 className="text-5xl md:text-8xl font-black tracking-tighter italic text-primary uppercase leading-[0.85] text-shadow-premium break-words">Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span></h2>
           </div>
         </div>
 
@@ -292,39 +292,39 @@ export default function PlanningPage() {
                  )}
 
                  <div className="flex items-center gap-8">
-                    <h3 className="text-4xl md:text-5xl font-black italic text-primary uppercase tracking-tighter">{format(parseISO(day.date), 'd MMMM yyyy', { locale: tr })}</h3>
+                    <h3 className="text-3xl md:text-5xl font-black italic text-primary uppercase tracking-tighter">{format(parseISO(day.date), 'd MMMM yyyy', { locale: tr })}</h3>
                     <div className="h-px flex-1 bg-slate-200" />
                     <Badge variant="outline" className="h-12 px-6 rounded-2xl font-black uppercase border-2 border-slate-100 text-primary text-[12px]">{day.day}</Badge>
                  </div>
                  
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {day.blocks?.map((block: any) => (
-                      <Card key={block.id} className={cn("aspect-square p-8 md:p-10 rounded-[4rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.12)] transition-all hover:scale-[1.03] bg-white flex flex-col group relative overflow-hidden", (block.status === 'done' || block.status === 'completed') && "opacity-60")}>
-                         <div className="space-y-6 relative z-10 flex-1 flex flex-col h-full">
+                      <Card key={block.id} className={cn("aspect-square p-6 md:p-8 rounded-[4rem] border-none shadow-[0_40px_80px_-20px_rgba(15,23,42,0.12)] transition-all hover:scale-[1.03] bg-white flex flex-col group relative overflow-hidden", (block.status === 'done' || block.status === 'completed') && "opacity-60")}>
+                         <div className="space-y-4 relative z-10 flex-1 flex flex-col h-full overflow-hidden">
                             <div className="flex justify-between items-center">
                                <div className="flex items-center gap-3">
-                                  <div className="px-4 py-2 rounded-[1rem] bg-[#FFF8E7] text-[#0F172A] flex items-center gap-2 border border-[#FEF3C7] shadow-sm">
-                                    <Clock className="h-3.5 w-3.5 text-accent" />
-                                    <span className="text-[13px] font-black">{block.phase1?.time || '10:00'}</span>
+                                  <div className="px-3 py-1.5 rounded-[1rem] bg-[#FFF8E7] text-[#0F172A] flex items-center gap-2 border border-[#FEF3C7] shadow-sm">
+                                    <Clock className="h-3 w-3 text-accent" />
+                                    <span className="text-[11px] font-black">{block.phase1?.time || '10:00'}</span>
                                   </div>
-                                  <span className="text-[10px] font-black text-primary/10 uppercase tracking-[0.2em] italic">#{String(block.lesson).includes('AYT') ? 'AYT' : 'TYT'}</span>
+                                  <span className="text-[9px] font-black text-primary/10 uppercase tracking-[0.2em] italic">#{String(block.lesson).includes('AYT') ? 'AYT' : 'TYT'}</span>
                                </div>
-                               <Badge className={cn("px-5 py-2 rounded-[1rem] text-[9px] font-black shadow-xl", (block.status === 'done' || block.status === 'completed') ? "bg-emerald-50 text-white" : "bg-[#FF4D6D] text-white")}>
+                               <Badge className={cn("px-4 py-1.5 rounded-[1rem] text-[8px] font-black shadow-xl", (block.status === 'done' || block.status === 'completed') ? "bg-emerald-50 text-white" : "bg-[#FF4D6D] text-white")}>
                                  {(block.status === 'done' || block.status === 'completed') ? 'TAMAM' : 'BEK'}
                                </Badge>
                             </div>
 
-                            <div className="flex-1 flex items-center justify-center py-2 overflow-hidden">
-                               <h4 className="text-4xl md:text-5xl lg:text-6xl font-black italic leading-[0.9] tracking-tighter uppercase text-primary text-shadow-premium text-center break-words max-w-full">
+                            <div className="flex-1 flex items-center justify-center py-4 px-2 overflow-hidden">
+                               <h4 className="text-3xl md:text-4xl lg:text-5xl font-black italic leading-[0.95] tracking-tighter uppercase text-primary text-shadow-premium text-center break-words max-w-full line-clamp-3 hyphens-auto">
                                   {block.topic}
                                </h4>
                             </div>
 
-                            <div className="bg-[#F8FAFC]/60 rounded-[3rem] p-6 space-y-6 border border-slate-50 shadow-inner mt-auto">
-                               <div className="space-y-3">
+                            <div className="bg-[#F8FAFC]/60 rounded-[2.5rem] p-5 space-y-4 border border-slate-50 shadow-inner mt-auto">
+                               <div className="space-y-2">
                                   <div className="flex items-center justify-between">
-                                     <span className="text-[9px] font-black text-primary/20 uppercase tracking-[0.3em] italic">KONU ÇALIŞMA</span>
-                                     <div className="flex gap-3 items-center">
+                                     <span className="text-[8px] font-black text-primary/20 uppercase tracking-[0.3em] italic">KONU ÇALIŞMA</span>
+                                     <div className="flex gap-2.5 items-center">
                                         {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="hover:scale-110 transition-all"><Youtube className="h-4 w-4 text-rose-500 opacity-60" /></a>}
                                         {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="hover:scale-110 transition-all"><FileText className="h-4 w-4 text-blue-500 opacity-60" /></a>}
                                         {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="hover:scale-110 transition-all"><BookOpen className="h-4 w-4 text-emerald-500 opacity-60" /></a>}
@@ -332,13 +332,13 @@ export default function PlanningPage() {
                                   </div>
                                </div>
                                <div className="h-px w-full bg-slate-200/40" />
-                               <div className="space-y-3">
+                               <div className="space-y-2">
                                   <div className="flex items-center justify-between">
-                                     <div className="flex items-center gap-2">
+                                     <div className="flex items-center gap-1.5">
                                         <div className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
-                                        <span className="text-[10px] font-black text-accent uppercase tracking-[0.3em] italic">TEST ÇÖZME</span>
+                                        <span className="text-[9px] font-black text-accent uppercase tracking-[0.3em] italic">TEST ÇÖZME</span>
                                      </div>
-                                     <div className="flex gap-3 items-center">
+                                     <div className="flex gap-2.5 items-center">
                                         {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank" className="hover:scale-110 transition-all"><Youtube className="h-4 w-4 text-rose-500 opacity-80" /></a>}
                                         {block.testUrl && <a href={block.testUrl} target="_blank" className="hover:scale-110 transition-all"><BookOpen className="h-4 w-4 text-emerald-500 opacity-80" /></a>}
                                         {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank" className="hover:scale-110 transition-all"><FileText className="h-4 w-4 text-blue-500 opacity-80" /></a>}
@@ -347,7 +347,7 @@ export default function PlanningPage() {
                                </div>
                             </div>
                             <div className="flex gap-2 pt-2">
-                               <Button onClick={() => { setEditingBlock({...block, date: day.date}); setIsEditDialogOpen(true); }} className="flex-1 h-12 rounded-2xl bg-primary text-white font-black uppercase text-[9px] tracking-widest gap-2 shadow-xl">DÜZENLE <Edit3 className="h-3.5 w-3.5 text-accent" /></Button>
+                               <button onClick={() => { setEditingBlock({...block, date: day.date}); setIsEditDialogOpen(true); }} className="flex-1 h-10 rounded-xl bg-primary text-white font-black uppercase text-[8px] tracking-widest gap-2 shadow-xl flex items-center justify-center">DÜZENLE <Edit3 className="h-3 w-3 text-accent" /></button>
                             </div>
                          </div>
                       </Card>

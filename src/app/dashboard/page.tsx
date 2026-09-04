@@ -28,14 +28,18 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
+    // Auth yüklemesi bittiyse ve kullanıcı yoksa ana sayfaya gönder
+    if (!authLoading && !user) {
+      router.replace('/');
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
     // Sınav türü seçilmemiş öğrenciyi ilgili sayfaya yönlendir
-    if (!docLoading && user && !userData) {
-      // Profil Firestore'da henüz yok, Google ile giriş yapmış olabilir veya kayıt yarım kalmış olabilir.
-      // Redirect to select-exam if student role is desired, but for now we stay on this page to show profile-missing UI.
-    } else if (!docLoading && userData && userData.role === 'student' && !userData.targetExam) {
+    if (!docLoading && userData && userData.role === 'student' && !userData.targetExam) {
       router.replace('/dashboard/select-exam');
     }
-  }, [userData, docLoading, user, router]);
+  }, [userData, docLoading, router]);
 
   const navItems = [
     { id: 'dashboard', label: 'Anasayfa', icon: LayoutDashboard, path: '/dashboard' },
@@ -62,10 +66,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (!user) {
-    router.replace('/');
-    return null;
-  }
+  if (!user) return null;
 
   if (!userData && !docLoading) {
     return (

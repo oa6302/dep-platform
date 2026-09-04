@@ -47,10 +47,11 @@ export default function PlanningPage() {
 
   const generateAutoLinks = (topic: string, lesson: string) => {
     const queryStr = encodeURIComponent(`${lesson} ${topic}`);
+    const topicQuery = encodeURIComponent(topic);
     return {
       youtubeUrl: `https://www.youtube.com/results?search_query=${queryStr}+konu+anlatımı`,
-      pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${encodeURIComponent(topic)}`,
-      mebiUrl: `https://mebi.eba.gov.tr/arama?q=${encodeURIComponent(topic)}`
+      pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}`,
+      mebiUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}`
     };
   };
 
@@ -327,7 +328,7 @@ export default function PlanningPage() {
                       {[
                         { key: 'youtubeUrl', label: 'Youtube', icon: Youtube, color: 'text-rose-500' },
                         { key: 'pdfUrl', label: 'OGM Materyal', icon: FileText, color: 'text-blue-500' },
-                        { key: 'mebiUrl', label: 'MEBİ', icon: BookOpen, color: 'text-emerald-500' }
+                        { key: 'mebiUrl', label: 'MEBİ/EBA', icon: BookOpen, color: 'text-emerald-500' }
                       ].map((item) => (
                          <div key={item.key} className="flex gap-4 items-center">
                             <item.icon className={cn("h-6 w-6 shrink-0", item.color)} />
@@ -362,3 +363,4 @@ export default function PlanningPage() {
     </div>
   );
 }
+

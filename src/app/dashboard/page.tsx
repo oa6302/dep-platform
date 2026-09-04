@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { useState, useEffect, Suspense } from 'react';
 import { StudentView } from '@/components/dashboard/student-view';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { format, addDays, differenceInDays, parseISO } from 'date-fns';
+import { format, addDays, differenceInDays, parseISO, isBefore, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
@@ -40,27 +40,40 @@ function DashboardContent() {
 
   const generateAutoPlan = () => {
     const plan = [];
-    const baseDate = new Date();
     const config = EXAM_CONFIGS['YKS_EA'];
-    const examDate = parseISO(config.examDate);
-    const lessons = config.lessons;
+    const startDate = parseISO(config.academicYearStart);
+    const aytDate = parseISO(config.aytStartDate);
+    const endDate = parseISO(config.examDate);
     
-    const daysUntilExam = Math.max(90, differenceInDays(examDate, baseDate));
+    const daysInterval = differenceInDays(endDate, startDate);
     
     const getTopics = (lesson: string) => {
       const cleanName = lesson.replace(/^(TYT|AYT)\s+/i, '').trim();
       return YKS_TM_TOPICS[lesson] || YKS_TM_TOPICS[cleanName] || ['Genel Tekrar'];
     };
 
-    for (let i = 0; i < daysUntilExam; i++) {
-      const currentDate = addDays(baseDate, i);
+    const lessonPointers: Record<string, number> = {};
+
+    for (let i = 0; i <= daysInterval; i++) {
+      const currentDate = addDays(startDate, i);
       const dateStr = format(currentDate, 'yyyy-MM-dd');
+      const isAytStarted = !isBefore(currentDate, aytDate);
       
       const dailyBlocks = [];
+      
+      // Havuz Belirleme (1 Aralık Öncesi vs Sonrası)
+      const currentLessons = isAytStarted 
+        ? [...config.tytLessons.slice(0, 2), ...config.aytLessons] 
+        : config.tytLessons;
+
+      // Günlük 2 Ana Ders Bloğu
       for (let j = 0; j < 2; j++) {
-        const lesson = lessons[(i * 2 + j) % lessons.length];
+        const lesson = currentLessons[(i * 2 + j) % currentLessons.length];
+        if (!lessonPointers[lesson]) lessonPointers[lesson] = 0;
         const topics = getTopics(lesson);
-        const topic = topics[i % topics.length];
+        const topic = topics[lessonPointers[lesson] % topics.length];
+        lessonPointers[lesson]++;
+        
         const topicQuery = encodeURIComponent(topic);
         
         dailyBlocks.push({
@@ -73,10 +86,23 @@ function DashboardContent() {
           youtubeUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic)}`,
           pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}`,
           mebiUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}`,
-          testUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}+test`
+          testUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}+test`,
+          testYoutubeUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic + ' soru çözümü')}`,
+          testPdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}+test`
         });
       }
       
+      // Stratejik Tekrar (12:00)
+      dailyBlocks.push({
+        id: `review_${dateStr}`,
+        lesson: 'GENEL',
+        topic: isAytStarted ? 'AYT/TYT Karma Tekrar & Analiz' : 'Dünün Analizi & TYT Tekrar',
+        status: 'planned',
+        isReview: true,
+        phase1: { type: 'STRATEJİK', time: '12:00' }
+      });
+
+      // Paragraf Kampı (15:00)
       dailyBlocks.push({
         id: `para_${dateStr}`,
         lesson: 'TYT Türkçe',
@@ -90,18 +116,10 @@ function DashboardContent() {
         testUrl: `https://www.eba.gov.tr/arama?q=Paragraf+test`
       });
 
-      dailyBlocks.push({
-        id: `review_${dateStr}`,
-        lesson: 'GENEL',
-        topic: 'Dünün Analizi & Stratejik Tekrar',
-        status: 'planned',
-        isReview: true,
-        phase1: { type: 'STRATEJİK', time: '12:00' }
-      });
-
       plan.push({
         date: dateStr,
         day: format(currentDate, 'EEEE', { locale: tr }),
+        isAytDay: dateStr === config.aytStartDate,
         blocks: dailyBlocks
       });
     }
@@ -150,7 +168,7 @@ function DashboardContent() {
 
   const navItems = [
     { id: 'dashboard', label: 'Anasayfa', icon: LayoutDashboard, path: '/dashboard' },
-    { id: 'planning', label: 'Planlama', icon: Calendar, path: '/dashboard/planning' },
+    { id: 'planning', label: 'Akademik Terminal', icon: Calendar, path: '/dashboard/planning' },
     { id: 'topics', label: 'Konu Takibi', icon: BookOpen, path: '/dashboard/topics' },
     { id: 'test-analysis', label: 'Test Analizi', icon: BarChart3, path: '/dashboard/test-analysis' },
     { id: 'deneme-analysis', label: 'Deneme Analizi', icon: Trophy, path: '/dashboard/deneme-analysis' },
@@ -195,7 +213,7 @@ function DashboardContent() {
         </ScrollArea>
       </aside>
 
-      <main className="flex-1 min-w-0">
+      <main className="flex-1 min-w-0 overflow-x-hidden">
         <StudentView user={user} userData={userData || { role: 'student', targetExam: 'YKS_EA' }} />
       </main>
     </div>

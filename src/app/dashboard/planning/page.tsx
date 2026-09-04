@@ -43,7 +43,7 @@ export default function PlanningPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date(2026, 8, 1)); // Eylül 2026 default
   const [startDate, setStartDate] = useState('2026-09-01');
-  const [endDate, setEndDate] = useState('2026-09-14');
+  const [endDate, setEndDate] = useState('2027-06-14');
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<any>(null);
@@ -81,12 +81,13 @@ export default function PlanningPage() {
   const stats = useMemo(() => {
     if (!studyPlan?.masterPlan) return { planned: 0, completed: 0, missing: 0, rate: 0 };
     
-    const relevantPlan = viewMode === 'annual' 
-      ? studyPlan.masterPlan 
-      : studyPlan.masterPlan.filter((d: any) => d.date.startsWith(format(selectedMonth, 'yyyy-MM')));
+    // Eğer aylık moddaysak sadece o ayın, değilsek seçili tarih aralığının istatistiğini getir
+    const relevantPlan = viewMode === 'monthly' 
+      ? studyPlan.masterPlan.filter((d: any) => d.date.startsWith(format(selectedMonth, 'yyyy-MM')))
+      : studyPlan.masterPlan.filter((d: any) => !isBefore(parseISO(d.date), parseISO(startDate)) && !isBefore(parseISO(endDate), parseISO(d.date)));
 
     const total = relevantPlan.reduce((acc: number, day: any) => acc + (day.blocks?.length || 0), 0);
-    const done = relevantPlan.reduce((acc: number, day: any) => acc + (day.blocks?.filter((b: any) => b.status === 'done').length || 0), 0);
+    const done = relevantPlan.reduce((acc: number, day: any) => acc + (day.blocks?.filter((b: any) => b.status === 'done' || b.status === 'completed').length || 0), 0);
     
     return {
       planned: total,
@@ -94,13 +95,15 @@ export default function PlanningPage() {
       missing: total - done,
       rate: Math.round((done / (total || 1)) * 100)
     };
-  }, [studyPlan, selectedMonth, viewMode]);
+  }, [studyPlan, selectedMonth, viewMode, startDate, endDate]);
 
   const handleRegeneratePlan = async () => {
     if (!db || !user || !userData) return;
     setIsRegenerating(true);
     try {
-      const newPlan = generateAdaptivePlan(startDate, userData.completedTopics || {});
+      // Yıllık planı 1 Eylül'den başlayarak tekrar kurgula (AYT 1 Aralık kuralı generateAdaptivePlan içinde)
+      const newPlan = generateAdaptivePlan('2026-09-01', userData.completedTopics || {});
+      
       await setDoc(doc(db, 'studyPlans', user.uid), {
         userId: user.uid,
         startDate: startDate,
@@ -154,6 +157,8 @@ export default function PlanningPage() {
       setEndDate(format(endOfMonth(now), 'yyyy-MM-dd'));
       setViewMode('daily');
     } else if (type === 'annual') {
+      setStartDate('2026-09-01');
+      setEndDate('2027-06-15');
       setViewMode('annual');
     }
   };
@@ -258,7 +263,7 @@ export default function PlanningPage() {
                const mStr = format(m.date, 'yyyy-MM');
                const mData = studyPlan?.masterPlan?.filter((d: any) => d.date.startsWith(mStr)) || [];
                const mTotal = mData.reduce((acc: number, day: any) => acc + (day.blocks?.length || 0), 0);
-               const mDone = mData.reduce((acc: number, day: any) => acc + (day.blocks?.filter((b: any) => b.status === 'done').length || 0), 0);
+               const mDone = mData.reduce((acc: number, day: any) => acc + (day.blocks?.filter((b: any) => b.status === 'done' || b.status === 'completed').length || 0), 0);
                const mRate = Math.round((mDone / (mTotal || 1)) * 100);
 
                return (
@@ -279,30 +284,6 @@ export default function PlanningPage() {
                );
              })}
           </div>
-        ) : viewMode === 'monthly' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-8">
-             {filteredPlan.map((day: any) => (
-              <Card key={day.date} onClick={() => { setStartDate(day.date); setEndDate(day.date); setViewMode('daily'); }} className={cn("p-10 rounded-[4rem] border-none shadow-xl bg-white hover:scale-[1.03] transition-all cursor-pointer group min-h-[300px]", day.date === '2026-12-01' && "border-2 border-accent")}>
-                 <div className="space-y-8">
-                    <div className="flex justify-between">
-                       <div className="flex items-center gap-3">
-                          <span className="text-5xl font-black text-primary italic tracking-tighter">{format(parseISO(day.date), 'd')}</span>
-                          {day.date === '2026-12-01' && <Zap className="h-5 w-5 text-accent fill-current" />}
-                       </div>
-                       <Badge variant="outline" className="border-primary/10 text-[9px] font-black uppercase">{day.day.substring(0, 3)}</Badge>
-                    </div>
-                    <div className="space-y-3">
-                       {day.blocks?.map((b: any, bi: number) => (
-                         <div key={bi} className="p-3 rounded-2xl bg-[#F8FAFC] border border-slate-100 group-hover:bg-white transition-all flex items-center justify-between">
-                            <p className="text-[10px] font-black text-primary uppercase line-clamp-1 italic">{b.topic}</p>
-                            {b.status === 'done' && <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
-                         </div>
-                       ))}
-                    </div>
-                 </div>
-              </Card>
-            ))}
-          </div>
         ) : (
           <div className="space-y-20">
             {filteredPlan.map((day: any) => (
@@ -319,10 +300,10 @@ export default function PlanningPage() {
                     <div className="h-px flex-1 bg-slate-200" />
                     <Badge variant="outline" className="h-14 px-8 rounded-3xl font-black uppercase border-2 border-slate-100 text-primary text-[14px]">{day.day}</Badge>
                  </div>
-                 {/* SIMETRIK QUAD-GRID (4 KART) */}
+                 
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-10">
                     {day.blocks?.map((block: any) => (
-                      <Card key={block.id} className={cn("p-12 md:p-14 rounded-[5.5rem] border-none shadow-[0_60px_120px_-30px_rgba(15,23,42,0.15)] transition-all hover:scale-[1.03] bg-white h-full flex flex-col group relative overflow-hidden", block.status === 'done' && "opacity-60")}>
+                      <Card key={block.id} className={cn("p-12 md:p-14 rounded-[5.5rem] border-none shadow-[0_60px_120px_-30px_rgba(15,23,42,0.15)] transition-all hover:scale-[1.03] bg-white h-full flex flex-col group relative overflow-hidden", (block.status === 'done' || block.status === 'completed') && "opacity-60")}>
                          <div className="space-y-14 relative z-10 flex-1 flex flex-col">
                             <div className="flex justify-between items-center">
                                <div className="flex items-center gap-6">
@@ -332,7 +313,9 @@ export default function PlanningPage() {
                                   </div>
                                   <span className="text-[14px] font-black text-primary/10 uppercase tracking-[0.2em] italic">#{String(block.lesson).includes('AYT') ? 'AYT' : 'TYT'}</span>
                                </div>
-                               <Badge className={cn("px-8 py-3.5 rounded-[1.5rem] text-[12px] font-black shadow-xl", block.status === 'done' ? "bg-emerald-50 text-white" : "bg-[#FF4D6D] text-white")}>{block.status === 'done' ? 'TAMAM' : 'BEK'}</Badge>
+                               <Badge className={cn("px-8 py-3.5 rounded-[1.5rem] text-[12px] font-black shadow-xl", (block.status === 'done' || block.status === 'completed') ? "bg-emerald-500 text-white" : "bg-[#FF4D6D] text-white")}>
+                                 {(block.status === 'done' || block.status === 'completed') ? 'TAMAM' : 'BEK'}
+                               </Badge>
                             </div>
 
                             <div className="flex-1 flex items-center justify-center py-6">
@@ -376,6 +359,14 @@ export default function PlanningPage() {
                  </div>
               </div>
             ))}
+            {filteredPlan.length === 0 && (
+              <div className="py-40 text-center space-y-8 animate-in zoom-in-95 duration-700">
+                <div className="h-32 w-32 bg-primary/5 rounded-[3rem] flex items-center justify-center mx-auto shadow-inner">
+                  <Zap className="h-16 w-16 text-primary opacity-20" />
+                </div>
+                <p className="text-2xl font-black uppercase tracking-[0.5em] italic text-primary/20">Seçili tarihlerde veri bulunamadı.</p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -392,6 +383,21 @@ export default function PlanningPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                    <div className="space-y-3"><Label className="text-[10px] font-bold uppercase opacity-40 ml-4">YOUTUBE KONU</Label><Input value={editingBlock.youtubeUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, youtubeUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner" /></div>
                    <div className="space-y-3"><Label className="text-[10px] font-bold uppercase opacity-40 ml-4">YOUTUBE SORU</Label><Input value={editingBlock.testYoutubeUrl || ''} onChange={(e) => setEditingBlock({...editingBlock, testYoutubeUrl: e.target.value})} className="h-14 rounded-2xl bg-slate-50 border-none shadow-inner" /></div>
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-[11px] font-black uppercase opacity-40 ml-6 italic">DURUM</Label>
+                  <div className="flex gap-4">
+                    <Button 
+                      onClick={() => setEditingBlock({...editingBlock, status: 'planned'})}
+                      variant={editingBlock.status === 'planned' ? 'default' : 'outline'}
+                      className="flex-1 h-14 rounded-2xl font-black uppercase"
+                    >BEKLEMEDE</Button>
+                    <Button 
+                      onClick={() => setEditingBlock({...editingBlock, status: 'done'})}
+                      variant={editingBlock.status === 'done' || editingBlock.status === 'completed' ? 'default' : 'outline'}
+                      className="flex-1 h-14 rounded-2xl font-black uppercase"
+                    >TAMAMLANDI</Button>
+                  </div>
                 </div>
                 <Button onClick={handleSaveEdit} className="w-full h-20 rounded-[2.5rem] bg-primary hover:bg-accent text-white font-black text-xl uppercase gap-8 shadow-2xl transition-all">KAYDET <Save className="h-8 w-8 text-accent" /></Button>
              </div>

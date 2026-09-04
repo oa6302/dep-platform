@@ -11,7 +11,7 @@ import {
   Calendar, Zap, Loader2, Sparkles, 
   ArrowLeft, Home, Edit3, Youtube, Save, FileText, 
   BookOpen, X, Clock, Target, TrendingUp, Brain,
-  ChevronRight, CheckCircle2, AlertCircle
+  ChevronRight, CheckCircle2, AlertCircle, Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
@@ -94,6 +94,36 @@ export default function PlanningPage() {
     };
   }, [studyPlan]);
 
+  const handleTaskAction = async (blockId: string, dayDate: string, action: 'done' | 'delete') => {
+    if (!db || !user || !studyPlan) return;
+    
+    const newPlan = studyPlan.masterPlan.map((day: any) => {
+      if (day.date === dayDate) {
+        return {
+          ...day,
+          blocks: day.blocks.map((b: any) => {
+            if (b.id === blockId) {
+              if (action === 'done') return { ...b, status: b.status === 'done' ? 'planned' : 'done' };
+              if (action === 'delete') return null;
+            }
+            return b;
+          }).filter(Boolean)
+        };
+      }
+      return day;
+    });
+
+    await updateDoc(doc(db, 'studyPlans', user.uid), { 
+      masterPlan: newPlan,
+      updatedAt: serverTimestamp()
+    });
+    
+    toast({ 
+      title: action === 'done' ? 'Terminal Mühürlendi' : 'Blok İmha Edildi', 
+      className: "bg-primary text-white rounded-2xl shadow-2xl"
+    });
+  };
+
   const handleRegeneratePlan = async () => {
     if (!db || !user || !userData) return;
     setIsRegenerating(true);
@@ -143,8 +173,8 @@ export default function PlanningPage() {
              <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-10 w-10 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><Home className="h-5 w-5" /></Button>
           </div>
           <div className="space-y-2">
-             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-primary font-black text-[9px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3 w-3" /> OMNI-SYNC v38.0</div>
-             <h2 className="text-4xl md:text-6xl lg:text-[7rem] font-black tracking-tighter italic text-primary uppercase leading-[0.8] text-shadow-premium break-words max-w-full">Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span></h2>
+             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-primary font-black text-[9px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20"><Calendar className="h-3 w-3" /> OMNI-SYNC v39.0</div>
+             <h2 className="text-4xl md:text-6xl lg:text-[7.5rem] font-black tracking-tighter italic text-primary uppercase leading-[0.8] text-shadow-premium break-words max-w-full">Akademik <br /><span className="text-accent text-shadow-accent">Terminal</span></h2>
           </div>
         </div>
 
@@ -261,7 +291,11 @@ export default function PlanningPage() {
                                   <div className="px-2 py-1 rounded-lg bg-[#FFF8E7] text-[#0F172A] flex items-center gap-1.5 border border-[#FEF3C7] shadow-sm"><Clock className="h-2.5 w-2.5 text-accent" /><span className="text-[9px] font-black">{block.phase1?.time || '10:00'}</span></div>
                                   <span className="text-[8px] font-black text-primary/10 uppercase tracking-[0.1em] italic">#{String(block.lesson).includes('AYT') ? 'AYT' : 'TYT'}</span>
                                </div>
-                               <Badge className={cn("px-3 py-1 rounded-lg text-[7px] font-black shadow-md border-none", (block.status === 'done' || block.status === 'completed') ? "bg-emerald-500 text-white" : "bg-[#FF4D6D] text-white")}>{(block.status === 'done' || block.status === 'completed') ? 'TAMAM' : 'BEK'}</Badge>
+                               <Badge 
+                                 onClick={() => handleTaskAction(block.id, day.date, 'done')}
+                                 className={cn("px-3 py-1 rounded-lg text-[7px] font-black shadow-md border-none cursor-pointer active:scale-95 transition-all", (block.status === 'done' || block.status === 'completed') ? "bg-emerald-500 text-white" : "bg-[#FF4D6D] text-white")}>
+                                 {(block.status === 'done' || block.status === 'completed') ? 'TAMAM' : 'BEK'}
+                               </Badge>
                             </div>
                             <div className="flex-1 flex items-center justify-center py-2 px-1 overflow-hidden">
                               <h4 className="text-xl md:text-2xl lg:text-3xl font-black italic leading-tight tracking-tighter uppercase text-primary text-shadow-premium text-center break-words line-clamp-3">
@@ -294,7 +328,10 @@ export default function PlanningPage() {
                                  </div>
                                </div>
                             </div>
-                            <button onClick={() => { setEditingBlock({...block, date: day.date}); setIsEditDialogOpen(true); }} className="w-full h-8 rounded-lg bg-primary text-white font-black uppercase text-[7px] tracking-widest gap-1.5 shadow-md flex items-center justify-center mt-1">DÜZENLE <Edit3 className="h-2.5 w-2.5 text-accent" /></button>
+                            <div className="flex gap-2 mt-1">
+                               <button onClick={() => { setEditingBlock({...block, date: day.date}); setIsEditDialogOpen(true); }} className="flex-1 h-8 rounded-lg bg-primary text-white font-black uppercase text-[7px] tracking-widest gap-1.5 shadow-md flex items-center justify-center">DÜZENLE <Edit3 className="h-2.5 w-2.5 text-accent" /></button>
+                               <button onClick={() => handleTaskAction(block.id, day.date, 'delete')} className="h-8 w-8 rounded-lg bg-slate-100 text-destructive hover:bg-destructive hover:text-white transition-all flex items-center justify-center shadow-md"><Trash2 className="h-3 w-3" /></button>
+                            </div>
                          </div>
                       </Card>
                     ))}

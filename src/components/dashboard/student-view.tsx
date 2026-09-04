@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   CheckCircle2, Loader2, Youtube, FileText, 
-  BookOpen, Zap, Clock, Calendar
+  BookOpen, Zap, Clock, Calendar, Edit3, Trash2
 } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -32,19 +32,28 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
     return studyPlan.masterPlan.find((d: any) => d.date === today);
   }, [studyPlan, today]);
 
-  const handleTaskAction = async (blockId: string) => {
+  const handleTaskAction = async (blockId: string, action: 'done' | 'delete') => {
     if (!db || !user || !studyPlan || !today) return;
     const newPlan = studyPlan.masterPlan.map((day: any) => {
       if (day.date === today) {
         return { 
           ...day, 
-          blocks: day.blocks.map((b: any) => b.id === blockId ? { ...b, status: b.status === 'done' ? 'planned' : 'done' } : b) 
+          blocks: day.blocks.map((b: any) => {
+            if (b.id === blockId) {
+              if (action === 'done') return { ...b, status: b.status === 'done' ? 'planned' : 'done' };
+              if (action === 'delete') return null;
+            }
+            return b;
+          }).filter(Boolean)
         };
       }
       return day;
     });
     await updateDoc(doc(db, 'studyPlans', user.uid), { masterPlan: newPlan, updatedAt: serverTimestamp() });
-    toast({ title: 'Terminal Güncellendi', className: "bg-primary text-white rounded-2xl shadow-2xl" });
+    toast({ 
+      title: action === 'done' ? 'Terminal Güncellendi' : 'Görevi İptal Edildi', 
+      className: "bg-primary text-white rounded-2xl shadow-2xl" 
+    });
   };
 
   if (planLoading) return (
@@ -93,7 +102,7 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                               <span className="text-[8px] font-black text-primary/10 uppercase tracking-[0.1em] italic">#{String(block.lesson).includes('AYT') ? 'AYT' : 'TYT'}</span>
                            </div>
                            <Badge 
-                             onClick={() => handleTaskAction(block.id)}
+                             onClick={() => handleTaskAction(block.id, 'done')}
                              className={cn(
                                "px-3 py-1 rounded-lg text-[7px] font-black shrink-0 shadow-md border-none cursor-pointer active:scale-95 transition-all", 
                                block.status === 'done' ? "bg-emerald-50 text-white" : "bg-[#FF4D6D] text-white hover:bg-[#FF4D6D]/90"
@@ -136,6 +145,11 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                                  </div>
                               </div>
                            </div>
+                        </div>
+
+                        <div className="flex gap-2 mt-2">
+                           <Button onClick={() => router.push('/dashboard/planning')} className="flex-1 h-9 rounded-xl bg-primary text-white font-black uppercase text-[8px] gap-2 shadow-lg"><Edit3 className="h-3 w-3 text-accent" /> DÜZENLE</Button>
+                           <Button onClick={() => handleTaskAction(block.id, 'delete')} variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-slate-50 text-destructive hover:bg-destructive hover:text-white transition-all shadow-md"><Trash2 className="h-4 w-4" /></Button>
                         </div>
                    </div>
                 </Card>

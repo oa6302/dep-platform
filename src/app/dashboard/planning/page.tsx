@@ -48,7 +48,6 @@ export default function PlanningPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<any>(null);
 
-  // Otomatik Link Üretici
   const generateAutoLinks = (topic: string, lesson: string) => {
     const queryStr = encodeURIComponent(`${lesson} ${topic}`);
     return {
@@ -58,7 +57,6 @@ export default function PlanningPage() {
     };
   };
 
-  // Otonom Öteleme Mantığı
   useEffect(() => {
     if (!studyPlan?.masterPlan || !user || !db) return;
 
@@ -128,14 +126,12 @@ export default function PlanningPage() {
         const isAytTime = isAfter(currentDt, aytStart) || currentDt.getTime() === aytStart.getTime();
         
         let pool = [...(examConfig?.lessons || ['TYT Matematik', 'TYT Türkçe'])];
-        // 1 Aralık öncesi AYT ve Edebiyat eleme
         if (!isAytTime) {
           pool = pool.filter(l => !l.includes('AYT') && !['Edebiyat'].includes(l));
         }
 
         const dailyBlocks = [];
 
-        // 1 & 2: Ana Konular
         for (let j = 0; j < 2; j++) {
           const lesson = pool[(i * 2 + j) % pool.length];
           const topics = YKS_TM_TOPICS[lesson] || ['Genel Tekrar'];
@@ -159,7 +155,6 @@ export default function PlanningPage() {
           lessonPointers[lesson]++;
         }
 
-        // 3: 20 Paragraf (HERGÜN SABİT)
         dailyBlocks.push({
           id: `para_${dateStr}`,
           lesson: 'TÜRKÇE',
@@ -172,7 +167,6 @@ export default function PlanningPage() {
           phase1: { type: 'GÜNLÜK KAMP', time: '12:00' }
         });
 
-        // 4: Dünün Tekrarı (HERGÜN SABİT)
         dailyBlocks.push({
           id: `review_${dateStr}`,
           lesson: 'GENEL',
@@ -274,7 +268,7 @@ export default function PlanningPage() {
              <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-12 w-12 rounded-xl bg-white shadow-sm border border-slate-100 hover:bg-primary hover:text-white transition-all"><Home className="h-5 w-5" /></Button>
           </div>
           <div className="space-y-2">
-             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic">
+             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-accent text-primary font-black text-[10px] uppercase tracking-widest shadow-xl shadow-accent/20 italic border border-accent/20">
                 <Calendar className="h-3.5 w-3.5" /> MASTER ACADEMIC ENGINE v4.8
              </div>
              <h2 className="text-6xl font-black tracking-tighter italic text-primary uppercase leading-none text-shadow-premium">
@@ -294,7 +288,7 @@ export default function PlanningPage() {
                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-16 rounded-2xl bg-white border-none shadow-xl font-bold text-sm px-6" />
              </div>
            </div>
-           <Button onClick={generateFasikulPlan} disabled={isGenerating} className="w-full sm:w-auto h-20 px-12 rounded-[2rem] bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest gap-4 shadow-2xl text-white">
+           <Button onClick={generateFasikulPlan} disabled={isGenerating} className="w-full sm:w-auto h-20 px-12 rounded-[2rem] bg-primary hover:bg-accent transition-all font-black text-xs uppercase tracking-widest gap-4 shadow-2xl text-white border-none">
               {isGenerating ? <Loader2 className="h-6 w-6 animate-spin" /> : <Sparkles className="h-6 w-6 text-accent" />} MOTORU ÇALIŞTIR
            </Button>
         </div>
@@ -308,7 +302,7 @@ export default function PlanningPage() {
                 <div className="h-px flex-1 bg-slate-200 hidden md:block" />
                 <Badge variant="outline" className="h-12 px-6 rounded-2xl font-black uppercase tracking-widest border-2 border-slate-100">{day.day}</Badge>
              </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full">
                 {day.blocks?.map((block: any) => (
                   <Card key={block.id} className={cn("p-10 rounded-[4rem] border-none shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] group relative overflow-hidden bg-white hover:scale-[1.02] transition-all duration-500 h-full flex flex-col", block.status === 'done' && "opacity-60")}>
                      <div className="space-y-8 relative z-10 h-full flex flex-col flex-1">
@@ -387,10 +381,10 @@ export default function PlanningPage() {
                    </div>
 
                    <div className="flex flex-col gap-6 pt-12 border-t border-slate-100">
-                      <Button onClick={() => handleSaveEdit(false)} className="w-full h-24 rounded-[3rem] bg-[#0F172A] hover:bg-accent text-white font-black text-lg uppercase tracking-[0.4em] gap-6 shadow-3xl transition-all">
+                      <Button onClick={() => handleSaveEdit(false)} className="w-full h-24 rounded-[3rem] bg-[#0F172A] hover:bg-accent text-white font-black text-lg uppercase tracking-[0.4em] gap-6 shadow-3xl transition-all border-none">
                          <Save className="h-8 w-8 text-accent" /> TERMİNALE KAYDET
                       </Button>
-                      <Button onClick={() => handleSaveEdit(true)} className="w-full h-20 rounded-[2.5rem] bg-accent hover:bg-primary text-primary hover:text-white transition-all font-black text-xs uppercase tracking-[0.3em] gap-6 shadow-2xl">
+                      <Button onClick={() => handleSaveEdit(true)} className="w-full h-20 rounded-[2.5rem] bg-accent hover:bg-primary text-primary hover:text-white transition-all font-black text-xs uppercase tracking-[0.3em] gap-6 shadow-2xl border-none">
                          SONRAKİ KARTA GEÇ <ArrowRight className="h-6 w-6" />
                       </Button>
                    </div>

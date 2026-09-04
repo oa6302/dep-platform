@@ -1,147 +1,281 @@
 'use client';
 
+import { useMemo, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { format } from 'date-fns';
+import { tr } from 'date-fns/locale';
+import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
+
 import { useDoc, useFirestore } from '@/firebase';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Sparkles, Brain, CheckCircle2, Loader2, 
-  Youtube, FileText, BellRing, Edit3, BookOpen, 
-  Zap, Target, BookOpenCheck, ArrowRight
-} from 'lucide-react';
-import { useMemo } from 'react';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { tr } from 'date-fns/locale';
-import { useRouter } from 'next/navigation';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
 
-export function StudentView({ user, userData }: { user: any, userData: any }) {
+import {
+  Brain,
+  CheckCircle2,
+  Loader2,
+  Youtube,
+  FileText,
+  Edit3,
+  BookOpen,
+  Zap,
+  CalendarDays,
+  Clock3,
+  ArrowRight,
+  Target,
+  BookOpenCheck
+} from 'lucide-react';
+
+type StudyBlock = {
+  id: string;
+  lesson?: string;
+  topic?: string;
+  status?: 'planned' | 'done';
+  youtubeUrl?: string;
+  pdfUrl?: string;
+  mebiUrl?: string;
+  isReview?: boolean;
+  phase1?: {
+    type?: string;
+  };
+};
+
+type DayPlan = {
+  date: string;
+  blocks?: StudyBlock[];
+};
+
+type StudyPlan = {
+  masterPlan?: DayPlan[];
+};
+
+interface StudentViewProps {
+  user: any;
+  userData: any;
+}
+
+export function StudentView({
+  user,
+  userData,
+}: StudentViewProps) {
   const db = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
   
-  const today = format(new Date(), 'yyyy-MM-dd');
-  const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
-  
-  const currentDayPlan = useMemo(() => {
-    if (!studyPlan?.masterPlan) return null;
-    return studyPlan.masterPlan.find((p: any) => p.date === today);
-  }, [studyPlan, today]);
+  const [today, setToday] = useState<string>('');
 
-  const handleTaskAction = async (blockId: string, action: string) => {
-    if (!db || !user || !studyPlan) return;
-    
-    const newPlan = studyPlan.masterPlan.map((day: any) => {
-      if (day.date === today) {
-        return {
-          ...day,
-          blocks: day.blocks.map((b: any) => {
-            if (b.id === blockId) {
-              if (action === 'done') return { ...b, status: b.status === 'done' ? 'planned' : 'done' };
-              if (action === 'delete') return null;
-              return b;
-            }
-            return b;
-          }).filter(Boolean)
-        };
-      }
-      return day;
-    });
+  useEffect(() => {
+    setToday(format(new Date(), 'yyyy-MM-dd'));
+  }, []);
 
-    await updateDoc(doc(db, 'studyPlans', user.uid), { 
-      masterPlan: newPlan,
-      updatedAt: serverTimestamp()
-    });
-    
-    toast({ 
-      title: 'Terminal Güncellendi', 
-      className: "bg-primary text-white rounded-2xl shadow-2xl"
-    });
-  };
-
-  if (planLoading) return (
-    <div className="p-20 flex flex-col items-center justify-center gap-6 min-h-[60vh]">
-      <Loader2 className="h-10 w-10 animate-spin text-accent" />
-      <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/40 italic">Terminal Senkronize Ediliyor...</p>
-    </div>
+  const {
+    data: studyPlan,
+    loading: planLoading,
+  } = useDoc<StudyPlan>(
+    user?.uid ? `studyPlans/${user.uid}` : null
   );
 
+  const currentDayPlan = useMemo(() => {
+    if (!studyPlan?.masterPlan?.length || !today) {
+      return null;
+    }
+
+    return (
+      studyPlan.masterPlan.find(
+        (day) => day.date === today
+      ) ?? null
+    );
+  }, [studyPlan, today]);
+
+  const todayBlocks = useMemo(
+    () => currentDayPlan?.blocks ?? [],
+    [currentDayPlan]
+  );
+
+  const completedCount = useMemo(
+    () =>
+      todayBlocks.filter(
+        (block) => block.status === 'done'
+      ).length,
+    [todayBlocks]
+  );
+
+  const handleTaskAction = async (
+    blockId: string,
+    action: 'done'
+  ) => {
+    if (!db || !user?.uid || !studyPlan?.masterPlan) return;
+
+    try {
+      const newPlan = studyPlan.masterPlan.map(
+        (day) => {
+          if (day.date !== today) return day;
+          return {
+            ...day,
+            blocks: (day.blocks ?? []).map(
+              (block) => {
+                if (block.id !== blockId) return block;
+                return {
+                  ...block,
+                  status: block.status === 'done' ? 'planned' : 'done',
+                };
+              }
+            ),
+          };
+        }
+      );
+
+      await updateDoc(
+        doc(db, 'studyPlans', user.uid),
+        {
+          masterPlan: newPlan,
+          updatedAt: serverTimestamp(),
+        }
+      );
+
+      toast({
+        title: 'Görev güncellendi',
+        className: 'bg-primary text-white rounded-2xl shadow-2xl',
+      });
+    } catch (error) {
+      toast({
+        title: 'Hata',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  if (planLoading || !today) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 p-20">
+        <Loader2 className="h-10 w-10 animate-spin text-accent" />
+        <p className="text-[10px] font-black uppercase italic tracking-[0.4em] text-primary/40">
+          Terminal Senkronize Ediliyor...
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-4 md:p-14 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000 bg-[#F8FAFC]">
-      <section className="bg-primary text-white rounded-[3.5rem] p-8 md:p-14 relative overflow-hidden group shadow-[0_60px_120px_-20px_rgba(15,23,42,0.4)]">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-accent/10 blur-[150px] rounded-full" />
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
-          <div className="space-y-6 flex-1 text-center md:text-left">
-            <div className="inline-flex items-center gap-4 text-accent font-black text-[10px] uppercase tracking-[0.3em] italic bg-white/5 px-6 py-2 rounded-full border border-white/10">
-              <Brain className="h-5 w-5 animate-pulse" /> DEK YAPAY ZEKA MENTORU
+    <div className="mx-auto w-full max-w-[1800px] space-y-10 bg-[#F8FAFC] p-4 animate-in fade-in duration-700 md:p-10 lg:p-14">
+      <section className="group relative overflow-hidden rounded-[3rem] bg-primary p-8 text-white shadow-[0_40px_100px_-30px_rgba(15,23,42,0.5)] md:p-12">
+        <div className="absolute -right-20 -top-20 h-96 w-96 rounded-full bg-accent/10 blur-[130px]" />
+        <div className="relative z-10 flex flex-col items-center justify-between gap-10 lg:flex-row">
+          <div className="flex-1 space-y-5 text-center lg:text-left">
+            <div className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-5 py-2 text-[10px] font-black uppercase tracking-[0.25em] text-accent">
+              <Brain className="h-5 w-5 animate-pulse" />
+              DEK Yapay Zekâ Mentoru
             </div>
-            <p className="text-3xl md:text-5xl font-black italic leading-[0.95] text-shadow-premium uppercase tracking-tighter text-white">
-               "Bugün {currentDayPlan?.blocks?.length || 0} devasa akademik blok saniyeler içinde seni bekliyor."
-            </p>
+            <div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-white/40">
+                Merhaba {userData?.displayName || 'Öğrenci'}
+              </p>
+              <h1 className="max-w-4xl text-3xl font-black uppercase italic leading-[1] tracking-tight md:text-5xl">
+                Bugün seni <span className="text-accent">{todayBlocks.length}</span> akademik çalışma bloğu bekliyor.
+              </h1>
+            </div>
+            <div className="flex flex-wrap justify-center gap-3 pt-2 lg:justify-start">
+              <div className="flex items-center gap-2 rounded-2xl bg-white/5 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white/70">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                {completedCount}/{todayBlocks.length} tamamlandı
+              </div>
+              <div className="flex items-center gap-2 rounded-2xl bg-white/5 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white/70">
+                <CalendarDays className="h-4 w-4 text-accent" />
+                {format(new Date(), 'd MMMM yyyy', { locale: tr })}
+              </div>
+            </div>
           </div>
-          <Button onClick={() => router.push('/dashboard/planning')} className="w-full md:w-auto bg-accent hover:bg-white hover:text-primary transition-all duration-500 rounded-[2rem] h-20 px-12 font-black uppercase text-[12px] tracking-[0.3em] shadow-3xl text-primary border-none">AKADEMİK TAKVİM</Button>
+          <Button
+            onClick={() => router.push('/dashboard/planning')}
+            className="h-16 w-full rounded-2xl border-none bg-accent px-10 text-[11px] font-black uppercase tracking-[0.22em] text-primary shadow-xl transition-all duration-300 hover:-translate-y-1 hover:bg-white lg:w-auto"
+          >
+            <CalendarDays className="mr-2 h-4 w-4" />
+            Akademik Takvim
+          </Button>
         </div>
       </section>
 
-      <div className="space-y-12">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-4">
-             <h2 className="text-3xl md:text-4xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep">GÜNLÜK AKADEMİK BLOKLARIN</h2>
-             <Badge className="bg-white text-primary border-2 border-slate-100 rounded-3xl px-8 py-3.5 font-black uppercase text-[10px] tracking-[0.2em] shadow-lg">{format(new Date(), 'd MMMM yyyy', { locale: tr })}</Badge>
+      <section className="space-y-7">
+        <div className="flex flex-col justify-between gap-5 px-1 md:flex-row md:items-center">
+          <div>
+            <p className="mb-1 text-[9px] font-black uppercase tracking-[0.3em] text-accent italic">GÜNLÜK AKIŞ</p>
+            <h2 className="text-2xl font-black uppercase italic tracking-tight text-primary md:text-4xl">Günlük Akademik Blokların</h2>
+          </div>
+          <Badge variant="outline" className="w-fit rounded-2xl border-slate-200 bg-white px-5 py-3 text-[9px] font-black uppercase tracking-[0.18em] text-primary shadow-sm">
+            <Clock3 className="mr-2 h-3.5 w-3.5" />
+            {format(new Date(), 'EEEE, d MMMM', { locale: tr })}
+          </Badge>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-             {currentDayPlan?.blocks?.map((block: any) => (
-                <Card 
-                  key={block.id} 
-                  className={cn(
-                    "p-8 rounded-[3.5rem] border-none transition-all hover:scale-[1.02] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] group relative overflow-hidden bg-white h-full flex flex-col",
-                    block.status === 'done' && "opacity-60"
-                  )}
-                >
-                   <div className="space-y-6 relative z-10 flex-1 flex flex-col">
-                        <div className="flex justify-between items-start gap-2">
-                           <div className="space-y-1 flex-1 min-w-0">
-                              <h4 className="text-2xl font-black italic leading-tight tracking-tighter uppercase text-primary text-shadow-deep line-clamp-2">{block.topic}</h4>
-                              <p className="text-[8px] font-bold text-muted-foreground/40 uppercase tracking-widest italic">#{block.lesson.substring(0, 3)}</p>
-                           </div>
-                           <Badge className={cn("px-4 py-1.5 rounded-full text-[8px] font-black shrink-0", block.status === 'done' ? "bg-emerald-500 text-white" : "bg-[#FF4D6D] text-white shadow-lg")}>
-                              {block.status === 'done' ? 'TAMAM' : 'BEK'}
-                           </Badge>
-                        </div>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {todayBlocks.map((block, index) => {
+              const isDone = block.status === 'done';
+              return (
+                <Card key={block.id || `${today}-${index}`} className={cn(
+                    'relative flex min-h-[360px] flex-col overflow-hidden rounded-[3rem] border border-slate-100 bg-white p-8 shadow-[0_20px_50px_-20px_rgba(15,23,42,0.18)] transition-all duration-300',
+                    'hover:-translate-y-1 hover:shadow-[0_30px_70px_-20px_rgba(15,23,42,0.22)]',
+                    isDone && 'opacity-60'
+                  )}>
+                  <div className={cn('absolute left-0 top-0 h-full w-2', isDone ? 'bg-emerald-500' : 'bg-accent')} />
+                  <div className="flex flex-1 flex-col space-y-6">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="mb-2 text-[8px] font-black uppercase tracking-[0.25em] text-accent italic">#{block.lesson?.substring(0, 4).toUpperCase() || 'DERS'}</p>
+                        <h3 className="line-clamp-3 text-2xl font-black uppercase italic leading-[1] tracking-tight text-primary">{block.topic || 'Konu Bekleniyor'}</h3>
+                      </div>
+                      <Badge className={cn('shrink-0 rounded-full border-none px-4 py-1.5 text-[8px] font-black uppercase tracking-wider shadow-lg', isDone ? 'bg-emerald-500 text-white' : 'bg-[#FF4D6D] text-white')}>
+                        {isDone ? 'Tamam' : 'Bek'}
+                      </Badge>
+                    </div>
 
-                        <div className="grid grid-cols-1 gap-4 flex-1">
-                           <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100 space-y-2 hover:bg-white transition-all shadow-inner">
-                              <div className="flex justify-between items-center border-b border-slate-200 pb-1.5">
-                                 <span className="text-[8px] font-black text-primary/30 uppercase tracking-[0.2em]">KAYNAKLAR</span>
-                                 <div className="flex gap-2">
-                                    {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="text-rose-500 hover:scale-110 transition-all"><Youtube className="h-4 w-4" /></a>}
-                                    {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="text-blue-500 hover:scale-110 transition-all"><FileText className="h-4 w-4" /></a>}
-                                    {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="text-emerald-500 hover:scale-110 transition-all"><BookOpen className="h-4 w-4" /></a>}
-                                 </div>
-                              </div>
-                              <p className="text-[10px] font-bold text-primary opacity-60 uppercase italic leading-tight">{block.phase1?.type || (block.isReview ? 'STRATEJİK TEKRAR' : 'DERS ÇALIŞMASI')}</p>
-                           </div>
-                        </div>
+                    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 space-y-3">
+                      <p className="text-[7px] font-black uppercase tracking-[0.3em] text-slate-400">ÇALIŞMA STRATEJİSİ</p>
+                      <p className="text-[11px] font-black uppercase italic text-primary/60 leading-tight">
+                        {block.phase1?.type || (block.isReview ? 'Stratejik Tekrar' : 'Ders Çalışması')}
+                      </p>
+                    </div>
 
-                        <div className="flex justify-between gap-2 pt-6 border-t border-slate-50">
-                           <Button onClick={() => handleTaskAction(block.id, 'done')} size="icon" className={cn("h-12 w-12 rounded-full shadow-xl transition-all", block.status === 'done' ? "bg-slate-100 text-slate-400" : "bg-emerald-500 text-white")}><CheckCircle2 className="h-5 w-5" /></Button>
-                           <div className="flex gap-2">
-                             <Button onClick={() => router.push('/dashboard/planning')} size="icon" variant="outline" className="h-12 w-12 rounded-full bg-white border border-slate-100 hover:border-primary text-slate-900 shadow-md"><Edit3 className="h-4 w-4" /></Button>
-                           </div>
-                        </div>
-                   </div>
+                    <div className="space-y-4">
+                      <p className="text-[7px] font-black uppercase tracking-[0.3em] text-slate-400">TERMİNAL KAYNAKLARI</p>
+                      <div className="flex gap-3">
+                        {block.youtubeUrl ? <a href={block.youtubeUrl} target="_blank" className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-500 border border-rose-100 hover:bg-rose-500 hover:text-white transition-all"><Youtube className="h-5 w-5" /></a> : <div className="h-11 w-11 rounded-xl bg-slate-50 flex items-center justify-center text-slate-200"><Youtube className="h-5 w-5" /></div>}
+                        {block.pdfUrl ? <a href={block.pdfUrl} target="_blank" className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-500 border border-blue-100 hover:bg-blue-500 hover:text-white transition-all"><FileText className="h-5 w-5" /></a> : <div className="h-11 w-11 rounded-xl bg-slate-50 flex items-center justify-center text-slate-200"><FileText className="h-5 w-5" /></div>}
+                        {block.mebiUrl ? <a href={block.mebiUrl} target="_blank" className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all"><BookOpen className="h-5 w-5" /></a> : <div className="h-11 w-11 rounded-xl bg-slate-50 flex items-center justify-center text-slate-200"><BookOpen className="h-5 w-5" /></div>}
+                      </div>
+                    </div>
+
+                    <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-6">
+                      <Button onClick={() => handleTaskAction(block.id, 'done')} className={cn('h-12 flex-1 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all', isDone ? 'bg-slate-100 text-slate-500' : 'bg-emerald-500 text-white shadow-lg')}>
+                        <CheckCircle2 className="mr-2 h-4 w-4" /> {isDone ? 'Geri Al' : 'Tamamla'}
+                      </Button>
+                      <Button onClick={() => router.push('/dashboard/planning')} variant="outline" size="icon" className="ml-3 h-12 w-12 shrink-0 rounded-xl border-slate-200 bg-white text-primary shadow-sm hover:border-primary transition-all">
+                        <Edit3 className="h-5 w-5" />
+                      </Button>
+                    </div>
+                  </div>
                 </Card>
-             ))}
-             {(!currentDayPlan || currentDayPlan?.blocks?.length === 0) && (
-                <Card onClick={() => router.push('/dashboard/planning')} className="lg:col-span-4 h-[300px] text-center bg-white rounded-[4rem] border-4 border-dashed border-slate-200 flex flex-col items-center justify-center gap-6 cursor-pointer hover:border-accent/20 transition-all group w-full">
-                   <Zap className="h-10 w-10 text-accent opacity-20 group-hover:scale-110 transition-transform" />
-                   <p className="text-xl font-black uppercase tracking-[0.4em] text-primary/20 italic">AKADEMİK TAKVİM BEKLENİYOR</p>
-                </Card>
-             )}
+              );
+            }
+          )}
+
+          {todayBlocks.length === 0 && (
+            <Card onClick={() => router.push('/dashboard/planning')} className="col-span-1 flex min-h-[320px] cursor-pointer flex-col items-center justify-center gap-6 rounded-[4rem] border-4 border-dashed border-slate-200 bg-white text-center transition-all hover:border-accent md:col-span-2 xl:col-span-4 group">
+              <div className="h-20 w-20 flex items-center justify-center rounded-3xl bg-accent/10 group-hover:scale-110 transition-transform">
+                <Zap className="h-10 w-10 text-accent animate-pulse" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-black uppercase italic tracking-tighter text-primary">AKADEMİK TAKVİM BEKLENİYOR</h3>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">TAKVMİDEN YENİ ÇALIŞMA EKLEYEREK<br />OTONOM DÖNGÜYÜ BAŞLAT</p>
+              </div>
+              <Button className="h-14 px-8 rounded-2xl bg-primary text-white font-black text-[10px] uppercase tracking-widest shadow-2xl">AKADEMİK PLANI OLUŞTUR</Button>
+            </Card>
+          )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

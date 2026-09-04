@@ -27,14 +27,12 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    // Auth yüklemesi bittiyse ve kullanıcı yoksa ana sayfaya at
     if (!authLoading && !user) {
       router.replace('/');
     }
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    // Belge yüklemesi bittiyse ve öğrenci olup sınav seçmemişse seçime at
     if (!docLoading && user && userData && userData.role === 'student' && !userData.targetExam) {
       router.replace('/dashboard/select-exam');
     }
@@ -54,7 +52,6 @@ export default function DashboardPage() {
     { id: 'settings', label: 'Ayarlar', icon: Settings, path: '/dashboard/settings' },
   ];
 
-  // RADİKAL ÇÖZÜM: Yükleme ekranındayken veya yönlendirme beklenirken render'ı kilitle
   if (authLoading || (user && docLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
@@ -68,7 +65,6 @@ export default function DashboardPage() {
 
   if (!user) return null;
 
-  // Profil belgesi Firestore'da hiç yoksa (Setup aşaması)
   if (!userData && !docLoading) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] py-20 px-6 flex items-center justify-center">
@@ -102,7 +98,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row relative">
-      {/* Mobile Header */}
       <header className="md:hidden h-20 bg-white border-b border-slate-100 flex items-center justify-between px-6 sticky top-0 z-[60]">
         <div className="text-xl font-black italic tracking-tighter text-primary uppercase leading-none">
           DEK <span className="text-accent">AI</span>
@@ -112,7 +107,6 @@ export default function DashboardPage() {
         </Button>
       </header>
 
-      {/* Overlay */}
       {sidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] md:hidden transition-all animate-in fade-in"
@@ -120,7 +114,6 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* Sidebar */}
       <aside className={cn(
         "w-[280px] bg-white border-r border-slate-100 flex flex-col fixed md:sticky inset-y-0 left-0 z-[58] transition-transform duration-500 ease-spring md:translate-x-0 h-screen",
         sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"

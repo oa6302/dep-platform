@@ -19,7 +19,7 @@ import { tr } from 'date-fns/locale';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
 
-// Otonom Planlama Motoru v7.0
+// Otonom Adaptive Planlama Motoru v7.0
 export const generateAdaptivePlan = (startDateStr: string, completedTopics: any = {}) => {
   const plan = [];
   const config = EXAM_CONFIGS['YKS_EA'];
@@ -30,10 +30,11 @@ export const generateAdaptivePlan = (startDateStr: string, completedTopics: any 
   const daysInterval = differenceInDays(endDate, startDate);
   if (daysInterval < 0) return [];
 
-  // Çalışılmamış konuları filtrele
+  // Çalışılmamış (Eksik) Konuları Filtreleme
   const getRemainingTopics = (lesson: string) => {
     const allTopics = YKS_TM_TOPICS[lesson] || [];
     const done = completedTopics[lesson] || [];
+    // Eğer konu listesinde varsa ve done içinde yoksa 'çalışılmamış' kabul edilir
     return allTopics.filter(t => !done.includes(t));
   };
 
@@ -46,7 +47,7 @@ export const generateAdaptivePlan = (startDateStr: string, completedTopics: any 
     
     const dailyBlocks = [];
     
-    // Havuz Belirleme (1 Aralık Öncesi vs Sonrası)
+    // Ders Havuzu Belirleme (1 Aralık Öncesi vs Sonrası)
     const currentLessons = isAytStarted 
       ? [...config.tytLessons.slice(0, 2), ...config.aytLessons] 
       : config.tytLessons;
@@ -59,7 +60,7 @@ export const generateAdaptivePlan = (startDateStr: string, completedTopics: any 
       const remainingTopics = getRemainingTopics(lesson);
       const allTopics = YKS_TM_TOPICS[lesson] || ['Genel Tekrar'];
       
-      // Eğer çalışılmamış konu bittiyse genel havuza dön veya genel tekrar yaptır
+      // Eğer çalışılmamış konu bittiyse genel tekrar yaptır
       const topic = remainingTopics.length > 0 
         ? remainingTopics[lessonPointers[lesson] % remainingTopics.length]
         : allTopics[lessonPointers[lesson] % allTopics.length];
@@ -75,12 +76,12 @@ export const generateAdaptivePlan = (startDateStr: string, completedTopics: any 
         status: 'planned',
         phase1: { type: 'KONU ÇALIŞMA', time: j === 0 ? '10:00' : '11:00' },
         phase2: { type: 'TEST ÇÖZME' },
-        // Konu Linkleri
+        // Konu Linkleri (4 Link)
         youtubeUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic)}`,
         pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}`,
         mebiUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}`,
         konuExtraUrl: '',
-        // Test Linkleri
+        // Test Linkleri (4 Link)
         testYoutubeUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic + ' soru çözümü')}`,
         testPdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}+test`,
         testUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}+test`,
@@ -88,7 +89,7 @@ export const generateAdaptivePlan = (startDateStr: string, completedTopics: any 
       });
     }
     
-    // Stratejik Tekrar (12:00)
+    // Stratejik Tekrar ve Analiz
     dailyBlocks.push({
       id: `review_${dateStr}`,
       lesson: 'GENEL',
@@ -98,7 +99,7 @@ export const generateAdaptivePlan = (startDateStr: string, completedTopics: any 
       phase1: { type: 'STRATEJİK', time: '12:00' }
     });
 
-    // Paragraf Kampı (15:00)
+    // Günlük Kamp
     dailyBlocks.push({
       id: `para_${dateStr}`,
       lesson: 'TYT Türkçe',
@@ -115,7 +116,7 @@ export const generateAdaptivePlan = (startDateStr: string, completedTopics: any 
     plan.push({
       date: dateStr,
       day: format(currentDate, 'EEEE', { locale: tr }),
-      isAytDay: dateStr === config.aytStartDate,
+      isAytDay: dateStr === '2026-12-01',
       blocks: dailyBlocks
     });
   }
@@ -154,6 +155,7 @@ function DashboardContent() {
             targetExam: 'YKS_EA',
             points: 1250,
             level: 4,
+            completedTopics: {},
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
           }, { merge: true });

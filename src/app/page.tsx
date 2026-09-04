@@ -8,20 +8,18 @@ import {
   ChevronRight,
   Sparkles,
   Clock,
-  TrendingUp,
   ShieldCheck,
-  ArrowRight,
+  TrendingUp,
 } from 'lucide-react';
 
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 export default function LandingPage() {
   const router = useRouter();
 
   const handleStartClick = () => {
-    // Üyelik kaldırıldı, doğrudan Dashboard'a git
+    // Üyelik ve modal kaldırıldı, doğrudan otonom dashboard'a git
     router.push('/dashboard');
   };
 
@@ -79,7 +77,7 @@ export default function LandingPage() {
             onClick={handleStartClick}
             className="h-11 rounded-xl border-none bg-primary px-5 text-[9px] font-black uppercase tracking-widest text-white shadow-xl shadow-primary/20 hover:bg-accent transition-all md:h-12 md:px-8 md:text-[10px]"
           >
-            PANELİME GİT
+            SİSTEME BAĞLAN
           </Button>
         </div>
       </nav>
@@ -103,11 +101,34 @@ export default function LandingPage() {
                 size="lg"
                 className="group h-18 w-full rounded-[1.8rem] border-none bg-primary px-10 text-lg font-black uppercase tracking-widest text-white shadow-[0_30px_70px_-20px_rgba(15,23,42,0.45)] transition-all hover:scale-[1.03] hover:bg-accent sm:w-auto md:h-20 md:px-14 md:text-xl"
               >
-                ÜCRETSİZ BAŞLA
+                HEMEN BAŞLA
                 <ChevronRight className="ml-3 h-6 w-6 transition-transform group-hover:translate-x-2" />
               </Button>
             </div>
           </div>
+        </section>
+
+        <section id="focus" className="relative w-full px-4 sm:px-8 mt-12 md:mt-24">
+           <div className="bg-[#0F172A] rounded-[4rem] p-12 md:p-24 text-white relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/10 blur-[150px] rounded-full"></div>
+              <div className="grid lg:grid-cols-2 gap-20 items-center relative z-10">
+                 <div className="space-y-8">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-accent font-black text-[10px] uppercase tracking-widest">
+                       <Zap className="h-3.5 w-3.5" /> FOCUS ENGINE v4.8
+                    </div>
+                    <h2 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase leading-[0.9] text-shadow-premium">MAKSİMUM <br /><span className="text-accent">ODAKLANMA</span></h2>
+                    <p className="text-xl opacity-60 italic leading-relaxed">Pomodoro tabanlı odak terminali ile çalışma ve mola sürelerini düzenle, akademik performansını stabil hale getir.</p>
+                    <div className="grid grid-cols-2 gap-6 pt-10 border-t border-white/10">
+                       <div><p className="text-4xl font-black text-accent md:text-6xl">25</p><p className="text-[10px] font-black uppercase tracking-widest opacity-40 mt-1">DAKİKA ÇALIŞMA</p></div>
+                       <div><p className="text-4xl font-black text-white md:text-6xl">5</p><p className="text-[10px] font-black uppercase tracking-widest opacity-40 mt-1">DAKİKA MOLA</p></div>
+                    </div>
+                 </div>
+                 <div className="bg-white/5 backdrop-blur-3xl rounded-[3rem] border border-white/10 p-12 text-center space-y-8 shadow-3xl">
+                    <p className="text-7xl md:text-[8rem] font-black italic tracking-tighter text-white text-shadow-premium leading-none">25<span className="text-accent animate-pulse">:</span>00</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-30 italic">FOKUSUNU YÖNET · HEDEFİNE ULAŞ</p>
+                 </div>
+              </div>
+           </div>
         </section>
 
         <section id="features" className="container mx-auto w-full px-5 py-28 md:px-6 md:py-40">
@@ -126,7 +147,7 @@ export default function LandingPage() {
       </main>
 
       <footer className="border-t border-primary/5 bg-white py-12 text-center">
-        <p className="text-[9px] font-black uppercase italic tracking-[0.5em] text-primary/20">DIGITAL EDUCATION COACH · YKS TM EDITION</p>
+        <p className="text-[9px] font-black uppercase italic tracking-[0.5em] text-primary/20">DIGITAL EDUCATION COACH · YKS TM EDITION · 2026</p>
       </footer>
     </div>
   );

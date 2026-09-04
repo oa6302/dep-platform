@@ -1,21 +1,27 @@
 
 'use client';
 
-import { useUser, useDoc, useAuth } from '@/firebase';
+import { useUser, useDoc, useFirestore } from '@/firebase';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   LayoutDashboard, Calendar, BookOpen, BarChart3, 
   Trophy, Link as LinkIcon, Award, Clock, Users, 
-  Brain, Settings, Menu, X, Loader2
+  Brain, Settings, Menu, X, Loader2, Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect, Suspense } from 'react';
 import { StudentView } from '@/components/dashboard/student-view';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { format, addDays } from 'date-fns';
+import { tr } from 'date-fns/locale';
+import { EXAM_CONFIGS } from '@/lib/exam-configs';
+import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
 
 function DashboardContent() {
   const { user } = useUser();
+  const db = useFirestore();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -23,22 +29,121 @@ function DashboardContent() {
   
   const targetUid = simulateUid || user?.uid;
   const { data: userData, loading: docLoading } = useDoc<any>(targetUid ? `users/${targetUid}` : null);
+  const { data: studyPlan, loading: planLoading } = useDoc<any>(targetUid ? `studyPlans/${targetUid}` : null);
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // OTONOM YÖNLENDİRME: Profil yoksa otomatik YKS TM kurulumuna gönder
-  useEffect(() => {
-    if (mounted && !docLoading && !userData && !simulateUid) {
-      router.replace('/dashboard/select-exam');
-    }
-  }, [userData, docLoading, mounted, router, simulateUid]);
+  const generateAutoPlan = () => {
+    const plan = [];
+    const baseDate = new Date();
+    const config = EXAM_CONFIGS['YKS_EA'];
+    const lessons = config.lessons;
+    
+    for (let i = 0; i < 90; i++) {
+      const currentDate = addDays(baseDate, i);
+      const dateStr = format(currentDate, 'yyyy-MM-dd');
+      
+      const dailyBlocks = [];
+      // 2 Ana Ders
+      for (let j = 0; j < 2; j++) {
+        const lesson = lessons[(i * 2 + j) % lessons.length];
+        const topics = YKS_TM_TOPICS[lesson] || ['Genel Tekrar'];
+        const topic = topics[i % topics.length];
+        
+        dailyBlocks.push({
+          id: `block_${dateStr}_${j}`,
+          lesson,
+          topic,
+          status: 'planned',
+          phase1: { type: 'KONU ÇALIŞMA', time: j === 0 ? '10:00' : '12:00' },
+          youtubeUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic)}`,
+          pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${encodeURIComponent(topic)}`
+        });
+      }
+      
+      // Paragraf Kampı
+      dailyBlocks.push({
+        id: `para_${dateStr}`,
+        lesson: 'TYT Türkçe',
+        topic: '20 Paragraf Soru Çözümü',
+        status: 'planned',
+        isParagraph: true,
+        phase1: { type: 'GÜNLÜK KAMP', time: '14:00' }
+      });
 
-  if (!mounted) return null;
+      // Stratejik Tekrar
+      dailyBlocks.push({
+        id: `review_${dateStr}`,
+        lesson: 'GENEL',
+        topic: 'Dünün Analizi & Stratejik Tekrar',
+        status: 'planned',
+        isReview: true,
+        phase1: { type: 'STRATEJİK', time: '16:00' }
+      });
+
+      plan.push({
+        date: dateStr,
+        day: format(currentDate, 'EEEE', { locale: tr }),
+        blocks: dailyBlocks
+      });
+    }
+    return plan;
+  };
+
+  useEffect(() => {
+    const initProfile = async () => {
+      // Profil veya Plan eksikse saniyeler içinde sessiz kurulum yap
+      if (mounted && !docLoading && !planLoading && !userData && !studyPlan && !simulateUid && db && user) {
+        setIsInitializing(true);
+        try {
+          const adaptivePlan = generateAutoPlan();
+          
+          await setDoc(doc(db, 'users', user.uid), {
+            uid: user.uid,
+            displayName: 'Misafir Öğrenci',
+            role: 'student',
+            targetExam: 'YKS_EA',
+            points: 1250,
+            level: 4,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+
+          await setDoc(doc(db, 'studyPlans', user.uid), {
+            userId: user.uid,
+            targetExam: 'YKS_EA',
+            masterPlan: adaptivePlan,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+        } catch (e) {
+          console.error("Initialization error:", e);
+        } finally {
+          setIsInitializing(false);
+        }
+      }
+    };
+
+    initProfile();
+  }, [userData, studyPlan, docLoading, planLoading, mounted, db, user, simulateUid]);
+
+  if (!mounted || isInitializing) return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8FAFC] gap-6 p-6 text-center">
+      <div className="relative">
+        <div className="h-24 w-24 animate-spin rounded-[2.5rem] border-[6px] border-accent border-t-transparent shadow-[0_0_50px_rgba(245,158,11,0.2)]" />
+        <Sparkles className="absolute inset-0 m-auto h-10 w-10 text-accent animate-pulse" />
+      </div>
+      <div className="space-y-2">
+        <p className="text-2xl font-black text-primary uppercase tracking-tighter italic">AKADEMİK TERMİNAL</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/40 italic animate-pulse">YKS TM Müfredatı Senkronize Ediliyor...</p>
+      </div>
+    </div>
+  );
 
   const navItems = [
     { id: 'dashboard', label: 'Anasayfa', icon: LayoutDashboard, path: '/dashboard' },

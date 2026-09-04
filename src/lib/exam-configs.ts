@@ -5,14 +5,14 @@ import {
 
 /**
  * @fileOverview Sadece YKS Eşit Ağırlık (TM) konfigürasyonu.
- * Akademik Yıl: 1 Eylül 2026 - 15 Haziran 2027
+ * Sınav Tarihi: 15 Haziran 2027
  */
 export const EXAM_CONFIGS: Record<string, any> = {
   'YKS_EA': {
     id: 'YKS_EA',
     title: 'YKS EŞİT AĞIRLIK (TM)',
     category: 'ÜNİVERSİTE',
-    description: 'Hukuk, İşletme ve Psikoloji hedefleri için saniyeler içinde TM odaklı otonom terminal.',
+    description: 'Hukuk, İşletme ve Psikoloji hedefleri için 15 Haziran 2027 odaklı otonom terminal.',
     targetGroup: '12. Sınıf & Mezun',
     icon: GraduationCap,
     academicYearStart: '2026-09-01',

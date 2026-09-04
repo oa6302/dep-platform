@@ -14,10 +14,113 @@ import { cn } from '@/lib/utils';
 import { useState, useEffect, Suspense } from 'react';
 import { StudentView } from '@/components/dashboard/student-view';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { format, addDays, differenceInDays, parseISO, isBefore, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { format, addDays, differenceInDays, parseISO, isBefore } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { EXAM_CONFIGS } from '@/lib/exam-configs';
 import { YKS_TM_TOPICS } from '@/lib/curriculum-data';
+
+// Otonom Planlama Motoru v7.0
+export const generateAdaptivePlan = (startDateStr: string, completedTopics: any = {}) => {
+  const plan = [];
+  const config = EXAM_CONFIGS['YKS_EA'];
+  const startDate = parseISO(startDateStr);
+  const aytDate = parseISO(config.aytStartDate);
+  const endDate = parseISO(config.examDate);
+  
+  const daysInterval = differenceInDays(endDate, startDate);
+  if (daysInterval < 0) return [];
+
+  // Çalışılmamış konuları filtrele
+  const getRemainingTopics = (lesson: string) => {
+    const allTopics = YKS_TM_TOPICS[lesson] || [];
+    const done = completedTopics[lesson] || [];
+    return allTopics.filter(t => !done.includes(t));
+  };
+
+  const lessonPointers: Record<string, number> = {};
+
+  for (let i = 0; i <= daysInterval; i++) {
+    const currentDate = addDays(startDate, i);
+    const dateStr = format(currentDate, 'yyyy-MM-dd');
+    const isAytStarted = !isBefore(currentDate, aytDate);
+    
+    const dailyBlocks = [];
+    
+    // Havuz Belirleme (1 Aralık Öncesi vs Sonrası)
+    const currentLessons = isAytStarted 
+      ? [...config.tytLessons.slice(0, 2), ...config.aytLessons] 
+      : config.tytLessons;
+
+    // Günlük 2 Ana Ders Bloğu
+    for (let j = 0; j < 2; j++) {
+      const lesson = currentLessons[(i * 2 + j) % currentLessons.length];
+      if (!lessonPointers[lesson]) lessonPointers[lesson] = 0;
+      
+      const remainingTopics = getRemainingTopics(lesson);
+      const allTopics = YKS_TM_TOPICS[lesson] || ['Genel Tekrar'];
+      
+      // Eğer çalışılmamış konu bittiyse genel havuza dön veya genel tekrar yaptır
+      const topic = remainingTopics.length > 0 
+        ? remainingTopics[lessonPointers[lesson] % remainingTopics.length]
+        : allTopics[lessonPointers[lesson] % allTopics.length];
+      
+      lessonPointers[lesson]++;
+      
+      const topicQuery = encodeURIComponent(topic);
+      
+      dailyBlocks.push({
+        id: `block_${dateStr}_${j}`,
+        lesson,
+        topic,
+        status: 'planned',
+        phase1: { type: 'KONU ÇALIŞMA', time: j === 0 ? '10:00' : '11:00' },
+        phase2: { type: 'TEST ÇÖZME' },
+        // Konu Linkleri
+        youtubeUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic)}`,
+        pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}`,
+        mebiUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}`,
+        konuExtraUrl: '',
+        // Test Linkleri
+        testYoutubeUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic + ' soru çözümü')}`,
+        testPdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}+test`,
+        testUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}+test`,
+        extraUrl: ''
+      });
+    }
+    
+    // Stratejik Tekrar (12:00)
+    dailyBlocks.push({
+      id: `review_${dateStr}`,
+      lesson: 'GENEL',
+      topic: isAytStarted ? 'AYT/TYT Karma Tekrar & Analiz' : 'Dünün Analizi & TYT Tekrar',
+      status: 'planned',
+      isReview: true,
+      phase1: { type: 'STRATEJİK', time: '12:00' }
+    });
+
+    // Paragraf Kampı (15:00)
+    dailyBlocks.push({
+      id: `para_${dateStr}`,
+      lesson: 'TYT Türkçe',
+      topic: '20 Paragraf Soru Çözümü',
+      status: 'planned',
+      isParagraph: true,
+      phase1: { type: 'GÜNLÜK KAMP', time: '15:00' },
+      youtubeUrl: `https://www.youtube.com/results?search_query=paragraf+soru+çözümü`,
+      pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=Paragraf`,
+      mebiUrl: `https://www.eba.gov.tr/arama?q=Paragraf`,
+      testUrl: `https://www.eba.gov.tr/arama?q=Paragraf+test`
+    });
+
+    plan.push({
+      date: dateStr,
+      day: format(currentDate, 'EEEE', { locale: tr }),
+      isAytDay: dateStr === config.aytStartDate,
+      blocks: dailyBlocks
+    });
+  }
+  return plan;
+};
 
 function DashboardContent() {
   const { user } = useUser();
@@ -37,94 +140,6 @@ function DashboardContent() {
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const generateAutoPlan = () => {
-    const plan = [];
-    const config = EXAM_CONFIGS['YKS_EA'];
-    const startDate = parseISO(config.academicYearStart);
-    const aytDate = parseISO(config.aytStartDate);
-    const endDate = parseISO(config.examDate);
-    
-    const daysInterval = differenceInDays(endDate, startDate);
-    
-    const getTopics = (lesson: string) => {
-      const cleanName = lesson.replace(/^(TYT|AYT)\s+/i, '').trim();
-      return YKS_TM_TOPICS[lesson] || YKS_TM_TOPICS[cleanName] || ['Genel Tekrar'];
-    };
-
-    const lessonPointers: Record<string, number> = {};
-
-    for (let i = 0; i <= daysInterval; i++) {
-      const currentDate = addDays(startDate, i);
-      const dateStr = format(currentDate, 'yyyy-MM-dd');
-      const isAytStarted = !isBefore(currentDate, aytDate);
-      
-      const dailyBlocks = [];
-      
-      // Havuz Belirleme (1 Aralık Öncesi vs Sonrası)
-      const currentLessons = isAytStarted 
-        ? [...config.tytLessons.slice(0, 2), ...config.aytLessons] 
-        : config.tytLessons;
-
-      // Günlük 2 Ana Ders Bloğu
-      for (let j = 0; j < 2; j++) {
-        const lesson = currentLessons[(i * 2 + j) % currentLessons.length];
-        if (!lessonPointers[lesson]) lessonPointers[lesson] = 0;
-        const topics = getTopics(lesson);
-        const topic = topics[lessonPointers[lesson] % topics.length];
-        lessonPointers[lesson]++;
-        
-        const topicQuery = encodeURIComponent(topic);
-        
-        dailyBlocks.push({
-          id: `block_${dateStr}_${j}`,
-          lesson,
-          topic,
-          status: 'planned',
-          phase1: { type: 'KONU ÇALIŞMA', time: j === 0 ? '10:00' : '11:00' },
-          phase2: { type: 'TEST ÇÖZME' },
-          youtubeUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic)}`,
-          pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}`,
-          mebiUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}`,
-          testUrl: `https://www.eba.gov.tr/arama?q=${topicQuery}+test`,
-          testYoutubeUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + topic + ' soru çözümü')}`,
-          testPdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=${topicQuery}+test`
-        });
-      }
-      
-      // Stratejik Tekrar (12:00)
-      dailyBlocks.push({
-        id: `review_${dateStr}`,
-        lesson: 'GENEL',
-        topic: isAytStarted ? 'AYT/TYT Karma Tekrar & Analiz' : 'Dünün Analizi & TYT Tekrar',
-        status: 'planned',
-        isReview: true,
-        phase1: { type: 'STRATEJİK', time: '12:00' }
-      });
-
-      // Paragraf Kampı (15:00)
-      dailyBlocks.push({
-        id: `para_${dateStr}`,
-        lesson: 'TYT Türkçe',
-        topic: '20 Paragraf Soru Çözümü',
-        status: 'planned',
-        isParagraph: true,
-        phase1: { type: 'GÜNLÜK KAMP', time: '15:00' },
-        youtubeUrl: `https://www.youtube.com/results?search_query=paragraf+soru+çözümü`,
-        pdfUrl: `https://ogmmateryal.eba.gov.tr/arama?q=Paragraf`,
-        mebiUrl: `https://www.eba.gov.tr/arama?q=Paragraf`,
-        testUrl: `https://www.eba.gov.tr/arama?q=Paragraf+test`
-      });
-
-      plan.push({
-        date: dateStr,
-        day: format(currentDate, 'EEEE', { locale: tr }),
-        isAytDay: dateStr === config.aytStartDate,
-        blocks: dailyBlocks
-      });
-    }
-    return plan;
-  };
 
   useEffect(() => {
     const initProfile = async () => {
@@ -149,7 +164,7 @@ function DashboardContent() {
 
       if (!planLoading && !studyPlan && userData) {
         try {
-          const adaptivePlan = generateAutoPlan();
+          const adaptivePlan = generateAdaptivePlan('2026-09-01', userData.completedTopics || {});
           await setDoc(doc(db, 'studyPlans', user.uid), {
             userId: user.uid,
             targetExam: 'YKS_EA',

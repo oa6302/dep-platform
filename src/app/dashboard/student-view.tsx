@@ -6,11 +6,10 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Sparkles, Brain, CheckCircle2, Loader2, 
-  Youtube, FileText, BellRing, Edit3, BookOpen, 
-  Zap, Target, BookOpenCheck, ArrowRight
+  CheckCircle2, Loader2, Youtube, FileText, 
+  BookOpen, Zap, Clock, Calendar, Edit3, Trash2
 } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -23,26 +22,26 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
   const router = useRouter();
   const { toast } = useToast();
   
-  const today = format(new Date(), 'yyyy-MM-dd');
+  const [today, setToday] = useState('');
+  useEffect(() => { setToday(format(new Date(), 'yyyy-MM-dd')); }, []);
+
   const { data: studyPlan, loading: planLoading } = useDoc<any>(user?.uid ? `studyPlans/${user.uid}` : null);
   
   const currentDayPlan = useMemo(() => {
-    if (!studyPlan?.masterPlan) return null;
-    return studyPlan.masterPlan.find((p: any) => p.date === today);
+    if (!studyPlan?.masterPlan || !today) return null;
+    return studyPlan.masterPlan.find((d: any) => d.date === today);
   }, [studyPlan, today]);
 
-  const handleTaskAction = async (blockId: string, action: string) => {
-    if (!db || !user || !studyPlan) return;
-    
+  const handleTaskAction = async (blockId: string, action: 'done' | 'delete') => {
+    if (!db || !user || !studyPlan || !today) return;
     const newPlan = studyPlan.masterPlan.map((day: any) => {
       if (day.date === today) {
-        return {
-          ...day,
+        return { 
+          ...day, 
           blocks: day.blocks.map((b: any) => {
             if (b.id === blockId) {
               if (action === 'done') return { ...b, status: b.status === 'done' ? 'planned' : 'done' };
               if (action === 'delete') return null;
-              return b;
             }
             return b;
           }).filter(Boolean)
@@ -50,15 +49,10 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
       }
       return day;
     });
-
-    await updateDoc(doc(db, 'studyPlans', user.uid), { 
-      masterPlan: newPlan,
-      updatedAt: serverTimestamp()
-    });
-    
+    await updateDoc(doc(db, 'studyPlans', user.uid), { masterPlan: newPlan, updatedAt: serverTimestamp() });
     toast({ 
-      title: 'Terminal Güncellendi', 
-      className: "bg-primary text-white rounded-2xl shadow-2xl"
+      title: action === 'done' ? 'Terminal Güncellendi' : 'Görevi İptal Edildi', 
+      className: "bg-primary text-white rounded-2xl shadow-2xl" 
     });
   };
 
@@ -70,26 +64,23 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
   );
 
   return (
-    <div className="p-4 md:p-14 space-y-12 max-w-[1800px] mx-auto w-full animate-in fade-in duration-1000 bg-[#F8FAFC]">
-      <section className="bg-primary text-white rounded-[3.5rem] p-8 md:p-14 relative overflow-hidden group shadow-[0_60px_120px_-20px_rgba(15,23,42,0.4)]">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-accent/10 blur-[150px] rounded-full" />
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
-          <div className="space-y-6 flex-1 text-center md:text-left">
-            <div className="inline-flex items-center gap-4 text-accent font-black text-[10px] uppercase tracking-[0.3em] italic bg-white/5 px-6 py-2 rounded-full border border-white/10">
-              <Brain className="h-5 w-5 animate-pulse" /> DEK YAPAY ZEKA MENTORU
-            </div>
-            <p className="text-3xl md:text-5xl font-black italic leading-[0.95] text-shadow-premium uppercase tracking-tighter text-white">
-               "Bugün {currentDayPlan?.blocks?.length || 0} devasa akademik blok saniyeler içinde seni bekliyor."
-            </p>
-          </div>
-          <Button onClick={() => router.push('/dashboard/planning')} className="w-full md:w-auto bg-accent hover:bg-white hover:text-primary transition-all duration-500 rounded-[2rem] h-20 px-12 font-black uppercase text-[12px] tracking-[0.3em] shadow-3xl text-primary border-none">AKADEMİK TAKVİM</Button>
-        </div>
-      </section>
-
-      <div className="space-y-12">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-4">
-             <h2 className="text-3xl md:text-4xl font-black italic tracking-tighter text-primary uppercase text-shadow-deep">GÜNLÜK AKADEMİK BLOKLARIN</h2>
-             <Badge className="bg-white text-primary border-2 border-slate-100 rounded-3xl px-8 py-3.5 font-black uppercase text-[10px] tracking-[0.2em] shadow-lg">{format(new Date(), 'd MMMM yyyy', { locale: tr })}</Badge>
+    <div className="p-4 md:p-8 space-y-10 max-w-[1600px] mx-auto w-full animate-in fade-in duration-1000 bg-[#F8FAFC]">
+      <section className="space-y-8">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-8 px-2">
+           <div className="space-y-2 text-center md:text-left overflow-hidden">
+              <h2 className="text-4xl md:text-6xl lg:text-[8rem] font-black italic leading-[0.85] tracking-tighter text-primary uppercase text-shadow-premium break-words">
+                 BUGÜNKÜ<br />BLOKLARIN
+              </h2>
+           </div>
+           <Card className="bg-white rounded-[2rem] px-8 py-5 flex items-center gap-4 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] border-none shrink-0 w-full md:w-auto">
+              <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center">
+                 <Calendar className="h-5 w-5 text-primary opacity-20" />
+              </div>
+              <div className="text-right flex-1 md:flex-none">
+                 <p className="text-xl font-black italic tracking-tighter text-primary leading-none">{format(new Date(), 'd MMMM', { locale: tr }).toUpperCase()}</p>
+                 <p className="text-[9px] font-black text-primary/20 uppercase tracking-[0.3em] mt-1">{format(new Date(), 'yyyy')}</p>
+              </div>
+           </Card>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -97,52 +88,96 @@ export function StudentView({ user, userData }: { user: any, userData: any }) {
                 <Card 
                   key={block.id} 
                   className={cn(
-                    "p-8 rounded-[3.5rem] border-none transition-all hover:scale-[1.02] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] group relative overflow-hidden bg-white h-full flex flex-col",
-                    block.status === 'done' && "opacity-60"
+                    "aspect-square p-8 rounded-[3rem] border-none transition-all hover:scale-[1.03] shadow-[0_40px_80px_-20px_rgba(15,23,42,0.12)] group relative overflow-hidden bg-white h-full flex flex-col",
+                    (block.status === 'done' || block.status === 'completed') && "opacity-50 grayscale-[0.5]"
                   )}
                 >
-                   <div className="space-y-6 relative z-10 flex-1 flex flex-col">
-                        <div className="flex justify-between items-start gap-2">
-                           <div className="space-y-1 flex-1 min-w-0">
-                              <h4 className="text-2xl font-black italic leading-tight tracking-tighter uppercase text-primary text-shadow-deep line-clamp-2">{block.topic}</h4>
-                              <p className="text-[8px] font-bold text-muted-foreground/40 uppercase tracking-widest italic">#{block.lesson.substring(0, 3)}</p>
+                   <div className="space-y-6 relative z-10 flex-1 flex flex-col h-full overflow-hidden">
+                        <div className="flex justify-between items-center">
+                           <div className="flex items-center gap-2">
+                              <div className="px-3 py-1.5 rounded-xl bg-[#FFF8E7] text-[#0F172A] flex items-center gap-2 border border-[#FEF3C7] shadow-sm">
+                                <Clock className="h-3.5 w-3.5 text-accent" />
+                                <span className="text-[11px] font-black">{block.phase1?.time || '10:00'}</span>
+                              </div>
+                              <span className="text-[10px] font-black text-primary/10 uppercase tracking-[0.2em] italic">#{String(block.lesson).includes('AYT') ? 'AYT' : 'TYT'}</span>
                            </div>
-                           <Badge className={cn("px-4 py-1.5 rounded-full text-[8px] font-black shrink-0", block.status === 'done' ? "bg-emerald-500 text-white" : "bg-[#FF4D6D] text-white shadow-lg")}>
-                              {block.status === 'done' ? 'TAMAM' : 'BEK'}
+                           <Badge 
+                             onClick={() => handleTaskAction(block.id, 'done')}
+                             className={cn(
+                               "px-4 py-1.5 rounded-xl text-[10px] font-black shadow-md border-none cursor-pointer active:scale-95 transition-all uppercase tracking-widest", 
+                               (block.status === 'done' || block.status === 'completed') ? "bg-emerald-500 text-white" : "bg-[#FF4D6D] text-white hover:bg-[#FF4D6D]/90"
+                             )}
+                           >
+                              {(block.status === 'done' || block.status === 'completed') ? 'TAMAM' : 'BEK'}
                            </Badge>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-4 flex-1">
-                           <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100 space-y-2 hover:bg-white transition-all shadow-inner">
-                              <div className="flex justify-between items-center border-b border-slate-200 pb-1.5">
-                                 <span className="text-[8px] font-black text-primary/30 uppercase tracking-[0.2em]">KAYNAKLAR</span>
-                                 <div className="flex gap-2">
-                                    {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="text-rose-500 hover:scale-110 transition-all"><Youtube className="h-4 w-4" /></a>}
-                                    {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="text-blue-500 hover:scale-110 transition-all"><FileText className="h-4 w-4" /></a>}
-                                    {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="text-emerald-500 hover:scale-110 transition-all"><BookOpen className="h-4 w-4" /></a>}
+                        <div className="flex-1 flex items-center justify-center py-4 overflow-hidden px-1">
+                           <h4 className="text-2xl md:text-3xl lg:text-4xl font-black italic leading-[1.1] tracking-tighter uppercase text-primary text-shadow-premium text-center break-words line-clamp-3">
+                              {block.topic}
+                           </h4>
+                        </div>
+
+                        <div className="bg-[#F8FAFC]/80 rounded-[2rem] p-5 space-y-4 border border-slate-50 shadow-inner mt-auto">
+                           <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                 <span className="text-[9px] font-black text-primary/30 uppercase tracking-[0.3em] italic">KONU ÇALIŞMA</span>
+                                 <div className="flex gap-3 items-center">
+                                    {block.youtubeUrl && <a href={block.youtubeUrl} target="_blank" className="hover:scale-110 transition-all text-rose-500 opacity-60"><Youtube className="h-4 w-4" /></a>}
+                                    {block.pdfUrl && <a href={block.pdfUrl} target="_blank" className="hover:scale-110 transition-all text-blue-500 opacity-60"><FileText className="h-4 w-4" /></a>}
+                                    {block.mebiUrl && <a href={block.mebiUrl} target="_blank" className="hover:scale-110 transition-all text-emerald-500 opacity-60"><BookOpen className="h-4 w-4" /></a>}
                                  </div>
                               </div>
-                              <p className="text-[10px] font-bold text-primary opacity-60 uppercase italic leading-tight">{block.phase1?.type || (block.isReview ? 'STRATEJİK TEKRAR' : 'DERS ÇALIŞMASI')}</p>
+                           </div>
+                           
+                           <div className="h-px w-full bg-slate-200/50" />
+
+                           <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                 <div className="flex items-center gap-1.5">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
+                                    <span className="text-[9px] font-black text-accent uppercase tracking-[0.3em] italic">TEST ÇÖZME</span>
+                                 </div>
+                                 <div className="flex gap-3 items-center">
+                                    {block.testYoutubeUrl && <a href={block.testYoutubeUrl} target="_blank" className="hover:scale-110 transition-all text-rose-500 opacity-80"><Youtube className="h-4 w-4" /></a>}
+                                    {block.testUrl && <a href={block.testUrl} target="_blank" className="hover:scale-110 transition-all text-emerald-500 opacity-80"><BookOpen className="h-4 w-4" /></a>}
+                                    {block.testPdfUrl && <a href={block.testPdfUrl} target="_blank" className="hover:scale-110 transition-all text-blue-500 opacity-80"><FileText className="h-4 w-4" /></a>}
+                                 </div>
+                              </div>
                            </div>
                         </div>
 
-                        <div className="flex justify-between gap-2 pt-6 border-t border-slate-50">
-                           <Button onClick={() => handleTaskAction(block.id, 'done')} size="icon" className={cn("h-12 w-12 rounded-full shadow-xl transition-all", block.status === 'done' ? "bg-slate-100 text-slate-400" : "bg-emerald-500 text-white")}><CheckCircle2 className="h-5 w-5" /></Button>
-                           <div className="flex gap-2">
-                             <Button onClick={() => router.push('/dashboard/planning')} size="icon" variant="outline" className="h-12 w-12 rounded-full bg-white border border-slate-100 hover:border-primary text-slate-900 shadow-md"><Edit3 className="h-4 w-4" /></Button>
-                           </div>
+                        <div className="flex gap-3 mt-2">
+                           <Button 
+                             onClick={() => router.push('/dashboard/planning')} 
+                             className="flex-1 h-12 rounded-2xl bg-[#0F172A] text-white font-black uppercase text-[10px] tracking-[0.3em] gap-2 shadow-xl hover:bg-accent transition-all"
+                           >
+                             DÜZENLE <Edit3 className="h-3.5 w-3.5 text-accent" />
+                           </Button>
+                           <Button 
+                             onClick={() => handleTaskAction(block.id, 'delete')} 
+                             variant="ghost" 
+                             size="icon" 
+                             className="h-12 w-12 rounded-2xl bg-slate-50 text-destructive hover:bg-destructive hover:text-white transition-all shadow-md"
+                           >
+                             <Trash2 className="h-5 w-5" />
+                           </Button>
                         </div>
                    </div>
                 </Card>
              ))}
+             
              {(!currentDayPlan || currentDayPlan?.blocks?.length === 0) && (
-                <Card onClick={() => router.push('/dashboard/planning')} className="lg:col-span-4 h-[300px] text-center bg-white rounded-[4rem] border-4 border-dashed border-slate-200 flex flex-col items-center justify-center gap-6 cursor-pointer hover:border-accent/20 transition-all group w-full">
-                   <Zap className="h-10 w-10 text-accent opacity-20 group-hover:scale-110 transition-transform" />
-                   <p className="text-xl font-black uppercase tracking-[0.4em] text-primary/20 italic">AKADEMİK TAKVİM BEKLENİYOR</p>
+                <Card onClick={() => router.push('/dashboard/planning')} className="lg:col-span-4 h-[300px] text-center bg-white rounded-[3rem] border-4 border-dashed border-slate-100 flex flex-col items-center justify-center gap-6 cursor-pointer hover:border-accent/30 transition-all group w-full">
+                   <Zap className="h-12 w-12 text-accent opacity-20 group-hover:scale-110 transition-transform" />
+                   <div className="space-y-2">
+                      <p className="text-2xl font-black uppercase tracking-[0.3em] text-primary/10 italic">BUGÜN BOŞ</p>
+                      <p className="text-[9px] font-bold text-primary/5 uppercase tracking-widest italic">AKADEMİK TERMİNALİ ÇALIŞTIRIN</p>
+                   </div>
                 </Card>
              )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }
